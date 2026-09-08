@@ -20,9 +20,9 @@ export const LoginView: React.FC = () => {
         <div className="text-center">
           <Link to="/" className="inline-block p-3 bg-white rounded-2xl shadow-xl mb-4">
             <img
-              src="/logo.svg"
+              src="/logo.png"
               alt="VL Engenharia"
-              className="h-12 w-auto mx-auto"
+              className="h-12 w-auto mx-auto object-contain"
             />
           </Link>
           <h2 className="text-2xl font-black text-white tracking-tight">

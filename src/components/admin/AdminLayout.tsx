@@ -159,7 +159,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5">
               <div className="p-1.5 bg-white rounded-lg shadow-sm">
-                <img src="/logo.svg" alt="VL" className="h-6 w-auto" />
+                <img src="/logo.png" alt="VL" className="h-6 w-auto object-contain" />
               </div>
               <div>
                 <span className="font-extrabold text-sm text-white tracking-tight block leading-tight">

@@ -23,6 +23,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import engineerPhoto from '../../assets/images/image.png';
 
 interface ServicoItem {
   id: string;
@@ -284,16 +285,18 @@ export const LandingPage: React.FC = () => {
                 <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#0B1E3D] to-[#1565D8] opacity-10 blur-sm"></div>
                 
                 <div className="relative bg-white rounded-2xl p-3 shadow-xl border border-slate-200 overflow-hidden">
-                  <div className="aspect-4/5 rounded-xl bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col items-center justify-end relative overflow-hidden group">
-                    {/* Engineer photo with fallbacks */}
+                  <div className="aspect-4/5 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 flex flex-col items-center justify-end relative overflow-hidden group">
+                    {/* Engineer photo with high resolution */}
                     <img
-                      src="/image.png"
+                      src={engineerPhoto}
                       alt="Vitor Leonardo - Engenheiro Mecânico CREA-PE"
-                      className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-103"
+                      className="w-full h-full object-contain object-bottom pt-2 transition-transform duration-300 group-hover:scale-102 filter drop-shadow-sm"
+                      loading="eager"
+                      decoding="async"
                       onError={(e) => {
-                        // Fallback to vitor-leonardo.png then placeholder badge
-                        if (e.currentTarget.src.includes('image.png')) {
-                          e.currentTarget.src = '/vitor-leonardo.png';
+                        // Fallback to /image.png then placeholder badge
+                        if (e.currentTarget.src !== window.location.origin + '/image.png') {
+                          e.currentTarget.src = '/image.png';
                           return;
                         }
                         e.currentTarget.style.display = 'none';
@@ -579,15 +582,6 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-              </div>
-
-              {/* Emergency Banner */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-900">
-                <Clock className="w-5 h-5 text-amber-600 shrink-0" />
-                <div className="text-xs">
-                  <strong className="font-bold block">Disponibilidade Imediata:</strong>
-                  Atendimento ágil em até 24h para emergências regulatórias, interdições e perícias urgentes.
-                </div>
               </div>
             </div>
 

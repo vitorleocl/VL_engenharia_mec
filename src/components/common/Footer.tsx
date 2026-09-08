@@ -1,21 +1,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Mail, Phone, MapPin, Shield, Lock } from 'lucide-react';
+import footerLogo from '../../assets/images/logo.png';
 
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-[#0B1E3D] text-slate-300 pt-16 pb-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-slate-800">
           
           {/* Brand Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white rounded-lg inline-block">
                 <img
-                  src="/logo.svg"
+                  src={footerLogo}
                   alt="VL Engenharia"
-                  className="h-10 w-auto"
+                  className="h-10 w-auto object-contain"
                 />
               </div>
             </div>
@@ -96,26 +97,6 @@ export const Footer: React.FC = () => {
                 </span>
               </li>
             </ul>
-          </div>
-
-          {/* Plantão & Agilidade */}
-          <div className="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Atendimento em até 24h
-            </span>
-            <h5 className="text-white font-bold text-sm">Emergências Regulatórias</h5>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Fiscalizações do Ministério do Trabalho, exigências de seguradoras ou auditorias urgentes com emissão ágil de ART.
-            </p>
-            <a
-              href="https://wa.me/5581984442592?text=Preciso%20de%20atendimento%20de%20urg%C3%AAncia%20para%20fiscaliza%C3%A7%C3%A3o%2Flaudo."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block w-full text-center py-2 px-3 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors"
-            >
-              Acionar Engenheiro de Plantão
-            </a>
           </div>
 
         </div>

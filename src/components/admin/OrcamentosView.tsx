@@ -275,7 +275,7 @@ export const OrcamentosView: React.FC = () => {
             {/* Header with Logo and Info */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
-                <img src="/logo.svg" alt="VL" className="h-10 w-auto" />
+                <img src="/logo.png" alt="VL" className="h-10 w-auto object-contain" />
                 <div>
                   <h3 className="font-extrabold text-[#0B1E3D] text-base">VL ENGENHARIA MECÂNICA</h3>
                   <p className="text-xs text-slate-500 font-mono">CREA-PE 1822299490 • Recife / PE</p>

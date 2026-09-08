@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, Shield, ArrowRight } from 'lucide-react';
+import siteLogo from '../../assets/images/logo.png';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,12 +25,14 @@ export const Header: React.FC = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center group focus:outline-none" aria-label="VL Engenharia">
           <img
-            src="/logo.png"
+            src={siteLogo}
             alt="VL Engenharia"
             className="h-12 sm:h-14 md:h-16 w-auto object-contain transition-transform group-hover:scale-102"
             onError={(e) => {
-              // Fallback to logo.svg if needed
-              e.currentTarget.src = '/logo.svg';
+              // Fallback to /logo.png if needed
+              if (e.currentTarget.src !== window.location.origin + '/logo.png') {
+                e.currentTarget.src = '/logo.png';
+              }
             }}
           />
         </Link>
