@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to get current user data
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    // Helper function to check master role (or master email)
+    function isMaster() {
+      return isAuthenticated() && (
+        request.auth.token.email == "vitorleonardocl@gmail.com" ||
+        getUserData().role == "master"
+      );
+    }
+
+    // Helper function to check collaborator role
+    function isColaborador() {
+      return isAuthenticated() && (
+        isMaster() ||
+        getUserData().role == "colaborador"
+      );
+    }
+
+    // Public contact form submission (Creation allowed without auth, reading/modifying forbidden)
+    match /contatos/{contatoId} {
+      allow create: if true;
+      allow read, update, delete: if isMaster() || isColaborador();
+    }
+
+    // Users and roles collection
+    match /usuarios/{uid} {
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isMaster());
+      allow write: if isMaster();
+    }
+
+    // Audit logs (strictly read-only for master, writable only through master or backend)
+    match /logsAuditoria/{logId} {
+      allow read: if isMaster();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit trail
+    }
+
+    // AI usage metrics
+    match /usoIA/{anoMes} {
+      allow read: if isAuthenticated();
+      allow write: if isMaster() || isColaborador();
+    }
+
+    // Atomic report counters (LAR-AAAA-NNN)
+    match /contadores/{ano} {
+      allow read, write: if isColaborador() || isMaster();
+    }
+
+    // Clients collection
+    match /clientes/{clienteId} {
+      allow read: if isColaborador() || isMaster() || (
+        isAuthenticated() && getUserData().role == "cliente" && getUserData().clienteId == clienteId
+      );
+      allow write: if isColaborador() || isMaster();
+    }
+
+    // Assets / Equipments
+    match /ativos/{ativoId} {
+      allow read: if isColaborador() || isMaster() || (
+        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
+      );
+      allow write: if isColaborador() || isMaster();
+    }
+
+    // Quotes / Budgets
+    match /orcamentos/{orcamentoId} {
+      allow read: if isColaborador() || isMaster() || (
+        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
+      );
+      allow write: if isColaborador() || isMaster();
+    }
+
+    // Technical Reports (Laudos)
+    match /laudos/{laudoId} {
+      allow read: if isColaborador() || isMaster() || (
+        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
+      );
+      allow write: if isColaborador() || isMaster();
+    }
+
+    // Report Templates
+    match /templatesLaudo/{templateId} {
+      allow read: if isColaborador() || isMaster();
+      allow write: if isColaborador() || isMaster();
+    }
+
+    // Inspection Schedule / Agenda
+    match /agendaVistorias/{agendaId} {
+      allow read, write: if isColaborador() || isMaster();
+    }
+  }
+}

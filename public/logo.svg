@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Metallic Gradient for Gear & Rim -->
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="30%" stop-color="#CBD5E1"/>
+      <stop offset="50%" stop-color="#94A3B8"/>
+      <stop offset="75%" stop-color="#64748B"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+
+    <!-- Electric Blue Gradient for 'L' and 'ENGENHARIA' -->
+    <linearGradient id="electricBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066FF"/>
+      <stop offset="100%" stop-color="#0047BA"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="gearShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#0A192F" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Left Emblem: Center is around (260, 260) -->
+  <g transform="translate(30, 20)" filter="url(#gearShadow)">
+    <!-- 6 Mechanical Gear Teeth on the left flank -->
+    <!-- Center (230, 240), Outer Radius ~190, Root Radius ~160 -->
+    <path d="
+      M 115 110 
+      L 70 85 L 55 115 L 98 140
+      A 175 175 0 0 0 85 190 
+      L 38 180 L 30 215 L 78 225
+      A 175 175 0 0 0 80 270 
+      L 32 285 L 42 320 L 90 305
+      A 175 175 0 0 0 115 350 
+      L 75 385 L 95 415 L 135 380
+      A 175 175 0 0 0 175 415 
+      L 155 460 L 190 475 L 210 425
+    " stroke="url(#silverGrad)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+
+    <!-- Metallic Circular Arc Ring -->
+    <path d="M 230 48 A 190 190 0 1 1 145 405" 
+          stroke="url(#silverGrad)" stroke-width="15" stroke-linecap="round" fill="none"/>
+    
+    <!-- Inner Dark Navy Concentric Guideline -->
+    <path d="M 230 72 A 166 166 0 1 1 160 380" 
+          stroke="#0A2540" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+    <!-- Stylized 'V' in Dark Navy -->
+    <!-- Solid polygon with precise angles -->
+    <polygon points="120,165 175,165 240,320 285,215 235,215 210,165 315,165 240,345" fill="#0A2540"/>
+
+    <!-- Stylized 'L' in Electric Royal Blue overlapping 'V' -->
+    <polygon points="260,140 310,140 250,290 385,290 385,340 200,340 200,290 235,290" fill="url(#electricBlue)"/>
+  </g>
+
+  <!-- Vertical Divider Line -->
+  <line x1="490" y1="100" x2="490" y2="420" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Right Typography Block -->
+  <g transform="translate(530, 20)">
+    <!-- VL ENGENHARIA -->
+    <text x="0" y="215" font-family="'Montserrat', 'Arial Black', 'Space Grotesk', system-ui, sans-serif" font-weight="900" font-size="120" letter-spacing="-2">
+      <tspan fill="#0A2540">VL </tspan>
+      <tspan fill="#0066FF">ENGENHARIA</tspan>
+    </text>
+
+    <!-- Horizontal Divider with Center Gear -->
+    <!-- Total width from x=0 to x=980, Center around x=480 -->
+    <line x1="0" y1="285" x2="440" y2="285" stroke="#0A2540" stroke-width="4.5" stroke-linecap="round"/>
+    
+    <!-- Central Small Cog Icon -->
+    <g transform="translate(470, 285)">
+      <circle cx="0" cy="0" r="16" fill="#0A2540"/>
+      <circle cx="0" cy="0" r="7" fill="white"/>
+      <path d="
+        M -22 -6 L -22 6 L -16 6 L -16 -6 Z
+        M 16 -6 L 22 -6 L 22 6 L 16 6 Z
+        M -6 -22 L 6 -22 L 6 -16 L -6 -16 Z
+        M -6 16 L 6 16 L 6 22 L -6 22 Z
+        M -16 -16 L -11 -20 L -7 -16 L -12 -12 Z
+        M 12 12 L 16 7 L 20 11 L 16 16 Z
+        M -16 16 L -20 11 L -16 7 L -12 12 Z
+        M 12 -12 L 16 -16 L 20 -11 L 16 -7 Z
+      " fill="#0A2540"/>
+    </g>
+
+    <line x1="500" y1="285" x2="960" y2="285" stroke="#0A2540" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- Subtitle Line -->
+    <text x="0" y="350" font-family="'Montserrat', 'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="32" letter-spacing="7.5" fill="#0A2540">
+      INSPEÇÕES  •  LAUDOS TÉCNICOS  •  ENGENHARIA MECÂNICA
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /laudos/{laudoId}/{allPaths=**} {
+      // Allow read to authenticated users, write to staff
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /assinaturas/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
