@@ -492,7 +492,7 @@ export const LandingPage: React.FC = () => {
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#38bdf812_1px,transparent_1px),linear-gradient(to_bottom,#38bdf812_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
                     
                     {/* Animated blueprint mechanical gear watermark */}
-                    <div className="absolute top-4 right-4 w-20 h-20 text-sky-400/25 pointer-events-none animate-[spin_30s_linear_infinite]">
+                    <div className="absolute top-4 right-4 w-20 h-20 text-sky-400/30 pointer-events-none animate-gear-slow">
                       <Cog className="w-full h-full" />
                     </div>
 
@@ -560,9 +560,10 @@ export const LandingPage: React.FC = () => {
               className="lg:col-span-7 space-y-6"
             >
               <div>
-                <span className="text-xs font-bold text-[#1565D8] uppercase tracking-wider">
-                  Responsabilidade Técnica e Credibilidade
-                </span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-[#1565D8] text-xs font-bold uppercase tracking-wider mb-2">
+                  <Cog className="w-3.5 h-3.5 text-[#1565D8] animate-gear-medium" />
+                  <span>Responsabilidade Técnica e Credibilidade</span>
+                </div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1E3D] mt-1 tracking-tight">
                   Sobre o Responsável Técnico
                 </h2>
@@ -631,7 +632,7 @@ export const LandingPage: React.FC = () => {
             className="text-center max-w-3xl mx-auto mb-10 space-y-3"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#1565D8]" />
+              <Cog className="w-3.5 h-3.5 text-[#1565D8] animate-gear-medium" />
               <span>Especialidades & Conformidade Legal</span>
             </div>
 

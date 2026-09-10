@@ -137,11 +137,11 @@ export const HeroServicesSlider: React.FC = () => {
       onMouseEnter={() => setIsPlaying(false)}
       onMouseLeave={() => setIsPlaying(true)}
     >
-      {/* Decorative Rotating Engineering Gears */}
-      <div className="absolute -top-6 -right-6 w-28 h-28 pointer-events-none opacity-25 z-0 animate-[spin_24s_linear_infinite]">
+      {/* Decorative Rotating Engineering Gears (Meshing pair: Clockwise & Counter-Clockwise) */}
+      <div className="absolute -top-6 -right-6 w-28 h-28 pointer-events-none opacity-30 z-0 animate-gear-slow">
         <Cog className="w-full h-full text-[#1565D8]" />
       </div>
-      <div className="absolute top-24 -right-8 w-16 h-16 pointer-events-none opacity-20 z-0 animate-[spin_16s_linear_infinite_reverse]">
+      <div className="absolute top-20 -right-7 w-16 h-16 pointer-events-none opacity-25 z-0 animate-gear-medium-reverse">
         <Cog className="w-full h-full text-slate-400" />
       </div>
 

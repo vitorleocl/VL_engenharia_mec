@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+/* Smooth continuous rotation animations for mechanical gears */
+@keyframes spin-gear-clockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-gear-counter {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-gear-slow {
+  animation: spin-gear-clockwise 32s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-gear-slow-reverse {
+  animation: spin-gear-counter 28s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-gear-medium {
+  animation: spin-gear-clockwise 20s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-gear-medium-reverse {
+  animation: spin-gear-counter 16s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.animate-gear-fast {
+  animation: spin-gear-clockwise 10s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}

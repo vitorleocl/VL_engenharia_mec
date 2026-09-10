@@ -16,17 +16,17 @@ export const EngineeringBackgroundTheme: React.FC = () => {
 
       {/* 3. Subtle Technical Compass & Gear Watermarks */}
       {/* Top Left Giant Technical Gear */}
-      <div className="absolute -top-28 -left-28 w-96 h-96 opacity-[0.035] animate-[spin_60s_linear_infinite] text-[#0B1E3D]">
+      <div className="absolute -top-28 -left-28 w-96 h-96 opacity-[0.045] animate-gear-slow text-[#0B1E3D]">
         <Cog className="w-full h-full stroke-[1]" />
       </div>
 
       {/* Mid Right Floating Technical Gear */}
-      <div className="absolute top-1/3 -right-32 w-80 h-80 opacity-[0.03] animate-[spin_45s_linear_infinite_reverse] text-[#1565D8]">
+      <div className="absolute top-1/3 -right-32 w-80 h-80 opacity-[0.04] animate-gear-slow-reverse text-[#1565D8]">
         <Cog className="w-full h-full stroke-[1]" />
       </div>
 
       {/* Bottom Left Gear */}
-      <div className="absolute bottom-20 -left-24 w-72 h-72 opacity-[0.025] animate-[spin_50s_linear_infinite] text-[#0B1E3D]">
+      <div className="absolute bottom-20 -left-24 w-72 h-72 opacity-[0.035] animate-gear-medium text-[#0B1E3D]">
         <Cog className="w-full h-full stroke-[1]" />
       </div>
 
