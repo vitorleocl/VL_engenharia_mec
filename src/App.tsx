@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { OfflineBanner } from './components/common/OfflineBanner';
+import { WhatsAppButton } from './components/common/WhatsAppButton';
 
 // Public Views
 import { LandingPage } from './components/public/LandingPage';
@@ -22,6 +23,15 @@ import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { GestaoView } from './components/admin/GestaoView';
 
+function FloatingContactHelper() {
+  const location = useLocation();
+  // Don't show WhatsApp floating badge inside the operations admin panel
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+  return <WhatsAppButton />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -31,6 +41,9 @@ export default function App() {
             
             {/* Global Offline Status Banner */}
             <OfflineBanner />
+
+            {/* Global Floating WhatsApp Contact for Public Customers */}
+            <FloatingContactHelper />
 
             <Routes>
               {/* Public Website Routes */}

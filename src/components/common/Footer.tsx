@@ -35,7 +35,7 @@ export const Footer: React.FC = () => {
               Serviços de Engenharia
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-400">
-              <li><a href="#servicos" className="hover:text-white transition-colors">Adequação à NR-12</a></li>
+              <li><a href="#servicos" className="hover:text-white transition-colors">Adequação à NR-12 & Projetos Mecânicos</a></li>
               <li><a href="#servicos" className="hover:text-white transition-colors">Laudos para Máquinas Pesadas</a></li>
               <li><a href="#servicos" className="hover:text-white transition-colors">Caminhões Munck e Guindastes</a></li>
               <li><a href="#servicos" className="hover:text-white transition-colors">Inspeção Veicular e Sinistro</a></li>

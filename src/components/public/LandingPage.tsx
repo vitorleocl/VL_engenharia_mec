@@ -20,10 +20,14 @@ import {
   MapPin,
   Mail,
   Instagram,
-  UserCheck
+  UserCheck,
+  Cog,
+  DraftingCompass
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import engineerPhoto from '../../assets/images/image.png';
+import engBlueprintBg from '../../assets/images/eng_blueprint_bg_1788996890188.jpg';
+import { HeroServicesSlider } from './HeroServicesSlider';
 
 interface ServicoItem {
   id: string;
@@ -40,16 +44,24 @@ const SERVICOS_LISTA: ServicoItem[] = [
   {
     id: 'nr12',
     numero: '01',
-    titulo: 'Adequação à NR-12',
-    descricaoCurta: 'Análise de conformidade de máquinas e equipamentos, relatórios técnicos e plano completo de adequação.',
+    titulo: 'Adequação à NR-12 & Projetos Mecânicos',
+    descricaoCurta: 'Apreciação de riscos, elaboração de projetos mecânicos executivos 2D/3D em CAD, fabricação, montagem, entrega e execução completa com ART.',
     normas: 'NR-12 • NBR 14153 • NBR ISO 12100 • NBR ISO 13849',
     detalhesCompletos: [
-      'Inventário completo de máquinas e mapeamento de riscos mecânicos, elétricos e térmicos.',
-      'Apreciação de Riscos quantitativa e qualitativa pela metodologia HRN (Hazard Rating Number).',
-      'Categorização dos circuitos de segurança e enclausuramento de zonas perigosas.',
-      'Elaboração de memorial descritivo de adequação com prazos e prioridades de intervenção.'
+      'Inventário completo de máquinas e mapeamento minucioso de perigos mecânicos, elétricos e térmicos.',
+      'Apreciação de Riscos quantitativa e qualitativa pela metodologia oficial HRN (Hazard Rating Number).',
+      'Elaboração de projetos mecânicos executivos com detalhamento técnico 2D e modelagem 3D em CAD.',
+      'Entrega e execução completa (turnkey): fabricação de proteções fixas e móveis, enclausuramentos e estruturas.',
+      'Instalação in loco, montagem mecânica e integração de dispositivos de segurança com intertravamento.',
+      'Validação funcional dos sistemas de segurança, emissão de memorial descritivo e ART de projeto e execução.'
     ],
-    entregaveis: ['Laudo de Apreciação de Riscos', 'Plano de Ação Corretivo', 'Anotação de Responsabilidade Técnica (ART)'],
+    entregaveis: [
+      'Laudo de Apreciação de Riscos (HRN)',
+      'Projetos Mecânicos Executivos (2D / 3D CAD)',
+      'Fabricação e Execução de Proteções Físicas',
+      'Memorial Descritivo e Validação de Conformidade',
+      'ART de Projeto e Execução Registrada no CREA-PE'
+    ],
     icon: ShieldCheck,
   },
   {
@@ -208,65 +220,78 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-white">
       {/* 1. HERO SECTION */}
-      <section id="inicio" className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl space-y-6">
+      <section id="inicio" className="relative pt-10 pb-16 md:pt-16 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50">
+        {/* Subtle CAD Drafting Grid Background */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0B1E3D06_1px,transparent_1px),linear-gradient(to_bottom,#0B1E3D06_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
-            {/* Tag normativo */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-[#1565D8]" />
-              <span>Engenharia Mecânica & Segurança Legal com ART</span>
+            {/* Left Column: Headlines, Value Proposition & CTAs */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Tag normativo */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-xs">
+                <ShieldCheck className="w-4 h-4 text-[#1565D8]" />
+                <span>Engenharia Mecânica & Segurança Legal com ART</span>
+              </div>
+
+              {/* Impact Headline */}
+              <h1 className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-black text-[#0B1E3D] tracking-tight leading-[1.12]">
+                Engenharia Mecânica com{' '}
+                <span className="text-[#1565D8] underline decoration-[#B0B4BA]/40 decoration-wavy decoration-2">
+                  Segurança, Conformidade
+                </span>{' '}
+                e Precisão.
+              </h1>
+
+              {/* Subtitle */}
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                Soluções completas para Adequação à NR-12 com Projetos Mecânicos e Execução, PMOC, Laudos de Playground, Máquinas Pesadas, Caminhões Munck e Inspeções Veiculares em Recife, Região Metropolitana e todo o estado de Pernambuco.
+              </p>
+
+              {/* CTAs */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <a
+                  href="https://wa.me/5581984442592?text=Ol%C3%A1%20Engenheiro%20Vitor%2C%20gostaria%20de%20solicitar%20uma%20avalia%C3%A7%C3%A3o%20t%C3%A9cnica%20para%20minha%20empresa."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all active:scale-98"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span>Solicitar Orçamento via WhatsApp</span>
+                </a>
+
+                <a
+                  href="#servicos"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#1565D8] text-slate-800 hover:text-[#1565D8] font-bold text-base transition-colors"
+                >
+                  <span>Ver Nossos Serviços</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+              </div>
+
+              {/* Trust highlights */}
+              <div className="pt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-slate-200">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>CREA-PE 1822299490</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>ART em 100% dos Laudos</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Projetos & Execução NR-12</span>
+                </div>
+              </div>
+
             </div>
 
-            {/* Impact Headline */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#0B1E3D] tracking-tight leading-[1.15]">
-              Engenharia Mecânica com{' '}
-              <span className="text-[#1565D8] underline decoration-[#B0B4BA]/40 decoration-wavy decoration-2">
-                Segurança, Conformidade
-              </span>{' '}
-              e Precisão.
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-              Soluções completas para Adequação à NR-12, PMOC, Laudos de Playground, Máquinas e Equipamentos Pesados, Inspeções Veiculares em Recife, Região Metropolitana e todo o estado de Pernambuco. Proteja seus ativos e garanta conformidade legal.
-            </p>
-
-            {/* CTAs */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <a
-                href="https://wa.me/5581984442592?text=Ol%C3%A1%20Engenheiro%20Vitor%2C%20gostaria%20de%20solicitar%20uma%20avalia%C3%A7%C3%A3o%20t%C3%A9cnica%20para%20minha%20empresa."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all active:scale-98"
-              >
-                <Phone className="w-5 h-5" />
-                <span>Solicitar Orçamento via WhatsApp</span>
-              </a>
-
-              <a
-                href="#servicos"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#1565D8] text-slate-800 hover:text-[#1565D8] font-bold text-base transition-colors"
-              >
-                <span>Ver Nossos Serviços</span>
-                <ChevronRight className="w-4 h-4" />
-              </a>
-            </div>
-
-            {/* Trust highlights */}
-            <div className="pt-8 grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-slate-200">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>CREA-PE 1822299490</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>ART em 100% dos Laudos</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Atendimento Ágil em 24h</span>
-              </div>
+            {/* Right Column: Hero Visual Services Slider */}
+            <div className="lg:col-span-5 relative flex justify-center">
+              <HeroServicesSlider />
             </div>
 
           </div>
@@ -285,12 +310,36 @@ export const LandingPage: React.FC = () => {
                 <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#0B1E3D] to-[#1565D8] opacity-10 blur-sm"></div>
                 
                 <div className="relative bg-white rounded-2xl p-3 shadow-xl border border-slate-200 overflow-hidden">
-                  <div className="aspect-4/5 rounded-xl bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 flex flex-col items-center justify-end relative overflow-hidden group">
+                  <div className="aspect-4/5 rounded-xl bg-slate-900 flex flex-col items-center justify-end relative overflow-hidden group">
+                    {/* Engineering Blueprint / CAD Theme Background */}
+                    <img
+                      src={engBlueprintBg}
+                      alt="Engineering CAD Schematic Blueprint"
+                      className="absolute inset-0 w-full h-full object-cover opacity-45 transition-transform duration-700 group-hover:scale-105 pointer-events-none"
+                    />
+                    
+                    {/* Technical CAD Blueprint Grid & Measurement Lines */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#38bdf812_1px,transparent_1px),linear-gradient(to_bottom,#38bdf812_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                    
+                    {/* Animated blueprint mechanical gear watermark */}
+                    <div className="absolute top-4 right-4 w-20 h-20 text-sky-400/25 pointer-events-none animate-[spin_30s_linear_infinite]">
+                      <Cog className="w-full h-full" />
+                    </div>
+
+                    {/* CAD Technical Annotation Badge */}
+                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-slate-950/80 backdrop-blur-xs border border-sky-500/30 text-sky-300 text-[9px] font-mono tracking-wider pointer-events-none flex items-center gap-1.5 shadow-sm">
+                      <DraftingCompass className="w-3 h-3 text-sky-400" />
+                      <span>CAD SCHEMATIC • CREA-PE 1822299490</span>
+                    </div>
+
+                    {/* Gradient highlight from bottom */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/40 pointer-events-none z-10"></div>
+
                     {/* Engineer photo with high resolution */}
                     <img
                       src={engineerPhoto}
                       alt="Vitor Leonardo - Engenheiro Mecânico CREA-PE"
-                      className="w-full h-full object-contain object-bottom pt-2 transition-transform duration-300 group-hover:scale-102 filter drop-shadow-sm"
+                      className="w-full h-full object-contain object-bottom pt-2 transition-transform duration-300 group-hover:scale-102 filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] relative z-20"
                       loading="eager"
                       decoding="async"
                       onError={(e) => {
@@ -306,7 +355,7 @@ export const LandingPage: React.FC = () => {
                     />
 
                     {/* Placeholder fallback if image missing */}
-                    <div id="photo-fallback" className="hidden absolute inset-0 flex-col items-center justify-center p-6 text-center bg-slate-100">
+                    <div id="photo-fallback" className="hidden absolute inset-0 flex-col items-center justify-center p-6 text-center bg-slate-100 z-20">
                       <div className="w-20 h-20 rounded-full bg-[#0B1E3D] text-white flex items-center justify-center mb-4 shadow-md">
                         <UserCheck className="w-10 h-10 text-white" />
                       </div>
@@ -316,13 +365,13 @@ export const LandingPage: React.FC = () => {
                     </div>
 
                     {/* Bottom floating badge */}
-                    <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-md">
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700/80 shadow-xl z-30">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-bold text-[#0B1E3D]">Vitor Leonardo</p>
-                          <p className="text-[11px] text-slate-500">Fundador & Responsável Técnico</p>
+                          <p className="text-xs font-bold text-white">Vitor Leonardo</p>
+                          <p className="text-[11px] text-slate-300">Fundador & Responsável Técnico</p>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-[#1565D8] font-bold text-[10px]">
+                        <span className="px-2 py-0.5 rounded bg-blue-600/30 border border-blue-400/40 text-blue-300 font-bold text-[10px]">
                           CREA-PE
                         </span>
                       </div>
