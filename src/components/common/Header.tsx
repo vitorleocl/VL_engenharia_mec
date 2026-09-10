@@ -55,7 +55,7 @@ export const Header: React.FC = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-slate-700">
           <button
             onClick={() => handleNavClick('#inicio')}
             className="hover:text-[#1565D8] transition-colors cursor-pointer"
@@ -73,6 +73,12 @@ export const Header: React.FC = () => {
             className="hover:text-[#1565D8] transition-colors cursor-pointer"
           >
             Serviços
+          </button>
+          <button
+            onClick={() => handleNavClick('#faq')}
+            className="hover:text-[#1565D8] transition-colors cursor-pointer"
+          >
+            FAQ
           </button>
           <button
             onClick={() => handleNavClick('#contato')}
@@ -136,6 +142,12 @@ export const Header: React.FC = () => {
             className="block w-full text-left py-2.5 px-3 rounded-md text-base font-semibold text-slate-800 hover:bg-slate-50 hover:text-[#1565D8]"
           >
             Nossos Serviços
+          </button>
+          <button
+            onClick={() => handleNavClick('#faq')}
+            className="block w-full text-left py-2.5 px-3 rounded-md text-base font-semibold text-slate-800 hover:bg-slate-50 hover:text-[#1565D8]"
+          >
+            Perguntas Frequentes (FAQ)
           </button>
           <button
             onClick={() => handleNavClick('#contato')}

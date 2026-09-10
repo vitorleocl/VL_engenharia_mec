@@ -34,6 +34,7 @@ import { useData } from '../../context/DataContext';
 import engineerPhoto from '../../assets/images/image.png';
 import engBlueprintBg from '../../assets/images/eng_blueprint_bg_1788996890188.jpg';
 import { HeroServicesSlider } from './HeroServicesSlider';
+import { FaqNormativo } from './FaqNormativo';
 
 interface ServicoItem {
   id: string;
@@ -800,7 +801,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. CONTATO / MEUS DADOS SECTION */}
+      {/* 4. PERGUNTAS FREQUENTES (FAQ NORMATIVO & JURÍDICO) */}
+      <FaqNormativo />
+
+      {/* 5. CONTATO / MEUS DADOS SECTION */}
       <section id="contato" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
