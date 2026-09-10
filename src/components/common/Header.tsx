@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, Phone, Shield, ArrowRight } from 'lucide-react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import siteLogo from '../../assets/images/logo.png';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Scroll Progress Bar using Framer Motion
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   const handleNavClick = (anchorId: string) => {
     setMobileMenuOpen(false);
@@ -20,7 +29,15 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all shadow-xs relative">
+      {/* Scroll Progress Bar at the Top of the Header */}
+      <motion.div
+        id="header-scroll-progress"
+        style={{ scaleX }}
+        className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1565D8] via-sky-400 to-[#25D366] origin-left z-50 pointer-events-none"
+        aria-hidden="true"
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center group focus:outline-none" aria-label="VL Engenharia">

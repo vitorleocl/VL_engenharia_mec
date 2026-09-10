@@ -5,9 +5,9 @@ import {
   Truck, 
   Car, 
   Smile, 
-  Fan, 
-  Award, 
-  BarChart2, 
+  Wind, 
+  FileCheck2, 
+  Gauge, 
   Phone, 
   CheckCircle2, 
   Clock, 
@@ -16,14 +16,20 @@ import {
   AlertTriangle, 
   X, 
   ChevronRight, 
+  ArrowUpRight,
   ExternalLink,
   MapPin,
   Mail,
   Instagram,
   UserCheck,
   Cog,
-  DraftingCompass
+  DraftingCompass,
+  Tractor,
+  Sparkles,
+  Layers,
+  Filter
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../../context/DataContext';
 import engineerPhoto from '../../assets/images/image.png';
 import engBlueprintBg from '../../assets/images/eng_blueprint_bg_1788996890188.jpg';
@@ -32,21 +38,48 @@ import { HeroServicesSlider } from './HeroServicesSlider';
 interface ServicoItem {
   id: string;
   numero: string;
+  categoria: 'projetos' | 'maquinas' | 'pericias' | 'pmoc' | 'gestao';
+  tagEspecialidade: string;
   titulo: string;
   descricaoCurta: string;
   normas: string;
+  destaquesVisuais: string[];
   detalhesCompletos: string[];
   entregaveis: string[];
   icon: React.ElementType;
+  corTema: {
+    iconBg: string;
+    iconText: string;
+    badgeBg: string;
+    badgeText: string;
+    borderHover: string;
+    dotColor: string;
+  };
 }
+
+const CATEGORIAS_SERVICOS = [
+  { id: 'todos', label: 'Todas as Especialidades', count: 8 },
+  { id: 'projetos', label: 'Projetos & NR-12', count: 1 },
+  { id: 'maquinas', label: 'Máquinas & Içamento', count: 2 },
+  { id: 'pericias', label: 'Laudos & Perícias', count: 2 },
+  { id: 'pmoc', label: 'PMOC Climatização', count: 1 },
+  { id: 'gestao', label: 'ART & Gestão PCM', count: 2 },
+];
 
 const SERVICOS_LISTA: ServicoItem[] = [
   {
     id: 'nr12',
     numero: '01',
+    categoria: 'projetos',
+    tagEspecialidade: 'Projetos & Turnkey CAD',
     titulo: 'Adequação à NR-12 & Projetos Mecânicos',
-    descricaoCurta: 'Apreciação de riscos, elaboração de projetos mecânicos executivos 2D/3D em CAD, fabricação, montagem, entrega e execução completa com ART.',
+    descricaoCurta: 'Apreciação de riscos (HRN), elaboração de projetos executivos 2D/3D em CAD, fabricação, montagem de proteções e ART.',
     normas: 'NR-12 • NBR 14153 • NBR ISO 12100 • NBR ISO 13849',
+    destaquesVisuais: [
+      'Projetos Executivos 2D/3D em CAD',
+      'Fabricação física e proteções mecânicas',
+      'Apreciação HRN com ART no CREA-PE'
+    ],
     detalhesCompletos: [
       'Inventário completo de máquinas e mapeamento minucioso de perigos mecânicos, elétricos e térmicos.',
       'Apreciação de Riscos quantitativa e qualitativa pela metodologia oficial HRN (Hazard Rating Number).',
@@ -62,14 +95,29 @@ const SERVICOS_LISTA: ServicoItem[] = [
       'Memorial Descritivo e Validação de Conformidade',
       'ART de Projeto e Execução Registrada no CREA-PE'
     ],
-    icon: ShieldCheck,
+    icon: DraftingCompass,
+    corTema: {
+      iconBg: 'bg-blue-50',
+      iconText: 'text-[#1565D8]',
+      badgeBg: 'bg-blue-50',
+      badgeText: 'text-[#1565D8]',
+      borderHover: 'group-hover:border-[#1565D8]',
+      dotColor: 'bg-[#1565D8]'
+    }
   },
   {
     id: 'maquinas-pesadas',
     numero: '02',
+    categoria: 'maquinas',
+    tagEspecialidade: 'Linha Amarela & Frotas',
     titulo: 'Laudos para Máquinas Pesadas',
-    descricaoCurta: 'Avaliação técnica qualificada, inspeção mecânica de frota e emissão de laudos de estabilidade com ART.',
+    descricaoCurta: 'Avaliação técnica qualificada, inspeção mecânica de frotas e emissão de laudos de estabilidade com ART.',
     normas: 'NR-11 • NR-12 • NR-18 • Normas ABNT de Máquinas Móveis',
+    destaquesVisuais: [
+      'Inspeção de estruturas ROPS/FOPS',
+      'Teste de freios, direção e hidráulica',
+      'Laudo técnico com ART para obras'
+    ],
     detalhesCompletos: [
       'Inspeção em retroescavadeiras, pás carregadeiras, motoniveladoras e tratores de esteira.',
       'Avaliação das estruturas de proteção contra capotamento (ROPS) e queda de objetos (FOPS).',
@@ -77,14 +125,29 @@ const SERVICOS_LISTA: ServicoItem[] = [
       'Teste de estabilidade operacional e estanqueidade de sistemas hidráulicos.'
     ],
     entregaveis: ['Relatório Fotográfico Pormenorizado', 'Laudo Técnico de Estabilidade', 'ART Registrada no CREA-PE'],
-    icon: Wrench,
+    icon: Tractor,
+    corTema: {
+      iconBg: 'bg-amber-50',
+      iconText: 'text-amber-600',
+      badgeBg: 'bg-amber-50',
+      badgeText: 'text-amber-700',
+      borderHover: 'group-hover:border-amber-500',
+      dotColor: 'bg-amber-500'
+    }
   },
   {
     id: 'munck-guindastes',
     numero: '03',
+    categoria: 'maquinas',
+    tagEspecialidade: 'Içamento & Rigging',
     titulo: 'Inspeções em Caminhões Munck e Guindastes',
     descricaoCurta: 'Inspeções periódicas preventivas, avaliação estrutural, testes de carga hidráulicos e laudos de içamento.',
     normas: 'NR-11 • NR-12 • NBR 14768 • NBR 8400',
+    destaquesVisuais: [
+      'Ensaio de estanqueidade e sobrechassi',
+      'Teste de carga com calibração LMI',
+      'Tabela de carga, rigging e ART'
+    ],
     detalhesCompletos: [
       'Inspeção estrutural de sobrechassi, grampos de fixação na longarina e braços telescópicos.',
       'Ensaio de estanqueidade e integridade dos cilindros e válvulas de retenção das sapatas.',
@@ -93,13 +156,28 @@ const SERVICOS_LISTA: ServicoItem[] = [
     ],
     entregaveis: ['Certificado de Inspeção Periódica', 'Plano de Rigging e Tabela de Capacidade', 'ART de Içamento'],
     icon: Truck,
+    corTema: {
+      iconBg: 'bg-indigo-50',
+      iconText: 'text-indigo-600',
+      badgeBg: 'bg-indigo-50',
+      badgeText: 'text-indigo-700',
+      borderHover: 'group-hover:border-indigo-500',
+      dotColor: 'bg-indigo-500'
+    }
   },
   {
     id: 'inspecao-veicular',
     numero: '04',
+    categoria: 'pericias',
+    tagEspecialidade: 'Perícia & DETRAN',
     titulo: 'Inspeção Veicular e Reclassificação de Monta',
-    descricaoCurta: 'Avaliação técnica profunda para regularização estrutural, reclassificação de sinistros no DETRAN.',
+    descricaoCurta: 'Avaliação pericial para regularização estrutural, reclassificação de sinistros no DETRAN e desbloqueios.',
     normas: 'Resoluções CONTRAN nº 810/2020 e 811/2020 • CTB',
+    destaquesVisuais: [
+      'Avaliação dos 31 itens do CONTRAN',
+      'Reclassificação média para pequena monta',
+      'Parecer técnico para desbloqueio'
+    ],
     detalhesCompletos: [
       'Perícia técnica em veículos envolvidos em acidentes com danos estruturais ou mecânicos.',
       'Avaliação dos 31 itens obrigatórios estabelecidos pelo CONTRAN para enquadramento de monta.',
@@ -108,13 +186,28 @@ const SERVICOS_LISTA: ServicoItem[] = [
     ],
     entregaveis: ['Termo de Constatação Técnica', 'Álbum Fotográfico Normativo', 'ART de Responsabilidade Pericial'],
     icon: Car,
+    corTema: {
+      iconBg: 'bg-slate-100',
+      iconText: 'text-slate-700',
+      badgeBg: 'bg-slate-100',
+      badgeText: 'text-slate-700',
+      borderHover: 'group-hover:border-slate-500',
+      dotColor: 'bg-slate-600'
+    }
   },
   {
     id: 'playgrounds',
     numero: '05',
-    titulo: 'Laudos para Playgrounds',
-    descricaoCurta: 'Avaliação detalhada de segurança infantil, conformidade com a ABNT NBR 16071 e recomendações práticas.',
+    categoria: 'pericias',
+    tagEspecialidade: 'Segurança Infantil',
+    titulo: 'Laudos para Playgrounds & Áreas Infantis',
+    descricaoCurta: 'Avaliação minuciosa de conformidade técnica com a ABNT NBR 16071 para condomínios, escolas e praças.',
     normas: 'ABNT NBR 16071 (Partes 1 a 7) • Lei da Recreação Segura',
+    destaquesVisuais: [
+      'Gabaritos contra aprisionamento de corpo',
+      'Inspeção de soldas, mancais e balanços',
+      'Teste de pisos amortecedores de impacto'
+    ],
     detalhesCompletos: [
       'Inspeção de equipamentos de recreação infantil em condomínios, clubes, escolas e praças.',
       'Verificação de aprisionamento de cabeça, pescoço, dedos e roupas com gabaritos normatizados.',
@@ -123,13 +216,28 @@ const SERVICOS_LISTA: ServicoItem[] = [
     ],
     entregaveis: ['Relatório de Não Conformidades por Prioridade', 'Checklist de Manutenção Preventiva', 'ART CREA-PE'],
     icon: Smile,
+    corTema: {
+      iconBg: 'bg-emerald-50',
+      iconText: 'text-emerald-600',
+      badgeBg: 'bg-emerald-50',
+      badgeText: 'text-emerald-700',
+      borderHover: 'group-hover:border-emerald-500',
+      dotColor: 'bg-emerald-500'
+    }
   },
   {
     id: 'pmoc',
     numero: '06',
+    categoria: 'pmoc',
+    tagEspecialidade: 'Qualidade do Ar & HVAC',
     titulo: 'Plano de Manutenção, Operação e Controle (PMOC)',
-    descricaoCurta: 'Elaboração e acompanhamento de PMOC para climatizadores industriais e corporativos sob as leis vigentes.',
+    descricaoCurta: 'Elaboração e acompanhamento de PMOC para climatizadores industriais e corporativos sob a legislação sanitária.',
     normas: 'Lei Federal 13.589/2018 • Portaria MS 3.523/1998 • Resolução ANVISA RE nº 9',
+    destaquesVisuais: [
+      'Caderno oficial de rotinas em 52 semanas',
+      'Adequação à ANVISA e prevenção de multas',
+      'Cronograma técnico e ART de Manutenção'
+    ],
     detalhesCompletos: [
       'Inventário completo de sistemas de ar condicionado central, split e VRF.',
       'Definição de rotinas mensais, trimestrais e semestrais de limpeza, higienização e troca de filtros.',
@@ -137,14 +245,29 @@ const SERVICOS_LISTA: ServicoItem[] = [
       'Cumprimento rigoroso das obrigações legais para evitar penalidades e multas sanitárias.'
     ],
     entregaveis: ['Caderno Oficial do PMOC', 'Cronograma Técnico de Execução', 'ART de Manutenção Climatização'],
-    icon: Fan,
+    icon: Wind,
+    corTema: {
+      iconBg: 'bg-sky-50',
+      iconText: 'text-sky-600',
+      badgeBg: 'bg-sky-50',
+      badgeText: 'text-sky-700',
+      borderHover: 'group-hover:border-sky-500',
+      dotColor: 'bg-sky-500'
+    }
   },
   {
     id: 'art-manutencao',
     numero: '07',
+    categoria: 'gestao',
+    tagEspecialidade: 'Responsabilidade Legal',
     titulo: 'ART para Serviços de Manutenção',
-    descricaoCurta: 'Articulação de Anotação de Responsabilidade Técnica para manutenção predial, fabril e mecânica corporativa.',
+    descricaoCurta: 'Assunção de Responsabilidade Técnica formal para manutenção mecânica predial, fabril e corporativa.',
     normas: 'Lei Federal 6.496/1977 • Resoluções CONFEA / CREA',
+    destaquesVisuais: [
+      'Emissão para licitações e contratos formais',
+      'Supervisão técnica de geradores e bombas',
+      'Respaldo jurídico para diretores e síndicos'
+    ],
     detalhesCompletos: [
       'Assunção de responsabilidade técnica para empresas de manutenção mecânica e facilities.',
       'Emissão de ART para licitações públicas, contratos corporativos e auditorias industriais.',
@@ -152,14 +275,29 @@ const SERVICOS_LISTA: ServicoItem[] = [
       'Segurança jurídica e respaldo formal para gestores de condomínios e diretores industriais.'
     ],
     entregaveis: ['ART de Cargo/Função ou Obra/Serviço', 'Atestado de Capacidade Técnica', 'Termo de Vistoria'],
-    icon: Award,
+    icon: FileCheck2,
+    corTema: {
+      iconBg: 'bg-violet-50',
+      iconText: 'text-violet-600',
+      badgeBg: 'bg-violet-50',
+      badgeText: 'text-violet-700',
+      borderHover: 'group-hover:border-violet-500',
+      dotColor: 'bg-violet-500'
+    }
   },
   {
     id: 'consultoria-pcm',
     numero: '08',
+    categoria: 'gestao',
+    tagEspecialidade: 'PCM & Confiabilidade',
     titulo: 'Consultoria em Gestão da Manutenção (PCM)',
-    descricaoCurta: 'Otimização com foco em PCM, KPIs (MTBF, MTTR), disponibilidade e alta confiabilidade de ativos corporativos.',
+    descricaoCurta: 'Otimização com foco em Planejamento e Controle, KPIs (MTBF, MTTR), disponibilidade e confiabilidade de ativos.',
     normas: 'ISO 55001 • RCM (Manutenção Centrada em Confiabilidade) • FMEA',
+    destaquesVisuais: [
+      'Plano Mestre de Manutenção Preventiva (PMP)',
+      'Gestão de indicadores MTBF, MTTR e custo',
+      'Aumento da disponibilidade física de ativos'
+    ],
     detalhesCompletos: [
       'Diagnóstico de maturidade dos processos de manutenção e gestão de ativos da empresa.',
       'Implantação de Plano Mestre de Manutenção Preventiva (PMP) estruturado em 52 semanas.',
@@ -167,7 +305,15 @@ const SERVICOS_LISTA: ServicoItem[] = [
       'Redução de paradas emergenciais de produção e aumento da disponibilidade física dos ativos.'
     ],
     entregaveis: ['Matriz de Criticidade e FMEA', 'Dashboard de KPIs Operacionais', 'Manual de Procedimentos PCM'],
-    icon: BarChart2,
+    icon: Gauge,
+    corTema: {
+      iconBg: 'bg-teal-50',
+      iconText: 'text-teal-600',
+      badgeBg: 'bg-teal-50',
+      badgeText: 'text-teal-700',
+      borderHover: 'group-hover:border-teal-500',
+      dotColor: 'bg-teal-500'
+    }
   },
 ];
 
@@ -185,6 +331,13 @@ export const LandingPage: React.FC = () => {
 
   // Service Detail Modal
   const [modalServico, setModalServico] = useState<ServicoItem | null>(null);
+
+  // Service Category Filter State
+  const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
+
+  const servicosFiltrados = filtroCategoria === 'todos'
+    ? SERVICOS_LISTA
+    : SERVICOS_LISTA.filter(s => s.categoria === filtroCategoria);
 
   const handleSubmitContato = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +381,12 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
             {/* Left Column: Headlines, Value Proposition & CTAs */}
-            <div className="lg:col-span-7 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-7 space-y-6"
+            >
               
               {/* Tag normativo */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-xs">
@@ -287,12 +445,17 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-            </div>
+            </motion.div>
 
             {/* Right Column: Hero Visual Services Slider */}
-            <div className="lg:col-span-5 relative flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-5 relative flex justify-center"
+            >
               <HeroServicesSlider />
-            </div>
+            </motion.div>
 
           </div>
         </div>
@@ -304,7 +467,13 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             {/* Photo / Visual Card */}
-            <div className="lg:col-span-5 flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, x: -28 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-5 flex justify-center"
+            >
               <div className="relative w-full max-w-md">
                 {/* Decorative border box */}
                 <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#0B1E3D] to-[#1565D8] opacity-10 blur-sm"></div>
@@ -379,10 +548,16 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Biography & Text Summary */}
-            <div className="lg:col-span-7 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, x: 28 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-7 space-y-6"
+            >
               <div>
                 <span className="text-xs font-bold text-[#1565D8] uppercase tracking-wider">
                   Responsabilidade Técnica e Credibilidade
@@ -434,90 +609,191 @@ export const LandingPage: React.FC = () => {
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
-            </div>
+            </motion.div>
 
           </div>
         </div>
       </section>
 
       {/* 3. NOSSOS SERVIÇOS DE ENGENHARIA SECTION */}
-      <section id="servicos" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="servicos" className="py-20 bg-slate-50/80 relative">
+        {/* Subtle CAD dot pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(#0B1E3D08_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           
-          <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-            <span className="text-xs font-bold text-[#1565D8] uppercase tracking-wider">
-              Soluções Especializadas
-            </span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center max-w-3xl mx-auto mb-10 space-y-3"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#1565D8]" />
+              <span>Especialidades & Conformidade Legal</span>
+            </div>
+
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1E3D] tracking-tight">
               Nossos Serviços de Engenharia
             </h2>
-            {/* Exact intro text from Section 4 item 4 */}
-            <p className="text-slate-600 text-base leading-relaxed">
+
+            <p className="text-slate-600 text-base leading-relaxed max-w-2xl mx-auto">
               Atuação técnica especializada orientada à segurança legal, aumento de disponibilidade, 
               conformidade normativa e alta confiabilidade mecânica.
             </p>
-          </div>
+          </motion.div>
 
-          {/* Cards Grid (Responsive 2 to 3 columns) */}
+          {/* Interactive Category Filter Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex items-center justify-start sm:justify-center overflow-x-auto pb-4 sm:pb-0 mb-10 gap-2 no-scrollbar"
+          >
+            <div className="inline-flex items-center p-1.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+              {CATEGORIAS_SERVICOS.map((cat) => {
+                const isActive = filtroCategoria === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setFiltroCategoria(cat.id)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1565D8] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-[#0B1E3D] hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-semibold ${
+                        isActive
+                          ? 'bg-white/25 text-white'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {cat.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Interactive Engineering Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SERVICOS_LISTA.map((servico) => {
-              const IconComp = servico.icon;
-              return (
-                <div
-                  key={servico.id}
-                  className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group hover:border-[#1565D8]/40"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#1565D8] flex items-center justify-center group-hover:bg-[#1565D8] group-hover:text-white transition-colors">
-                        <IconComp className="w-5 h-5" />
+            <AnimatePresence mode="popLayout">
+              {servicosFiltrados.map((servico, index) => {
+                const IconComp = servico.icon;
+                return (
+                  <motion.div
+                    key={servico.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.4, delay: (index % 4) * 0.05 }}
+                    whileHover={{ y: -5 }}
+                    className={`bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between group cursor-pointer relative overflow-hidden ${servico.corTema.borderHover}`}
+                    onClick={() => setModalServico(servico)}
+                  >
+                    {/* Top color indicator line */}
+                    <div className={`absolute top-0 left-0 right-0 h-1.5 ${servico.corTema.dotColor} opacity-90`} />
+
+                    <div className="space-y-4">
+                      {/* Card Header: Custom Icon + Specialty Tag + Module Number */}
+                      <div className="flex items-start justify-between gap-2 pt-1">
+                        <div
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${servico.corTema.iconBg} ${servico.corTema.iconText} transition-all duration-300 group-hover:scale-105 shadow-2xs border border-slate-100`}
+                        >
+                          <IconComp className="w-6 h-6" />
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-mono font-bold text-slate-400">
+                            #{servico.numero}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase ${servico.corTema.badgeBg} ${servico.corTema.badgeText}`}
+                          >
+                            {servico.tagEspecialidade}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs font-mono font-bold text-[#B0B4BA]">
-                        {servico.numero}
-                      </span>
-                    </div>
 
-                    <div>
-                      <h3 className="text-lg font-bold text-[#0B1E3D] group-hover:text-[#1565D8] transition-colors">
-                        {servico.titulo}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium mt-1">
-                        {servico.normas}
+                      {/* Title & Normative Standard */}
+                      <div className="space-y-1.5">
+                        <h3 className="text-base font-bold text-[#0B1E3D] group-hover:text-[#1565D8] transition-colors leading-snug line-clamp-2">
+                          {servico.titulo}
+                        </h3>
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 border border-slate-200/70 text-[11px] font-mono font-semibold text-slate-600">
+                          <ShieldCheck className="w-3 h-3 text-[#1565D8] shrink-0" />
+                          <span className="truncate max-w-[210px]">{servico.normas.split('•')[0]}</span>
+                        </div>
+                      </div>
+
+                      {/* Brief description */}
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                        {servico.descricaoCurta}
                       </p>
+
+                      {/* Scannable Key Highlights Checklist */}
+                      <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Principais Entregáveis:
+                        </p>
+                        {servico.destaquesVisuais.map((destaque, dIdx) => (
+                          <div
+                            key={dIdx}
+                            className="flex items-start gap-1.5 text-xs text-slate-700 font-medium"
+                          >
+                            <CheckCircle2
+                              className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${servico.corTema.iconText}`}
+                            />
+                            <span className="line-clamp-1">{destaque}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      {servico.descricaoCurta}
-                    </p>
-                  </div>
+                    {/* Card Footer: Interactive Actions */}
+                    <div
+                      className="pt-4 border-t border-slate-100 mt-5 flex items-center justify-between gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setModalServico(servico)}
+                        className="text-xs font-bold text-[#1565D8] hover:text-[#0b4fb8] flex items-center gap-1 group/btn cursor-pointer transition-colors"
+                      >
+                        <span>Especificação</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                      </button>
 
-                  <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between">
-                    <button
-                      onClick={() => setModalServico(servico)}
-                      className="text-xs font-bold text-[#1565D8] hover:text-[#0b4fb8] flex items-center gap-1 cursor-pointer focus:outline-none"
-                    >
-                      <span>Saber mais</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    <a
-                      href={`https://wa.me/5581984442592?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20servi%C3%A7o%20de%20${encodeURIComponent(servico.titulo)}.`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-semibold text-slate-400 hover:text-emerald-600 transition-colors"
-                      title="Orçamento Rápido"
-                    >
-                      Orçar WhatsApp
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
+                      <a
+                        href={`https://wa.me/5581984442592?text=Ol%C3%A1%2C%20Eng.%20Vitor%20Leonardo!%20Gostaria%20de%20um%20or%C3%A7amento%20para%20${encodeURIComponent(servico.titulo)}.`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200/80 hover:border-emerald-600 text-xs font-bold transition-all shadow-2xs"
+                        title={`Orçar ${servico.titulo} no WhatsApp`}
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>Orçar WhatsApp</span>
+                      </a>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-xs text-slate-500">
-              Precisa de um laudo customizado ou de uma norma específica? 
-              Realizamos ensaios e perícias personalizadas sob demanda.
+          <div className="mt-12 text-center max-w-xl mx-auto p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+            <p className="text-xs text-slate-600">
+              <strong className="text-[#0B1E3D]">Precisa de um laudo customizado ou de uma norma específica?</strong>
+              <br />
+              Elaboramos ensaios técnicos, vistorias e perícias de engenharia mecânica sob demanda para indústrias, condomínios e órgãos reguladores.
             </p>
           </div>
 
@@ -531,7 +807,13 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             
             {/* Left Column: Official Contact Info */}
-            <div className="lg:col-span-5 space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-5 space-y-8"
+            >
               <div>
                 <span className="text-xs font-bold text-[#1565D8] uppercase tracking-wider">
                   Atendimento & Plantão Técnico
@@ -632,10 +914,16 @@ export const LandingPage: React.FC = () => {
                 </div>
 
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Column: Interactive Contact Form */}
-            <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:col-span-7"
+            >
               <div className="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
                 
                 <h3 className="text-xl font-bold text-[#0B1E3D]">
@@ -771,7 +1059,7 @@ export const LandingPage: React.FC = () => {
                 )}
 
               </div>
-            </div>
+            </motion.div>
 
           </div>
 
@@ -790,13 +1078,29 @@ export const LandingPage: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-slate-100 text-slate-600">
-                Módulo {modalServico.numero}
-              </span>
-              <span className="text-xs font-semibold text-[#1565D8]">
-                {modalServico.normas}
-              </span>
+            {/* Modal Header with Custom Service Icon */}
+            <div className="flex items-start gap-4 mb-4">
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${modalServico.corTema.iconBg} ${modalServico.corTema.iconText} border border-slate-200/80 shadow-xs`}
+              >
+                <modalServico.icon className="w-6 h-6" />
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                    Módulo {modalServico.numero}
+                  </span>
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded ${modalServico.corTema.badgeBg} ${modalServico.corTema.badgeText}`}
+                  >
+                    {modalServico.tagEspecialidade}
+                  </span>
+                </div>
+                <span className="text-xs font-semibold text-[#1565D8]">
+                  {modalServico.normas}
+                </span>
+              </div>
             </div>
 
             <h3 className="text-2xl font-bold text-[#0B1E3D] mb-3">

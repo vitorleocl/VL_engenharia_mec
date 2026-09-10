@@ -6,6 +6,7 @@ import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { OfflineBanner } from './components/common/OfflineBanner';
 import { WhatsAppButton } from './components/common/WhatsAppButton';
+import { EngineeringBackgroundTheme } from './components/common/EngineeringBackgroundTheme';
 
 // Public Views
 import { LandingPage } from './components/public/LandingPage';
@@ -37,8 +38,11 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <DataProvider>
-          <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-[#1565D8] selection:text-white">
+          <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-[#1565D8] selection:text-white relative">
             
+            {/* Engineering Mechanical Blueprint Theme across the whole site */}
+            <EngineeringBackgroundTheme />
+
             {/* Global Offline Status Banner */}
             <OfflineBanner />
 
