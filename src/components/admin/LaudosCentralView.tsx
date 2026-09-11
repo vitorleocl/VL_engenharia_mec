@@ -155,17 +155,13 @@ export const LaudosCentralView: React.FC = () => {
     if (!selecaoTaxonomia || !clienteId) return;
 
     try {
-      const novoId = criarLaudoPorTaxonomia(
-        selecaoTaxonomia.categoria.id,
-        selecaoTaxonomia.subcategoria.id,
-        selecaoTaxonomia.tipo.id,
+      const novoId = criarLaudoPorTaxonomia({
+        tipoLaudoId: selecaoTaxonomia.tipo.id,
         clienteId,
-        ativoId || undefined,
-        {
-          artNumero,
-          dataInspecao,
-        }
-      );
+        ativoId: ativoId || '',
+        artNumero,
+        dataInspecao,
+      });
 
       setModalTaxonomiaAberto(false);
       navigate(`/admin/laudos/${novoId}`);
@@ -323,7 +319,7 @@ export const LaudosCentralView: React.FC = () => {
                 <option value="todas">Todas as 12 Categorias</option>
                 {categoriasLaudo.map(cat => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.codigo}. {cat.nome}
+                    {cat.numero}. {cat.nome}
                   </option>
                 ))}
               </select>

@@ -33,6 +33,7 @@ interface DataContextType {
   laudos: Laudo[];
   templates: LaudoTemplate[];
   logsAuditoria: LogAuditoria[];
+  auditLogs: LogAuditoria[];
   contatos: ContatoFormulario[];
   usuarios: Usuario[];
   usoIA: UsoIAMetricas;
@@ -82,7 +83,7 @@ interface DataContextType {
   marcarContatoRespondido: (id: string) => void;
 
   // IA Tracking
-  registrarUsoIA: (quantidade?: number) => void;
+  registrarUsoIA: (tipoOuQtd?: string | number, quantidade?: number) => void;
   atualizarLimiteIA: (novoLimite: number) => void;
 }
 
@@ -649,9 +650,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // IA Tracking
-  const registrarUsoIA = (quantidade = 1) => {
+  const registrarUsoIA = (tipoOuQtd: string | number = 1, quantidade = 1) => {
+    const qtdEfetiva = typeof tipoOuQtd === 'number' ? tipoOuQtd : quantidade;
     setUsoIA(prev => {
-      const totalChamadas = (prev?.totalChamadas || 0) + quantidade;
+      const totalChamadas = (prev?.totalChamadas || 0) + qtdEfetiva;
       return {
         ...prev,
         totalChamadas,
@@ -674,6 +676,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         laudos,
         templates,
         logsAuditoria,
+        auditLogs: logsAuditoria,
         contatos,
         usuarios,
         usoIA,

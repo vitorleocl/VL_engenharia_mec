@@ -68,7 +68,7 @@ export const AtivosView: React.FC = () => {
     setIdentificacao(a.identificacao);
     setFabricante(a.fabricante || '');
     setModelo(a.modelo || '');
-    setAno(a.ano || new Date().getFullYear());
+    setAno(Number(a.ano) || new Date().getFullYear());
     setNumeroSerie(a.numeroSerie || '');
     setCapacidade(a.capacidade || '');
     setLocalizacao(a.localizacao || '');

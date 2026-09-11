@@ -32,6 +32,7 @@ export interface Cliente {
   razaoSocial: string;
   nomeFantasia?: string;
   cpfCnpj: string;
+  cnpj?: string;
   contatos: ClienteContato[];
   endereco: ClienteEndereco;
   criadoEm: string;
@@ -101,7 +102,9 @@ export interface Orcamento {
   laudoGeradoId?: string;
   tipoLaudoVinculadoId?: string;
   fotosDescricao?: string;
+  propostaGeradaEm?: string;
   paginas?: PropostaPagina[];
+  paginasProposta?: PropostaPagina[];
   aceiteDigital?: {
     aprovado: boolean;
     dataHora: string;
@@ -262,12 +265,15 @@ export interface LaudoSecao {
   id: string;
   titulo: string;
   ordem: number;
+  tipo?: 'capa' | 'apresentacao' | 'diretrizes' | 'corpo_tecnico' | 'checklist' | 'conclusao' | 'art_assinatura' | 'custom' | string;
   conteudoHtml?: string;
+  conteudoJson?: any;
   parecerTecnico?: string;
   recomendacoes?: string[];
   itens?: LaudoItemChecklist[];
   fotos?: EvidenciaFoto[];
   isFixa?: boolean;
+  isObrigatoria?: boolean;
 }
 
 export interface LaudoTemplate {
@@ -279,7 +285,15 @@ export interface LaudoTemplate {
   criadoEm: string;
 }
 
-export type LaudoStatus = 'rascunho' | 'em_revisao' | 'finalizado';
+export interface LaudoRevisao {
+  id: string;
+  dataHora: string;
+  usuarioUid: string;
+  usuarioNome: string;
+  descricao: string;
+}
+
+export type LaudoStatus = 'rascunho' | 'em_andamento' | 'em_revisao' | 'finalizado';
 
 export interface Laudo {
   id: string;
@@ -307,6 +321,7 @@ export interface Laudo {
   tabelaNaoConformidades?: TabelaNaoConformidadeItem[];
   artArquivoUrl?: string;
   artNomeArquivo?: string;
+  artTipoArquivo?: 'imagem' | 'pdf';
   artDataHomologacao?: string;
   assinaturaDigital?: AssinaturaDigitalLaudo;
   assinaturaUrl?: string;
@@ -314,6 +329,7 @@ export interface Laudo {
   secoes: LaudoSecao[];
   anexosFotos?: EvidenciaFoto[];
   hrnCalculoGeral?: HRNResult;
+  revisoes?: LaudoRevisao[];
   usoIA: { chamadas: number };
   criadoEm: string;
   atualizadoEm: string;

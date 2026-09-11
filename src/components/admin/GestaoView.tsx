@@ -313,7 +313,7 @@ export const GestaoView: React.FC = () => {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                         log.acao === 'criar'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : log.acao === 'atualizar'
+                          : log.acao === 'editar'
                           ? 'bg-blue-100 text-blue-800'
                           : log.acao === 'finalizar'
                           ? 'bg-purple-100 text-purple-800'
@@ -323,10 +323,10 @@ export const GestaoView: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-3 font-semibold text-slate-700 capitalize">
-                      {log.entidade}
+                      {log.colecaoAfetada}
                     </td>
                     <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
-                      {log.detalhes || `ID: ${log.entidadeId}`}
+                      {log.detalhes || `ID: ${log.documentoId}`}
                     </td>
                   </tr>
                 ))}

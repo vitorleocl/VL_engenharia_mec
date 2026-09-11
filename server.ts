@@ -262,16 +262,33 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
         },
         {
           numero: 2,
-          titulo: "NOSSA MISSÃO & PROPÓSITO",
+          titulo: "APRESENTAÇÃO INSTITUCIONAL E CREDENCIAIS TÉCNICAS",
           conteudoHtml: `<div class="space-y-4">
-            <blockquote class="p-4 border-l-4 border-[#0B1E3D] bg-slate-50 italic text-slate-800 text-base font-medium">
-              "Contribuir para um ambiente mais seguro e eficiente em diversos setores industriais, elevando o nível de consciência do mercado."
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-xl border border-slate-200 bg-slate-50/80">
+              <div class="shrink-0 text-center">
+                <img src="/vitor-leonardo.png" alt="Eng. Vitor Leonardo Cordeiro Linhares" class="w-32 h-36 object-cover rounded-lg shadow-sm border border-slate-300 mx-auto" />
+                <span class="inline-block mt-2 px-2 py-0.5 rounded bg-[#0B1E3D] text-white text-[10px] font-bold tracking-wider uppercase">CREA-PE 182229949-0</span>
+              </div>
+              <div class="space-y-2 text-left">
+                <h3 class="text-base font-black text-[#0B1E3D]">Eng. Vitor Leonardo Cordeiro Linhares</h3>
+                <p class="text-xs font-bold text-[#1565D8] tracking-wide uppercase">Engenheiro Mecânico • Perito Técnico & Consultor</p>
+                <p class="text-slate-700 text-xs leading-relaxed">
+                  Profissional com registro ativo no Conselho Regional de Engenharia e Agronomia de Pernambuco (CREA-PE). Especialista em engenharia diagnóstica, laudos periciais mecânicos, adequação a Normas Regulamentadoras (NR-11, NR-12, NR-13), projetos de climatização (PMOC), combate a incêndio e ensaios não destrutivos.
+                </p>
+                <div class="grid grid-cols-2 gap-2 pt-1 text-[11px] text-slate-600 font-medium">
+                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Emissão Oficial de ART</div>
+                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Engenharia Diagnóstica</div>
+                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Conformidade ABNT / NRs</div>
+                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Respaldo Jurídico-Pericial</div>
+                </div>
+              </div>
+            </div>
+
+            <blockquote class="p-3 border-l-4 border-[#0B1E3D] bg-slate-50 italic text-slate-800 text-xs font-medium">
+              "Contribuir para um ambiente operacional mais seguro, eficiente e juridicamente protegido, combinando rigor técnico com agilidade e ética profissional."
             </blockquote>
-            <p class="text-slate-700 text-sm leading-relaxed">
-              Sob a direção técnica do Engenheiro Mecânico Vitor Leonardo C. Linhares (CREA-PE 182229949-0), nossa atuação é pautada pelo rigor metodológico e conformidade com as normas técnicas da ABNT e diretrizes federais de segurança do trabalho.
-            </p>
-            <p class="text-slate-700 text-sm leading-relaxed">
-              Aliamos sólida formação em engenharia diagnóstica às mais avançadas ferramentas de perícia técnica, proporcionando a empresas dos mais diversos portes tranquilidade regulatória e excelência operacional.
+            <p class="text-slate-700 text-xs leading-relaxed">
+              Sob a liderança do Eng. Vitor Leonardo, aliamos sólida base técnica às mais modernas metodologias de inspeção e auditoria diagnóstica, garantindo aos nossos clientes total conformidade perante os órgãos de fiscalização (Ministério do Trabalho, CBMPE e CREA).
             </p>
           </div>`
         },
