@@ -6,8 +6,6 @@ import {
   Users, 
   Cpu, 
   FileSpreadsheet, 
-  Calendar, 
-  Copy, 
   ShieldCheck, 
   UserCheck, 
   LogOut, 
@@ -17,11 +15,11 @@ import {
   Wifi, 
   WifiOff, 
   Home, 
-  Bell,
-  ChevronRight,
-  Shield,
-  Sun,
-  Moon
+  Bell, 
+  ChevronRight, 
+  Shield, 
+  Sun, 
+  Moon 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -79,18 +77,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       label: 'Orçamentos',
       path: '/admin/orcamentos',
       icon: FileSpreadsheet,
-      visible: isColaborador,
-    },
-    {
-      label: 'Agenda de Vistorias',
-      path: '/admin/agenda',
-      icon: Calendar,
-      visible: true,
-    },
-    {
-      label: 'Templates de Laudo',
-      path: '/admin/templates',
-      icon: Copy,
       visible: isColaborador,
     },
     {
