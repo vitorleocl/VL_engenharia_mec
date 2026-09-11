@@ -21,7 +21,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { Laudo, Cliente, Ativo } from '../../types';
 
 interface LaudoPdfExportModalProps {
@@ -75,6 +75,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: element.scrollWidth,
+        onclone: (clonedDoc) => {
+          clonedDoc.documentElement.classList.remove('dark');
+          clonedDoc.body.classList.remove('dark');
+        },
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -316,21 +320,51 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               </div>
 
               {/* ============================================================ */}
-              {/* SEÇÃO 2: ESCOPO & NORMAS APLICÁVEIS                          */}
+              {/* SEÇÃO 2: APRESENTAÇÃO, METODOLOGIA & NORMAS APLICÁVEIS       */}
               {/* ============================================================ */}
-              <div className="mb-6 p-3 rounded-lg border border-blue-100 bg-blue-50/50 text-xs space-y-1">
-                <span className="font-bold text-[#0B1E3D] uppercase text-[10px] block tracking-wider">
-                  3. Base Normativa e Legislação Técnica Aplicada
-                </span>
-                <p className="text-slate-700 leading-relaxed text-[11px]">
-                  Vistoria técnica, ensaios de campo e apreciação conduzidos estritamente em conformidade com: 
-                  <strong> Norma Regulamentadora NR-12</strong> (Segurança no Trabalho em Máquinas e Equipamentos), 
-                  <strong> NR-11</strong> (Transporte e Movimentação de Cargas), 
-                  <strong> Lei Federal nº 13.589/2018</strong> (PMOC), 
-                  <strong> ABNT NBR ISO 12100</strong> (Apreciação e Redução de Riscos), 
-                  <strong> ABNT NBR 14153</strong>, 
-                  <strong> Resoluções do CONFEA/CREA</strong> e manuais técnicos do fabricante.
-                </p>
+              <div className="space-y-3 mb-6">
+                {laudo.apresentacao && (
+                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 text-xs space-y-1">
+                    <span className="font-bold text-[#0B1E3D] uppercase text-[10px] block tracking-wider">
+                      3. Apresentação & Objetivo do Laudo
+                    </span>
+                    <p className="text-slate-700 leading-relaxed text-[11px]">
+                      {laudo.apresentacao}
+                    </p>
+                  </div>
+                )}
+
+                {laudo.metodologia && (
+                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 text-xs space-y-1">
+                    <span className="font-bold text-[#0B1E3D] uppercase text-[10px] block tracking-wider">
+                      4. Metodologia de Avaliação Técnica
+                    </span>
+                    <p className="text-slate-700 leading-relaxed text-[11px]">
+                      {laudo.metodologia}
+                    </p>
+                  </div>
+                )}
+
+                <div className="p-3 rounded-lg border border-blue-100 bg-blue-50/50 text-xs space-y-1">
+                  <span className="font-bold text-[#0B1E3D] uppercase text-[10px] block tracking-wider">
+                    {laudo.apresentacao || laudo.metodologia ? '5.' : '3.'} Base Normativa e Legislação Técnica Aplicada
+                  </span>
+                  <p className="text-slate-700 leading-relaxed text-[11px]">
+                    Vistoria técnica, ensaios de campo e apreciação conduzidos estritamente em conformidade com: 
+                    {laudo.normasReferencia ? (
+                      <strong className="text-[#1565D8]"> {laudo.normasReferencia}</strong>
+                    ) : (
+                      <>
+                        <strong> Norma Regulamentadora NR-12</strong> (Segurança no Trabalho em Máquinas e Equipamentos), 
+                        <strong> NR-11</strong> (Transporte e Movimentação de Cargas), 
+                        <strong> Lei Federal nº 13.589/2018</strong> (PMOC), 
+                        <strong> ABNT NBR ISO 12100</strong> (Apreciação e Redução de Riscos), 
+                        <strong> ABNT NBR 14153</strong>, 
+                        <strong> Resoluções do CONFEA/CREA</strong> e manuais técnicos do fabricante.
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
               {/* ============================================================ */}
@@ -339,65 +373,67 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               <div className="mb-6 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
                   <h3 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider">
-                    4. Matriz de Auditoria & Verificação de Conformidade
+                    {laudo.apresentacao || laudo.metodologia ? '6.' : '4.'} Matriz de Auditoria & Verificação de Conformidade
                   </h3>
                   <span className="text-[10px] text-slate-500">
                     Inspeção visual, dimensional e funcional
                   </span>
                 </div>
 
-                {laudo.secoes.map((secao) => (
+                {(laudo.secoes || []).map((secao) => (
                   <div key={secao.id} className="space-y-2 page-break-inside-avoid">
                     <h4 className="text-[11px] font-bold text-[#1565D8] bg-slate-100 px-2.5 py-1 rounded">
                       {secao.titulo}
                     </h4>
 
-                    <table className="w-full text-left text-[10px] border-collapse">
-                      <thead>
-                        <tr className="bg-slate-200/80 text-slate-700 border-b border-slate-300">
-                          <th className="p-1.5 font-bold w-7/12">Item / Requisito Normativo</th>
-                          <th className="p-1.5 font-bold w-2/12 text-center">Status</th>
-                          <th className="p-1.5 font-bold w-3/12">Observações Técnicas</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {secao.itens.map((item) => (
-                          <tr key={item.id} className="hover:bg-slate-50">
-                            <td className="p-1.5 text-slate-800 align-top">
-                              <span className="font-semibold block">{item.requisito}</span>
-                              {item.normaRef && (
-                                <span className="text-[9px] text-slate-500 font-mono">Ref: {item.normaRef}</span>
-                              )}
-                            </td>
-                            <td className="p-1.5 text-center align-top">
-                              {item.status === 'conforme' && (
-                                <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                  CONFORME
-                                </span>
-                              )}
-                              {item.status === 'nao_conforme' && (
-                                <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-red-100 text-red-800 border border-red-300">
-                                  NÃO CONFORME
-                                </span>
-                              )}
-                              {item.status === 'nao_aplicavel' && (
-                                <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-slate-100 text-slate-600 border border-slate-300">
-                                  NÃO APLICÁVEL
-                                </span>
-                              )}
-                              {item.status === 'pendente' && (
-                                <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-amber-100 text-amber-800 border border-amber-300">
-                                  PENDENTE
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-1.5 text-slate-600 align-top text-[10px]">
-                              {item.observacao || '—'}
-                            </td>
+                    {(secao.itens && secao.itens.length > 0) && (
+                      <table className="w-full text-left text-[10px] border-collapse">
+                        <thead>
+                          <tr className="bg-slate-200/80 text-slate-700 border-b border-slate-300">
+                            <th className="p-1.5 font-bold w-7/12">Item / Requisito Normativo</th>
+                            <th className="p-1.5 font-bold w-2/12 text-center">Status</th>
+                            <th className="p-1.5 font-bold w-3/12">Observações Técnicas</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {secao.itens.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-50">
+                              <td className="p-1.5 text-slate-800 align-top">
+                                <span className="font-semibold block">{item.requisito}</span>
+                                {item.normaRef && (
+                                  <span className="text-[9px] text-slate-500 font-mono">Ref: {item.normaRef}</span>
+                                )}
+                              </td>
+                              <td className="p-1.5 text-center align-top">
+                                {item.status === 'conforme' && (
+                                  <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    CONFORME
+                                  </span>
+                                )}
+                                {item.status === 'nao_conforme' && (
+                                  <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-red-100 text-red-800 border border-red-300">
+                                    NÃO CONFORME
+                                  </span>
+                                )}
+                                {item.status === 'nao_aplicavel' && (
+                                  <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-slate-100 text-slate-600 border border-slate-300">
+                                    NÃO APLICÁVEL
+                                  </span>
+                                )}
+                                {item.status === 'pendente' && (
+                                  <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-amber-100 text-amber-800 border border-amber-300">
+                                    PENDENTE
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-1.5 text-slate-600 align-top text-[10px]">
+                                {item.observacao || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 ))}
               </div>

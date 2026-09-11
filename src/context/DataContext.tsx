@@ -9,7 +9,9 @@ import {
   LogAuditoria, 
   ContatoFormulario, 
   Usuario,
-  UsoIAMetricas
+  UsoIAMetricas,
+  CategoriaLaudoDef,
+  TipoLaudoDef
 } from '../types';
 import { 
   CLIENTES_INICIAIS, 
@@ -20,6 +22,7 @@ import {
   TEMPLATES_INICIAIS,
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
+import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -33,6 +36,7 @@ interface DataContextType {
   contatos: ContatoFormulario[];
   usuarios: Usuario[];
   usoIA: UsoIAMetricas;
+  categoriasLaudo: CategoriaLaudoDef[];
   
   // Clientes Actions
   adicionarCliente: (cliente: Omit<Cliente, 'id' | 'criadoEm'>) => string;
@@ -46,6 +50,7 @@ interface DataContextType {
 
   // Orçamentos Actions
   adicionarOrcamento: (orcamento: Omit<Orcamento, 'id' | 'criadoEm'>) => string;
+  atualizarOrcamento: (id: string, dados: Partial<Orcamento>) => void;
   atualizarStatusOrcamento: (id: string, status: Orcamento['status']) => void;
   gerarLaudoFromOrcamento: (orcamentoId: string, ativoIdEscolhido?: string) => string;
   removerOrcamento: (id: string) => void;
@@ -55,9 +60,11 @@ interface DataContextType {
   atualizarStatusVistoria: (id: string, status: AgendaVistoria['status']) => void;
   removerVistoria: (id: string) => void;
 
-  // Laudos Actions
-  gerarNumeroLaudo: () => string;
+  // Taxonomia & Laudos Actions
+  atualizarCategoriasLaudo: (novas: CategoriaLaudoDef[]) => void;
+  gerarNumeroLaudo: (prefixo?: string) => string;
   criarNovoLaudo: (dados: Partial<Laudo> & { tipo: string; clienteId: string; ativoId: string }) => string;
+  criarLaudoPorTaxonomia: (params: { tipoLaudoId: string; clienteId: string; ativoId: string; artNumero?: string; dataInspecao?: string }) => string;
   atualizarLaudo: (id: string, dados: Partial<Laudo>) => void;
   finalizarLaudo: (id: string, artNumero: string, assinaturaUrl?: string) => void;
   removerLaudo: (id: string) => void;
@@ -107,6 +114,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
   const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
+  const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA));
   const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => loadStorage('vl_logs', [
     {
       id: 'log-01',
@@ -190,6 +198,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_agenda', agenda), [agenda]);
   useEffect(() => saveStorage('vl_laudos', laudos), [laudos]);
   useEffect(() => saveStorage('vl_templates', templates), [templates]);
+  useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
@@ -211,16 +220,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLogsAuditoria(prev => [novoLog, ...prev]);
   };
 
-  // Atomic Sequence Generator LAR-AAAA-NNN
-  const gerarNumeroLaudo = (): string => {
+  // Atomic Sequence Generator (e.g. LAR-2026-001 or NR12-2026-001)
+  const gerarNumeroLaudo = (prefixoPersonalizado?: string): string => {
     const anoAtual = new Date().getFullYear();
-    const prefixoAno = `LAR-${anoAtual}-`;
+    const prefixo = prefixoPersonalizado ? `${prefixoPersonalizado}-${anoAtual}-` : `LAR-${anoAtual}-`;
     
-    // Find highest sequential number this year
+    // Find highest sequential number this year for this prefix
     let maxNum = 0;
     laudos.forEach(l => {
-      if (l.numero && l.numero.startsWith(prefixoAno)) {
-        const parteNum = parseInt(l.numero.replace(prefixoAno, ''), 10);
+      if (l.numero && l.numero.startsWith(prefixo)) {
+        const parteNum = parseInt(l.numero.replace(prefixo, ''), 10);
         if (!isNaN(parteNum) && parteNum > maxNum) {
           maxNum = parteNum;
         }
@@ -228,7 +237,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const proximoNum = maxNum + 1;
-    return `${prefixoAno}${String(proximoNum).padStart(3, '0')}`;
+    return `${prefixo}${String(proximoNum).padStart(3, '0')}`;
+  };
+
+  // Atualizar Taxonomia
+  const atualizarCategoriasLaudo = (novas: CategoriaLaudoDef[]) => {
+    setCategoriasLaudo(novas);
+    registrarLog('taxonomiaLaudos', 'categorias', 'editar', 'Estrutura taxonômica de laudos atualizada.');
   };
 
   // Clientes
@@ -289,6 +304,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrcamentos(prev => [novo, ...prev]);
     registrarLog('orcamentos', id, 'criar', `Orçamento criado: R$ ${novo.valor} (${novo.servico})`);
     return id;
+  };
+
+  const atualizarOrcamento = (id: string, dados: Partial<Orcamento>) => {
+    setOrcamentos(prev => prev.map(o => o.id === id ? { ...o, ...dados } : o));
+    registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
   };
 
   const atualizarStatusOrcamento = (id: string, status: Orcamento['status']) => {
@@ -408,6 +428,89 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Laudos
+  const criarLaudoPorTaxonomia = ({
+    tipoLaudoId,
+    clienteId,
+    ativoId,
+    artNumero = '',
+    dataInspecao = new Date().toISOString().slice(0, 10)
+  }: {
+    tipoLaudoId: string;
+    clienteId: string;
+    ativoId: string;
+    artNumero?: string;
+    dataInspecao?: string;
+  }): string => {
+    let tipoEncontrado: TipoLaudoDef | undefined;
+    let categoriaEncontradaId = '';
+    let subcategoriaEncontradaId = '';
+
+    for (const cat of categoriasLaudo) {
+      for (const sub of cat.subcategorias) {
+        const found = sub.tipos.find(t => t.id === tipoLaudoId);
+        if (found) {
+          tipoEncontrado = found;
+          categoriaEncontradaId = cat.id;
+          subcategoriaEncontradaId = sub.id;
+          break;
+        }
+      }
+      if (tipoEncontrado) break;
+    }
+
+    const cliente = clientes.find(c => c.id === clienteId);
+    const ativo = ativos.find(a => a.id === ativoId);
+    const prefixo = tipoEncontrado?.codigo || 'LAR';
+    const numero = gerarNumeroLaudo(prefixo);
+    const id = `lau-${Date.now()}`;
+
+    const novo: Laudo = {
+      id,
+      numero,
+      tipo: tipoEncontrado?.nome || 'Laudo Técnico Pericial',
+      tipoLaudoId,
+      categoriaId: categoriaEncontradaId,
+      subcategoriaId: subcategoriaEncontradaId,
+      clienteId,
+      clienteNome: cliente?.razaoSocial || 'Cliente Corporativo',
+      clienteCnpj: cliente?.cnpj || '',
+      ativoId,
+      ativoIdentificacao: ativo?.identificacao || 'Equipamento / Instalação Mecânica',
+      status: 'rascunho',
+      artNumero,
+      dataInspecao,
+      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
+      responsavelCrea: 'CREA-PE 182229949-0',
+      normasReferencia: tipoEncontrado?.normasRef || 'ABNT NBR, NR-12, NR-11, NR-13',
+      apresentacao: tipoEncontrado?.apresentacaoPadrao || 'O presente laudo técnico pericial tem por escopo avaliar as condições mecânicas e de segurança do ativo.',
+      metodologia: tipoEncontrado?.metodologiaPadrao || 'A metodologia adotada contemplou inspeção visual, ensaios funcionais e checagem de conformidade com as normas vigentes.',
+      checklist: tipoEncontrado?.checklistPadrao ? tipoEncontrado.checklistPadrao.map(item => ({ ...item })) : [],
+      tabelaNaoConformidades: [],
+      conclusao: 'Com base nas avaliações e ensaios técnicos realizados, o equipamento encontra-se em conformidade com as exigências normativas aplicáveis, condicionando-se o início ou continuidade das operações à observância do plano de manutenção e eventuais ações corretivas apontadas.',
+      secoes: tipoEncontrado?.secoesPadrao ? tipoEncontrado.secoesPadrao.map(s => ({
+        id: s.id,
+        titulo: s.titulo,
+        ordem: s.ordem,
+        conteudoHtml: s.conteudoHtml || '',
+        itens: [],
+        fotos: []
+      })) : [],
+      assinaturaDigital: {
+        responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
+        responsavelCrea: 'CREA-PE 182229949-0',
+        dataHora: new Date().toISOString(),
+        hashAutenticidade: `AUT-VL-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
+      },
+      usoIA: { chamadas: 0 },
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString(),
+    };
+
+    setLaudos(prev => [novo, ...prev]);
+    registrarLog('laudos', id, 'criar', `Novo laudo técnico criado via taxonomia: ${numero} (${tipoEncontrado?.nome})`);
+    return id;
+  };
+
   const criarNovoLaudo = (dados: Partial<Laudo> & { tipo: string; clienteId: string; ativoId: string }): string => {
     const id = `lau-${Date.now()}`;
     const numero = dados.numero || gerarNumeroLaudo();
@@ -420,14 +523,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tipo: dados.tipo,
       clienteId: dados.clienteId,
       clienteNome: cliente?.razaoSocial || 'Cliente',
+      clienteCnpj: cliente?.cnpj || '',
       ativoId: dados.ativoId,
       ativoIdentificacao: ativo?.identificacao || 'Equipamento',
       status: 'rascunho',
       artNumero: dados.artNumero || '',
       dataInspecao: dados.dataInspecao || new Date().toISOString().slice(0, 10),
-      responsavelNome: 'Vitor Leonardo',
-      responsavelCrea: 'CREA-PE 1822299490',
+      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
+      responsavelCrea: 'CREA-PE 182229949-0',
       resumoExecutivo: dados.resumoExecutivo || `Inspeção e apreciação técnica de ${dados.tipo}.`,
+      normasReferencia: dados.normasReferencia || 'ABNT NBR / Normas Regulamentadoras',
+      apresentacao: dados.apresentacao || 'O presente laudo técnico pericial tem por finalidade aferir a conformidade estrutural e operacional do equipamento.',
+      metodologia: dados.metodologia || 'A metodologia adotou inspeção in loco e verificação contra normas técnicas da ABNT e Ministério do Trabalho.',
+      checklist: dados.checklist || [],
+      tabelaNaoConformidades: dados.tabelaNaoConformidades || [],
+      conclusao: dados.conclusao || 'O equipamento cumpre as exigências fundamentais das normas de segurança vigentes.',
       secoes: dados.secoes || [],
       usoIA: { chamadas: 0 },
       criadoEm: new Date().toISOString(),
@@ -567,6 +677,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         contatos,
         usuarios,
         usoIA,
+        categoriasLaudo,
         adicionarCliente,
         atualizarCliente,
         removerCliente,
@@ -574,14 +685,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         atualizarAtivo,
         removerAtivo,
         adicionarOrcamento,
+        atualizarOrcamento,
         atualizarStatusOrcamento,
         gerarLaudoFromOrcamento,
         removerOrcamento,
         adicionarVistoria,
         atualizarStatusVistoria,
         removerVistoria,
+        atualizarCategoriasLaudo,
         gerarNumeroLaudo,
         criarNovoLaudo,
+        criarLaudoPorTaxonomia,
         atualizarLaudo,
         finalizarLaudo,
         removerLaudo,

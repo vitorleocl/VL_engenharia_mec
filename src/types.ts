@@ -66,19 +66,48 @@ export interface Ativo {
 
 export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado';
 
+export interface PropostaPagina {
+  numero: number;
+  titulo: string;
+  subtitulo?: string;
+  conteudoHtml: string;
+}
+
 export interface Orcamento {
   id: string;
+  codigoProposta?: string; // ex: PROP-2026-001
   clienteId: string;
   clienteNome?: string;
+  cnpjCliente?: string;
+  representanteNome?: string;
+  emailCliente?: string;
+  telefoneCliente?: string;
+  localidadeServico?: string;
   servico: string;
   descricaoEscopo?: string;
+  normasTecnicas?: string;
+  qtdEquipamentos?: string;
+  horasEngenharia?: string;
+  mobilizacao?: string;
   ativoId?: string;
   ativoIdentificacao?: string;
   valor: number;
+  valorFormatado?: string;
   prazoDias?: number;
+  prazoEntrega?: string;
+  validadeDias?: number;
   condicoesPagamento?: string;
   status: OrcamentoStatus;
   laudoGeradoId?: string;
+  tipoLaudoVinculadoId?: string;
+  fotosDescricao?: string;
+  paginas?: PropostaPagina[];
+  aceiteDigital?: {
+    aprovado: boolean;
+    dataHora: string;
+    responsavelCliente: string;
+    ipOuHash?: string;
+  };
   criadoEm: string;
 }
 
@@ -151,6 +180,71 @@ export interface EvidenciaFoto {
   timestamp: string;
 }
 
+export interface TipoLaudoItemChecklist {
+  id: string;
+  descricao: string;
+  status: 'conforme' | 'nao_conforme' | 'nao_aplicavel';
+  observacao?: string;
+  fotoUrl?: string;
+}
+
+export interface TipoLaudoSecaoPadrao {
+  id: string;
+  titulo: string;
+  ordem: number;
+  conteudoHtml?: string;
+}
+
+export interface TipoLaudoDef {
+  id: string;
+  codigo: string;
+  nome: string;
+  descricaoCurta?: string;
+  normasRef: string;
+  apresentacaoPadrao: string;
+  metodologiaPadrao: string;
+  checklistPadrao: TipoLaudoItemChecklist[];
+  secoesPadrao?: TipoLaudoSecaoPadrao[];
+}
+
+export interface SubcategoriaLaudoDef {
+  id: string;
+  nome: string;
+  tipos: TipoLaudoDef[];
+}
+
+export interface CategoriaLaudoDef {
+  id: string;
+  numero: number;
+  nome: string;
+  icone?: string;
+  descricao?: string;
+  subcategorias: SubcategoriaLaudoDef[];
+}
+
+export type CategoriaLaudoTaxonomia = CategoriaLaudoDef;
+export type SubcategoriaLaudoTaxonomia = SubcategoriaLaudoDef;
+export type TipoLaudoTaxonomia = TipoLaudoDef;
+
+export interface TabelaNaoConformidadeItem {
+  id: string;
+  item: string;
+  descricao: string;
+  prioridade: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
+  recomendacao: string;
+  prazo: string;
+}
+
+export interface AssinaturaDigitalLaudo {
+  responsavelNome: string;
+  responsavelCrea: string;
+  dataHora: string;
+  hashAutenticidade: string;
+  assinaturaUrl?: string;
+  representanteCliente?: string;
+  dataHoraCliente?: string;
+}
+
 export interface LaudoItemChecklist {
   id: string;
   requisito: string;
@@ -168,10 +262,12 @@ export interface LaudoSecao {
   id: string;
   titulo: string;
   ordem: number;
+  conteudoHtml?: string;
   parecerTecnico?: string;
   recomendacoes?: string[];
-  itens: LaudoItemChecklist[];
-  fotos: EvidenciaFoto[];
+  itens?: LaudoItemChecklist[];
+  fotos?: EvidenciaFoto[];
+  isFixa?: boolean;
 }
 
 export interface LaudoTemplate {
@@ -187,10 +283,14 @@ export type LaudoStatus = 'rascunho' | 'em_revisao' | 'finalizado';
 
 export interface Laudo {
   id: string;
-  numero: string; // ex: LAR-2026-001
+  numero: string; // ex: NR12-2026-001
   tipo: string;
+  tipoLaudoId?: string;
+  categoriaId?: string;
+  subcategoriaId?: string;
   clienteId: string;
   clienteNome: string;
+  clienteCnpj?: string;
   ativoId: string;
   ativoIdentificacao: string;
   status: LaudoStatus;
@@ -198,10 +298,21 @@ export interface Laudo {
   dataInspecao: string;
   responsavelNome: string;
   responsavelCrea: string;
+  capaFotoUrl?: string;
+  apresentacao?: string;
+  metodologia?: string;
+  normasReferencia?: string;
+  conclusao?: string;
+  checklist?: TipoLaudoItemChecklist[];
+  tabelaNaoConformidades?: TabelaNaoConformidadeItem[];
+  artArquivoUrl?: string;
+  artNomeArquivo?: string;
+  artDataHomologacao?: string;
+  assinaturaDigital?: AssinaturaDigitalLaudo;
   assinaturaUrl?: string;
   resumoExecutivo?: string;
-  conclusao?: string;
   secoes: LaudoSecao[];
+  anexosFotos?: EvidenciaFoto[];
   hrnCalculoGeral?: HRNResult;
   usoIA: { chamadas: number };
   criadoEm: string;

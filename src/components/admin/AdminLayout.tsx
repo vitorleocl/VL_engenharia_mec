@@ -19,7 +19,8 @@ import {
   ChevronRight, 
   Shield, 
   Sun, 
-  Moon 
+  Moon,
+  Cog 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -157,16 +158,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Brand Header */}
         <div>
           <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-white rounded-lg shadow-sm">
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="p-1.5 bg-white rounded-lg shadow-sm relative overflow-hidden">
                 <img src="/logo.png" alt="VL" className="h-6 w-auto object-contain" />
               </div>
               <div>
-                <span className="font-extrabold text-sm text-white tracking-tight block leading-tight">
-                  VL ENGENHARIA
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-sm text-white tracking-tight block leading-tight">
+                    VL ENGENHARIA
+                  </span>
+                  <Cog className="w-3.5 h-3.5 text-blue-400 animate-gear-slow group-hover:text-amber-400 transition-colors" />
+                </div>
                 <span className="text-[10px] text-slate-400 block font-mono">
-                  CREA-PE 1822299490
+                  CREA-PE 182229949-0
                 </span>
               </div>
             </Link>
