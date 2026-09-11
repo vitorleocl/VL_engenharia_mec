@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { OfflineBanner } from './components/common/OfflineBanner';
@@ -38,7 +39,8 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <DataProvider>
-          <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-[#1565D8] selection:text-white relative">
+          <ThemeProvider>
+            <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-[#1565D8] selection:text-white relative">
             
             {/* Engineering Mechanical Blueprint Theme across the whole site */}
             <EngineeringBackgroundTheme />
@@ -174,8 +176,9 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-        </DataProvider>
-      </AuthProvider>
+        </ThemeProvider>
+      </DataProvider>
+    </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -19,10 +19,13 @@ import {
   Home, 
   Bell,
   ChevronRight,
-  Shield
+  Shield,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { useAdminTheme } from '../../context/ThemeContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,6 +34,7 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { currentUser, logout, isOnline, loginDemo } = useAuth();
   const { usoIA, contatos } = useData();
+  const { theme, isDark, toggleTheme, setTheme } = useAdminTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -108,10 +112,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const percIA = Math.min(100, Math.round((usoIA.totalChamadas / usoIA.limiteMensal) * 100));
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row">
+    <div className={`min-h-screen ${isDark ? 'dark bg-[#070E1A] text-slate-100' : 'bg-slate-100 text-slate-800'} flex flex-col md:flex-row transition-colors duration-200`}>
       
       {/* Mobile Top Header */}
-      <div className="md:hidden bg-[#0B1E3D] text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40">
+      <div className={`md:hidden ${isDark ? 'bg-[#060D18] border-b border-slate-800' : 'bg-[#0B1E3D]'} text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40`}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
@@ -131,6 +135,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mobile Theme Switcher */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            title={isDark ? 'Alternar para Tema Claro' : 'Alternar para Tema Industrial Escuro'}
+            aria-label="Alternar tema"
+          >
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-300" />}
+          </button>
+
           {isOnline ? (
             <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
               <Wifi className="w-3 h-3" />
@@ -149,8 +163,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <aside className={`
         ${mobileSidebarOpen ? 'block' : 'hidden'} md:block
         fixed md:sticky top-0 left-0 z-30
-        w-64 h-screen bg-[#0B1E3D] text-slate-300
-        flex flex-col justify-between border-r border-slate-800 shrink-0
+        w-64 h-screen ${isDark ? 'bg-[#060D1A] border-r border-slate-800/90' : 'bg-[#0B1E3D] border-r border-slate-800'} text-slate-300
+        flex flex-col justify-between shrink-0
         shadow-xl md:shadow-none
       `}>
         
@@ -269,6 +283,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </p>
           </div>
 
+          {/* Sidebar Theme Switcher */}
+          <div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-slate-900/70 border border-slate-800 text-xs">
+            <span className="text-[11px] text-slate-300 flex items-center gap-1.5 font-medium">
+              {isDark ? <Moon className="w-3.5 h-3.5 text-cyan-300" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
+              <span>{isDark ? 'Tema Industrial' : 'Tema Claro'}</span>
+            </span>
+            <button
+              onClick={toggleTheme}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                isDark 
+                  ? 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50' 
+                  : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+              }`}
+            >
+              {isDark ? 'Mudar p/ Claro' : 'Mudar p/ Escuro'}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between pt-1">
             <Link
               to="/"
@@ -297,29 +329,67 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
         {/* Desktop Top Status Bar */}
-        <header className="hidden md:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200">
+        <header className={`hidden md:flex items-center justify-between px-8 py-4 ${
+          isDark 
+            ? 'bg-[#0A1324] border-b border-slate-800 text-slate-100' 
+            : 'bg-white border-b border-slate-200 text-slate-800'
+        } transition-colors`}>
           <div>
-            <h1 className="text-lg font-extrabold text-[#0B1E3D]">
+            <h1 className={`text-lg font-extrabold ${isDark ? 'text-white' : 'text-[#0B1E3D]'}`}>
               VL Engenharia — Gestão Técnica Operacional
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Ambiente de laudos, ensaios de campo, apreciação HRN e emissão de ART CREA-PE
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             
+            {/* Theme Selector (Claro / Escuro Industrial) */}
+            <div className={`flex items-center p-0.5 rounded-xl border ${
+              isDark ? 'bg-slate-900/90 border-slate-700/80' : 'bg-slate-100 border-slate-200'
+            }`}>
+              <button
+                onClick={() => setTheme('light')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  !isDark 
+                    ? 'bg-white text-[#0B1E3D] shadow-xs' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Ativar Modo Claro"
+              >
+                <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : 'text-slate-400'}`} />
+                <span>Claro</span>
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  isDark 
+                    ? 'bg-[#1565D8] text-white shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title="Ativar Modo Escuro Industrial (Cinza Escuro e Azul Marinho)"
+              >
+                <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-cyan-200' : 'text-slate-500'}`} />
+                <span>Industrial</span>
+              </button>
+            </div>
+
             {/* Online/Offline status */}
             <div className="flex items-center gap-2">
               {isOnline ? (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                  isDark 
+                    ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800' 
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                }`}>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Conectado à Nuvem</span>
+                  <span>Conectado</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold animate-pulse">
                   <WifiOff className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Modo Offline (IndexedDB)</span>
+                  <span>Modo Offline</span>
                 </div>
               )}
             </div>
@@ -328,18 +398,26 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             {contatosNovos > 0 && isColaborador && (
               <div 
                 onClick={() => navigate('/admin')} 
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#1565D8] border border-blue-200 text-xs font-bold cursor-pointer hover:bg-blue-100 transition-colors"
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-blue-950/70 text-blue-300 border border-blue-800 hover:bg-blue-900/60'
+                    : 'bg-blue-50 text-[#1565D8] border border-blue-200 hover:bg-blue-100'
+                }`}
                 title={`${contatosNovos} nova(s) mensagem(ns) no site`}
               >
                 <Bell className="w-3.5 h-3.5" />
-                <span>{contatosNovos} Contato(s) novo(s)</span>
+                <span>{contatosNovos} Novo(s)</span>
               </div>
             )}
 
             {/* Quick user role selector for test/demo mode */}
-            <div className="text-xs font-medium text-slate-600 flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-              <span className="text-slate-400">Perfil:</span>
-              <strong className="text-[#0B1E3D] capitalize">{currentUser.role}</strong>
+            <div className={`text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg border ${
+              isDark 
+                ? 'bg-slate-900 text-slate-300 border-slate-800' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-400'}>Perfil:</span>
+              <strong className={`capitalize ${isDark ? 'text-white' : 'text-[#0B1E3D]'}`}>{currentUser.role}</strong>
             </div>
 
           </div>

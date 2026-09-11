@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Smooth continuous rotation animations for mechanical gears */
 @keyframes spin-gear-clockwise {
   from {
@@ -47,4 +49,85 @@
   animation: spin-gear-clockwise 10s linear infinite;
   transform-origin: center center;
   will-change: transform;
+}
+
+/* Print and Official PDF Export Stylesheet */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 12mm 10mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide app navigation and non-printable elements */
+  aside,
+  header:not(.printable-header),
+  nav,
+  .no-print,
+  button,
+  .hide-on-print {
+    display: none !important;
+  }
+
+  /* Force printable container to occupy full width */
+  .printable-document {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .page-break-after-always {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}
+
+/* Ensure document sheet remains clean white in preview and exports even in dark theme */
+html.dark .printable-document {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.dark .printable-document .bg-slate-50,
+html.dark .printable-document .bg-slate-100 {
+  background-color: #f8fafc !important;
+}
+
+html.dark .printable-document .text-slate-900,
+html.dark .printable-document .text-slate-800,
+html.dark .printable-document .text-[#0B1E3D] {
+  color: #0b1e3d !important;
+}
+
+html.dark .printable-document .text-slate-700 {
+  color: #334155 !important;
+}
+
+html.dark .printable-document .text-slate-600 {
+  color: #475569 !important;
+}
+
+html.dark .printable-document .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.dark .printable-document .border-slate-200 {
+  border-color: #e2e8f0 !important;
 }

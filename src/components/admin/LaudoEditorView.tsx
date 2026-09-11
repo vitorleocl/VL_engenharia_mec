@@ -17,12 +17,14 @@ import {
   FileText,
   Clock,
   Check,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { calculateHRN, HRN_LO_OPTIONS, HRN_FE_OPTIONS, HRN_DPH_OPTIONS, HRN_NP_OPTIONS } from '../../utils/hrn';
 import { Laudo, SecaoLaudo, ItemChecklist, HRNValues } from '../../types';
+import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 
 export const LaudoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +38,7 @@ export const LaudoEditorView: React.FC = () => {
   const [salvando, setSalvando] = useState(false);
   const [analisandoIA, setAnalisandoIA] = useState(false);
   const [resultadoIA, setResultadoIA] = useState<any>(null);
+  const [modalPdfAberto, setModalPdfAberto] = useState(false);
 
   // Local mutable state
   const [laudoState, setLaudoState] = useState<Laudo | null>(laudoOriginal || null);
@@ -244,27 +247,27 @@ export const LaudoEditorView: React.FC = () => {
     <div className="space-y-6">
       
       {/* Top Bar Navigation and Actions */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#0E1726] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/admin/laudos')}
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
             title="Voltar para Central"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-black text-[#0B1E3D] font-mono">
+              <h2 className="text-lg font-black text-[#0B1E3D] dark:text-white font-mono">
                 {laudoState.numero}
               </h2>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                isFinalizado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                isFinalizado ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
               }`}>
                 {isFinalizado ? 'Finalizado (ART)' : 'Rascunho / Em Edição'}
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {laudoState.tipo} • Cliente: <strong>{laudoState.clienteNome}</strong>
             </p>
           </div>
@@ -275,7 +278,7 @@ export const LaudoEditorView: React.FC = () => {
             <button
               onClick={handleSalvar}
               disabled={salvando}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>{salvando ? 'Salvando...' : 'Salvar Alterações'}</span>
@@ -283,17 +286,27 @@ export const LaudoEditorView: React.FC = () => {
           )}
 
           <button
-            onClick={() => window.print()}
+            onClick={() => setModalPdfAberto(true)}
             className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+            title="Exportar Laudo Técnico para PDF com cabeçalho e rodapé da VL Engenharia"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exportar para PDF</span>
+          </button>
+
+          <button
+            onClick={() => setModalPdfAberto(true)}
+            className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Visualizar documento e imprimir"
           >
             <Printer className="w-4 h-4" />
-            <span>Visualizar / Imprimir PDF</span>
+            <span className="hidden sm:inline">Visualizar</span>
           </button>
         </div>
       </div>
 
       {/* Tabs of Wizard */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
         {[
           { id: 'dados', label: '1. Ativo & Dados' },
           { id: 'checklist', label: '2. Checklist Normativo' },
@@ -307,8 +320,8 @@ export const LaudoEditorView: React.FC = () => {
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-[#0B1E3D] text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                ? 'bg-[#0B1E3D] dark:bg-[#1565D8] text-white shadow-sm'
+                : 'bg-white dark:bg-[#0E1726] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/70 border border-slate-200 dark:border-slate-800'
             }`}
           >
             {tab.label}
@@ -804,6 +817,17 @@ export const LaudoEditorView: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Modal de Exportação PDF com Cabeçalho e Rodapé Oficial */}
+      {modalPdfAberto && laudoState && (
+        <LaudoPdfExportModal
+          laudo={laudoState}
+          cliente={clientes.find(c => c.id === laudoState.clienteId || c.razaoSocial === laudoState.clienteNome)}
+          ativo={ativos.find(a => a.id === laudoState.ativoId || a.identificacao === laudoState.ativoIdentificacao)}
+          isOpen={modalPdfAberto}
+          onClose={() => setModalPdfAberto(false)}
+        />
       )}
 
     </div>

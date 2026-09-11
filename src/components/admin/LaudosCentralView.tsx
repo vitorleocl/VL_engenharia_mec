@@ -25,12 +25,14 @@ import {
   CheckCircle2, 
   Clock,
   ArrowRight,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { MODULOS_LAUDO_CATALOGO, NR12_REQUISITOS_PADRAO } from '../../data/initialData';
-import { ModuloLaudoCatalogo } from '../../types';
+import { ModuloLaudoCatalogo, Laudo } from '../../types';
+import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 
 // Map icon strings to Lucide components
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -59,6 +61,7 @@ export const LaudosCentralView: React.FC = () => {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
   const [moduloSelecionado, setModuloSelecionado] = useState<ModuloLaudoCatalogo | null>(null);
+  const [laudoPdfExportar, setLaudoPdfExportar] = useState<Laudo | null>(null);
 
   // Form states for new report modal
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
@@ -331,6 +334,14 @@ export const LaudosCentralView: React.FC = () => {
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => setLaudoPdfExportar(laudo)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
+                          title="Exportar laudo para PDF com cabeçalho e rodapé da VL Engenharia"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>PDF</span>
+                        </button>
+                        <button
                           onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
                           className="px-3 py-1 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-[11px] shadow-xs cursor-pointer"
                         >
@@ -425,6 +436,17 @@ export const LaudosCentralView: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal de Exportação PDF com Cabeçalho e Rodapé Oficial */}
+      {laudoPdfExportar && (
+        <LaudoPdfExportModal
+          laudo={laudoPdfExportar}
+          cliente={clientes.find(c => c.id === laudoPdfExportar.clienteId || c.razaoSocial === laudoPdfExportar.clienteNome)}
+          ativo={ativos.find(a => a.id === laudoPdfExportar.ativoId || a.identificacao === laudoPdfExportar.ativoIdentificacao)}
+          isOpen={Boolean(laudoPdfExportar)}
+          onClose={() => setLaudoPdfExportar(null)}
+        />
       )}
 
     </div>
