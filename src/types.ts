@@ -126,6 +126,8 @@ export interface UsoIAMetricas {
   totalChamadas: number;
   limiteMensal: number;
   mesAno: string;
+  mesReferencia?: string;
+  custoEstimadoUSD?: number;
 }
 
 export interface HRNValues {

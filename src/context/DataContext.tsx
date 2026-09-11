@@ -160,11 +160,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   ]));
 
-  const [usoIA, setUsoIA] = useState<UsoIAMetricas>(() => loadStorage('vl_uso_ia', {
-    totalChamadas: 18,
-    limiteMensal: 500,
-    mesAno: new Date().toISOString().slice(0, 7),
-  }));
+  const [usoIA, setUsoIA] = useState<UsoIAMetricas>(() => {
+    const defaultData: UsoIAMetricas = {
+      totalChamadas: 18,
+      limiteMensal: 500,
+      mesAno: new Date().toISOString().slice(0, 7),
+      mesReferencia: 'Setembro/2026',
+      custoEstimadoUSD: 0.05,
+    };
+    const loaded = loadStorage('vl_uso_ia', defaultData);
+    const chamadas = loaded?.totalChamadas ?? defaultData.totalChamadas;
+    return {
+      ...defaultData,
+      ...loaded,
+      totalChamadas: chamadas,
+      limiteMensal: loaded?.limiteMensal ?? defaultData.limiteMensal,
+      mesAno: loaded?.mesAno ?? defaultData.mesAno,
+      mesReferencia: loaded?.mesReferencia || defaultData.mesReferencia,
+      custoEstimadoUSD: typeof loaded?.custoEstimadoUSD === 'number'
+        ? loaded.custoEstimadoUSD
+        : Number(((chamadas || 0) * 0.0025).toFixed(4)),
+    };
+  });
 
   // Sync state to local storage
   useEffect(() => saveStorage('vl_clientes', clientes), [clientes]);
@@ -523,10 +540,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // IA Tracking
   const registrarUsoIA = (quantidade = 1) => {
-    setUsoIA(prev => ({
-      ...prev,
-      totalChamadas: prev.totalChamadas + quantidade,
-    }));
+    setUsoIA(prev => {
+      const totalChamadas = (prev?.totalChamadas || 0) + quantidade;
+      return {
+        ...prev,
+        totalChamadas,
+        custoEstimadoUSD: Number((totalChamadas * 0.0025).toFixed(4)),
+      };
+    });
   };
 
   const atualizarLimiteIA = (novoLimite: number) => {

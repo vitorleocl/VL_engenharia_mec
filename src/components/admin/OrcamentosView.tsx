@@ -200,7 +200,7 @@ export const OrcamentosView: React.FC = () => {
                 <div>
                   <span className="text-slate-400 block text-[10px]">Valor Total:</span>
                   <span className="text-base font-black text-[#0B1E3D]">
-                    {orc.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(orc.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
                 <div className="text-right">
@@ -320,7 +320,7 @@ export const OrcamentosView: React.FC = () => {
                   <div>
                     <span className="text-slate-500 text-[10px] block font-bold">VALOR LÍQUIDO DOS SERVIÇOS:</span>
                     <span className="text-2xl font-black text-[#0B1E3D]">
-                      {orcamentoImprimindo.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {(orcamentoImprimindo.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                   <div className="text-right max-w-xs text-[11px] text-slate-600">

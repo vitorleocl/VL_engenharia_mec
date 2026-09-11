@@ -423,7 +423,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                       </p>
                       <div className="flex items-center gap-3">
                         <span className="text-2xl font-black font-mono text-[#0B1E3D]">
-                          {laudo.hrnCalculoGeral.score.toFixed(1)}
+                          {typeof laudo.hrnCalculoGeral.score === 'number'
+                            ? laudo.hrnCalculoGeral.score.toFixed(1)
+                            : (laudo.hrnCalculoGeral.score ?? '0.0')}
                         </span>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-xs ${
                           laudo.hrnCalculoGeral.nivel === 'Insignificante' || laudo.hrnCalculoGeral.nivel === 'Baixo'
@@ -432,13 +434,13 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                             ? 'bg-amber-500'
                             : 'bg-red-600'
                         }`}>
-                          Nível: {laudo.hrnCalculoGeral.nivel.toUpperCase()}
+                          Nível: {(laudo.hrnCalculoGeral.nivel || 'Não avaliado').toUpperCase()}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-[10px] text-slate-600 sm:max-w-md bg-white p-2.5 rounded border border-slate-200">
-                      <strong>Diretriz Recomendada:</strong> {laudo.hrnCalculoGeral.recomendacao}
+                      <strong>Diretriz Recomendada:</strong> {laudo.hrnCalculoGeral.recomendacao || 'Manter inspeções preventivas regulares.'}
                     </div>
                   </div>
                 </div>

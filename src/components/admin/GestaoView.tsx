@@ -355,22 +355,24 @@ export const GestaoView: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 text-xs block">Chamadas Realizadas no Mês:</span>
-              <span className="text-3xl font-black text-[#0B1E3D]">{usoIA.totalChamadas}</span>
-              <span className="text-[11px] text-slate-500 block mt-1">Mês de Referência: {usoIA.mesReferencia}</span>
+              <span className="text-3xl font-black text-[#0B1E3D]">{usoIA.totalChamadas ?? 0}</span>
+              <span className="text-[11px] text-slate-500 block mt-1">
+                Mês de Referência: {usoIA.mesReferencia || usoIA.mesAno || 'Mês Vigente'}
+              </span>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 text-xs block">Limite Configurado:</span>
-              <span className="text-3xl font-black text-purple-700">{usoIA.limiteMensal}</span>
+              <span className="text-3xl font-black text-purple-700">{usoIA.limiteMensal ?? 500}</span>
               <span className="text-[11px] text-slate-500 block mt-1">Bloqueio automático ao atingir 100%</span>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 text-xs block">Custo Estimado (USD):</span>
               <span className="text-3xl font-black text-emerald-700">
-                ${usoIA.custoEstimadoUSD.toFixed(2)}
+                ${(typeof usoIA.custoEstimadoUSD === 'number' ? usoIA.custoEstimadoUSD : ((usoIA.totalChamadas || 0) * 0.0025)).toFixed(2)}
               </span>
-              <span className="text-[11px] text-slate-500 block mt-1">Base: modelo Gemini 2.5 Flash</span>
+              <span className="text-[11px] text-slate-500 block mt-1">Base: modelo Gemini 3.8 Flash</span>
             </div>
           </div>
 
