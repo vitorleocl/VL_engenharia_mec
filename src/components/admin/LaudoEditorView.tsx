@@ -198,6 +198,9 @@ export const LaudoEditorView: React.FC = () => {
       });
 
       const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Falha na resposta do serviço de IA');
+      }
       setResultadoIA(data);
       registrarUsoIA(1);
 

@@ -89,15 +89,24 @@ app.post("/api/ai/analyze-inspection", async (req, res) => {
       });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ 
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
 
     const systemPrompt = `Você é um engenheiro mecânico especialista em segurança do trabalho, laudos periciais e apreciação de riscos industriais (CREA, NR-12, NR-13, CONTRAN, ABNT NBR 16071, PMOC Lei 13.589/2018).
 Seu papel é auxiliar o Engenheiro Mecânico Vitor Leonardo (CREA-PE 1822299490) na análise técnica preliminar para laudo pericial.
 Responda SEMPRE em JSON rigoroso com a seguinte estrutura:
 {
   "parecerTecnico": "Texto formal e técnico para constar no laudo",
-  "naoConformidadesProvaveis": ["item 1", "item 2"],
+  "riscosIdentificados": ["item 1", "item 2"],
+  "recomendacoesGerais": "Texto explicativo consolidado com as ações corretivas",
   "recomendacoesPlanoAcao": ["medida 1", "medida 2", "medida 3"],
+  "nivelRiscoSugerido": "Baixo" | "Médio" | "Alto" | "Muito Alto" | "Crítico",
   "sugestaoHRN": {
     "nivel": "Baixo" | "Médio" | "Alto" | "Muito Alto" | "Crítico",
     "justificativa": "breve justificativa"
@@ -112,23 +121,57 @@ Score HRN Preliminar: ${scoreEfetivo}
 
 Gere a análise técnica em formato JSON estruturado com parecerTecnico, riscosIdentificados (ou naoConformidadesProvaveis), recomendacoesGerais (ou recomendacoesPlanoAcao) e nivelRiscoSugerido.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }
-      ],
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
+    const modelsToTry = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+    let response: any = null;
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        response = await ai.models.generateContent({
+          model: modelName,
+          contents: [
+            { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }
+          ],
+          config: {
+            responseMimeType: "application/json",
+          },
+        });
+        if (response?.text) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Tentativa com modelo ${modelName} falhou:`, err?.message || err);
+      }
+    }
+
+    if (!response && lastError) {
+      throw lastError;
+    }
 
     monthlyAICalls++;
-    const text = response.text || "{}";
-    let parsed = {};
+    const text = response?.text || "{}";
+    let parsed: any = {};
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = { parecerTecnico: text, naoConformidadesProvaveis: [], recomendacoesPlanoAcao: [] };
+      parsed = { 
+        parecerTecnico: text, 
+        riscosIdentificados: [], 
+        recomendacoesGerais: "Manter manutenção preventiva e auditorias periódicas.",
+        recomendacoesPlanoAcao: [] 
+      };
+    }
+
+    // Standardize field names if model used alternate names
+    if (!parsed.riscosIdentificados && parsed.naoConformidadesProvaveis) {
+      parsed.riscosIdentificados = parsed.naoConformidadesProvaveis;
+    }
+    if (!parsed.recomendacoesGerais && Array.isArray(parsed.recomendacoesPlanoAcao)) {
+      parsed.recomendacoesGerais = parsed.recomendacoesPlanoAcao.join('. ');
+    }
+    if (!parsed.nivelRiscoSugerido && parsed.sugestaoHRN?.nivel) {
+      parsed.nivelRiscoSugerido = parsed.sugestaoHRN.nivel;
     }
 
     return res.json({
