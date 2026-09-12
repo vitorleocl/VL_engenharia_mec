@@ -1,6 +1,17 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
+export interface SecaoEspecificaFirestore {
+  titulo: string;
+  conteudoSugeridoIA?: string;
+}
+
+export interface ItemChecklistInicialFirestore {
+  item: string;
+  statusSugeridoIA?: 'Conforme' | 'Não Conforme' | 'Não Aplicável' | 'Pendente de Verificação em Campo';
+  observacaoSugeridaIA?: string;
+}
+
 export interface DocumentoTipoLaudoFirestore {
   id: string;
   codigo?: string;
@@ -11,8 +22,9 @@ export interface DocumentoTipoLaudoFirestore {
   textoBaseApresentacao: string;
   apresentacaoPadrao: string;
   metodologiaPadrao: string;
-  secoesEspecificas: string[];
-  checklistInicial: string[];
+  permitePreenchimentoIA?: boolean;
+  secoesEspecificas: (string | SecaoEspecificaFirestore)[];
+  checklistInicial: (string | ItemChecklistInicialFirestore)[];
   atualizadoEm: string;
 }
 

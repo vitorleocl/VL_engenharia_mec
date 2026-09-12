@@ -189,7 +189,7 @@ export interface EvidenciaFoto {
 export interface TipoLaudoItemChecklist {
   id: string;
   descricao: string;
-  status: 'conforme' | 'nao_conforme' | 'nao_aplicavel';
+  status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente';
   observacao?: string;
   fotoUrl?: string;
 }
@@ -199,6 +199,19 @@ export interface TipoLaudoSecaoPadrao {
   titulo: string;
   ordem: number;
   conteudoHtml?: string;
+}
+
+export type StatusSugeridoIA = 'Conforme' | 'Não Conforme' | 'Não Aplicável' | 'Pendente de Verificação em Campo';
+
+export interface SecaoEspecificaDef {
+  titulo: string;
+  conteudoSugeridoIA?: string;
+}
+
+export interface ItemChecklistDef {
+  item: string;
+  statusSugeridoIA?: StatusSugeridoIA;
+  observacaoSugeridaIA?: string;
 }
 
 export interface TipoLaudoDef {
@@ -214,8 +227,9 @@ export interface TipoLaudoDef {
   temHrn?: boolean;
   hrn?: boolean;
   textoBaseApresentacao?: string;
-  secoesEspecificas?: string[];
-  checklistInicial?: string[];
+  permitePreenchimentoIA?: boolean;
+  secoesEspecificas?: (string | SecaoEspecificaDef)[];
+  checklistInicial?: (string | ItemChecklistDef)[];
 }
 
 export interface SubcategoriaLaudoDef {
@@ -340,6 +354,8 @@ export interface Laudo {
   hrnCalculoGeral?: HRNResult;
   revisoes?: LaudoRevisao[];
   usoIA: { chamadas: number };
+  iniciadoComIA?: boolean;
+  modoCriacao?: 'em_branco' | 'sugestao_ia';
   criadoEm: string;
   atualizadoEm: string;
 }

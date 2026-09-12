@@ -764,6 +764,31 @@ export const LaudoEditorView: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
+      {/* AVISO FIXO: LAUDO INICIADO COM SUGESTÕES DE IA                           */}
+      {/* ========================================================================= */}
+      {laudoState.iniciadoComIA && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/80 shadow-xs flex items-start gap-3.5">
+          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-1.5 text-sm">
+                <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                Preenchimento Assistido por IA
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                Rascunho Preliminar
+              </span>
+            </div>
+            <p className="text-amber-900/90 dark:text-amber-200/90 leading-relaxed font-medium">
+              Este laudo foi iniciado com sugestões geradas por IA. Revise e valide todas as informações antes da emissão final. O conteúdo sugerido não substitui a vistoria técnica presencial.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* CARD DE FOTO DA CAPA DO LAUDO (EQUIPAMENTO / INSTALAÇÃO)                  */}
       {/* ========================================================================= */}
       <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">

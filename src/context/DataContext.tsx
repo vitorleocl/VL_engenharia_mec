@@ -77,7 +77,7 @@ interface DataContextType {
   atualizarCategoriasLaudo: (novas: CategoriaLaudoDef[]) => void;
   gerarNumeroLaudo: (prefixo?: string) => string;
   criarNovoLaudo: (dados: Partial<Laudo> & { tipo: string; clienteId: string; ativoId: string }) => string;
-  criarLaudoPorTaxonomia: (params: { tipoLaudoId: string; clienteId: string; ativoId: string; artNumero?: string; dataInspecao?: string }) => string;
+  criarLaudoPorTaxonomia: (params: { tipoLaudoId: string; clienteId: string; ativoId: string; artNumero?: string; dataInspecao?: string; modoPreenchimento?: 'em_branco' | 'sugestao_ia' }) => string;
   atualizarLaudo: (id: string, dados: Partial<Laudo>) => void;
   finalizarLaudo: (id: string, artNumero: string, assinaturaUrl?: string) => void;
   removerLaudo: (id: string) => void;
@@ -556,13 +556,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clienteId,
     ativoId,
     artNumero = '',
-    dataInspecao = new Date().toISOString().slice(0, 10)
+    dataInspecao = new Date().toISOString().slice(0, 10),
+    modoPreenchimento = 'em_branco',
   }: {
     tipoLaudoId: string;
     clienteId: string;
     ativoId: string;
     artNumero?: string;
     dataInspecao?: string;
+    modoPreenchimento?: 'em_branco' | 'sugestao_ia';
   }): string => {
     let tipoEncontrado: TipoLaudoDef | undefined;
     let categoriaEncontradaId = '';
@@ -586,6 +588,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const prefixo = tipoEncontrado?.codigo || 'LAR';
     const numero = gerarNumeroLaudo(prefixo);
     const id = `lau-${Date.now()}`;
+    const ehModoIA = modoPreenchimento === 'sugestao_ia';
 
     const novo: Laudo = {
       id,
@@ -608,39 +611,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       apresentacao: tipoEncontrado?.apresentacaoPadrao || 'O presente laudo técnico pericial tem por escopo avaliar as condições mecânicas e de segurança do ativo.',
       metodologia: tipoEncontrado?.metodologiaPadrao || 'A metodologia adotada contemplou inspeção visual, ensaios funcionais e checagem de conformidade com as normas vigentes.',
       checklist: (tipoEncontrado?.checklistPadrao && tipoEncontrado.checklistPadrao.length > 0)
-        ? tipoEncontrado.checklistPadrao.map(item => ({ ...item }))
-        : (tipoEncontrado?.checklistInicial || []).map((desc, idx) => ({
-            id: `ck-${idx + 1}`,
-            descricao: desc,
-            status: 'conforme' as const,
-            observacao: 'Conforme requisitos técnicos verificados'
-          })),
+        ? tipoEncontrado.checklistPadrao.map(item => ({
+            ...item,
+            status: ehModoIA ? item.status : ('pendente' as const),
+            observacao: ehModoIA ? item.observacao : ''
+          }))
+        : (tipoEncontrado?.checklistInicial || []).map((itemDef, idx) => {
+            const descricao = typeof itemDef === 'string' ? itemDef : itemDef.item;
+            let status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente' = 'pendente';
+            let observacao = '';
+
+            if (ehModoIA) {
+              if (typeof itemDef === 'object' && itemDef.statusSugeridoIA) {
+                const st = itemDef.statusSugeridoIA;
+                if (st === 'Conforme') status = 'conforme';
+                else if (st === 'Não Conforme') status = 'nao_conforme';
+                else if (st === 'Não Aplicável') status = 'nao_aplicavel';
+                else status = 'pendente';
+
+                observacao = itemDef.observacaoSugeridaIA || (status === 'conforme' ? 'Conforme requisitos técnicos verificados' : 'Pendente de verificação em campo');
+              } else {
+                const precisaTestePresencial = /medi[çc][ãa]o|ensaio|teste|ultrassom|calibra[çc][ãa]o|press[ãa]o|carga|desgaste|hrn|aprecia[çc][ãa]o/i.test(descricao);
+                status = precisaTestePresencial ? 'pendente' : 'conforme';
+                observacao = precisaTestePresencial 
+                  ? 'Pendente de verificação e medição in loco durante a vistoria' 
+                  : 'Conforme verificação documental e identificação física';
+              }
+            } else {
+              status = 'pendente';
+              observacao = '';
+            }
+
+            return {
+              id: `ck-${idx + 1}`,
+              descricao,
+              status,
+              observacao
+            };
+          }),
       tabelaNaoConformidades: [],
-      conclusao: 'Com base nas avaliações e ensaios técnicos realizados, o equipamento encontra-se em conformidade com as exigências normativas aplicáveis, condicionando-se o início ou continuidade das operações à observância do plano de manutenção e eventuais ações corretivas apontadas.',
+      conclusao: ehModoIA 
+        ? 'Com base nas avaliações e ensaios técnicos preliminares realizados, sugere-se a verificação final dos pontos assinalados como pendentes antes da homologação conclusiva das operações.'
+        : '',
       secoes: (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
         ? tipoEncontrado.secoesPadrao.map(s => ({
             id: s.id,
             titulo: s.titulo,
             ordem: s.ordem,
-            conteudoHtml: s.conteudoHtml || '',
+            conteudoHtml: ehModoIA ? (s.conteudoHtml || '') : '',
             itens: [],
             fotos: []
           }))
-        : (tipoEncontrado?.secoesEspecificas || []).map((sec, idx) => ({
-            id: `sec-${idx + 1}`,
-            titulo: sec,
-            ordem: idx + 1,
-            conteudoHtml: '',
-            itens: [],
-            fotos: []
-          })),
+        : (tipoEncontrado?.secoesEspecificas || []).map((sec, idx) => {
+            const titulo = typeof sec === 'string' ? sec : sec.titulo;
+            const conteudoSugerido = typeof sec === 'object' && sec.conteudoSugeridoIA ? sec.conteudoSugeridoIA : '';
+            let conteudoHtml = '';
+            if (ehModoIA && conteudoSugerido) {
+              conteudoHtml = `<p class="leading-relaxed">${conteudoSugerido.replace(/\n\n/g, '</p><p class="leading-relaxed mt-3">').replace(/\n/g, '<br/>')}</p>`;
+            }
+            return {
+              id: `sec-${idx + 1}`,
+              titulo,
+              ordem: idx + 1,
+              conteudoHtml,
+              itens: [],
+              fotos: []
+            };
+          }),
       assinaturaDigital: {
         responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
         responsavelCrea: 'CREA-PE 182229949-0',
         dataHora: new Date().toISOString(),
         hashAutenticidade: `AUT-VL-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
       },
-      usoIA: { chamadas: 0 },
+      usoIA: { chamadas: ehModoIA ? 1 : 0 },
+      iniciadoComIA: ehModoIA,
+      modoCriacao: modoPreenchimento,
       criadoEm: new Date().toISOString(),
       atualizadoEm: new Date().toISOString(),
     };
