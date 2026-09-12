@@ -179,8 +179,11 @@ export interface HRNResult {
 export interface EvidenciaFoto {
   id: string;
   url: string;
-  legenda: string;
-  timestamp: string;
+  legenda?: string;
+  descricao?: string;
+  timestamp?: string;
+  dataHora?: string;
+  autorUid?: string;
 }
 
 export interface TipoLaudoItemChecklist {
@@ -313,6 +316,7 @@ export interface Laudo {
   responsavelNome: string;
   responsavelCrea: string;
   capaFotoUrl?: string;
+  capaFotoLegenda?: string;
   apresentacao?: string;
   metodologia?: string;
   normasReferencia?: string;

@@ -32,7 +32,13 @@ import {
   Layers,
   FileCheck2,
   HelpCircle,
-  X
+  X,
+  Image as ImageIcon,
+  UploadCloud,
+  Paperclip,
+  FileCheck,
+  ExternalLink,
+  ZoomIn
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -135,6 +141,14 @@ export const LaudoEditorView: React.FC = () => {
   // Editing section title inline
   const [editandoSecaoId, setEditandoSecaoId] = useState<string | null>(null);
   const [tituloEditando, setTituloEditando] = useState('');
+
+  // Image upload and ART attachment state
+  const capaFileInputRef = useRef<HTMLInputElement>(null);
+  const secaoFotoInputRef = useRef<HTMLInputElement>(null);
+  const artFileInputRef = useRef<HTMLInputElement>(null);
+  const [legendaNovaFotoSecao, setLegendaNovaFotoSecao] = useState('');
+  const [modalVisualizarImagemUrl, setModalVisualizarImagemUrl] = useState<{ url: string; titulo?: string } | null>(null);
+  const [modalVisualizarArtAberto, setModalVisualizarArtAberto] = useState(false);
 
   // Synchronize initial active section
   useEffect(() => {
@@ -444,6 +458,138 @@ export const LaudoEditorView: React.FC = () => {
     alert('Laudo pericial finalizado com sucesso e ART CREA-PE vinculada com fé pública!');
   };
 
+  // Cover Photo Handlers
+  const handleCapaFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        agendarAutoSave({
+          ...laudoState,
+          capaFotoUrl: base64,
+          capaFotoLegenda: laudoState.capaFotoLegenda || 'Equipamento em Avaliação Pericial',
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoverCapaFoto = () => {
+    agendarAutoSave({
+      ...laudoState,
+      capaFotoUrl: undefined,
+      capaFotoLegenda: undefined,
+    });
+  };
+
+  const handleCapaLegendaChange = (legenda: string) => {
+    agendarAutoSave({
+      ...laudoState,
+      capaFotoLegenda: legenda,
+    });
+  };
+
+  // Section Photo & Evidences Handlers
+  const handleFotoSecaoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !secaoAtiva) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        const novaFoto = {
+          id: `foto-${Date.now()}`,
+          url: base64,
+          descricao: legendaNovaFotoSecao.trim() || `Evidência Fotográfica - ${secaoAtiva.titulo}`,
+          dataHora: new Date().toISOString(),
+          autorUid: currentUser?.uid,
+        };
+
+        const fotosSecao = secaoAtiva.fotos || [];
+        const novasSecoes = laudoState.secoes.map(s => {
+          if (s.id === secaoAtiva.id) {
+            return { ...s, fotos: [...fotosSecao, novaFoto] };
+          }
+          return s;
+        });
+
+        setLegendaNovaFotoSecao('');
+        agendarAutoSave({
+          ...laudoState,
+          secoes: novasSecoes,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleInserirFotoNoTexto = (fotoUrl: string, legenda?: string) => {
+    if (!secaoAtiva) return;
+    const blocoHtml = `<div class="my-4 text-center"><img src="${fotoUrl}" alt="${legenda || 'Evidência Técnica'}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:8px; border:1px solid #cbd5e1; margin:0 auto; display:block;" /><p style="font-size:11px; color:#64748b; font-style:italic; margin-top:6px; font-weight:600;">${legenda || 'Evidência fotográfica pericial'}</p></div><p></p>`;
+    const novoConteudo = (secaoAtiva.conteudoHtml || '') + blocoHtml;
+    const novasSecoes = laudoState.secoes.map(s => {
+      if (s.id === secaoAtiva.id) {
+        return { ...s, conteudoHtml: novoConteudo };
+      }
+      return s;
+    });
+    agendarAutoSave({
+      ...laudoState,
+      secoes: novasSecoes,
+    });
+  };
+
+  const handleRemoverFotoSecao = (fotoId: string) => {
+    if (!secaoAtiva) return;
+    const novasSecoes = laudoState.secoes.map(s => {
+      if (s.id === secaoAtiva.id) {
+        return { ...s, fotos: (s.fotos || []).filter(f => f.id !== fotoId) };
+      }
+      return s;
+    });
+    agendarAutoSave({
+      ...laudoState,
+      secoes: novasSecoes,
+    });
+  };
+
+  // ART Attachment Handlers (PDF or Image)
+  const handleArtArquivoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      const isPdf = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
+      const novoEstado: Laudo = {
+        ...laudoState,
+        artArquivoUrl: base64,
+        artNomeArquivo: file.name,
+        artTipoArquivo: isPdf ? 'pdf' : 'imagem',
+        artDataHomologacao: laudoState.artDataHomologacao || new Date().toISOString(),
+      };
+      agendarAutoSave(novoEstado);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoverArt = () => {
+    agendarAutoSave({
+      ...laudoState,
+      artArquivoUrl: undefined,
+      artNomeArquivo: undefined,
+      artTipoArquivo: undefined,
+    });
+  };
+
   return (
     <div className="space-y-4 pb-12">
       
@@ -615,6 +761,115 @@ export const LaudoEditorView: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* ========================================================================= */}
+      {/* CARD DE FOTO DA CAPA DO LAUDO (EQUIPAMENTO / INSTALAÇÃO)                  */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <input 
+          type="file" 
+          ref={capaFileInputRef} 
+          onChange={handleCapaFotoUpload} 
+          accept="image/*" 
+          className="hidden" 
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-[#1565D8]">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-[#0B1E3D] dark:text-white flex items-center gap-2">
+                Foto Oficial da Capa do Laudo
+                {laudoState.capaFotoUrl ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    Foto Configurada
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    Opcional / Recomendado
+                  </span>
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Esta fotografia do equipamento ou instalação será impressa em destaque na 1ª página (capa oficial) do laudo técnico em PDF.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => capaFileInputRef.current?.click()}
+              className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-[#1565D8] dark:text-blue-400 text-xs font-bold flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 shadow-xs cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>{laudoState.capaFotoUrl ? 'Substituir Foto da Capa' : 'Enviar Foto do Computador / Celular'}</span>
+            </button>
+            {laudoState.capaFotoUrl && (
+              <button
+                type="button"
+                onClick={handleRemoverCapaFoto}
+                className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 border border-transparent hover:border-red-200 cursor-pointer"
+                title="Remover Foto da Capa"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {laudoState.capaFotoUrl ? (
+          <div className="pt-4 flex flex-col sm:flex-row items-start gap-4">
+            <div 
+              className="relative group cursor-pointer shrink-0 rounded-xl overflow-hidden border-2 border-[#1565D8]/40 shadow-sm w-full sm:w-64 h-40 bg-slate-900 flex items-center justify-center"
+              onClick={() => setModalVisualizarImagemUrl({ url: laudoState.capaFotoUrl!, titulo: laudoState.capaFotoLegenda || 'Foto da Capa do Laudo' })}
+            >
+              <img 
+                src={laudoState.capaFotoUrl} 
+                alt="Capa do Laudo" 
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                <ZoomIn className="w-4 h-4" />
+                <span>Ampliar Imagem</span>
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-2 text-xs w-full">
+              <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                Legenda Técnica da Fotografia de Capa:
+              </label>
+              <input
+                type="text"
+                value={laudoState.capaFotoLegenda || ''}
+                onChange={(e) => handleCapaLegendaChange(e.target.value)}
+                placeholder="Ex: Foto frontal do equipamento auditado em suas instalações operacionais"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+              />
+              <p className="text-[11px] text-slate-500">
+                A foto da capa confere alto padrão estético de engenharia diagnóstica e autenticidade ao laudo pericial oficial.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div 
+            onClick={() => capaFileInputRef.current?.click()}
+            className="mt-3 p-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 bg-slate-50/50 dark:bg-slate-900/30 text-center cursor-pointer transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] flex items-center justify-center mx-auto mb-2">
+              <Camera className="w-6 h-6" />
+            </div>
+            <p className="font-bold text-xs text-slate-700 dark:text-slate-200">
+              Nenhuma foto de capa vinculada a este laudo
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Clique aqui ou use o botão acima para carregar a imagem do equipamento inspecionado (PNG, JPG, WEBP).
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -820,6 +1075,104 @@ export const LaudoEditorView: React.FC = () => {
                 />
               </div>
 
+              {/* Evidências Fotográficas & Fotos desta Seção */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <input
+                  type="file"
+                  ref={secaoFotoInputRef}
+                  onChange={handleFotoSecaoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-emerald-600" />
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Evidências Fotográficas desta Seção ({secaoAtiva.fotos?.length || 0})
+                    </h4>
+                  </div>
+
+                  <span className="text-[11px] text-slate-400">
+                    Insira fotos com legenda técnica e adicione-as ao texto com um clique
+                  </span>
+                </div>
+
+                {/* Upload Form for Section Photo */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <input
+                    type="text"
+                    value={legendaNovaFotoSecao}
+                    onChange={(e) => setLegendaNovaFotoSecao(e.target.value)}
+                    placeholder="Legenda da foto (Ex: Foto 1: Desgaste abrasivo no dente da engrenagem)"
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => secaoFotoInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload Foto</span>
+                  </button>
+                </div>
+
+                {/* Photos Grid for this Section */}
+                {secaoAtiva.fotos && secaoAtiva.fotos.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                    {secaoAtiva.fotos.map((foto) => (
+                      <div 
+                        key={foto.id}
+                        className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2 flex flex-col justify-between"
+                      >
+                        <div 
+                          className="relative group rounded-lg overflow-hidden h-32 bg-slate-100 dark:bg-slate-800 cursor-pointer border border-slate-200 dark:border-slate-700"
+                          onClick={() => setModalVisualizarImagemUrl({ url: foto.url, titulo: foto.descricao })}
+                        >
+                          <img 
+                            src={foto.url} 
+                            alt={foto.descricao || 'Evidência'} 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold gap-1">
+                            <ZoomIn className="w-3.5 h-3.5" />
+                            <span>Ver Foto</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">
+                          {foto.descricao || 'Evidência sem legenda'}
+                        </p>
+
+                        <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => handleInserirFotoNoTexto(foto.url, foto.descricao)}
+                            className="flex-1 py-1 px-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-[#1565D8] dark:text-blue-300 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                            title="Inserir esta foto no corpo de texto do laudo"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Inserir no Texto</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverFotoSecao(foto.id)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                            title="Excluir Evidência"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">
+                    Nenhuma foto adicional cadastrada nesta seção. Use o formulário acima ou a barra de ferramentas do editor para adicionar fotos.
+                  </p>
+                )}
+              </div>
+
             </div>
           ) : (
             <div className="bg-white dark:bg-[#0B1324] p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-2">
@@ -830,6 +1183,272 @@ export const LaudoEditorView: React.FC = () => {
         </div>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* SEÇÃO OFICIAL DE ANEXO DA ART (CREA-PE)                                   */}
+      {/* Suporta upload de arquivo em PDF ou Imagem                               */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <input
+          type="file"
+          ref={artFileInputRef}
+          onChange={handleArtArquivoUpload}
+          accept="image/*,application/pdf"
+          className="hidden"
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-base text-[#0B1E3D] dark:text-white">
+                  Anexo Oficial da ART (Anotação de Responsabilidade Técnica — CREA-PE)
+                </h3>
+                {laudoState.artArquivoUrl ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    ART Anexada
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    Obrigatório para Finalização
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Anexe o arquivo oficial emitido pelo CREA-PE. O sistema aceita comprovantes tanto em formato <strong>PDF</strong> quanto em <strong>Imagem (PNG/JPG)</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => artFileInputRef.current?.click()}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>{laudoState.artArquivoUrl ? 'Substituir Arquivo da ART' : 'Anexar ART (PDF ou Imagem)'}</span>
+            </button>
+            {laudoState.artArquivoUrl && (
+              <button
+                type="button"
+                onClick={handleRemoverArt}
+                className="p-2 rounded-xl hover:bg-red-50 text-red-600 border border-transparent hover:border-red-200 cursor-pointer"
+                title="Remover Anexo da ART"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {laudoState.artArquivoUrl ? (
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              
+              {/* File details and visual representation */}
+              <div className="md:col-span-4 flex items-center gap-3">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
+                  laudoState.artTipoArquivo === 'pdf'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-200'
+                    : 'bg-blue-100 text-[#1565D8] dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200'
+                }`}>
+                  {laudoState.artTipoArquivo === 'pdf' ? (
+                    <div className="text-center">
+                      <FileText className="w-6 h-6 mx-auto mb-0.5" />
+                      <span className="text-[9px] uppercase font-black">PDF</span>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <ImageIcon className="w-6 h-6 mx-auto mb-0.5" />
+                      <span className="text-[9px] uppercase font-black">IMG</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase font-mono tracking-wider ${
+                      laudoState.artTipoArquivo === 'pdf'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-blue-600 text-white'
+                    }`}>
+                      {laudoState.artTipoArquivo === 'pdf' ? 'Documento PDF Oficial' : 'Imagem Técnica da ART'}
+                    </span>
+                  </div>
+                  <strong className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block mt-1">
+                    {laudoState.artNomeArquivo || 'art-oficial-crea.pdf'}
+                  </strong>
+                  <span className="text-[10px] text-slate-500 block">
+                    Homologado em: {laudoState.artDataHomologacao ? new Date(laudoState.artDataHomologacao).toLocaleDateString('pt-BR') : 'Data atual'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Number and Date Fields */}
+              <div className="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Nº da ART CREA-PE:
+                  </label>
+                  <input
+                    type="text"
+                    value={laudoState.artNumero || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setArtNumeroInput(val);
+                      agendarAutoSave({ ...laudoState, artNumero: val });
+                    }}
+                    placeholder="Ex: PE20261822299"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold text-[#0B1E3D] dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Data de Registro:
+                  </label>
+                  <input
+                    type="date"
+                    value={laudoState.artDataHomologacao ? laudoState.artDataHomologacao.split('T')[0] : ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      agendarAutoSave({ ...laudoState, artDataHomologacao: val });
+                    }}
+                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              {/* Actions & Preview Button */}
+              <div className="md:col-span-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (laudoState.artTipoArquivo === 'imagem') {
+                      setModalVisualizarImagemUrl({ url: laudoState.artArquivoUrl!, titulo: `ART CREA-PE: ${laudoState.artNumero || 'Documento Oficial'}` });
+                    } else {
+                      setModalVisualizarArtAberto(true);
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 shadow-xs cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5 text-[#1565D8]" />
+                  <span>Visualizar ART</span>
+                </button>
+                <a
+                  href={laudoState.artArquivoUrl}
+                  download={laudoState.artNomeArquivo || 'ART_CREA_PE.pdf'}
+                  className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 cursor-pointer"
+                  title="Baixar Arquivo da ART"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              </div>
+
+            </div>
+
+            {/* If ART is an image, show small thumbnail */}
+            {laudoState.artTipoArquivo === 'imagem' && (
+              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 flex items-center gap-3">
+                <img
+                  src={laudoState.artArquivoUrl}
+                  alt="Miniatura da ART"
+                  className="w-20 h-14 object-cover rounded-lg border border-slate-300 dark:border-slate-700 shadow-xs cursor-pointer hover:opacity-90"
+                  onClick={() => setModalVisualizarImagemUrl({ url: laudoState.artArquivoUrl!, titulo: `ART CREA-PE: ${laudoState.artNumero || 'Oficial'}` })}
+                />
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Esta imagem da ART será impressa em página de anexo em tamanho integral na exportação em PDF do laudo técnico.
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            onClick={() => artFileInputRef.current?.click()}
+            className="p-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-900/30 text-center cursor-pointer transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-200 dark:border-emerald-800">
+              <Paperclip className="w-6 h-6" />
+            </div>
+            <p className="font-bold text-xs text-slate-700 dark:text-slate-200">
+              Clique aqui para anexar o arquivo da ART (PDF ou Imagem)
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Selecione o arquivo baixado do portal do CREA-PE ou tire uma foto legível da guia de Anotação de Responsabilidade Técnica.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL: VISUALIZAR IMAGEM EM ALTA RESOLUÇÃO */}
+      {modalVisualizarImagemUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <span className="font-bold text-xs text-slate-800 dark:text-white truncate">
+                {modalVisualizarImagemUrl.titulo || 'Visualização de Imagem'}
+              </span>
+              <button
+                onClick={() => setModalVisualizarImagemUrl(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-slate-950">
+              <img
+                src={modalVisualizarImagemUrl.url}
+                alt="Visualização"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VISUALIZAR ART (PDF EMBED) */}
+      {modalVisualizarArtAberto && laudoState.artArquivoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-red-600" />
+                <span className="font-bold text-xs text-slate-800 dark:text-white">
+                  Documento Anexo da ART: {laudoState.artNomeArquivo || 'ART CREA-PE'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={laudoState.artArquivoUrl}
+                  download={laudoState.artNomeArquivo || 'ART_CREA_PE.pdf'}
+                  className="px-3 py-1 rounded-lg bg-blue-50 text-[#1565D8] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Baixar Arquivo</span>
+                </a>
+                <button
+                  onClick={() => setModalVisualizarArtAberto(false)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-2">
+              <iframe
+                src={laudoState.artArquivoUrl}
+                title="ART PDF Preview"
+                className="w-full h-full rounded-lg border border-slate-200 dark:border-slate-800"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: ADICIONAR NOVA SEÇÃO                                              */}
