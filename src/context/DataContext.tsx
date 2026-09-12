@@ -23,7 +23,11 @@ import {
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
-import { sincronizarFirestoreNR12eNR13, sincronizarFirestoreVeicular } from '../lib/firestoreTaxonomia';
+import { 
+  sincronizarFirestoreNR12eNR13, 
+  sincronizarFirestoreVeicular,
+  sincronizarFirestoreIncendio
+} from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -118,9 +122,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
   const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => {
     const loaded = loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA);
+    const cat1Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-1');
     const cat2Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-2');
     const cat4Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-4');
     return loaded.map((cat: CategoriaLaudoDef) => {
+      if (cat.id === 'cat-1' && cat1Atualizada) return cat1Atualizada;
       if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
       if (cat.id === 'cat-4' && cat4Atualizada) return cat4Atualizada;
       return cat;
@@ -215,7 +221,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
 
-  // Sincronização de documentos Firestore das categorias de laudo NR-12/NR-13 e Engenharia Veicular
+  // Sincronização de documentos Firestore das categorias de laudo (NR-12/NR-13, Veicular, Incêndio)
   useEffect(() => {
     sincronizarFirestoreNR12eNR13().then(res => {
       if (res.sucesso) {
@@ -231,6 +237,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Veicular] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreIncendio().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Incêndio] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Incêndio] Sincronização em segundo plano:', err);
     });
   }, []);
 

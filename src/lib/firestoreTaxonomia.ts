@@ -574,3 +574,311 @@ export async function sincronizarFirestoreNR12eNR13(): Promise<{
     };
   }
 }
+
+/**
+ * Definições completas dos 6 tipos de laudo da categoria
+ * Segurança Contra Incêndio e Pânico
+ */
+export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo de Análise/Levantamento Pré-Projeto PPCI
+  'laudo-de-analise-levantamento-pre-projeto-ppci': {
+    id: 'laudo-de-analise-levantamento-pre-projeto-ppci',
+    codigo: 'PPCI-PRE',
+    nome: 'Laudo de Análise/Levantamento Pré-Projeto PPCI',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 9077, NBR 13434, Instruções Técnicas do CBMPE',
+    textoBaseApresentacao: 'O presente laudo técnico tem por finalidade realizar o levantamento físico e cadastral das instalações prediais e industriais para subsidiar a elaboração do Projeto de Proteção e Combate a Incêndio e Pânico (PPCI).',
+    apresentacaoPadrao: 'O presente laudo técnico tem por finalidade realizar o levantamento físico e cadastral das instalações prediais e industriais para subsidiar a elaboração do Projeto de Proteção e Combate a Incêndio e Pânico (PPCI).',
+    metodologiaPadrao: 'Vistoria minuciosa in loco para identificação das características arquitetônicas, ocupação, carga de incêndio preliminar e definição dos sistemas de segurança obrigatórios.',
+    secoesEspecificas: [
+      'Levantamento Arquitetônico (plantas, áreas por pavimento, pé-direito, número de pavimentos, altura da edificação)',
+      'Classificação da Edificação (ocupação, grupo/divisão, carga de incêndio de referência) conforme a Instrução Técnica do Corpo de Bombeiros do estado',
+      'Verificação de Isolamento de Risco e Acesso de Viaturas (afastamento entre edificações, dimensões da via de acesso)',
+      'Diagnóstico de Sistemas Preventivos Existentes (hidrantes, extintores, alarme, iluminação de emergência, SPDA, compartimentação)',
+      'Levantamento do Reservatório de Água para Incêndio (existência, capacidade, exclusividade)',
+      'Recomendações Preliminares e Memorial Descritivo para Elaboração do Projeto de PPCI'
+    ],
+    checklistInicial: [
+      'Planta baixa atualizada e compatível com a edificação real',
+      'Área construída por pavimento medida/conferida',
+      'Altura da edificação determinada',
+      'Número de pavimentos e uso de cada um identificado',
+      'Classificação de ocupação (Grupo/Divisão) definida conforme IT estadual',
+      'Carga de incêndio de referência da ocupação identificada',
+      'Isolamento de risco (afastamento entre edificações) avaliado',
+      'Acesso de viaturas do Corpo de Bombeiros verificado (largura, raio de giro, resistência do piso)',
+      'Reservatório de água para incêndio identificado (capacidade e exclusividade)',
+      'Sistema de hidrantes existente avaliado (se houver)',
+      'Sistema de alarme/detecção existente avaliado (se houver)',
+      'Saídas de emergência mapeadas preliminarmente',
+      'SPDA (sistema de proteção contra descargas atmosféricas) avaliado',
+      'Compartimentação horizontal/vertical avaliada',
+      'Registro fotográfico do estado atual da edificação'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Dimensionamento de Saídas de Emergência e Carga de Incêndio
+  'laudo-de-dimensionamento-de-saidas-de-emergencia-e-carga-de-incendio': {
+    id: 'laudo-de-dimensionamento-de-saidas-de-emergencia-e-carga-de-incendio',
+    codigo: 'PPCI-SAIDAS',
+    nome: 'Laudo de Dimensionamento de Saídas de Emergência e Carga de Incêndio',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 9077, NBR 14432, ITs CBMPE',
+    textoBaseApresentacao: 'Laudo técnico quantitativo para determinação da carga de incêndio específica em edificações comerciais/industriais e cálculo do dimensionamento das saídas de emergência e portas corta-fogo.',
+    apresentacaoPadrao: 'Laudo técnico quantitativo para determinação da carga de incêndio específica em edificações comerciais/industriais e cálculo do dimensionamento das saídas de emergência e portas corta-fogo.',
+    metodologiaPadrao: 'Inventário quantitativo e qualitativo dos materiais combustíveis presentes por compartimento, cálculo estequiométrico em MJ/m² e validação das portas de escape.',
+    secoesEspecificas: [
+      'Cálculo de População (Lotação) por Pavimento e Uso, conforme IT estadual e ABNT NBR 9077',
+      'Dimensionamento da Largura das Saídas (Unidades de Passagem) e Número de Saídas Exigidas',
+      'Verificação da Distância Máxima a Percorrer até a Saída',
+      'Cálculo da Carga de Incêndio por Ocupação (MJ/m²)',
+      'Dimensionamento de Escadas de Emergência (largura, corrimãos, sinalização, portas corta-fogo)',
+      'Estimativa do Tempo de Escoamento da População'
+    ],
+    checklistInicial: [
+      'População calculada por pavimento conforme uso/ocupação',
+      'Largura das saídas calculada em unidades de passagem',
+      'Número de saídas exigidas comparado ao número existente',
+      'Distância máxima a percorrer verificada dentro do limite normativo',
+      'Carga de incêndio calculada por ocupação (MJ/m²)',
+      'Escadas de emergência dimensionadas (largura mínima, corrimãos)',
+      'Portas corta-fogo dimensionadas e localizadas corretamente',
+      'Sinalização de rota de fuga fotoluminescente especificada',
+      'Tempo de escoamento estimado calculado',
+      'Compatibilidade do dimensionamento com o uso real da edificação verificada'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Vistoria e Conformidade para AVCB
+  'laudo-de-vistoria-e-conformidade-para-avcb': {
+    id: 'laudo-de-vistoria-e-conformidade-para-avcb',
+    codigo: 'AVCB-CONF',
+    nome: 'Laudo de Vistoria e Conformidade para AVCB',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Legislação do Corpo de Bombeiros Militar de Pernambuco (COBOM/CBMPE)',
+    textoBaseApresentacao: 'Laudo conclusivo de atesto das condições de funcionamento e conformidade das medidas ativas e passivas de segurança contra incêndio para fins de obtenção/renovação do Auto de Vistoria do Corpo de Bombeiros (AVCB).',
+    apresentacaoPadrao: 'Laudo conclusivo de atesto das condições de funcionamento e conformidade das medidas ativas e passivas de segurança contra incêndio para fins de obtenção/renovação do Auto de Vistoria do Corpo de Bombeiros (AVCB).',
+    metodologiaPadrao: 'Inspeção física e ensaios práticos nos sistemas de hidrantes, alarmes, iluminação de emergência, sinalização e extintores.',
+    secoesEspecificas: [
+      'Vistoria do Sistema de Extintores (tipo, carga, validade, distância de caminhamento, sinalização)',
+      'Vistoria do Sistema de Hidrantes (pressão, vazão, mangueiras, chave storz, esguicho, reservatório e bomba de incêndio)',
+      'Vistoria do Sistema de Chuveiros Automáticos/Sprinklers (quando exigido — bombas, reservatório, válvulas de governo)',
+      'Vistoria do Sistema de Detecção e Alarme de Incêndio (central, acionadores manuais, sirenes, detectores)',
+      'Vistoria de Iluminação de Emergência e Sinalização de Segurança',
+      'Vistoria do SPDA (Sistema de Proteção Contra Descargas Atmosféricas)',
+      'Vistoria de Saídas de Emergência, Portas Corta-Fogo e Compartimentação',
+      'Verificação da Brigada de Incêndio e Plano de Emergência',
+      'Relação de Pendências e Prazo de Regularização para Protocolo Junto ao Corpo de Bombeiros'
+    ],
+    checklistInicial: [
+      'Extintores com tipo/carga adequados ao risco, validade em dia e sinalizados',
+      'Distância de caminhamento até o extintor dentro do limite normativo',
+      'Hidrantes testados (pressão e vazão no ponto mais desfavorável)',
+      'Mangueiras, esguicho e chave storz conferidos',
+      'Reservatório de incêndio com nível adequado',
+      'Bomba de incêndio testada (partida automática e pressão nominal)',
+      'Sprinklers inspecionados visualmente (obstrução, corrosão, cobertura), quando exigidos',
+      'Central de alarme testada (todos os laços)',
+      'Acionadores manuais testados',
+      'Detectores de fumaça/calor testados',
+      'Sirenes/estrobos testados quanto a audibilidade e visibilidade',
+      'Iluminação de emergência testada (autonomia mínima conforme norma)',
+      'Sinalização de emergência fotoluminescente conferida',
+      'SPDA inspecionado visualmente (continuidade elétrica, aterramento)',
+      'Portas corta-fogo testadas (fechamento automático, barra antipânico)',
+      'Saídas de emergência desobstruídas e sinalizadas',
+      'Compartimentação horizontal/vertical verificada',
+      'Escada de emergência pressurizada testada, quando exigida',
+      'Brigada de incêndio treinada e com certificado válido',
+      'Plano de emergência elaborado e disponível no local',
+      'Relação de pendências elaborada com prazo de regularização'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 4. Laudo Técnico Simplificado para CLCB
+  'laudo-tecnico-simplificado-para-clcb': {
+    id: 'laudo-tecnico-simplificado-para-clcb',
+    codigo: 'CLCB-SIMP',
+    nome: 'Laudo Técnico Simplificado para CLCB',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Normas Técnicas CBMPE para Edificações de Baixo Risco',
+    textoBaseApresentacao: 'Laudo de responsabilidade técnica para regularização simplificada de imóveis com Certificado de Licença do Corpo de Bombeiros (CLCB).',
+    apresentacaoPadrao: 'Laudo de responsabilidade técnica para regularização simplificada de imóveis com Certificado de Licença do Corpo de Bombeiros (CLCB).',
+    metodologiaPadrao: 'Checklist expedito de itens de segurança elementares (extintores, sinalização básica e iluminação).',
+    secoesEspecificas: [
+      'Verificação Simplificada de Extintores (tipo, quantidade, validade)',
+      'Verificação de Saída de Emergência Única (sinalização e desobstrução)',
+      'Verificação Visual da Instalação Elétrica',
+      'Verificação de Lotação/Área Compatível com o Uso',
+      'Enquadramento como Baixo Risco ou Microempresa conforme IT estadual'
+    ],
+    checklistInicial: [
+      'Extintor adequado à classe de risco (A/B/C) presente',
+      'Quantidade de extintores compatível com a área do estabelecimento',
+      'Extintor dentro da validade e sinalizado',
+      'Saída de emergência sinalizada e desobstruída',
+      'Instalação elétrica aparentemente regular (sem fios expostos)',
+      'Quadro elétrico identificado (disjuntores nomeados)',
+      'Lotação do estabelecimento compatível com a área',
+      'Iluminação de emergência básica presente, quando exigida',
+      'Enquadramento em baixo risco/microempresa confirmado conforme IT aplicável'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 5. Laudo de Comissionamento de Sistemas de Incêndio
+  'laudo-de-comissionamento-de-sistemas-de-incendio': {
+    id: 'laudo-de-comissionamento-de-sistemas-de-incendio',
+    codigo: 'COMIS-INC',
+    nome: 'Laudo de Comissionamento de Sistemas de Incêndio',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 10897 (Sprinklers), NBR 13714 (Hidrantes), NBR 17240 (Alarme)',
+    textoBaseApresentacao: 'Auditoria técnica de entrega e recebimento de obra mecânica de sistemas de proteção contra incêndio.',
+    apresentacaoPadrao: 'Auditoria técnica de entrega e recebimento de obra mecânica de sistemas de proteção contra incêndio.',
+    metodologiaPadrao: 'Ensaios hidrostáticos em tubulações, testes de fluxo e vazão em bombas principais e jockey, e teste de disparo de bicos de sprinklers.',
+    secoesEspecificas: [
+      'Teste de Vazão e Pressão dos Hidrantes no Ponto Mais Desfavorável',
+      'Teste da Bomba de Incêndio (partida automática, pressão nominal, tempo de resposta)',
+      'Inspeção e Teste dos Sprinklers (cobertura, obstrução, corrosão)',
+      'Teste da Central de Alarme (todos os laços, acionadores manuais, detectores automáticos)',
+      'Teste de Sirenes e Sinalizadores Visuais (audibilidade e visibilidade)',
+      'Teste de Autonomia e Luminância da Iluminação de Emergência',
+      'Ficha de Comissionamento com Resultados Registrados e Assinatura do Responsável Técnico'
+    ],
+    checklistInicial: [
+      'Teste de vazão e pressão realizado no hidrante mais desfavorável',
+      'Bomba de incêndio testada (partida automática e pressão nominal)',
+      'Reservatório de incêndio com nível conferido antes do teste',
+      'Sprinklers inspecionados visualmente (obstrução, corrosão, cobertura)',
+      'Central de alarme testada em todos os laços',
+      'Acionadores manuais testados individualmente',
+      'Detectores de fumaça/calor testados',
+      'Sirenes testadas quanto à audibilidade',
+      'Sinalizadores visuais (estrobo) testados quanto à visibilidade',
+      'Iluminação de emergência testada quanto à autonomia mínima',
+      'Luminância da iluminação de emergência medida',
+      'Ficha de comissionamento preenchida e assinada pelo responsável técnico'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 6. Laudo de Estanqueidade de Rede de Gás (GLP/GN)
+  'laudo-de-estanqueidade-de-rede-de-gas-glp-gn': {
+    id: 'laudo-de-estanqueidade-de-rede-de-gas-glp-gn',
+    codigo: 'GAS-ESTANQ',
+    nome: 'Laudo de Estanqueidade de Rede de Gás (GLP/GN)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 15526, NBR 15358 e IT CBMPE',
+    textoBaseApresentacao: 'Laudo pericial e ensaio de estanqueidade pneumático para comprovação da integridade e ausência de vazamentos em tubulações de gás combustível.',
+    apresentacaoPadrao: 'Laudo pericial e ensaio de estanqueidade pneumático para comprovação da integridade e ausência de vazamentos em tubulações de gás combustível.',
+    metodologiaPadrao: 'Pressurização da linha com gás inerte (nitrogênio), aferição em manômetro calibrado e teste com solução formadora de bolhas nas conexões.',
+    secoesEspecificas: [
+      'Identificação da Instalação (tipo de gás, capacidade da central, layout da rede)',
+      'Metodologia do Teste de Estanqueidade (pressurização com ar/nitrogênio, pressão de teste, tempo de estabilização)',
+      'Verificação de Conexões, Válvulas e Regulador de Pressão',
+      'Verificação da Ventilação do Abrigo/Central de Gás',
+      'Verificação de Sinalização e Proteção Contra Impacto de Veículos'
+    ],
+    checklistInicial: [
+      'Central de gás identificada e sinalizada ("Gás Inflamável")',
+      'Pressão de teste aplicada conforme norma aplicável',
+      'Tempo de estabilização respeitado',
+      'Ausência de queda de pressão confirmada (estanqueidade aprovada)',
+      'Conexões e válvulas inspecionadas visualmente (ausência de vazamento/corrosão)',
+      'Regulador de pressão conferido e dentro do prazo de manutenção',
+      'Ventilação do abrigo/central de gás avaliada como adequada',
+      'Proteção contra impacto de veículos verificada, quando aplicável',
+      'Certificado de calibração do manômetro utilizado no teste anexado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+export const ALIASES_TIPOS_INCENDIO: Record<string, string> = {
+  'laudo-ppci-pre': 'laudo-de-analise-levantamento-pre-projeto-ppci',
+  'laudo-dim-saidas': 'laudo-de-dimensionamento-de-saidas-de-emergencia-e-carga-de-incendio',
+  'laudo-avcb': 'laudo-de-vistoria-e-conformidade-para-avcb',
+  'laudo-clcb': 'laudo-tecnico-simplificado-para-clcb',
+  'laudo-comissionamento-incendio': 'laudo-de-comissionamento-de-sistemas-de-incendio',
+  'laudo-estanqueidade-gas': 'laudo-de-estanqueidade-de-rede-de-gas-glp-gn'
+};
+
+/**
+ * Persiste ou atualiza os 6 documentos no Firestore nas rotas:
+ * `categoriasLaudo/seguranca-contra-incendio-e-panico/tipos/{tipo}`
+ * e também `categoriasLaudo/segurança-contra-incêndio-e-pânico/tipos/{tipo}`
+ */
+export async function sincronizarFirestoreIncendio(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'seguranca-contra-incendio-e-panico',
+    'segurança-contra-incêndio-e-pânico'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Segurança Contra Incêndio e Pânico',
+        icone: 'Flame',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_INCENDIO_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também no ID curto / alias se existir correspondência
+        const shortAlias = Object.keys(ALIASES_TIPOS_INCENDIO).find(k => ALIASES_TIPOS_INCENDIO[k] === tipoKey);
+        if (shortAlias) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de incêndio sincronizados nas coleções Firestore categoriasLaudo/seguranca-contra-incendio-e-panico/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de incêndio com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
