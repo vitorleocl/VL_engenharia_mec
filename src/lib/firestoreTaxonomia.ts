@@ -2060,6 +2060,255 @@ export async function sincronizarFirestoreTubulacoesProcesso(): Promise<{
   }
 }
 
+/**
+ * Definições completas dos 3 tipos de laudo da categoria
+ * "Perícias Judiciais/Avaliação de Bens" (Perícias Mecânicas Judicial e Extrajudicial)
+ */
+export const TIPOS_PERICIAS_AVALIACAO_BENS_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)
+  'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis': {
+    id: 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+    codigo: 'PER-RCA',
+    nome: 'Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ASM Handbook Vol. 11 (Failure Analysis and Prevention), ABNT NBR ISO 9001',
+    textoBaseApresentacao: 'Investigação pericial forense para determinação da causa-raiz de quebra catastrófica de eixos, engrenagens, rolamentos e motores industriais.',
+    apresentacaoPadrao: 'Investigação pericial forense para determinação da causa-raiz de quebra catastrófica de eixos, engrenagens, rolamentos e motores industriais.',
+    metodologiaPadrao: 'Análise fractográfica das marcas de praia (fadiga), cavidades de inclusão, sobrecarga mecânica e histórico operacional de lubrificação.',
+    secoesEspecificas: [
+      'Identificação do Componente Falhado (tipo, material, fabricante, função no conjunto, histórico operacional)',
+      'Levantamento de Dados e Contexto do Evento (condições operacionais no momento da falha, histórico de manutenção, tempo de uso)',
+      'Exame Macroscópico da Superfície de Fratura (aspecto visual, origem da fratura, direção de propagação)',
+      'Exame Microscópico e Ensaios Complementares (fractografia, metalografia, dureza, composição química, quando aplicável)',
+      'Análise de Mecanismo de Falha (fadiga, fratura frágil/dúctil, corrosão sob tensão, sobrecarga, desgaste, fluência)',
+      'Análise de Condições de Projeto e Operação (dimensionamento, especificação de material, condições de uso vs. projeto)',
+      'Determinação da Causa-Raiz (técnica de árvore de causas / Ishikawa, correlação entre evidências e mecanismo identificado)',
+      'Conclusão Pericial e Recomendações (medidas corretivas e preventivas)'
+    ],
+    checklistInicial: [
+      'Componente falhado identificado (tipo, material, fabricante/especificação)',
+      'Função do componente no conjunto/sistema descrita',
+      'Histórico operacional e de manutenção levantado',
+      'Condições operacionais no momento do evento levantadas (carga, velocidade, temperatura)',
+      'Registro fotográfico da peça fraturada realizado antes de qualquer manuseio',
+      'Superfície de fratura preservada sem limpeza que comprometa a análise',
+      'Ponto de origem da fratura identificado macroscopicamente',
+      'Direção de propagação da trinca/fratura determinada',
+      'Aspecto da superfície de fratura classificado (dúctil, frágil, fadiga — marcas de praia, etc.)',
+      'Exame microscópico/fractográfico realizado, quando necessário',
+      'Ensaio de dureza realizado, quando aplicável',
+      'Análise de composição química realizada, quando aplicável (conformidade com material especificado)',
+      'Presença de descontinuidades prévias (inclusões, porosidade, defeitos de fabricação) avaliada',
+      'Mecanismo de falha identificado e fundamentado nas evidências',
+      'Comparação entre condição de projeto e condição real de operação realizada',
+      'Sobrecarga, uso indevido ou desvio de manutenção avaliados como fatores contribuintes',
+      'Causa-raiz determinada e correlacionada com as evidências técnicas',
+      'Concausas (quando existentes) identificadas e hierarquizadas',
+      'Recomendações técnicas corretivas e preventivas apresentadas',
+      'Registro fotográfico completo (macro e micro) anexado ao laudo'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Incêndio/Explosão por Origem Mecânica ou Térmica
+  'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica': {
+    id: 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+    codigo: 'PER-INC',
+    nome: 'Laudo de Incêndio/Explosão por Origem Mecânica ou Térmica',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'NFPA 921 (Guide for Fire and Explosion Investigations), ABNT NBR 13771',
+    textoBaseApresentacao: 'Perícia para identificação do ponto de ignição e causa mecânica de incêndio em máquinas, salas de máquinas ou veículos.',
+    apresentacaoPadrao: 'Perícia para identificação do ponto de ignição e causa mecânica de incêndio em máquinas, salas de máquinas ou veículos.',
+    metodologiaPadrao: 'Exame de atrito metal-metal, superaquecimento de mancais, vazamento de fluido inflamável sob pressão sobre superfícies quentes.',
+    secoesEspecificas: [
+      'Identificação do Local e Contexto do Sinistro (edificação/equipamento, data/hora, extensão do dano)',
+      'Preservação e Documentação da Cena (registro fotográfico, croqui, cadeia de custódia de evidências)',
+      'Determinação da Área de Origem (padrões de queima, direção de propagação, V-patterns)',
+      'Determinação do Ponto de Ignição (análise de calcinação, carbonização, fusão de materiais)',
+      'Identificação da Fonte de Ignição (elétrica, mecânica — atrito/superaquecimento, térmica)',
+      'Identificação do Primeiro Material Ignizado e Sequência de Propagação',
+      'Exclusão de Causas Alternativas (metodologia de eliminação conforme NFPA 921)',
+      'Conclusão Pericial sobre a Causa e Origem do Incêndio/Explosão'
+    ],
+    checklistInicial: [
+      'Local do sinistro identificado e delimitado',
+      'Data, hora e extensão do dano registradas',
+      'Cena preservada e cadeia de custódia das evidências documentada',
+      'Registro fotográfico sistemático realizado (visão geral e detalhes)',
+      'Croqui/planta do local com indicação de pontos relevantes elaborado',
+      'Padrões de queima (V-patterns, calcinação de madeira, deformação de materiais) mapeados',
+      'Direção de propagação do fogo determinada',
+      'Área de origem delimitada com base nos padrões físicos',
+      'Ponto de ignição especificado dentro da área de origem',
+      'Materiais na área de origem identificados e examinados',
+      'Fonte de ignição classificada (elétrica, mecânica por atrito/superaquecimento, térmica, outra)',
+      'Evidências de falha elétrica (curto-circuito, arco) avaliadas, quando aplicável',
+      'Evidências de falha mecânica (superaquecimento por atrito, rolamento, lubrificação deficiente) avaliadas, quando aplicável',
+      'Primeiro material ignizado identificado',
+      'Sequência de propagação reconstituída',
+      'Hipóteses alternativas de causa levantadas e sistematicamente excluídas',
+      'Metodologia de investigação referenciada (NFPA 921 ou equivalente)',
+      'Conclusão pericial fundamentada sobre origem e causa apresentada',
+      'Recomendações de prevenção registradas, quando aplicável'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Avaliação do Estado de Conservação e Valoração de Ativos (ABNT NBR 14653-5)
+  'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5': {
+    id: 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+    codigo: 'PER-VALOR',
+    nome: 'Laudo de Avaliação do Estado de Conservação e Valoração de Ativos (ABNT NBR 14653-5)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 14653-5 (Avaliação de bens - Máquinas, equipamentos, instalações e bens industriais)',
+    textoBaseApresentacao: 'Avaliação patrimonial pericial com determinação do valor de mercado, valor de liquidação forçada e depreciação física de máquinas e frotas.',
+    apresentacaoPadrao: 'Avaliação patrimonial pericial com determinação do valor de mercado, valor de liquidação forçada e depreciação física de máquinas e frotas.',
+    metodologiaPadrao: 'Método comparativo direto de dados de mercado conjugado ao método do custo de reposição depreciado (Critério de Heidecke).',
+    secoesEspecificas: [
+      'Identificação do Bem Avaliando (tipo, fabricante, modelo, ano de fabricação, número de série, capacidade)',
+      'Finalidade e Pressupostos da Avaliação (objetivo do laudo, data de referência, base de valor solicitada)',
+      'Vistoria Técnica e Levantamento do Estado de Conservação (funcionalidade, desgaste, obsolescência)',
+      'Metodologia de Avaliação Aplicada (comparativo direto de mercado, custo de reprodução/reposição, capitalização de renda)',
+      'Pesquisa de Mercado e Dados Comparativos (fontes, tratamento estatístico, homogeneização)',
+      'Cálculo da Depreciação Física (métodos — linear, Ross-Heidecke, etc.) e Obsolescência Funcional/Econômica',
+      'Determinação do Valor de Mercado',
+      'Determinação do Valor de Liquidação Forçada',
+      'Grau de Fundamentação e Enquadramento na NBR 14653'
+    ],
+    checklistInicial: [
+      'Bem avaliando identificado (tipo, fabricante, modelo, número de série)',
+      'Ano de fabricação e idade cronológica determinados',
+      'Capacidade/especificações técnicas registradas',
+      'Finalidade da avaliação definida (judicial, garantia, seguro, compra/venda, etc.)',
+      'Data de referência da avaliação estabelecida',
+      'Vistoria técnica realizada com registro fotográfico',
+      'Estado de conservação classificado (novo, ótimo, bom, regular, ruim)',
+      'Funcionalidade operacional do bem verificada',
+      'Idade aparente e vida útil remanescente estimadas',
+      'Metodologia avaliatória escolhida e justificada (comparativo, custo, renda)',
+      'Pesquisa de mercado realizada com número mínimo de dados conforme norma',
+      'Dados de mercado homogeneizados (tratamento por fatores)',
+      'Tratamento estatístico aplicado, quando pertinente',
+      'Valor de reprodução/reposição a novo calculado (quando aplicável o método de custo)',
+      'Depreciação física calculada (método utilizado explicitado)',
+      'Obsolescência funcional e econômica avaliadas',
+      'Valor de mercado do bem determinado',
+      'Valor de liquidação forçada calculado (percentual sobre o valor de mercado, justificado)',
+      'Grau de fundamentação da avaliação enquadrado conforme NBR 14653-1/14653-5',
+      'Campo de arbítrio observado (variação admissível em relação à média)',
+      'Parecer técnico conclusivo sobre o valor apresentado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+/**
+ * Mapeamento de identificadores curtos e aliases para Perícias Judiciais e Avaliação de Bens
+ */
+export const ALIASES_TIPOS_PERICIAS_AVALIACAO_BENS: Record<string, string> = {
+  // PER-RCA
+  'laudo-analise-falha-rca': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'laudo-pericial-analise-falha-mecanica': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'analise-de-falha-mecanica': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'root-cause-analysis': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'analise-de-quebras': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'falha-mecanica': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+  'PER-RCA': 'laudo-pericial-de-analise-de-falha-mecanica-root-cause-analysis',
+
+  // PER-INC
+  'laudo-incendio-mecanico': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+  'laudo-de-incendio-mecanico': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+  'incendio-explosao-origem-mecanica-ou-termica': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+  'incendio-origem-mecanica': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+  'incendio-mecanico': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+  'PER-INC': 'laudo-de-incendio-explosao-por-origem-mecanica-ou-termica',
+
+  // PER-VALOR
+  'laudo-valoracao-ativos': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'laudo-de-valoracao-de-ativos': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'avaliacao-estado-conservacao-valoracao-ativos': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'valoracao-ativos-nbr-14653': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'valoracao-de-ativos': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'nbr-14653-5': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5',
+  'PER-VALOR': 'laudo-de-avaliacao-do-estado-de-conservacao-e-valoracao-de-ativos-abnt-nbr-14653-5'
+};
+
+/**
+ * Função de sincronização Firestore para os tipos da categoria
+ * "Perícias Judiciais/Avaliação de Bens"
+ */
+export async function sincronizarFirestorePericiasAvaliacaoBens(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'pericias-judiciais-avaliacao-de-bens',
+    'pericias-judiciais-e-avaliacao-de-bens',
+    'perícias-judiciais-avaliação-de-bens',
+    'pericias-mecanicas-judicial-e-extrajudicial-analise-de-falhas'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Perícias Judiciais / Avaliação de Bens',
+        icone: 'Search',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_PERICIAS_AVALIACAO_BENS_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_PERICIAS_AVALIACAO_BENS).filter(k => ALIASES_TIPOS_PERICIAS_AVALIACAO_BENS[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de perícias e avaliação de bens sincronizados nas coleções Firestore categoriasLaudo/pericias-judiciais-avaliacao-de-bens/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de perícias e avaliação de bens com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+
 
 
 
