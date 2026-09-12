@@ -32,7 +32,8 @@ import {
   sincronizarFirestoreEstruturasMetalicas,
   sincronizarFirestoreElevacaoIndustrial,
   sincronizarFirestoreTubulacoesProcesso,
-  sincronizarFirestorePericiasAvaliacaoBens
+  sincronizarFirestorePericiasAvaliacaoBens,
+  sincronizarFirestoreGeradoresAcessibilidadeRuido
 } from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
@@ -137,6 +138,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cat8Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-8');
     const cat9Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-9');
     const cat10Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-10');
+    const cat11Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-11');
+    const cat12Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-12');
     return loaded.map((cat: CategoriaLaudoDef) => {
       if (cat.id === 'cat-1' && cat1Atualizada) return cat1Atualizada;
       if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
@@ -147,6 +150,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (cat.id === 'cat-8' && cat8Atualizada) return cat8Atualizada;
       if (cat.id === 'cat-9' && cat9Atualizada) return cat9Atualizada;
       if (cat.id === 'cat-10' && cat10Atualizada) return cat10Atualizada;
+      if (cat.id === 'cat-11' && cat11Atualizada) return cat11Atualizada;
+      if (cat.id === 'cat-12' && cat12Atualizada) return cat12Atualizada;
       return cat;
     });
   });
@@ -311,6 +316,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Perícias e Avaliação de Bens] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreGeradoresAcessibilidadeRuido().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Geradores e Acessibilidade/Ruído] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Geradores e Acessibilidade/Ruído] Sincronização em segundo plano:', err);
     });
   }, []);
 

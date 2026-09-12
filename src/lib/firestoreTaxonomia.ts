@@ -2308,6 +2308,298 @@ export async function sincronizarFirestorePericiasAvaliacaoBens(): Promise<{
   }
 }
 
+/**
+ * Definições completas dos 4 tipos de laudo da categoria
+ * "Geradores e Acessibilidade/Ruído"
+ * (Subcategorias: "Automação e Utilidades" e "Mobilidade Técnica e Acústica")
+ */
+export const TIPOS_GERADORES_ACESSIBILIDADE_RUIDO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 13.1 Automação e Utilidades - Laudo de Conformidade de Grupos Geradores
+  'laudo-de-conformidade-de-grupos-geradores': {
+    id: 'laudo-de-conformidade-de-grupos-geradores',
+    codigo: 'TERM-GERAD',
+    nome: 'Laudo de Conformidade de Grupos Geradores',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR ISO 8528 (Grupos geradores de corrente alternada acionados por motor térmico), NR-10, NR-12',
+    textoBaseApresentacao: 'Laudo de inspeção e comissionamento de grupos geradores a diesel/gás instalados em hospitais, condomínios e indústrias.',
+    apresentacaoPadrao: 'Laudo de inspeção e comissionamento de grupos geradores a diesel/gás instalados em hospitais, condomínios e indústrias.',
+    metodologiaPadrao: 'Testes de transferência automática (QTA), tempo de partida a frio, estanqueidade do tanque de combustível diário e bacia de contenção.',
+    secoesEspecificas: [
+      'Identificação do Grupo Gerador (fabricante, potência nominal, tipo de acionamento — diesel/gás, tensão/frequência)',
+      'Verificação da Instalação Física (casa de máquinas, ventilação, base antivibratória, sistema de exaustão)',
+      'Verificação do Sistema Elétrico e de Comando (quadro de transferência automática — QTA, aterramento, proteções, NR-10)',
+      'Verificação do Sistema de Combustível (tanque diário, tanque de reserva, tubulações, bacia de contenção)',
+      'Verificação de Dispositivos de Segurança Mecânica (proteções de partes móveis, correias, escapamento — NR-12)',
+      'Teste de Comissionamento/Funcionamento (partida automática, transferência de carga, tempo de resposta, parada)',
+      'Verificação Ambiental e Acústica Associada (nível de ruído, emissão de gases — quando aplicável)'
+    ],
+    checklistInicial: [
+      'Potência nominal e de emergência identificadas na placa do equipamento',
+      'Tipo de acionamento (diesel/gás) e capacidade do motor conferidos',
+      'Casa de máquinas com ventilação adequada para dissipação de calor',
+      'Base antivibratória e fixação do conjunto avaliadas',
+      'Sistema de exaustão (escapamento) direcionado adequadamente, sem risco de intoxicação',
+      'Silenciador de escape presente e íntegro',
+      'Quadro de Transferência Automática (QTA) identificado e funcional',
+      'Aterramento do sistema elétrico conferido',
+      'Proteções elétricas (disjuntores, relés) dimensionadas e funcionais',
+      'Instalações elétricas em conformidade com NR-10 (bloqueio/etiquetagem, sinalização)',
+      'Tanque de combustível diário com nível e vedação adequados',
+      'Tanque de reserva (quando houver) com bacia de contenção conforme norma ambiental',
+      'Tubulações de combustível sem vazamentos',
+      'Proteções mecânicas de partes móveis (correias, ventoinha) presentes conforme NR-12',
+      'Dispositivos de parada de emergência testados',
+      'Teste de partida automática (falta de energia) realizado com sucesso',
+      'Tempo de transferência de carga registrado e dentro do esperado',
+      'Teste de retransferência à rede normal realizado',
+      'Parada do gerador (manual e automática) testada',
+      'Alarmes de baixo nível de óleo/combustível e superaquecimento testados',
+      'Nível de ruído do conjunto avaliado (referência para enquadramento ambiental)'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 13.1 Automação e Utilidades - Laudo de Opacidade e Emissão de Poluentes de Motores Estacionários
+  'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios': {
+    id: 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+    codigo: 'TERM-OPAC',
+    nome: 'Laudo de Opacidade e Emissão de Poluentes de Motores Estacionários',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Resolução CONAMA nº 382/2006, ABNT NBR 13037, NBR 12897',
+    textoBaseApresentacao: 'Medição de fumaça preta (opacidade) em escapamentos de geradores e motores industriais para licenciamento ambiental CPRH.',
+    apresentacaoPadrao: 'Medição de fumaça preta (opacidade) em escapamentos de geradores e motores industriais para licenciamento ambiental CPRH.',
+    metodologiaPadrao: 'Ensaio com opacímetro de fluxo parcial ou escala Ringelmann sob carga constante.',
+    secoesEspecificas: [
+      'Identificação da Fonte Emissora (motor/gerador, potência, combustível utilizado, finalidade de uso)',
+      'Condições de Ensaio (regime de carga do motor no momento da medição, condições ambientais)',
+      'Metodologia de Medição de Opacidade (escala de Ringelmann ou opacímetro, conforme norma aplicável)',
+      'Execução da Medição (pontos de amostragem, número de leituras, tempo de aceleração livre)',
+      'Resultado e Comparação com Limites Legais (CONAMA 382/2006 e legislação estadual/CPRH aplicável)',
+      'Conclusão sobre Conformidade e Recomendações (ajustes de motor, manutenção do sistema de escape)'
+    ],
+    checklistInicial: [
+      'Fonte emissora identificada (motor, potência, combustível)',
+      'Finalidade de uso do motor/gerador registrada (emergência, geração contínua, etc.)',
+      'Enquadramento na Resolução CONAMA 382/2006 (categoria da fonte) definido',
+      'Condições ambientais no momento do ensaio registradas',
+      'Regime de carga do motor durante a medição registrado',
+      'Equipamento de medição (opacímetro) calibrado e com certificado válido',
+      'Ponto de amostragem no escapamento definido corretamente',
+      'Número mínimo de leituras/acelerações realizado conforme metodologia',
+      'Resultado de opacidade expresso na unidade aplicável (% ou escala Ringelmann) ',
+      'Limite legal aplicável identificado (conforme fonte/potência)',
+      'Resultado comparado ao limite legal com conclusão de conformidade/não conformidade',
+      'Condição de manutenção do motor (filtros, injeção) observada como fator de influência',
+      'Recomendações técnicas em caso de não conformidade registradas',
+      'Data e validade do laudo para fins de licenciamento ambiental (CPRH) definidas'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 13.2 Mobilidade Técnica e Acústica - Laudo de Inspeção Técnica de Elevadores Sociais, Plataformas Acessíveis e Escadas Mecânicas
+  'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas': {
+    id: 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+    codigo: 'ACES-ELEV',
+    nome: 'Laudo de Inspeção Técnica de Elevadores Sociais, Plataformas Acessíveis e Escadas Mecânicas',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR NM 207, NBR NM 313 (Acessibilidade em elevadores), NBR 9050, Lei Brasileira de Inclusão',
+    textoBaseApresentacao: 'Inspeção mecânica e atestado anual de segurança e acessibilidade para elevadores sociais, plataformas de translação vertical e esteiras rolantes.',
+    apresentacaoPadrao: 'Inspeção mecânica e atestado anual de segurança e acessibilidade para elevadores sociais, plataformas de translação vertical e esteiras rolantes.',
+    metodologiaPadrao: 'Verificação de limites de nivelamento de piso, botão de emergência com intercomunicador funcional, sintetizador de voz e freio de segurança.',
+    secoesEspecificas: [
+      'Identificação do Equipamento (tipo — elevador social/plataforma/escada rolante, fabricante, capacidade, ano de instalação)',
+      'Verificação de Requisitos de Acessibilidade (dimensões de cabina, sinalização tátil/sonora, botoeiras em Braille, conforme NBR 9050/NBR NM 313)',
+      'Verificação Mecânica do Sistema de Tração/Movimentação (cabos, motor, redutor, freios)',
+      'Verificação de Dispositivos de Segurança (paraquedas, limitador de velocidade, sensores de porta, parada de emergência)',
+      'Verificação da Casa de Máquinas e Poço (quando aplicável)',
+      'Verificação de Plataformas de Translação Vertical/Inclinada (guias, sistema de segurança contra esmagamento)',
+      'Emissão do Atestado Anual de Inspeção e Prazo de Validade'
+    ],
+    checklistInicial: [
+      'Tipo de equipamento identificado (elevador social, plataforma acessível, escada/esteira rolante)',
+      'Capacidade nominal e ano de instalação conferidos',
+      'Dimensões internas da cabina/plataforma conforme NBR 9050',
+      'Sinalização tátil e visual (Braille, alto-relevo) presente nas botoeiras',
+      'Sinalização sonora de chegada de pavimento funcional',
+      'Corrimãos e barras de apoio conforme norma de acessibilidade',
+      'Cabos de tração sem desgaste ou fios rompidos',
+      'Motor e redutor sem ruído ou vibração anormal',
+      'Freio de segurança testado',
+      'Dispositivo paraquedas testado (quando aplicável)',
+      'Limitador de velocidade testado',
+      'Sensores de porta (fotocélula/borda de segurança) funcionais',
+      'Botão de parada de emergência testado',
+      'Intertravamento de portas de pavimento e cabina funcional',
+      'Casa de máquinas com acesso seguro e sinalização adequada (quando aplicável)',
+      'Poço com iluminação e para-choques íntegros (quando aplicável)',
+      'Guias de deslizamento de plataformas sem desgaste excessivo',
+      'Sistema de proteção contra esmagamento/aprisionamento em plataformas testado',
+      'Velocidade de deslocamento conforme especificação de projeto',
+      'Atestado anual de inspeção emitido com data de validade definida'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 13.2 Mobilidade Técnica e Acústica - Laudo de Ruído Ambiental e Vibração Industrial
+  'laudo-de-ruido-ambiental-e-vibracao-industrial': {
+    id: 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+    codigo: 'ACES-RUIDO',
+    nome: 'Laudo de Ruído Ambiental e Vibração Industrial',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 10151 (Avaliação do ruído em áreas habitadas), NBR 10152, NR-15',
+    textoBaseApresentacao: 'Medição sonométrica e emissão de laudo pericial para atendimento a notificações ambientais, queixas de vizinhança ou conforto acústico corporativo.',
+    apresentacaoPadrao: 'Medição sonométrica e emissão de laudo pericial para atendimento a notificações ambientais, queixas de vizinhança ou conforto acústico corporativo.',
+    metodologiaPadrao: 'Aferição com sonômetro (decibelímetro) integrador Tipo 1 com calibrador acústico acoplado, medição dos níveis LAeq diurno e noturno.',
+    secoesEspecificas: [
+      'Identificação do Local e Objeto da Medição (fonte de ruído, área receptora, uso do solo/zoneamento)',
+      'Condições de Ensaio (horário — diurno/noturno, condições climáticas, ruído de fundo)',
+      'Metodologia de Medição Sonométrica (equipamento, calibração, pontos de medição, altura do microfone)',
+      'Execução das Medições (nível de pressão sonora equivalente — Leq, nível de critério de avaliação — NCA)',
+      'Medição de Vibração Industrial (quando aplicável — pontos, eixos de medição, norma de referência)',
+      'Comparação com Limites Normativos (NBR 10151, NBR 10152, NR-15 — conforme finalidade)',
+      'Conclusão sobre Conformidade e Recomendações de Mitigação'
+    ],
+    checklistInicial: [
+      'Fonte de ruído identificada e caracterizada',
+      'Área receptora e uso do solo/zoneamento classificados',
+      'Finalidade da avaliação definida (queixa de vizinhança, licenciamento, conforto corporativo, insalubridade)',
+      'Horário da medição registrado (período diurno/noturno conforme norma)',
+      'Condições climáticas no momento da medição registradas (vento, chuva)',
+      'Equipamento (decibelímetro/dosímetro) calibrado e com certificado válido',
+      'Calibração de campo realizada antes e após as medições',
+      'Pontos de medição definidos e mapeados (interno/externo, limite de propriedade)',
+      'Altura e distância do microfone conforme norma aplicável',
+      'Ruído de fundo (background) medido separadamente',
+      'Nível de pressão sonora equivalente (Leq) determinado para cada ponto',
+      'Nível de Critério de Avaliação (NCA) calculado conforme NBR 10151',
+      'Correções aplicadas (tonal, impulsivo), quando identificadas',
+      'Medição de vibração realizada nos eixos aplicáveis, quando pertinente',
+      'Resultados comparados aos limites da NBR 10151/10152 ou NR-15 (conforme finalidade)',
+      'Conclusão de conformidade ou não conformidade apresentada',
+      'Recomendações de mitigação (barreiras acústicas, enclausuramento, horário de operação) registradas, quando aplicável'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+/**
+ * Mapeamento de identificadores curtos e aliases para Geradores e Acessibilidade/Ruído
+ */
+export const ALIASES_TIPOS_GERADORES_ACESSIBILIDADE_RUIDO: Record<string, string> = {
+  // TERM-GERAD
+  'laudo-geradores-conformidade': 'laudo-de-conformidade-de-grupos-geradores',
+  'conformidade-grupos-geradores': 'laudo-de-conformidade-de-grupos-geradores',
+  'grupos-geradores': 'laudo-de-conformidade-de-grupos-geradores',
+  'geradores-conformidade': 'laudo-de-conformidade-de-grupos-geradores',
+  'geradores': 'laudo-de-conformidade-de-grupos-geradores',
+  'TERM-GERAD': 'laudo-de-conformidade-de-grupos-geradores',
+
+  // TERM-OPAC
+  'laudo-opacidade-motores': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+  'opacidade-emissao-poluentes-motores': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+  'opacidade-motores': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+  'poluentes-motores-estacionarios': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+  'opacidade-geradores': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+  'TERM-OPAC': 'laudo-de-opacidade-e-emissao-de-poluentes-de-motores-estacionarios',
+
+  // ACES-ELEV
+  'laudo-elevadores-acessibilidade': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+  'inspecao-elevadores-sociais-plataformas-escadas': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+  'elevadores-sociais-plataformas-acessiveis': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+  'elevadores-acessibilidade': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+  'elevadores-plataformas-escadas': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+  'ACES-ELEV': 'laudo-de-inspecao-tecnica-de-elevadores-sociais-plataformas-acessiveis-e-escadas-mecanicas',
+
+  // ACES-RUIDO
+  'laudo-ruido-vibracao': 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+  'ruido-ambiental-e-vibracao-industrial': 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+  'ruido-ambiental': 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+  'ruido-vibracao': 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+  'ruido-nbr-10151': 'laudo-de-ruido-ambiental-e-vibracao-industrial',
+  'ACES-RUIDO': 'laudo-de-ruido-ambiental-e-vibracao-industrial'
+};
+
+/**
+ * Função de sincronização Firestore para os tipos da categoria
+ * "Geradores e Acessibilidade/Ruído"
+ */
+export async function sincronizarFirestoreGeradoresAcessibilidadeRuido(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  // Inclui o path explícito do entregável "geradores-e-acessibilidade-ruido"
+  // e as categorias canônicas correspondentes
+  const categoriasAlvo = [
+    'geradores-e-acessibilidade-ruido',
+    'geradores-e-acessibilidade-ruído',
+    'grupos-geradores-e-maquinas-termicas',
+    'acessibilidade-e-engenharia-legal-aplicada',
+    'geradores-e-maquinas-termicas',
+    'acessibilidade-e-ruido'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: catId.includes('gerador') ? 'Geradores e Máquinas Térmicas' : 'Acessibilidade e Ruído Industrial',
+        icone: catId.includes('gerador') ? 'Zap' : 'CheckCircle2',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_GERADORES_ACESSIBILIDADE_RUIDO_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_GERADORES_ACESSIBILIDADE_RUIDO).filter(k => ALIASES_TIPOS_GERADORES_ACESSIBILIDADE_RUIDO[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de geradores, acessibilidade e ruído sincronizados nas coleções Firestore categoriasLaudo/geradores-e-acessibilidade-ruido/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de geradores e acessibilidade/ruído com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+
 
 
 

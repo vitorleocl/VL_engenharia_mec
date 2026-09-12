@@ -2611,24 +2611,106 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-geradores-conformidade',
             codigo: 'TERM-GERAD',
             nome: 'Laudo de Conformidade de Grupos Geradores',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR ISO 8528 (Grupos geradores de corrente alternada acionados por motor térmico), NR-10, NR-12',
+            textoBaseApresentacao: 'Laudo de inspeção e comissionamento de grupos geradores a diesel/gás instalados em hospitais, condomínios e indústrias.',
             apresentacaoPadrao: 'Laudo de inspeção e comissionamento de grupos geradores a diesel/gás instalados em hospitais, condomínios e indústrias.',
             metodologiaPadrao: 'Testes de transferência automática (QTA), tempo de partida a frio, estanqueidade do tanque de combustível diário e bacia de contenção.',
+            secoesEspecificas: [
+              'Identificação do Grupo Gerador (fabricante, potência nominal, tipo de acionamento — diesel/gás, tensão/frequência)',
+              'Verificação da Instalação Física (casa de máquinas, ventilação, base antivibratória, sistema de exaustão)',
+              'Verificação do Sistema Elétrico e de Comando (quadro de transferência automática — QTA, aterramento, proteções, NR-10)',
+              'Verificação do Sistema de Combustível (tanque diário, tanque de reserva, tubulações, bacia de contenção)',
+              'Verificação de Dispositivos de Segurança Mecânica (proteções de partes móveis, correias, escapamento — NR-12)',
+              'Teste de Comissionamento/Funcionamento (partida automática, transferência de carga, tempo de resposta, parada)',
+              'Verificação Ambiental e Acústica Associada (nível de ruído, emissão de gases — quando aplicável)'
+            ],
+            checklistInicial: [
+              'Potência nominal e de emergência identificadas na placa do equipamento',
+              'Tipo de acionamento (diesel/gás) e capacidade do motor conferidos',
+              'Casa de máquinas com ventilação adequada para dissipação de calor',
+              'Base antivibratória e fixação do conjunto avaliadas',
+              'Sistema de exaustão (escapamento) direcionado adequadamente, sem risco de intoxicação',
+              'Silenciador de escape presente e íntegro',
+              'Quadro de Transferência Automática (QTA) identificado e funcional',
+              'Aterramento do sistema elétrico conferido',
+              'Proteções elétricas (disjuntores, relés) dimensionadas e funcionais',
+              'Instalações elétricas em conformidade com NR-10 (bloqueio/etiquetagem, sinalização)',
+              'Tanque de combustível diário com nível e vedação adequados',
+              'Tanque de reserva (quando houver) com bacia de contenção conforme norma ambiental',
+              'Tubulações de combustível sem vazamentos',
+              'Proteções mecânicas de partes móveis (correias, ventoinha) presentes conforme NR-12',
+              'Dispositivos de parada de emergência testados',
+              'Teste de partida automática (falta de energia) realizado com sucesso',
+              'Tempo de transferência de carga registrado e dentro do esperado',
+              'Teste de retransferência à rede normal realizado',
+              'Parada do gerador (manual e automática) testada',
+              'Alarmes de baixo nível de óleo/combustível e superaquecimento testados',
+              'Nível de ruído do conjunto avaliado (referência para enquadramento ambiental)'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Grupo Gerador (potência, acionamento, tensão)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Verificação da Instalação Física e Ventilação', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Sistema Elétrico, QTA e Aterramento (NR-10)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Sistema de Combustível e Bacia de Contenção', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Proteções Mecânicas de Partes Móveis (NR-12)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Teste de Comissionamento e Transferência de Carga', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Verificação Ambiental e Atenuação Acústica', ordem: 7 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Quadro de Transferência Automática (QTA) com intertravamento mecânico e elétrico', status: 'conforme', observacao: 'Tempo de comutação inferior a 8 segundos' },
-              { id: 'ck-2', descricao: 'Bacia de contenção sob o tanque de óleo diesel com capacidade para 110% do volume', status: 'conforme', observacao: 'Bacia impermeável e com válvula de dreno fechada' }
+              { id: 'ck-1', descricao: 'Quadro de Transferência Automática (QTA) com intertravamento mecânico e elétrico', status: 'conforme', observacao: 'Tempo de comutação de 6,2 segundos aferido' },
+              { id: 'ck-2', descricao: 'Bacia de contenção sob o tanque de óleo diesel com capacidade para 110% do volume', status: 'conforme', observacao: 'Bacia impermeável e com válvula de dreno fechada' },
+              { id: 'ck-3', descricao: 'Proteções mecânicas de partes móveis (correias, ventoinha) presentes conforme NR-12', status: 'conforme', observacao: 'Grades de proteção com fixação rígida em conformidade' },
+              { id: 'ck-4', descricao: 'Aterramento do sistema elétrico conferido', status: 'conforme', observacao: 'Resistência de aterramento < 5 ohms com laudo anexado' }
             ]
           },
           {
             id: 'laudo-opacidade-motores',
             codigo: 'TERM-OPAC',
             nome: 'Laudo de Opacidade e Emissão de Poluentes de Motores Estacionários',
+            hrn: false,
+            temHrn: false,
             normasRef: 'Resolução CONAMA nº 382/2006, ABNT NBR 13037, NBR 12897',
+            textoBaseApresentacao: 'Medição de fumaça preta (opacidade) em escapamentos de geradores e motores industriais para licenciamento ambiental CPRH.',
             apresentacaoPadrao: 'Medição de fumaça preta (opacidade) em escapamentos de geradores e motores industriais para licenciamento ambiental CPRH.',
             metodologiaPadrao: 'Ensaio com opacímetro de fluxo parcial ou escala Ringelmann sob carga constante.',
+            secoesEspecificas: [
+              'Identificação da Fonte Emissora (motor/gerador, potência, combustível utilizado, finalidade de uso)',
+              'Condições de Ensaio (regime de carga do motor no momento da medição, condições ambientais)',
+              'Metodologia de Medição de Opacidade (escala de Ringelmann ou opacímetro, conforme norma aplicável)',
+              'Execução da Medição (pontos de amostragem, número de leituras, tempo de aceleração livre)',
+              'Resultado e Comparação com Limites Legais (CONAMA 382/2006 e legislação estadual/CPRH aplicável)',
+              'Conclusão sobre Conformidade e Recomendações (ajustes de motor, manutenção do sistema de escape)'
+            ],
+            checklistInicial: [
+              'Fonte emissora identificada (motor, potência, combustível)',
+              'Finalidade de uso do motor/gerador registrada (emergência, geração contínua, etc.)',
+              'Enquadramento na Resolução CONAMA 382/2006 (categoria da fonte) definido',
+              'Condições ambientais no momento do ensaio registradas',
+              'Regime de carga do motor durante a medição registrado',
+              'Equipamento de medição (opacímetro) calibrado e com certificado válido',
+              'Ponto de amostragem no escapamento definido corretamente',
+              'Número mínimo de leituras/acelerações realizado conforme metodologia',
+              'Resultado de opacidade expresso na unidade aplicável (% ou escala Ringelmann) ',
+              'Limite legal aplicável identificado (conforme fonte/potência)',
+              'Resultado comparado ao limite legal com conclusão de conformidade/não conformidade',
+              'Condição de manutenção do motor (filtros, injeção) observada como fator de influência',
+              'Recomendações técnicas em caso de não conformidade registradas',
+              'Data e validade do laudo para fins de licenciamento ambiental (CPRH) definidas'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação da Fonte Emissora (motor, potência, combustível)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Condições de Ensaio e Regime de Carga', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Metodologia de Medição de Opacidade (Opacímetro/Ringelmann)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Execução das Medições e Leituras de Amostragem', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Resultado e Confronto com CONAMA 382/2006 e CPRH', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Conclusão sobre Conformidade e Recomendações', ordem: 6 }
+            ],
             checklistPadrao: [
               { id: 'ck-1', descricao: 'Coeficiente de absorção de luz (k) dentro dos limites ambientais', status: 'conforme', observacao: 'Medição apurada em 0,42 m⁻¹ (limite 1,18 m⁻¹)' },
-              { id: 'ck-2', descricao: 'Atenuação acústica da carenagem acústica nos limites perimetrais', status: 'conforme', observacao: 'Nível de ruído a 1,5m inferior a 75 dB(A)' }
+              { id: 'ck-2', descricao: 'Atenuação acústica da carenagem nos limites perimetrais', status: 'conforme', observacao: 'Nível de ruído a 1,5m inferior a 75 dB(A)' },
+              { id: 'ck-3', descricao: 'Opacímetro de fluxo parcial com certificado RBC válido', status: 'conforme', observacao: 'Calibração em dia com emissão de curva' }
             ]
           }
         ]
@@ -2649,26 +2731,111 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
           {
             id: 'laudo-elevadores-acessibilidade',
             codigo: 'ACES-ELEV',
-            nome: 'Laudo de Inspeção Técnica de Elevadores Sociais, Plataformas Acessíveis e Escadas Mecânicas (ABNT NBR 207 / NBR NM 313)',
+            nome: 'Laudo de Inspeção Técnica de Elevadores Sociais, Plataformas Acessíveis e Escadas Mecânicas',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR NM 207, NBR NM 313 (Acessibilidade em elevadores), NBR 9050, Lei Brasileira de Inclusão',
+            textoBaseApresentacao: 'Inspeção mecânica e atestado anual de segurança e acessibilidade para elevadores sociais, plataformas de translação vertical e esteiras rolantes.',
             apresentacaoPadrao: 'Inspeção mecânica e atestado anual de segurança e acessibilidade para elevadores sociais, plataformas de translação vertical e esteiras rolantes.',
             metodologiaPadrao: 'Verificação de limites de nivelamento de piso, botão de emergência com intercomunicador funcional, sintetizador de voz e freio de segurança.',
+            secoesEspecificas: [
+              'Identificação do Equipamento (tipo — elevador social/plataforma/escada rolante, fabricante, capacidade, ano de instalação)',
+              'Verificação de Requisitos de Acessibilidade (dimensões de cabina, sinalização tátil/sonora, botoeiras em Braille, conforme NBR 9050/NBR NM 313)',
+              'Verificação Mecânica do Sistema de Tração/Movimentação (cabos, motor, redutor, freios)',
+              'Verificação de Dispositivos de Segurança (paraquedas, limitador de velocidade, sensores de porta, parada de emergência)',
+              'Verificação da Casa de Máquinas e Poço (quando aplicável)',
+              'Verificação de Plataformas de Translação Vertical/Inclinada (guias, sistema de segurança contra esmagamento)',
+              'Emissão do Atestado Anual de Inspeção e Prazo de Validade'
+            ],
+            checklistInicial: [
+              'Tipo de equipamento identificado (elevador social, plataforma acessível, escada/esteira rolante)',
+              'Capacidade nominal e ano de instalação conferidos',
+              'Dimensões internas da cabina/plataforma conforme NBR 9050',
+              'Sinalização tátil e visual (Braille, alto-relevo) presente nas botoeiras',
+              'Sinalização sonora de chegada de pavimento funcional',
+              'Corrimãos e barras de apoio conforme norma de acessibilidade',
+              'Cabos de tração sem desgaste ou fios rompidos',
+              'Motor e redutor sem ruído ou vibração anormal',
+              'Freio de segurança testado',
+              'Dispositivo paraquedas testado (quando aplicável)',
+              'Limitador de velocidade testado',
+              'Sensores de porta (fotocélula/borda de segurança) funcionais',
+              'Botão de parada de emergência testado',
+              'Intertravamento de portas de pavimento e cabina funcional',
+              'Casa de máquinas com acesso seguro e sinalização adequada (quando aplicável)',
+              'Poço com iluminação e para-choques íntegros (quando aplicável)',
+              'Guias de deslizamento de plataformas sem desgaste excessivo',
+              'Sistema de proteção contra esmagamento/aprisionamento em plataformas testado',
+              'Velocidade de deslocamento conforme especificação de projeto',
+              'Atestado anual de inspeção emitido com data de validade definida'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Equipamento (tipo, fabricante, capacidade)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Requisitos de Acessibilidade (NBR 9050 / NBR NM 313)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação Mecânica de Tração e Cabos', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Dispositivos de Segurança (paraquedas, limitador, sensores)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Vistoria de Casa de Máquinas e Poço', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Plataformas de Translação e Dispositivos Antiesmagamento', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Atestado Anual de Inspeção e Validade', ordem: 7 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Precisão de parada e nivelamento da cabine em relação ao piso do pavimento (± 5 mm)', status: 'conforme', observacao: 'Nivelamento aferido com gabarito' },
+              { id: 'ck-1', descricao: 'Precisão de parada e nivelamento da cabine em relação ao piso do pavimento (± 5 mm)', status: 'conforme', observacao: 'Nivelamento aferido com gabarito milimétrico' },
               { id: 'ck-2', descricao: 'Iluminação de emergência e botão de socorro com chamada remota ativa', status: 'conforme', observacao: 'Interfone com portaria operacional' },
-              { id: 'ck-3', descricao: 'Informações em Braille e relevo nos botões da botoeira de cabine e pavimentos', status: 'conforme', observacao: 'Conforme ABNT NBR 9050' }
+              { id: 'ck-3', descricao: 'Informações em Braille e relevo nos botões da botoeira de cabine e pavimentos', status: 'conforme', observacao: 'Conforme ABNT NBR 9050' },
+              { id: 'ck-4', descricao: 'Cabos de tração sem desgaste ou fios rompidos', status: 'conforme', observacao: 'Cabos lubrificados sem corrosão ou redução de diâmetro' }
             ]
           },
           {
             id: 'laudo-ruido-vibracao',
             codigo: 'ACES-RUIDO',
-            nome: 'Laudo de Ruído Ambiental e Vibração Industrial (NBR 10151/NBR 10152)',
+            nome: 'Laudo de Ruído Ambiental e Vibração Industrial',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR 10151 (Avaliação do ruído em áreas habitadas), NBR 10152, NR-15',
+            textoBaseApresentacao: 'Medição sonométrica e emissão de laudo pericial para atendimento a notificações ambientais, queixas de vizinhança ou conforto acústico corporativo.',
             apresentacaoPadrao: 'Medição sonométrica e emissão de laudo pericial para atendimento a notificações ambientais, queixas de vizinhança ou conforto acústico corporativo.',
             metodologiaPadrao: 'Aferição com sonômetro (decibelímetro) integrador Tipo 1 com calibrador acústico acoplado, medição dos níveis LAeq diurno e noturno.',
+            secoesEspecificas: [
+              'Identificação do Local e Objeto da Medição (fonte de ruído, área receptora, uso do solo/zoneamento)',
+              'Condições de Ensaio (horário — diurno/noturno, condições climáticas, ruído de fundo)',
+              'Metodologia de Medição Sonométrica (equipamento, calibração, pontos de medição, altura do microfone)',
+              'Execução das Medições (nível de pressão sonora equivalente — Leq, nível de critério de avaliação — NCA)',
+              'Medição de Vibração Industrial (quando aplicável — pontos, eixos de medição, norma de referência)',
+              'Comparação com Limites Normativos (NBR 10151, NBR 10152, NR-15 — conforme finalidade)',
+              'Conclusão sobre Conformidade e Recomendações de Mitigação'
+            ],
+            checklistInicial: [
+              'Fonte de ruído identificada e caracterizada',
+              'Área receptora e uso do solo/zoneamento classificados',
+              'Finalidade da avaliação definida (queixa de vizinhança, licenciamento, conforto corporativo, insalubridade)',
+              'Horário da medição registrado (período diurno/noturno conforme norma)',
+              'Condições climáticas no momento da medição registradas (vento, chuva)',
+              'Equipamento (decibelímetro/dosímetro) calibrado e com certificado válido',
+              'Calibração de campo realizada antes e após as medições',
+              'Pontos de medição definidos e mapeados (interno/externo, limite de propriedade)',
+              'Altura e distância do microfone conforme norma aplicável',
+              'Ruído de fundo (background) medido separadamente',
+              'Nível de pressão sonora equivalente (Leq) determinado para cada ponto',
+              'Nível de Critério de Avaliação (NCA) calculado conforme NBR 10151',
+              'Correções aplicadas (tonal, impulsivo), quando identificadas',
+              'Medição de vibração realizada nos eixos aplicáveis, quando pertinente',
+              'Resultados comparados aos limites da NBR 10151/10152 ou NR-15 (conforme finalidade)',
+              'Conclusão de conformidade ou não conformidade apresentada',
+              'Recomendações de mitigação (barreiras acústicas, enclausuramento, horário de operação) registradas, quando aplicável'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação da Fonte de Ruído e Área Receptora', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Condições de Ensaio e Ruído de Fundo', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Metodologia de Medição Sonométrica e Calibração', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Níveis de Pressão Sonora Equivalente (Leq) e NCA', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Medição de Vibração Industrial (quando aplicável)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Comparação com Limites da NBR 10151 e NR-15', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Conclusão sobre Conformidade e Medidas Mitigadoras', ordem: 7 }
+            ],
             checklistPadrao: [
               { id: 'ck-1', descricao: 'Nível sonoro equivalente corrigido (RLC) no limite perimetral da propriedade', status: 'conforme', observacao: 'Abaixo do limite de 55 dB(A) para zona mista' },
-              { id: 'ck-2', descricao: 'Calibração de campo do sonômetro antes e após as medições registradas', status: 'conforme', observacao: 'Desvio menor que 0,2 dB' }
+              { id: 'ck-2', descricao: 'Calibração de campo do sonômetro antes e após as medições registradas', status: 'conforme', observacao: 'Desvio menor que 0,2 dB aferido com calibrador acústico' },
+              { id: 'ck-3', descricao: 'Microfone com protetor de vento posicionado a 1,5m de altura e a 2m de superfícies refletoras', status: 'conforme', observacao: 'Conforme ABNT NBR 10151' }
             ]
           }
         ]
