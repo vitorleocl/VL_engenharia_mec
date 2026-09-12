@@ -1822,5 +1822,244 @@ export async function sincronizarFirestoreElevacaoIndustrial(): Promise<{
   }
 }
 
+/**
+ * Definições completas dos 3 tipos de laudo da categoria
+ * Tubulações de Processo e Redes Industriais (Vasos, Tanques e Redes de Fluidos)
+ */
+export const TIPOS_TUBULACOES_PROCESSOS_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo de Teste de Estanqueidade e Pressão Hidrostática/Pneumática
+  'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica': {
+    id: 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+    codigo: 'FLUID-TEST',
+    nome: 'Laudo de Teste de Estanqueidade e Pressão Hidrostática/Pneumática',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ASME B31.3, NR-13',
+    textoBaseApresentacao: 'Execução e emissão de laudo pericial de teste hidrostático em linhas industriais recém-montadas ou sob manutenção.',
+    apresentacaoPadrao: 'Execução e emissão de laudo pericial de teste hidrostático em linhas industriais recém-montadas ou sob manutenção.',
+    metodologiaPadrao: 'Injeção de água desmineralizada com bomba de teste manual/elétrica, monitoramento de pressão por registrador gráfico ou digital calibrado.',
+    secoesEspecificas: [
+      'Identificação da Linha/Sistema (tag, diâmetro, material, classe de pressão, código de projeto)',
+      'Verificação Preliminar (isolamento da linha, suportação, dispositivos de segurança removidos/bloqueados)',
+      'Critérios do Teste (pressão de teste, tempo de estabilização, meio de teste — água, ar, gás inerte)',
+      'Execução do Teste Hidrostático/Pneumático (procedimento, instrumentação utilizada, curva pressão x tempo)',
+      'Verificação de Vazamentos e Deformações Durante o Teste',
+      'Liberação da Linha (despressurização, drenagem, secagem, remoção de bloqueios)'
+    ],
+    checklistInicial: [
+      'Linha/sistema identificado (tag, diâmetro, material, classe)',
+      'Código de projeto aplicável definido (ASME B31.3 ou equivalente)',
+      'Pressão de teste calculada conforme código (múltiplo da pressão de projeto)',
+      'Isolamento da linha conferido (flanges cegos, bloqueios)',
+      'Suportação provisória/definitiva adequada para o peso do fluido de teste',
+      'Instrumentos de medição (manômetros) calibrados e com certificado válido',
+      'Meio de teste definido (água, ar comprimido, gás inerte) e justificado',
+      'Pressurização realizada de forma gradual e controlada',
+      'Tempo de estabilização/permanência na pressão de teste respeitado',
+      'Inspeção visual de juntas, soldas e conexões durante o teste',
+      'Ausência de vazamentos registrada',
+      'Ausência de deformações permanentes registrada',
+      'Queda de pressão durante o teste dentro da tolerância aceitável',
+      'Despressurização controlada realizada ao final do teste',
+      'Drenagem e secagem da linha (quando aplicável) realizadas',
+      'Bloqueios e dispositivos de segurança reinstalados após o teste',
+      'Certificado/registro do teste emitido com resultado (aprovado/reprovado)'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Vistoria de Sistemas de Refrigeração por Amônia (NH₃)
+  'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3': {
+    id: 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+    codigo: 'FLUID-NH3',
+    nome: 'Laudo de Vistoria de Sistemas de Refrigeração por Amônia (NH₃)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'NR-36, NR-13, ABNT NBR 16069, IIAR',
+    textoBaseApresentacao: 'Inspeção pericial de segurança mecânica em salas de compressores, condensadores evaporativos e tanques acumuladores de amônia.',
+    apresentacaoPadrao: 'Inspeção pericial de segurança mecânica em salas de compressores, condensadores evaporativos e tanques acumuladores de amônia.',
+    metodologiaPadrao: 'Verificação de detectores de vazamento de NH₃, ventilação de emergência forçada, válvulas de alívio duplas e chuveiro lava-olhos.',
+    secoesEspecificas: [
+      'Identificação do Sistema (capacidade frigorífica, carga de amônia, arranjo — sala de máquinas, condensadores, reservatórios)',
+      'Verificação da Sala de Máquinas (ventilação, detecção de gás, iluminação antiexplosão, rotas de fuga)',
+      'Verificação de Compressores e Componentes Mecânicos (vibração, vedações, lubrificação, dispositivos de segurança)',
+      'Verificação de Condensadores Evaporativos e Torres (estado estrutural, corrosão, tratamento de água)',
+      'Verificação de Tanques Acumuladores/Reservatórios de Amônia (integridade, dispositivos de alívio, nível)',
+      'Verificação de Tubulações e Válvulas do Sistema (isolamento térmico, identificação por cor, vazamentos)',
+      'Verificação de Equipamentos de Proteção e Emergência (chuveiro/lava-olhos, EPI para amônia, plano de emergência)'
+    ],
+    checklistInicial: [
+      'Capacidade frigorífica e carga total de amônia identificadas',
+      'Sala de máquinas com ventilação mecânica adequada (conforme NBR 16069/IIAR)',
+      'Sistema de detecção de vazamento de amônia instalado e testado',
+      'Alarmes visuais e sonoros de detecção funcionais',
+      'Iluminação e instalações elétricas da sala de máquinas adequadas à classificação de área',
+      'Rotas de fuga sinalizadas e desobstruídas',
+      'Compressores sem vazamentos aparentes e com vibração dentro do esperado',
+      'Vedações e selos mecânicos dos compressores íntegros',
+      'Dispositivos de segurança (pressostatos, válvulas de alívio) testados',
+      'Condensadores evaporativos sem corrosão estrutural significativa',
+      'Tratamento de água dos condensadores/torres verificado',
+      'Tanques acumuladores identificados, sem sinais de corrosão ou vazamento',
+      'Válvulas de alívio de pressão dos reservatórios calibradas e com selo válido',
+      'Nível de amônia nos reservatórios dentro dos limites operacionais',
+      'Tubulações identificadas por cor/código conforme norma aplicável',
+      'Isolamento térmico das tubulações íntegro',
+      'Válvulas de bloqueio e controle sem vazamentos',
+      'Chuveiro de emergência e lava-olhos disponíveis, funcionais e sinalizados',
+      'EPIs específicos para amônia disponíveis (máscara autônoma, luvas, óculos)',
+      'Plano de emergência para vazamento de amônia disponível e atualizado',
+      'Treinamento da equipe para resposta a emergências verificado (documental)'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Medição de Espessura por Ultrassom (Mapeamento de Corrosão)
+  'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao': {
+    id: 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+    codigo: 'FLUID-US',
+    nome: 'Laudo de Medição de Espessura por Ultrassom (Mapeamento de Corrosão)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR NM 330, ASME Seção V Artigo 5, API 570',
+    textoBaseApresentacao: 'Mapeamento de perda de espessura por corrosão interna/externa em tubulações, dutos e chapas metálicas industriais.',
+    apresentacaoPadrao: 'Mapeamento de perda de espessura por corrosão interna/externa em tubulações, dutos e chapas metálicas industriais.',
+    metodologiaPadrao: 'Ensaio pontual com medidor digital por ultrassom e cabeçote duplo cristal com acoplante, gerando mapa de isócoras de desgaste.',
+    secoesEspecificas: [
+      'Identificação do Componente Inspecionado (tubulação, duto, chapa — material, diâmetro/dimensões, espessura nominal)',
+      'Metodologia e Equipamento Utilizado (medidor de espessura por ultrassom, calibração, acoplante)',
+      'Definição dos Pontos de Medição (malha de pontos, CMLs — Corrosion Monitoring Locations)',
+      'Execução das Medições e Registro de Espessuras',
+      'Mapeamento de Perda de Espessura (comparação com espessura nominal/original)',
+      'Cálculo da Taxa de Corrosão e Vida Útil Remanescente',
+      'Identificação de Áreas Críticas (corrosão localizada, afunilamento, erosão)'
+    ],
+    checklistInicial: [
+      'Componente identificado (tipo, material, diâmetro/dimensões)',
+      'Espessura nominal/original do componente levantada (catálogo ou projeto)',
+      'Equipamento de ultrassom calibrado, com certificado válido',
+      'Bloco padrão de calibração utilizado antes das medições',
+      'Acoplante adequado ao acabamento superficial utilizado',
+      'Malha de pontos de medição (CMLs) definida e mapeada',
+      'Preparação da superfície (remoção de pintura/incrustação) realizada quando necessário',
+      'Espessuras medidas e registradas em cada ponto',
+      'Menor espessura encontrada identificada e localizada',
+      'Perda de espessura calculada (percentual em relação à nominal)',
+      'Espessura mínima admissível calculada conforme código aplicável (ASME B31.3, API 570)',
+      'Taxa de corrosão calculada (quando houver histórico de medições anteriores)',
+      'Vida útil remanescente estimada para o componente/ponto crítico',
+      'Áreas de corrosão localizada (pites) identificadas e mapeadas',
+      'Pontos de afunilamento ou erosão preferencial identificados (curvas, reduções, solda)',
+      'Registro fotográfico das áreas críticas anexado',
+      'Recomendações técnicas (reparo, substituição, reinspeção) registradas',
+      'Intervalo de reinspeção recomendado definido'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+/**
+ * Mapeamento de identificadores curtos e slugs alternativos para Tubulações de Processo e Redes Industriais
+ */
+export const ALIASES_TIPOS_TUBULACOES_PROCESSO: Record<string, string> = {
+  // FLUID-TEST
+  'laudo-pressao-hidrostatica': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+  'laudo-teste-estanqueidade-pressao-hidrostatica-pneumatica': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+  'teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+  'teste-estanqueidade-pressao-hidrostatica': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+  'teste-hidrostatico': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+  'FLUID-TEST': 'laudo-de-teste-de-estanqueidade-e-pressao-hidrostatica-pneumatica',
+
+  // FLUID-NH3
+  'laudo-refrigeracao-amonia': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'laudo-vistoria-sistemas-refrigeracao-amonia-nh3': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'sistemas-de-refrigeracao-por-amonia-nh3': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'refrigeracao-amonia': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'refrigeracao-por-amonia': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'amonia-nh3': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+  'FLUID-NH3': 'laudo-de-vistoria-de-sistemas-de-refrigeracao-por-amonia-nh3',
+
+  // FLUID-US
+  'laudo-ultrassom-espessura': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'laudo-medicao-espessura-ultrassom-mapeamento-corrosao': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'medicao-espessura-ultrassom': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'ultrassom-espessura': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'mapeamento-corrosao': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao',
+  'FLUID-US': 'laudo-de-medicao-de-espessura-por-ultrassom-mapeamento-de-corrosao'
+};
+
+/**
+ * Função de sincronização Firestore para os tipos da categoria
+ * "Tubulações de Processo e Redes Industriais" (Vasos, Tanques e Redes de Fluidos Especializados)
+ */
+export async function sincronizarFirestoreTubulacoesProcesso(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'tubulacoes-de-processo-e-redes-industriais',
+    'tubulações-de-processo-e-redes-industriais',
+    'vasos-tanques-e-redes-de-fluidos-especializados'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Tubulações de Processo e Redes Industriais',
+        icone: 'Database',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_TUBULACOES_PROCESSOS_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_TUBULACOES_PROCESSO).filter(k => ALIASES_TIPOS_TUBULACOES_PROCESSO[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de tubulações de processo e redes industriais sincronizados nas coleções Firestore categoriasLaudo/tubulacoes-de-processo-e-redes-industriais/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de tubulações de processo com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+
 
 
