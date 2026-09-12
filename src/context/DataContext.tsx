@@ -23,6 +23,7 @@ import {
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
+import { sincronizarFirestoreNR12eNR13, sincronizarFirestoreVeicular } from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -115,7 +116,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
   const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
-  const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA));
+  const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => {
+    const loaded = loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA);
+    const cat2Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-2');
+    const cat4Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-4');
+    return loaded.map((cat: CategoriaLaudoDef) => {
+      if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
+      if (cat.id === 'cat-4' && cat4Atualizada) return cat4Atualizada;
+      return cat;
+    });
+  });
   const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => loadStorage('vl_logs', [
     {
       id: 'log-01',
@@ -204,6 +214,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
+
+  // Sincronização de documentos Firestore das categorias de laudo NR-12/NR-13 e Engenharia Veicular
+  useEffect(() => {
+    sincronizarFirestoreNR12eNR13().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia NR12/NR13] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia NR12/NR13] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreVeicular().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Veicular] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Veicular] Sincronização em segundo plano:', err);
+    });
+  }, []);
 
   // Log Auditoria Helper
   const registrarLog = (colecao: string, docId: string, acao: LogAuditoria['acao'], detalhes?: string) => {
@@ -485,17 +514,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       normasReferencia: tipoEncontrado?.normasRef || 'ABNT NBR, NR-12, NR-11, NR-13',
       apresentacao: tipoEncontrado?.apresentacaoPadrao || 'O presente laudo técnico pericial tem por escopo avaliar as condições mecânicas e de segurança do ativo.',
       metodologia: tipoEncontrado?.metodologiaPadrao || 'A metodologia adotada contemplou inspeção visual, ensaios funcionais e checagem de conformidade com as normas vigentes.',
-      checklist: tipoEncontrado?.checklistPadrao ? tipoEncontrado.checklistPadrao.map(item => ({ ...item })) : [],
+      checklist: (tipoEncontrado?.checklistPadrao && tipoEncontrado.checklistPadrao.length > 0)
+        ? tipoEncontrado.checklistPadrao.map(item => ({ ...item }))
+        : (tipoEncontrado?.checklistInicial || []).map((desc, idx) => ({
+            id: `ck-${idx + 1}`,
+            descricao: desc,
+            status: 'conforme' as const,
+            observacao: 'Conforme requisitos técnicos verificados'
+          })),
       tabelaNaoConformidades: [],
       conclusao: 'Com base nas avaliações e ensaios técnicos realizados, o equipamento encontra-se em conformidade com as exigências normativas aplicáveis, condicionando-se o início ou continuidade das operações à observância do plano de manutenção e eventuais ações corretivas apontadas.',
-      secoes: tipoEncontrado?.secoesPadrao ? tipoEncontrado.secoesPadrao.map(s => ({
-        id: s.id,
-        titulo: s.titulo,
-        ordem: s.ordem,
-        conteudoHtml: s.conteudoHtml || '',
-        itens: [],
-        fotos: []
-      })) : [],
+      secoes: (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
+        ? tipoEncontrado.secoesPadrao.map(s => ({
+            id: s.id,
+            titulo: s.titulo,
+            ordem: s.ordem,
+            conteudoHtml: s.conteudoHtml || '',
+            itens: [],
+            fotos: []
+          }))
+        : (tipoEncontrado?.secoesEspecificas || []).map((sec, idx) => ({
+            id: `sec-${idx + 1}`,
+            titulo: sec,
+            ordem: idx + 1,
+            conteudoHtml: '',
+            itens: [],
+            fotos: []
+          })),
       assinaturaDigital: {
         responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
         responsavelCrea: 'CREA-PE 182229949-0',

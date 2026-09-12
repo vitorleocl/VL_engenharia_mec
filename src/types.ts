@@ -211,6 +211,11 @@ export interface TipoLaudoDef {
   metodologiaPadrao: string;
   checklistPadrao: TipoLaudoItemChecklist[];
   secoesPadrao?: TipoLaudoSecaoPadrao[];
+  temHrn?: boolean;
+  hrn?: boolean;
+  textoBaseApresentacao?: string;
+  secoesEspecificas?: string[];
+  checklistInicial?: string[];
 }
 
 export interface SubcategoriaLaudoDef {

@@ -96,6 +96,17 @@ service cloud.firestore {
       allow write: if isColaborador() || isMaster();
     }
 
+    // Categorias e Tipos de Laudo (Taxonomia e Diretrizes Técnicas)
+    match /categoriasLaudo/{categoriaId} {
+      allow read: if true;
+      allow write: if isColaborador() || isMaster();
+
+      match /tipos/{tipoId} {
+        allow read: if true;
+        allow write: if isColaborador() || isMaster();
+      }
+    }
+
     // Inspection Schedule / Agenda
     match /agendaVistorias/{agendaId} {
       allow read, write: if isColaborador() || isMaster();
