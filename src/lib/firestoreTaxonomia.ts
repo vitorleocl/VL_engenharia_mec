@@ -1576,4 +1576,251 @@ export async function sincronizarFirestoreEstruturasMetalicas(): Promise<{
   }
 }
 
+/**
+ * Definições completas dos 4 tipos de laudo da categoria
+ * Equipamentos de Elevação e Movimentação Industrial (Estáticos/Fixos)
+ */
+export const TIPOS_ELEVACAO_INDUSTRIAL_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo de Integridade e Segurança de Pontes Rolantes e Pórticos Rolantes
+  'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes': {
+    id: 'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes',
+    codigo: 'ELEV-PONTE',
+    nome: 'Laudo de Integridade e Segurança de Pontes Rolantes e Pórticos Rolantes',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 8400, NBR 16147, NR-11, NR-12',
+    textoBaseApresentacao: 'Inspeção mecânica, estrutural e elétrica em pontes rolantes univiga e dupla viga, pórticos e semi-pórticos industriais.',
+    apresentacaoPadrao: 'Inspeção mecânica, estrutural e elétrica em pontes rolantes univiga e dupla viga, pórticos e semi-pórticos industriais.',
+    metodologiaPadrao: 'Inspeção de vigas de rolamento, trilhos, batentes de fim de curso, freios de translação e elevação, cabo de aço e enrolador.',
+    secoesEspecificas: [
+      'Identificação do Equipamento (capacidade nominal, vão, fabricante, TAG)',
+      'Vistoria Estrutural das Vigas de Rolamento (trilhos, alinhamento, desgaste)',
+      'Verificação de Barramentos Elétricos (cabos, coletores de energia, isolamento)',
+      'Verificação da Talha (cabo/corrente, freio, redutor)',
+      'Verificação do Sistema de Freios (freio de translação e freio de elevação)',
+      'Verificação de Fins de Curso e Dispositivos de Segurança (limitador de carga, botão de emergência)',
+      'Verificação da Estrutura da Ponte/Pórtico (viga principal e carrinho)'
+    ],
+    checklistInicial: [
+      'Capacidade nominal identificada na placa do equipamento',
+      'Vão da ponte/pórtico conferido',
+      'Trilhos de rolamento avaliados quanto a desgaste e alinhamento',
+      'Rodas do carrinho/ponte avaliadas',
+      'Barramento elétrico isolado e sem danos aparentes',
+      'Coletores de energia avaliados',
+      'Cabo de aço/corrente da talha sem desgaste ou corrosão',
+      'Freio de elevação testado',
+      'Freio de translação testado',
+      'Redutor sem vazamento de óleo ou ruído anormal',
+      'Fins de curso (superior, inferior, lateral) testados',
+      'Limitador de carga testado',
+      'Botão de emergência testado',
+      'Controle pendente (botoeira) sem danos',
+      'Estrutura da viga principal sem deformação ou trinca',
+      'Estrutura do carrinho sem deformação',
+      'Sinalização de capacidade nominal afixada na ponte/pórtico'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Análise de Vida Útil Remanescente (SWP - Safe Working Period)
+  'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period': {
+    id: 'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period',
+    codigo: 'ELEV-SWP',
+    nome: 'Laudo de Análise de Vida Útil Remanescente (SWP - Safe Working Period)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ISO 12482, ISO 4301, FEM 1.001, FEM 9.755',
+    textoBaseApresentacao: 'Cálculo analítico do Período Seguro de Trabalho (Safe Working Period - SWP) para mecanismos de elevação e talhas de pontes rolantes.',
+    apresentacaoPadrao: 'Cálculo analítico do Período Seguro de Trabalho (Safe Working Period - SWP) para mecanismos de elevação e talhas de pontes rolantes.',
+    metodologiaPadrao: 'Coleta de dados de horas de operação, espectro de carga médio, ciclos por hora e cálculo da classe FEM do mecanismo.',
+    secoesEspecificas: [
+      'Levantamento do Histórico de Ciclos de Operação (horas trabalhadas, número de ciclos de içamento)',
+      'Classificação do Grupo de Utilização e Estado de Carga (conforme ISO 4301 / FEM 1.001)',
+      'Cálculo do SWP (Período de Trabalho Seguro) com Base na Classificação',
+      'Estimativa da Vida Útil Remanescente',
+      'Recomendação de Periodicidade de Reinspeção'
+    ],
+    checklistInicial: [
+      'Histórico de operação levantado (horas, ciclos), quando disponível',
+      'Classe de utilização (U0–U9, conforme ISO 4301) definida',
+      'Estado de carga (Q1–Q4) definido',
+      'Grupo de classificação (FEM) calculado a partir de utilização x estado de carga',
+      'SWP calculado a partir do grupo de classificação',
+      'Vida útil já consumida comparada ao SWP total',
+      'Vida útil remanescente estimada',
+      'Recomendação de periodicidade de reinspeção definida',
+      'Componentes críticos para fadiga identificados (gancho, tambor, estrutura)'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Inspeção de Elevadores de Cargas e Monta-Cargas
+  'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas': {
+    id: 'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas',
+    codigo: 'ELEV-MONTA',
+    nome: 'Laudo de Inspeção de Elevadores de Cargas e Monta-Cargas',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 14712, NR-11, NR-12',
+    textoBaseApresentacao: 'Inspeção de segurança em elevadores de carga industriais e monta-cargas hidráulicos ou a cabo.',
+    apresentacaoPadrao: 'Inspeção de segurança em elevadores de carga industriais e monta-cargas hidráulicos ou a cabo.',
+    metodologiaPadrao: 'Verificação do freio de segurança (cunha de frenagem), portas de pavimento intertravadas, guias e limites.',
+    secoesEspecificas: [
+      'Identificação do Equipamento (capacidade nominal, percurso, número de paradas)',
+      'Verificação de Cabos de Aço (tração e limitador de velocidade)',
+      'Verificação do Freio de Emergência (pára-quedas)',
+      'Verificação de Intertravamento de Portas (pavimento e cabina)',
+      'Verificação da Casa de Máquinas (motor, quadro de comando, iluminação, ventilação)',
+      'Verificação do Poço (fundo de poço, para-choques, iluminação)'
+    ],
+    checklistInicial: [
+      'Capacidade nominal identificada',
+      'Percurso e número de paradas conferidos',
+      'Cabos de tração sem fios rompidos ou corrosão',
+      'Limitador de velocidade testado',
+      'Freio de emergência (pára-quedas) testado',
+      'Portas de pavimento com intertravamento funcional',
+      'Porta de cabina com intertravamento funcional',
+      'Casa de máquinas com acesso seguro e iluminação adequada',
+      'Quadro de comando identificado, sem exposição de partes energizadas',
+      'Ventilação da casa de máquinas avaliada',
+      'Fundo de poço limpo e com para-choques íntegros',
+      'Iluminação do poço funcional',
+      'Sinalização de capacidade máxima afixada na cabina',
+      'Dispositivo de alarme/comunicação de emergência testado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 4. Laudo de Dispositivos de Içamento (Olhais, Balancins e Travessões)
+  'laudo-de-dispositivos-de-icamento-olhais-balancins-e-travessoes': {
+    id: 'laudo-de-dispositivos-de-icamento-olhais-balancins-e-travessoes',
+    codigo: 'ELEV-DISP',
+    nome: 'Laudo de Dispositivos de Içamento (Olhais, Balancins e Travessões)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 8400, ASME B30.20',
+    textoBaseApresentacao: 'Projeto, cálculo estrutural e laudo de homologação com ART de balancins de içamento, travessões de carga e olhais soldados.',
+    apresentacaoPadrao: 'Projeto, cálculo estrutural e laudo de homologação com ART de balancins de içamento, travessões de carga e olhais soldados.',
+    metodologiaPadrao: 'Análise de tensões de Von Mises por elementos finitos (FEA), teste de carga com dinamômetro e ensaio de LP nas soldas dos olhais.',
+    secoesEspecificas: [
+      'Identificação do Dispositivo (tipo, dimensões, capacidade nominal)',
+      'Memória de Cálculo do Dispositivo (dimensionamento estrutural e fator de segurança)',
+      'Teste de Carga do Acessório (percentual da capacidade nominal)',
+      'Inspeção de Solda e Fixação',
+      'Marcação e Identificação Permanente da Capacidade'
+    ],
+    checklistInicial: [
+      'Dispositivo identificado (tipo, dimensões, material)',
+      'Memória de cálculo apresentada (dimensionamento e fator de segurança)',
+      'Fator de segurança conforme norma aplicável (NBR 8400 ou equivalente)',
+      'Teste de carga realizado (percentual da capacidade nominal)',
+      'Ausência de deformação permanente após o teste',
+      'Solda inspecionada visualmente (fissuras, porosidade)',
+      'Fixação/parafusos conferidos com torque adequado',
+      'Marcação de capacidade nominal gravada de forma permanente na peça',
+      'Data de fabricação/teste registrada',
+      'Certificado do teste de carga anexado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+/**
+ * Mapeamento de identificadores curtos para os tipos de elevação industrial
+ */
+export const ALIASES_TIPOS_ELEVACAO_INDUSTRIAL: Record<string, string> = {
+  'laudo-ponte-rolante': 'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes',
+  'laudo-integridade-seguranca-pontes-rolantes-porticos-rolantes': 'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes',
+  'pontes-rolantes-e-porticos': 'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes',
+  'laudo-pontes-rolantes': 'laudo-de-integridade-e-seguranca-de-pontes-rolantes-e-porticos-rolantes',
+
+  'laudo-vida-util-swp': 'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period',
+  'laudo-de-analise-de-vida-util-remanescente-swp': 'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period',
+  'laudo-analise-vida-util-remanescente-swp': 'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period',
+  'swp': 'laudo-de-analise-de-vida-util-remanescente-swp-safe-working-period',
+
+  'laudo-elevador-carga': 'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas',
+  'laudo-inspecao-elevadores-cargas-monta-cargas': 'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas',
+  'elevadores-de-cargas-e-monta-cargas': 'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas',
+  'elevadores-e-dispositivos-de-carga-industrial': 'laudo-de-inspecao-de-elevadores-de-cargas-e-monta-cargas',
+
+  'laudo-dispositivos-icamento': 'laudo-de-dispositivos-de-icamento-olhais-balancins-e-travessoes',
+  'laudo-dispositivos-icamento-olhais-balancins-travessoes': 'laudo-de-dispositivos-de-icamento-olhais-balancins-e-travessoes',
+  'dispositivos-de-icamento': 'laudo-de-dispositivos-de-icamento-olhais-balancins-e-travessoes'
+};
+
+/**
+ * Função de sincronização Firestore para os tipos da categoria
+ * "Equipamentos de Elevação e Movimentação Industrial (Estáticos/Fixos)"
+ */
+export async function sincronizarFirestoreElevacaoIndustrial(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'equipamentos-de-elevacao-e-movimentacao-industrial',
+    'equipamentos-de-elevação-e-movimentação-industrial',
+    'equipamentos-de-elevacao-e-movimentacao-industrial-estaticos-fixos'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Equipamentos de Elevação e Movimentação Industrial (Estáticos/Fixos)',
+        icone: 'Layers',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_ELEVACAO_INDUSTRIAL_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_ELEVACAO_INDUSTRIAL).filter(k => ALIASES_TIPOS_ELEVACAO_INDUSTRIAL[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de elevação industrial sincronizados nas coleções Firestore categoriasLaudo/equipamentos-de-elevacao-e-movimentacao-industrial/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de elevação industrial com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+
 

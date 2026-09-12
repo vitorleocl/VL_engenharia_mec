@@ -29,7 +29,8 @@ import {
   sincronizarFirestoreIncendio,
   sincronizarFirestoreMaquinasPesadas,
   sincronizarFirestorePlayground,
-  sincronizarFirestoreEstruturasMetalicas
+  sincronizarFirestoreEstruturasMetalicas,
+  sincronizarFirestoreElevacaoIndustrial
 } from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
@@ -131,6 +132,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cat4Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-4');
     const cat6Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-6');
     const cat7Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-7');
+    const cat8Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-8');
     return loaded.map((cat: CategoriaLaudoDef) => {
       if (cat.id === 'cat-1' && cat1Atualizada) return cat1Atualizada;
       if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
@@ -138,6 +140,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (cat.id === 'cat-4' && cat4Atualizada) return cat4Atualizada;
       if (cat.id === 'cat-6' && cat6Atualizada) return cat6Atualizada;
       if (cat.id === 'cat-7' && cat7Atualizada) return cat7Atualizada;
+      if (cat.id === 'cat-8' && cat8Atualizada) return cat8Atualizada;
       return cat;
     });
   });
@@ -278,6 +281,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Estruturas Metálicas] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreElevacaoIndustrial().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Elevação Industrial] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Elevação Industrial] Sincronização em segundo plano:', err);
     });
   }, []);
 

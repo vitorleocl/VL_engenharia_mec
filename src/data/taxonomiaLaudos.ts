@@ -1890,25 +1890,114 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-ponte-rolante',
             codigo: 'ELEV-PONTE',
             nome: 'Laudo de Integridade e Segurança de Pontes Rolantes e Pórticos Rolantes',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR 8400, NBR 16147, NR-11, NR-12',
+            textoBaseApresentacao: 'Inspeção mecânica, estrutural e elétrica em pontes rolantes univiga e dupla viga, pórticos e semi-pórticos industriais.',
             apresentacaoPadrao: 'Inspeção mecânica, estrutural e elétrica em pontes rolantes univiga e dupla viga, pórticos e semi-pórticos industriais.',
             metodologiaPadrao: 'Inspeção de vigas de rolamento, trilhos, batentes de fim de curso, freios de translação e elevação, cabo de aço e enrolador.',
+            secoesEspecificas: [
+              'Identificação do Equipamento (capacidade nominal, vão, fabricante, TAG)',
+              'Vistoria Estrutural das Vigas de Rolamento (trilhos, alinhamento, desgaste)',
+              'Verificação de Barramentos Elétricos (cabos, coletores de energia, isolamento)',
+              'Verificação da Talha (cabo/corrente, freio, redutor)',
+              'Verificação do Sistema de Freios (freio de translação e freio de elevação)',
+              'Verificação de Fins de Curso e Dispositivos de Segurança (limitador de carga, botão de emergência)',
+              'Verificação da Estrutura da Ponte/Pórtico (viga principal e carrinho)'
+            ],
+            checklistInicial: [
+              'Capacidade nominal identificada na placa do equipamento',
+              'Vão da ponte/pórtico conferido',
+              'Trilhos de rolamento avaliados quanto a desgaste e alinhamento',
+              'Rodas do carrinho/ponte avaliadas',
+              'Barramento elétrico isolado e sem danos aparentes',
+              'Coletores de energia avaliados',
+              'Cabo de aço/corrente da talha sem desgaste ou corrosão',
+              'Freio de elevação testado',
+              'Freio de translação testado',
+              'Redutor sem vazamento de óleo ou ruído anormal',
+              'Fins de curso (superior, inferior, lateral) testados',
+              'Limitador de carga testado',
+              'Botão de emergência testado',
+              'Controle pendente (botoeira) sem danos',
+              'Estrutura da viga principal sem deformação ou trinca',
+              'Estrutura do carrinho sem deformação',
+              'Sinalização de capacidade nominal afixada na ponte/pórtico'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Equipamento (capacidade nominal, vão, fabricante, TAG)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Vistoria Estrutural das Vigas de Rolamento (trilhos, alinhamento, desgaste)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação de Barramentos Elétricos (cabos, coletores, isolamento)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação da Talha (cabo/corrente, freio, redutor)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Verificação do Sistema de Freios (translação e elevação)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Verificação de Fins de Curso e Dispositivos de Segurança', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Verificação da Estrutura da Ponte/Pórtico (viga principal e carrinho)', ordem: 7 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Chaves de fim de curso de elevação e translação duplamente monitoradas', status: 'conforme', observacao: 'Fim de curso por engrenagem e gravidade operacionais' },
-              { id: 'ck-2', descricao: 'Desgaste e alinhamento dos trilhos de rolamento e batentes de extremidade', status: 'conforme', observacao: 'Batentes amortecedores com elastômero intacto' },
-              { id: 'ck-3', descricao: 'Freio eletromagnético de elevação com retenção de 150% da carga nominal', status: 'conforme', observacao: 'Pastilhas de freio com desgaste regular' }
+              { id: 'ck-1', descricao: 'Capacidade nominal identificada na placa do equipamento', status: 'conforme', observacao: 'Placa indelével afixada com capacidade de 10 toneladas' },
+              { id: 'ck-2', descricao: 'Vão da ponte/pórtico conferido', status: 'conforme', observacao: 'Vão livre de 18,50 m aferido com trena a laser' },
+              { id: 'ck-3', descricao: 'Trilhos de rolamento avaliados quanto a desgaste e alinhamento', status: 'conforme', observacao: 'Trilhos alinhados e sem deformações ou degraus nas juntas' },
+              { id: 'ck-4', descricao: 'Rodas do carrinho/ponte avaliadas', status: 'conforme', observacao: 'Frisos das rodas íntegros e sem desgastes acentuados' },
+              { id: 'ck-5', descricao: 'Barramento elétrico isolado e sem danos aparentes', status: 'conforme', observacao: 'Barramento blindado protegido e devidamente aterrado' },
+              { id: 'ck-6', descricao: 'Coletores de energia avaliados', status: 'conforme', observacao: 'Sapatas coletoras com pressão de mola e espessura adequadas' },
+              { id: 'ck-7', descricao: 'Cabo de aço/corrente da talha sem desgaste ou corrosão', status: 'conforme', observacao: 'Cabo lubrificado sem arames rompidos ou dobras' },
+              { id: 'ck-8', descricao: 'Freio de elevação testado', status: 'conforme', observacao: 'Retenção imediata sob carga de ensaio sem deslizamento' },
+              { id: 'ck-9', descricao: 'Freio de translação testado', status: 'conforme', observacao: 'Frenagem suave com desaceleração conforme norma' },
+              { id: 'ck-10', descricao: 'Redutor sem vazamento de óleo ou ruído anormal', status: 'conforme', observacao: 'Nível de óleo adequado e vedação intacta' },
+              { id: 'ck-11', descricao: 'Fins de curso (superior, inferior, lateral) testados', status: 'conforme', observacao: 'Sensores de fim de curso acionados com precisão' },
+              { id: 'ck-12', descricao: 'Limitador de carga testado', status: 'conforme', observacao: 'Célula de carga atuando e cortando içamento em 105% da nominal' },
+              { id: 'ck-13', descricao: 'Botão de emergência testado', status: 'conforme', observacao: 'Desarme instantâneo do contator geral verificado' },
+              { id: 'ck-14', descricao: 'Controle pendente (botoeira) sem danos', status: 'conforme', observacao: 'Cabo de aço de sustentação aliviando tração dos condutores elétricos' },
+              { id: 'ck-15', descricao: 'Estrutura da viga principal sem deformação ou trinca', status: 'conforme', observacao: 'Flecha estática inferior a L/800 conforme NBR 8400' },
+              { id: 'ck-16', descricao: 'Estrutura do carrinho sem deformação', status: 'conforme', observacao: 'Chassi do trole alinhado e sem trincas nas soldas' },
+              { id: 'ck-17', descricao: 'Sinalização de capacidade nominal afixada na ponte/pórtico', status: 'conforme', observacao: 'Inscrições visíveis do piso em ambos os lados da viga' }
             ]
           },
           {
             id: 'laudo-vida-util-swp',
             codigo: 'ELEV-SWP',
-            nome: 'Laudo de Análise de Vida Útil Remanescente (SWP)',
-            normasRef: 'ISO 12482 (Crane - Condition monitoring), FEM 9.755',
+            nome: 'Laudo de Análise de Vida Útil Remanescente (SWP - Safe Working Period)',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ISO 12482, ISO 4301, FEM 1.001, FEM 9.755',
+            textoBaseApresentacao: 'Cálculo analítico do Período Seguro de Trabalho (Safe Working Period - SWP) para mecanismos de elevação e talhas de pontes rolantes.',
             apresentacaoPadrao: 'Cálculo analítico do Período Seguro de Trabalho (Safe Working Period - SWP) para mecanismos de elevação e talhas de pontes rolantes.',
             metodologiaPadrao: 'Coleta de dados de horas de operação, espectro de carga médio, ciclos por hora e cálculo da classe FEM do mecanismo.',
+            secoesEspecificas: [
+              'Levantamento do Histórico de Ciclos de Operação (horas trabalhadas, número de ciclos de içamento)',
+              'Classificação do Grupo de Utilização e Estado de Carga (conforme ISO 4301 / FEM 1.001)',
+              'Cálculo do SWP (Período de Trabalho Seguro) com Base na Classificação',
+              'Estimativa da Vida Útil Remanescente',
+              'Recomendação de Periodicidade de Reinspeção'
+            ],
+            checklistInicial: [
+              'Histórico de operação levantado (horas, ciclos), quando disponível',
+              'Classe de utilização (U0–U9, conforme ISO 4301) definida',
+              'Estado de carga (Q1–Q4) definido',
+              'Grupo de classificação (FEM) calculado a partir de utilização x estado de carga',
+              'SWP calculado a partir do grupo de classificação',
+              'Vida útil já consumida comparada ao SWP total',
+              'Vida útil remanescente estimada',
+              'Recomendação de periodicidade de reinspeção definida',
+              'Componentes críticos para fadiga identificados (gancho, tambor, estrutura)'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Levantamento do Histórico de Ciclos de Operação (horas, ciclos)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Classificação do Grupo de Utilização e Estado de Carga (ISO 4301 / FEM 1.001)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Cálculo do SWP (Período de Trabalho Seguro) com Base na Classificação', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Estimativa da Vida Útil Remanescente', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Recomendação de Periodicidade de Reinspeção', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Percentual de vida útil de projeto consumida pela talha principal', status: 'conforme', observacao: 'Consumo atual estimado em 42% do ciclo de vida FEM 2m' },
-              { id: 'ck-2', descricao: 'Previsão matemática de tempo para revisão geral (overhaul mecânico)', status: 'conforme', observacao: 'Próxima revisão maior recomendada em 36 meses' }
+              { id: 'ck-1', descricao: 'Histórico de operação levantado (horas, ciclos), quando disponível', status: 'conforme', observacao: 'Horímetro e relatórios de turnos de produção coletados' },
+              { id: 'ck-2', descricao: 'Classe de utilização (U0–U9, conforme ISO 4301) definida', status: 'conforme', observacao: 'Classificado como classe U4 (operação moderada)' },
+              { id: 'ck-3', descricao: 'Estado de carga (Q1–Q4) definido', status: 'conforme', observacao: 'Estado de carga Q2 (médio) determinado' },
+              { id: 'ck-4', descricao: 'Grupo de classificação (FEM) calculado a partir de utilização x estado de carga', status: 'conforme', observacao: 'Grupo mecânico FEM 2m / ISO M5 determinado' },
+              { id: 'ck-5', descricao: 'SWP calculado a partir do grupo de classificação', status: 'conforme', observacao: 'Período total de trabalho seguro de projeto: 1.600 horas em plena carga' },
+              { id: 'ck-6', descricao: 'Vida útil já consumida comparada ao SWP total', status: 'conforme', observacao: 'Consumo atual acumulado calculado em 38% do SWP total' },
+              { id: 'ck-7', descricao: 'Vida útil remanescente estimada', status: 'conforme', observacao: 'Vida útil teórica remanescente estimada em 62% (~4,5 anos operacionais)' },
+              { id: 'ck-8', descricao: 'Recomendação de periodicidade de reinspeção definida', status: 'conforme', observacao: 'Reinspeção periódica anual recomendada' },
+              { id: 'ck-9', descricao: 'Componentes críticos para fadiga identificados (gancho, tambor, estrutura)', status: 'conforme', observacao: 'Eixo do tambor de enrolamento e gancho forjado submetidos a ensaios' }
             ]
           }
         ]
@@ -1921,24 +2010,108 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-elevador-carga',
             codigo: 'ELEV-MONTA',
             nome: 'Laudo de Inspeção de Elevadores de Cargas e Monta-Cargas',
-            normasRef: 'ABNT NBR 14712 (Elevadores de carga e monta-cargas), NR-11',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR 14712, NR-11, NR-12',
+            textoBaseApresentacao: 'Inspeção de segurança em elevadores de carga industriais e monta-cargas hidráulicos ou a cabo.',
             apresentacaoPadrao: 'Inspeção de segurança em elevadores de carga industriais e monta-cargas hidráulicos ou a cabo.',
             metodologiaPadrao: 'Verificação do freio de segurança (cunha de frenagem), portas de pavimento intertravadas, guias e limites.',
+            secoesEspecificas: [
+              'Identificação do Equipamento (capacidade nominal, percurso, número de paradas)',
+              'Verificação de Cabos de Aço (tração e limitador de velocidade)',
+              'Verificação do Freio de Emergência (pára-quedas)',
+              'Verificação de Intertravamento de Portas (pavimento e cabina)',
+              'Verificação da Casa de Máquinas (motor, quadro de comando, iluminação, ventilação)',
+              'Verificação do Poço (fundo de poço, para-choques, iluminação)'
+            ],
+            checklistInicial: [
+              'Capacidade nominal identificada',
+              'Percurso e número de paradas conferidos',
+              'Cabos de tração sem fios rompidos ou corrosão',
+              'Limitador de velocidade testado',
+              'Freio de emergência (pára-quedas) testado',
+              'Portas de pavimento com intertravamento funcional',
+              'Porta de cabina com intertravamento funcional',
+              'Casa de máquinas com acesso seguro e iluminação adequada',
+              'Quadro de comando identificado, sem exposição de partes energizadas',
+              'Ventilação da casa de máquinas avaliada',
+              'Fundo de poço limpo e com para-choques íntegros',
+              'Iluminação do poço funcional',
+              'Sinalização de capacidade máxima afixada na cabina',
+              'Dispositivo de alarme/comunicação de emergência testado'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Equipamento (capacidade, percurso, paradas)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Verificação de Cabos de Aço (tração e limitador)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação do Freio de Emergência (pára-quedas)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Intertravamento de Portas (pavimento e cabina)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Verificação da Casa de Máquinas (motor, comando, ventilação)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Verificação do Poço (fundo de poço, para-choques, iluminação)', ordem: 6 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Intertravamento das portas de pavimento impedindo abertura com cabine em movimento', status: 'conforme', observacao: 'Chaves elétricas de travamento funcionando' },
-              { id: 'ck-2', descricao: 'Teste do aparelho de segurança (freio de segurança do carro por cabo frouxo)', status: 'conforme', observacao: 'Bloqueio mecânico instantâneo ativado no teste' }
+              { id: 'ck-1', descricao: 'Capacidade nominal identificada', status: 'conforme', observacao: 'Capacidade nominal de 2.000 kg indicada' },
+              { id: 'ck-2', descricao: 'Percurso e número de paradas conferidos', status: 'conforme', observacao: 'Percurso total de 12 metros atendendo 4 pavimentos' },
+              { id: 'ck-3', descricao: 'Cabos de tração sem fios rompidos ou corrosão', status: 'conforme', observacao: 'Conjunto de 4 cabos de aço com diâmetro uniforme e lubrificados' },
+              { id: 'ck-4', descricao: 'Limitador de velocidade testado', status: 'conforme', observacao: 'Disparo mecânico em velocidade de calibração aferido' },
+              { id: 'ck-5', descricao: 'Freio de emergência (pára-quedas) testado', status: 'conforme', observacao: 'Atuação das cunhas travando o carro nas guias com precisão' },
+              { id: 'ck-6', descricao: 'Portas de pavimento com intertravamento funcional', status: 'conforme', observacao: 'Trincos mecânicos e contatos elétricos de segurança operantes' },
+              { id: 'ck-7', descricao: 'Porta de cabina com intertravamento funcional', status: 'conforme', observacao: 'Impossibilidade de movimento com folha aberta' },
+              { id: 'ck-8', descricao: 'Casa de máquinas com acesso seguro e iluminação adequada', status: 'conforme', observacao: 'Porta corta-fogo com fechadura e iluminação > 200 lux' },
+              { id: 'ck-9', descricao: 'Quadro de comando identificado, sem exposição de partes energizadas', status: 'conforme', observacao: 'Painel metálico fechado e com diagrama elétrico interno' },
+              { id: 'ck-10', descricao: 'Ventilação da casa de máquinas avaliada', status: 'conforme', observacao: 'Venezianas permanentes com tela antipássaros' },
+              { id: 'ck-11', descricao: 'Fundo de poço limpo e com para-choques íntegros', status: 'conforme', observacao: 'Sem acúmulo de água ou óleo, amortecedores de mola intactos' },
+              { id: 'ck-12', descricao: 'Iluminação do poço funcional', status: 'conforme', observacao: 'Lâmpadas protegidas com interruptores no poço e casa de máquinas' },
+              { id: 'ck-13', descricao: 'Sinalização de capacidade máxima afixada na cabina', status: 'conforme', observacao: 'Placa indelével proibindo transporte de pessoas' },
+              { id: 'ck-14', descricao: 'Dispositivo de alarme/comunicação de emergência testado', status: 'conforme', observacao: 'Interfone e sirene de alarme operantes' }
             ]
           },
           {
             id: 'laudo-dispositivos-icamento',
             codigo: 'ELEV-DISP',
             nome: 'Laudo de Dispositivos de Içamento (Olhais, Balancins e Travessões)',
-            normasRef: 'ABNT NBR 8400, ASME B30.20 (Below-the-Hook Lifting Devices)',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR 8400, ASME B30.20',
+            textoBaseApresentacao: 'Projeto, cálculo estrutural e laudo de homologação com ART de balancins de içamento, travessões de carga e olhais soldados.',
             apresentacaoPadrao: 'Projeto, cálculo estrutural e laudo de homologação com ART de balancins de içamento, travessões de carga e olhais soldados.',
             metodologiaPadrao: 'Análise de tensões de Von Mises por elementos finitos (FEA), teste de carga com dinamômetro e ensaio de LP nas soldas dos olhais.',
+            secoesEspecificas: [
+              'Identificação do Dispositivo (tipo, dimensões, capacidade nominal)',
+              'Memória de Cálculo do Dispositivo (dimensionamento estrutural e fator de segurança)',
+              'Teste de Carga do Acessório (percentual da capacidade nominal)',
+              'Inspeção de Solda e Fixação',
+              'Marcação e Identificação Permanente da Capacidade'
+            ],
+            checklistInicial: [
+              'Dispositivo identificado (tipo, dimensões, material)',
+              'Memória de cálculo apresentada (dimensionamento e fator de segurança)',
+              'Fator de segurança conforme norma aplicável (NBR 8400 ou equivalente)',
+              'Teste de carga realizado (percentual da capacidade nominal)',
+              'Ausência de deformação permanente após o teste',
+              'Solda inspecionada visualmente (fissuras, porosidade)',
+              'Fixação/parafusos conferidos com torque adequado',
+              'Marcação de capacidade nominal gravada de forma permanente na peça',
+              'Data de fabricação/teste registrada',
+              'Certificado do teste de carga anexado'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Dispositivo (tipo, dimensões, capacidade nominal)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Memória de Cálculo do Dispositivo (dimensionamento, fator de segurança)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Teste de Carga do Acessório (percentual da capacidade nominal)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Inspeção de Solda e Fixação', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Marcação e Identificação Permanente da Capacidade', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Marcação permanente da Capacidade Máxima de Carga (CMT) em ambos os lados', status: 'conforme', observacao: 'Pintura visível indicando 10.000 kg' },
-              { id: 'ck-2', descricao: 'Inspeção por Líquido Penetrante nos olhais de sustentação primários', status: 'conforme', observacao: 'Soldas aprovadas sem indicação de trincas' }
+              { id: 'ck-1', descricao: 'Dispositivo identificado (tipo, dimensões, material)', status: 'conforme', observacao: 'Balancim monotrave em perfil W 250x38.5 em aço ASTM A36' },
+              { id: 'ck-2', descricao: 'Memória de cálculo apresentada (dimensionamento e fator de segurança)', status: 'conforme', observacao: 'Memorial analítico com simulação de tensões anexado' },
+              { id: 'ck-3', descricao: 'Fator de segurança conforme norma aplicável (NBR 8400 ou equivalente)', status: 'conforme', observacao: 'Fator de segurança adotado FS = 3.0 para içamento de cargas' },
+              { id: 'ck-4', descricao: 'Teste de carga realizado (percentual da capacidade nominal)', status: 'conforme', observacao: 'Teste estático com 125% da carga nominal (12,5 toneladas)' },
+              { id: 'ck-5', descricao: 'Ausência de deformação permanente após o teste', status: 'conforme', observacao: 'Medição dimensional antes e pós-teste sem flecha residual' },
+              { id: 'ck-6', descricao: 'Solda inspecionada visualmente (fissuras, porosidade)', status: 'conforme', observacao: 'Soldas de chanfro e filete dos olhais aprovadas por LP' },
+              { id: 'ck-7', descricao: 'Fixação/parafusos conferidos com torque adequado', status: 'conforme', observacao: 'Manilhas e pinos de fixação conferidos com contrapino' },
+              { id: 'ck-8', descricao: 'Marcação de capacidade nominal gravada de forma permanente na peça', status: 'conforme', observacao: 'Plaqueta soldada em baixo-relevo com CMT 10.000 kg' },
+              { id: 'ck-9', descricao: 'Data de fabricação/teste registrada', status: 'conforme', observacao: 'Data do ensaio e número da ART gravados' },
+              { id: 'ck-10', descricao: 'Certificado do teste de carga anexado', status: 'conforme', observacao: 'Certificado de calibração da célula de carga anexado' }
             ]
           }
         ]
