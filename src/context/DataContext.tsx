@@ -27,7 +27,9 @@ import {
   sincronizarFirestoreNR12eNR13, 
   sincronizarFirestoreVeicular,
   sincronizarFirestoreIncendio,
-  sincronizarFirestoreMaquinasPesadas
+  sincronizarFirestoreMaquinasPesadas,
+  sincronizarFirestorePlayground,
+  sincronizarFirestoreEstruturasMetalicas
 } from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
@@ -127,11 +129,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cat2Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-2');
     const cat3Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-3');
     const cat4Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-4');
+    const cat6Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-6');
+    const cat7Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-7');
     return loaded.map((cat: CategoriaLaudoDef) => {
       if (cat.id === 'cat-1' && cat1Atualizada) return cat1Atualizada;
       if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
       if (cat.id === 'cat-3' && cat3Atualizada) return cat3Atualizada;
       if (cat.id === 'cat-4' && cat4Atualizada) return cat4Atualizada;
+      if (cat.id === 'cat-6' && cat6Atualizada) return cat6Atualizada;
+      if (cat.id === 'cat-7' && cat7Atualizada) return cat7Atualizada;
       return cat;
     });
   });
@@ -256,6 +262,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Máquinas Pesadas] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestorePlayground().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Playground] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Playground] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreEstruturasMetalicas().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Estruturas Metálicas] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Estruturas Metálicas] Sincronização em segundo plano:', err);
     });
   }, []);
 

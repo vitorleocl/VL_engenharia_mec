@@ -1210,3 +1210,370 @@ export async function sincronizarFirestoreMaquinasPesadas(): Promise<{
   }
 }
 
+export const TIPOS_PLAYGROUND_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo Técnico de Inspeção de Playground (ABNT NBR 16071)
+  'laudo-tecnico-de-inspecao-de-playground-abnt-nbr-16071': {
+    id: 'laudo-tecnico-de-inspecao-de-playground-abnt-nbr-16071',
+    codigo: 'PLAY-NBR',
+    nome: 'Laudo Técnico de Inspeção de Playground (ABNT NBR 16071)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 16071 partes 1 a 7, Lei Estadual / Municipal de Segurança em Brinquedos',
+    textoBaseApresentacao: 'Laudo pericial com ART de inspeção física em áreas de recreação infantil em condomínios residenciais, escolas, shopping centers e parques públicos de Pernambuco.',
+    apresentacaoPadrao: 'Laudo pericial com ART de inspeção física em áreas de recreação infantil em condomínios residenciais, escolas, shopping centers e parques públicos de Pernambuco.',
+    metodologiaPadrao: 'Aplicação de gabaritos normativos para testes de aprisionamento de cabeça e pescoço, dedos e roupas, medição da área de impacto e ensaio do piso amortecedor.',
+    secoesEspecificas: [
+      'Identificação do Playground (localização, área total, equipamentos existentes)',
+      'Verificação de Superfícies de Impacto e Área de Queda Livre (conforme altura de queda de cada equipamento)',
+      'Verificação de Rotas de Aprisionamento (cabeça/pescoço, dedos, roupas/cordões)',
+      'Verificação de Ancoragens, Fundações e Fixação dos Equipamentos',
+      'Verificação de Materiais e Acabamento (arestas, pontas, ferrugem)',
+      'Verificação Específica por Tipo de Equipamento (balanços, escorregadores, gangorras, carrossel)',
+      'Verificação de Zona de Segurança e Distância Mínima Entre Equipamentos',
+      'Verificação de Sinalização de Idade Recomendada e Normas de Uso'
+    ],
+    checklistInicial: [
+      'Superfície de amortecimento de impacto adequada à altura de queda livre de cada equipamento',
+      'Área de queda livre desobstruída',
+      'Ausência de pontos de aprisionamento de cabeça/pescoço (aberturas entre 89 e 230 mm)',
+      'Ausência de pontos de aprisionamento de dedos',
+      'Ausência de pontos de prendimento de roupas ou cordões',
+      'Ancoragens e fundações firmes, sem corrosão',
+      'Ausência de arestas cortantes ou pontas expostas',
+      'Ausência de ferrugem estrutural comprometedora',
+      'Correntes/cabos de balanços sem desgaste excessivo',
+      'Escorregador com ângulo e altura conformes à norma',
+      'Gangorra com sistema de amortecimento no ponto de contato',
+      'Carrossel com velocidade de rotação controlada',
+      'Zona de segurança entre equipamentos respeitada (distância mínima)',
+      'Sinalização de idade recomendada e normas de uso afixada',
+      'Identificação de fabricante/certificação do equipamento, quando aplicável'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Análise de Risco e Manutenção Corretiva
+  'laudo-de-analise-de-risco-e-manutencao-corretiva': {
+    id: 'laudo-de-analise-de-risco-e-manutencao-corretiva',
+    codigo: 'PLAY-RISCO',
+    nome: 'Laudo de Análise de Risco e Manutenção Corretiva',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 16071-7 (Inspeção, Manutenção e Operação)',
+    textoBaseApresentacao: 'Plano de ação corretivo e classificação de risco para brinquedos com desgaste mecânico severo, visando reforma estrutural ou interdição temporária.',
+    apresentacaoPadrao: 'Plano de ação corretivo e classificação de risco para brinquedos com desgaste mecânico severo, visando reforma estrutural ou interdição temporária.',
+    metodologiaPadrao: 'Mapeamento de folgas em correntes de balanços, estabilidade de ancoragem das sapatas de concreto e substituição de ferragens oxidadas.',
+    secoesEspecificas: [
+      'Mapeamento de Partes Lascadas e Degradação de Madeira/Plástico',
+      'Mapeamento de Ferrugem e Corrosão Estrutural',
+      'Verificação de Parafusos Expostos, Soltos ou Faltantes',
+      'Verificação de Folgas Estruturais e Desgaste de Articulações (balanços, gangorras)',
+      'Classificação de Prioridade das Não Conformidades (Crítica, Moderada, Baixa)',
+      'Plano de Ação Corretivo com Prazos'
+    ],
+    checklistInicial: [
+      'Partes lascadas/rachadas identificadas e mapeadas',
+      'Ferrugem/corrosão estrutural mapeada',
+      'Parafusos soltos ou faltantes identificados',
+      'Tampas de proteção de parafusos presentes',
+      'Folgas em articulações de balanços/gangorras medidas',
+      'Desgaste de correntes/cabos avaliado',
+      'Superfície de amortecimento com desgaste ou deslocamento verificado',
+      'Vegetação ou obstáculos próximos ao playground avaliados',
+      'Classificação de prioridade (crítica/moderada/baixa) atribuída a cada não conformidade',
+      'Plano de ação corretivo elaborado com prazos por item'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+export const ALIASES_TIPOS_PLAYGROUND: Record<string, string> = {
+  'laudo-playground-nbr16071': 'laudo-tecnico-de-inspecao-de-playground-abnt-nbr-16071',
+  'play-nbr': 'laudo-tecnico-de-inspecao-de-playground-abnt-nbr-16071',
+  'laudo-playground-risco': 'laudo-de-analise-de-risco-e-manutencao-corretiva',
+  'play-risco': 'laudo-de-analise-de-risco-e-manutencao-corretiva'
+};
+
+export const TIPOS_ESTRUTURAS_METALICAS_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo de Integridade Estrutural de Galpões e Coberturas Metálicas (ABNT NBR 8800)
+  'laudo-de-integridade-estrutural-de-galpoes-e-coberturas-metalicas-abnt-nbr-8800': {
+    id: 'laudo-de-integridade-estrutural-de-galpoes-e-coberturas-metalicas-abnt-nbr-8800',
+    codigo: 'ESTR-GALP',
+    nome: 'Laudo de Integridade Estrutural de Galpões e Coberturas Metálicas (ABNT NBR 8800)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 8800, NBR 6123, NBR 14762',
+    textoBaseApresentacao: 'Inspeção técnica e pericial para verificação da estabilidade estrutural de tesouras, terças, contraventamentos e telhados de galpões industriais.',
+    apresentacaoPadrao: 'Inspeção técnica e pericial para verificação da estabilidade estrutural de tesouras, terças, contraventamentos e telhados de galpões industriais.',
+    metodologiaPadrao: 'Varredura por drones/acesso por corda, análise de flechas de deformação, aperto de parafusos estruturais e mapeamento de corrosão galvânica.',
+    secoesEspecificas: [
+      'Identificação da Estrutura (tipologia: tesoura, pórtico ou treliça; vão livre; área coberta)',
+      'Avaliação de Deformações e Indícios de Flambagem em Elementos Estruturais',
+      'Avaliação de Corrosão (localização, severidade, estimativa de perda de seção)',
+      'Medição de Flechas em Tesouras/Treliças/Pilares e Comparação ao Limite Normativo',
+      'Avaliação de Ligações Parafusadas e Soldadas',
+      'Avaliação da Fixação da Cobertura, Calhas e Sistema de Drenagem Pluvial',
+      'Avaliação de Contraventamentos'
+    ],
+    checklistInicial: [
+      'Tipologia estrutural identificada (tesoura, pórtico ou treliça)',
+      'Vão livre e área coberta conferidos',
+      'Deformações visíveis em elementos estruturais mapeadas',
+      'Indícios de flambagem em barras comprimidas verificados',
+      'Corrosão mapeada por elemento (localização e severidade)',
+      'Perda de seção por corrosão estimada',
+      'Flechas medidas em tesouras/treliças/pilares',
+      'Flechas comparadas ao limite normativo aplicável',
+      'Ligações parafusadas conferidas (torque, ausência de folga)',
+      'Ligações soldadas inspecionadas visualmente',
+      'Fixação da cobertura (telhas) verificada',
+      'Calhas e sistema de drenagem pluvial avaliados',
+      'Contraventamentos verificados quanto à integridade',
+      'Pintura anticorrosiva avaliada'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Capacidade de Carga de Pisos Industriais e Mezaninos (NBR 8800 / NBR 6120)
+  'laudo-de-capacidade-de-carga-de-pisos-industriais-e-mezaninos-nbr-8800-nbr-6120': {
+    id: 'laudo-de-capacidade-de-carga-de-pisos-industriais-e-mezaninos-nbr-8800-nbr-6120',
+    codigo: 'ESTR-PISO',
+    nome: 'Laudo de Capacidade de Carga de Pisos Industriais e Mezaninos (NBR 8800 / NBR 6120)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 8800, ABNT NBR 6120',
+    textoBaseApresentacao: 'Determinação pericial da capacidade máxima admissível de carga concentrada e distribuída (kgf/m²) em mezaninos metálicos e pavimentos industriais.',
+    apresentacaoPadrao: 'Determinação pericial da capacidade máxima admissível de carga concentrada e distribuída (kgf/m²) em mezaninos metálicos e pavimentos industriais.',
+    metodologiaPadrao: 'Modelagem de cálculo estrutural com base nos perfis metálicos I/W instalados, vão livre e verificação de flechas sob carregamento.',
+    secoesEspecificas: [
+      'Identificação da Estrutura do Piso/Mezanino (tipo de laje/piso, vigas, pilares)',
+      'Levantamento da Capacidade de Projeto Original, quando disponível (memorial de cálculo)',
+      'Verificação da Capacidade de Suporte por m² Conforme Uso Pretendido (ABNT NBR 6120)',
+      'Avaliação para Armazenagem (empilhamento de materiais)',
+      'Avaliação para Tráfego de Empilhadeiras e Equipamentos Móveis (carga dinâmica/concentrada)',
+      'Parecer sobre Adequação ou Necessidade de Reforço Estrutural'
+    ],
+    checklistInicial: [
+      'Estrutura do piso/mezanino identificada (tipo, vigas, pilares)',
+      'Capacidade de projeto original levantada, quando existente',
+      'Carga atual/pretendida comparada à capacidade calculada',
+      'Sobrecarga de utilização verificada conforme ABNT NBR 6120',
+      'Avaliação de tráfego de empilhadeiras (carga dinâmica e concentrada) realizada',
+      'Deformações ou fissuras na estrutura do piso/mezanino verificadas',
+      'Guarda-corpo do mezanino conferido (altura, resistência)',
+      'Sinalização de carga máxima admissível afixada',
+      'Parecer sobre adequação ou necessidade de reforço estrutural emitido'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Inspeção de Solda (Visual e Dimensional)
+  'laudo-de-inspecao-de-solda-visual-e-dimensional': {
+    id: 'laudo-de-inspecao-de-solda-visual-e-dimensional',
+    codigo: 'SOLDA-VISUAL',
+    nome: 'Laudo de Inspeção de Solda (Visual e Dimensional)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'AWS D1.1, ASME Seção IX',
+    textoBaseApresentacao: 'Inspeção técnica de juntas soldadas em estruturas industriais, caldeiraria e tubulações.',
+    apresentacaoPadrao: 'Inspeção técnica de juntas soldadas em estruturas industriais, caldeiraria e tubulações.',
+    metodologiaPadrao: 'Uso de gabaritos de solda tipo Cambridge para medição de perna, garganta, reforço de solda e identificação de mordeduras ou respingos.',
+    secoesEspecificas: [
+      'Identificação das Juntas Soldadas Inspecionadas (localização, tipo de junta)',
+      'Inspeção Visual (porosidade, mordedura, respingos, trincas superficiais)',
+      'Verificação Dimensional (perna de solda, comprimento do cordão, reforço)',
+      'Verificação de Indícios de Falta de Penetração/Fusão',
+      'Classificação de Aceitação/Rejeição por Junta Conforme Critério Normativo (AWS D1.1 ou equivalente)'
+    ],
+    checklistInicial: [
+      'Juntas soldadas identificadas e numeradas',
+      'Inspeção visual realizada em todas as juntas listadas',
+      'Porosidade superficial verificada',
+      'Mordedura (undercut) verificada',
+      'Respingos de solda verificados',
+      'Trincas superficiais verificadas',
+      'Dimensão da perna de solda (perna do filete) medida',
+      'Comprimento do cordão conferido',
+      'Reforço da solda de topo verificado',
+      'Sobreposição/desalinhamento de chapas verificado',
+      'Critério de aceitação/rejeição aplicado por junta',
+      'Registro fotográfico por junta inspecionada'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 4. Laudo de Ensaios Não Destrutivos (LP / PM / US / RX)
+  'laudo-de-ensaios-nao-destrutivos-lp-pm-us-rx': {
+    id: 'laudo-de-ensaios-nao-destrutivos-lp-pm-us-rx',
+    codigo: 'SOLDA-END',
+    nome: 'Laudo de Ensaios Não Destrutivos (LP / PM / US / RX)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR NM 334 (LP), NBR NM 342 (PM), NBR ISO 9712, ASME V',
+    textoBaseApresentacao: 'Laudo de ensaio por Líquido Penetrante (LP), Partículas Magnéticas (PM) ou Ultrassom (US) para detecção de descontinuidades subsuperficiais.',
+    apresentacaoPadrao: 'Laudo de ensaio por Líquido Penetrante (LP), Partículas Magnéticas (PM) ou Ultrassom (US) para detecção de descontinuidades subsuperficiais.',
+    metodologiaPadrao: 'Limpeza prévia, aplicação de penetrante/revelador ou campo magnético com partículas fluorescentes e inspeção sob luz branca/negra.',
+    secoesEspecificas: [
+      'Definição do Método de Ensaio Aplicado por Junta/Ponto (Líquido Penetrante, Partícula Magnética, Ultrassom, Radiografia)',
+      'Metodologia de Execução do Ensaio (preparação de superfície, aplicação, tempo de revelação/exposição)',
+      'Resultados por Junta/Ponto Inspecionado',
+      'Classificação de Descontinuidades Encontradas (tipo, dimensão, localização)',
+      'Parecer de Aprovação/Reprovação Conforme Critério de Aceitação Aplicável'
+    ],
+    checklistInicial: [
+      'Método de ensaio definido por junta/ponto (LP/PM/US/RX)',
+      'Superfície preparada conforme exigência do método',
+      'Ensaio executado conforme procedimento aplicável',
+      'Resultados registrados por junta/ponto',
+      'Descontinuidades classificadas (tipo, dimensão, localização)',
+      'Critério de aceitação aplicado, com norma de referência informada',
+      'Certificado de qualificação do inspetor (nível 1/2, conforme SNQC/ABENDI) anexado',
+      'Equipamento de ensaio calibrado e com certificado válido',
+      'Parecer de aprovação/reprovação emitido por junta/ponto',
+      'Registro fotográfico/radiográfico anexado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+export const ALIASES_TIPOS_ESTRUTURAS_METALICAS: Record<string, string> = {
+  'laudo-galpao-metalico': 'laudo-de-integridade-estrutural-de-galpoes-e-coberturas-metalicas-abnt-nbr-8800',
+  'estr-galp': 'laudo-de-integridade-estrutural-de-galpoes-e-coberturas-metalicas-abnt-nbr-8800',
+  'laudo-capacidade-piso': 'laudo-de-capacidade-de-carga-de-pisos-industriais-e-mezaninos-nbr-8800-nbr-6120',
+  'estr-piso': 'laudo-de-capacidade-de-carga-de-pisos-industriais-e-mezaninos-nbr-8800-nbr-6120',
+  'laudo-inspecao-solda': 'laudo-de-inspecao-de-solda-visual-e-dimensional',
+  'solda-visual': 'laudo-de-inspecao-de-solda-visual-e-dimensional',
+  'laudo-ensaios-end': 'laudo-de-ensaios-nao-destrutivos-lp-pm-us-rx',
+  'solda-end': 'laudo-de-ensaios-nao-destrutivos-lp-pm-us-rx'
+};
+
+export async function sincronizarFirestorePlayground(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = ['playground-e-lazer'];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Playground e Lazer',
+        icone: 'Smile',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_PLAYGROUND_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_PLAYGROUND).filter(k => ALIASES_TIPOS_PLAYGROUND[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de playground sincronizados nas coleções Firestore categoriasLaudo/playground-e-lazer/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de playground com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+export async function sincronizarFirestoreEstruturasMetalicas(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'estruturas-metalicas-caldeiraria-e-soldagem',
+    'estruturas-metálicas-caldeiraria-e-soldagem'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Estruturas Metálicas, Caldeiraria e Soldagem',
+        icone: 'Hammer',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_ESTRUTURAS_METALICAS_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_ESTRUTURAS_METALICAS).filter(k => ALIASES_TIPOS_ESTRUTURAS_METALICAS[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de estruturas metálicas sincronizados nas coleções Firestore categoriasLaudo/estruturas-metalicas-caldeiraria-e-soldagem/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de estruturas metálicas com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+

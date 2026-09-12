@@ -1520,31 +1520,122 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
     subcategorias: [
       {
         id: 'sub-6-1',
-        nome: 'Segurança em Áreas de Recreação Infantis',
+        nome: 'Segurança em Áreas de Recreação Infantis (Playground)',
         tipos: [
           {
             id: 'laudo-playground-nbr16071',
             codigo: 'PLAY-NBR',
             nome: 'Laudo Técnico de Inspeção de Playground (ABNT NBR 16071)',
-            normasRef: 'ABNT NBR 16071 partes 1 a 7 (Playgrounds), Lei Estadual / Municipal de Segurança em Brinquedos',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR 16071 partes 1 a 7, Lei Estadual / Municipal de Segurança em Brinquedos',
+            textoBaseApresentacao: 'Laudo pericial com ART de inspeção física em áreas de recreação infantil em condomínios residenciais, escolas, shopping centers e parques públicos de Pernambuco.',
             apresentacaoPadrao: 'Laudo pericial com ART de inspeção física em áreas de recreação infantil em condomínios residenciais, escolas, shopping centers e parques públicos de Pernambuco.',
             metodologiaPadrao: 'Aplicação de gabaritos normativos para testes de aprisionamento de cabeça e pescoço, dedos e roupas, medição da área de impacto e ensaio do piso amortecedor.',
+            secoesEspecificas: [
+              'Identificação do Playground (localização, área total, equipamentos existentes)',
+              'Verificação de Superfícies de Impacto e Área de Queda Livre (conforme altura de queda de cada equipamento)',
+              'Verificação de Rotas de Aprisionamento (cabeça/pescoço, dedos, roupas/cordões)',
+              'Verificação de Ancoragens, Fundações e Fixação dos Equipamentos',
+              'Verificação de Materiais e Acabamento (arestas, pontas, ferrugem)',
+              'Verificação Específica por Tipo de Equipamento (balanços, escorregadores, gangorras, carrossel)',
+              'Verificação de Zona de Segurança e Distância Mínima Entre Equipamentos',
+              'Verificação de Sinalização de Idade Recomendada e Normas de Uso'
+            ],
+            checklistInicial: [
+              'Superfície de amortecimento de impacto adequada à altura de queda livre de cada equipamento',
+              'Área de queda livre desobstruída',
+              'Ausência de pontos de aprisionamento de cabeça/pescoço (aberturas entre 89 e 230 mm)',
+              'Ausência de pontos de aprisionamento de dedos',
+              'Ausência de pontos de prendimento de roupas ou cordões',
+              'Ancoragens e fundações firmes, sem corrosão',
+              'Ausência de arestas cortantes ou pontas expostas',
+              'Ausência de ferrugem estrutural comprometedora',
+              'Correntes/cabos de balanços sem desgaste excessivo',
+              'Escorregador com ângulo e altura conformes à norma',
+              'Gangorra com sistema de amortecimento no ponto de contato',
+              'Carrossel com velocidade de rotação controlada',
+              'Zona de segurança entre equipamentos respeitada (distância mínima)',
+              'Sinalização de idade recomendada e normas de uso afixada',
+              'Identificação de fabricante/certificação do equipamento, quando aplicável'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Playground (localização, área total, equipamentos existentes)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Verificação de Superfícies de Impacto e Área de Queda Livre (conforme altura de queda)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação de Rotas de Aprisionamento (cabeça/pescoço, dedos, roupas/cordões)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Ancoragens, Fundações e Fixação dos Equipamentos', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Verificação de Materiais e Acabamento (arestas, pontas, ferrugem)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Verificação Específica por Tipo de Equipamento (balanços, escorregadores, gangorras, carrossel)', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Verificação de Zona de Segurança e Distância Mínima Entre Equipamentos', ordem: 7 },
+              { id: 'sec-8', titulo: '8. Verificação de Sinalização de Idade Recomendada e Normas de Uso', ordem: 8 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Uso de sondas normalizadas para verificar riscos de aprisionamento de cabeça e pescoço', status: 'conforme', observacao: 'Todas as aberturas respeitam as dimensões da NBR 16071-2' },
-              { id: 'ck-2', descricao: 'Piso absorvedor de impacto e espessura da camada amortecedora sob os brinquedos altos', status: 'conforme', observacao: 'Gramado sintético com manta emborrachada amortecedora adequada para altura crítica de queda' },
-              { id: 'ck-3', descricao: 'Ausência de farpas em madeiras, corrosão perfurante em metais e quinas vivas', status: 'conforme', observacao: 'Bordas arredondadas com raio mínimo de 3mm' }
+              { id: 'ck-1', descricao: 'Superfície de amortecimento de impacto adequada à altura de queda livre de cada equipamento', status: 'conforme', observacao: 'Piso emborrachado contínuo com absorção de impacto certificada' },
+              { id: 'ck-2', descricao: 'Área de queda livre desobstruída', status: 'conforme', observacao: 'Raio de segurança livre de obstáculos fixos ou vegetação agressiva' },
+              { id: 'ck-3', descricao: 'Ausência de pontos de aprisionamento de cabeça/pescoço (aberturas entre 89 e 230 mm)', status: 'conforme', observacao: 'Testado com gabarito normativo de cabeça' },
+              { id: 'ck-4', descricao: 'Ausência de pontos de aprisionamento de dedos', status: 'conforme', observacao: 'Aberturas menores que 8mm ou maiores que 25mm' },
+              { id: 'ck-5', descricao: 'Ausência de pontos de prendimento de roupas ou cordões', status: 'conforme', observacao: 'Sem saliências ou parafusos salientes em áreas de deslizamento' },
+              { id: 'ck-6', descricao: 'Ancoragens e fundações firmes, sem corrosão', status: 'conforme', observacao: 'Sapatas enterradas e protegidas contra intempéries' },
+              { id: 'ck-7', descricao: 'Ausência de arestas cortantes ou pontas expostas', status: 'conforme', observacao: 'Cantos chanfrados e arredondados com raio mínimo normativo' },
+              { id: 'ck-8', descricao: 'Ausência de ferrugem estrutural comprometedora', status: 'conforme', observacao: 'Pintura eletrostática em bom estado' },
+              { id: 'ck-9', descricao: 'Correntes/cabos de balanços sem desgaste excessivo', status: 'conforme', observacao: 'Elos calibrados com espessura dentro da tolerância' },
+              { id: 'ck-10', descricao: 'Escorregador com ângulo e altura conformes à norma', status: 'conforme', observacao: 'Seção de desaceleração e altura terminal adequadas' },
+              { id: 'ck-11', descricao: 'Gangorra com sistema de amortecimento no ponto de contato', status: 'conforme', observacao: 'Batentes de borracha intactos sob os assentos' },
+              { id: 'ck-12', descricao: 'Carrossel com velocidade de rotação controlada', status: 'conforme', observacao: 'Regulador de velocidade operacional e piso nivelado' },
+              { id: 'ck-13', descricao: 'Zona de segurança entre equipamentos respeitada (distância mínima)', status: 'conforme', observacao: 'Afastamentos mínimos entre áreas de impacto atendidos' },
+              { id: 'ck-14', descricao: 'Sinalização de idade recomendada e normas de uso afixada', status: 'conforme', observacao: 'Placa visível na entrada com faixas etárias indicadas' },
+              { id: 'ck-15', descricao: 'Identificação de fabricante/certificação do equipamento, quando aplicável', status: 'conforme', observacao: 'Plaqueta do fabricante com rastreabilidade afixada' }
             ]
           },
           {
             id: 'laudo-playground-risco',
             codigo: 'PLAY-RISCO',
             nome: 'Laudo de Análise de Risco e Manutenção Corretiva',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR 16071-7 (Inspeção, Manutenção e Operação)',
+            textoBaseApresentacao: 'Plano de ação corretivo e classificação de risco para brinquedos com desgaste mecânico severo, visando reforma estrutural ou interdição temporária.',
             apresentacaoPadrao: 'Plano de ação corretivo e classificação de risco para brinquedos com desgaste mecânico severo, visando reforma estrutural ou interdição temporária.',
             metodologiaPadrao: 'Mapeamento de folgas em correntes de balanços, estabilidade de ancoragem das sapatas de concreto e substituição de ferragens oxidadas.',
+            secoesEspecificas: [
+              'Mapeamento de Partes Lascadas e Degradação de Madeira/Plástico',
+              'Mapeamento de Ferrugem e Corrosão Estrutural',
+              'Verificação de Parafusos Expostos, Soltos ou Faltantes',
+              'Verificação de Folgas Estruturais e Desgaste de Articulações (balanços, gangorras)',
+              'Classificação de Prioridade das Não Conformidades (Crítica, Moderada, Baixa)',
+              'Plano de Ação Corretivo com Prazos'
+            ],
+            checklistInicial: [
+              'Partes lascadas/rachadas identificadas e mapeadas',
+              'Ferrugem/corrosão estrutural mapeada',
+              'Parafusos soltos ou faltantes identificados',
+              'Tampas de proteção de parafusos presentes',
+              'Folgas em articulações de balanços/gangorras medidas',
+              'Desgaste de correntes/cabos avaliado',
+              'Superfície de amortecimento com desgaste ou deslocamento verificado',
+              'Vegetação ou obstáculos próximos ao playground avaliados',
+              'Classificação de prioridade (crítica/moderada/baixa) atribuída a cada não conformidade',
+              'Plano de ação corretivo elaborado com prazos por item'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Mapeamento de Partes Lascadas e Degradação de Madeira/Plástico', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Mapeamento de Ferrugem e Corrosão Estrutural', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação de Parafusos Expostos, Soltos ou Faltantes', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Folgas Estruturais e Desgaste de Articulações (balanços, gangorras)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Classificação de Prioridade das Não Conformidades (Crítica, Moderada, Baixa)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Plano de Ação Corretivo com Prazos', ordem: 6 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Estabilidade estrutural das fundações e ancoragens ao solo dos pórticos de balanço', status: 'conforme', observacao: 'Bases de concreto firmes sem tombamento' },
-              { id: 'ck-2', descricao: 'Espessura e integridade dos elos de correntes de sustentação de balanços', status: 'nao_conforme', observacao: 'Elo desgastado com perda superior a 30% da bitola; substituir' }
+              { id: 'ck-1', descricao: 'Partes lascadas/rachadas identificadas e mapeadas', status: 'conforme', observacao: 'Madeiramento lixado e sem lascas perfurantes' },
+              { id: 'ck-2', descricao: 'Ferrugem/corrosão estrutural mapeada', status: 'conforme', observacao: 'Mapeamento efetuado nas colunas e flanges metálicas' },
+              { id: 'ck-3', descricao: 'Parafusos soltos ou faltantes identificados', status: 'conforme', observacao: 'Fixações reapertadas e conferidas' },
+              { id: 'ck-4', descricao: 'Tampas de proteção de parafusos presentes', status: 'conforme', observacao: 'Capas de polímero instaladas em todas as porcas salientes' },
+              { id: 'ck-5', descricao: 'Folgas em articulações de balanços/gangorras medidas', status: 'conforme', observacao: 'Mancais e buchas com folga dentro do limite seguro' },
+              { id: 'ck-6', descricao: 'Desgaste de correntes/cabos avaliado', status: 'conforme', observacao: 'Elos com perda de seção inferior ao limite de descarte' },
+              { id: 'ck-7', descricao: 'Superfície de amortecimento com desgaste ou deslocamento verificado', status: 'conforme', observacao: 'Manta amortecedora nivelada e sem buracos' },
+              { id: 'ck-8', descricao: 'Vegetação ou obstáculos próximos ao playground avaliados', status: 'conforme', observacao: 'Podas de segurança realizadas' },
+              { id: 'ck-9', descricao: 'Classificação de prioridade (crítica/moderada/baixa) atribuída a cada não conformidade', status: 'conforme', observacao: 'Matriz de criticidade documentada' },
+              { id: 'ck-10', descricao: 'Plano de ação corretivo elaborado com prazos por item', status: 'conforme', observacao: 'Cronograma executivo com responsáveis definido' }
             ]
           }
         ]
@@ -1565,25 +1656,111 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
           {
             id: 'laudo-galpao-metalico',
             codigo: 'ESTR-GALP',
-            nome: 'Laudo de Integridade Estrutural de Galpões e Coberturas Metálicas',
-            normasRef: 'ABNT NBR 8800 (Estruturas de Aço), NBR 6123 (Forças devidas ao vento), NBR 14762',
+            nome: 'Laudo de Integridade Estrutural de Galpões e Coberturas Metálicas (ABNT NBR 8800)',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR 8800, NBR 6123, NBR 14762',
+            textoBaseApresentacao: 'Inspeção técnica e pericial para verificação da estabilidade estrutural de tesouras, terças, contraventamentos e telhados de galpões industriais.',
             apresentacaoPadrao: 'Inspeção técnica e pericial para verificação da estabilidade estrutural de tesouras, terças, contraventamentos e telhados de galpões industriais.',
             metodologiaPadrao: 'Varredura por drones/acesso por corda, análise de flechas de deformação, aperto de parafusos estruturais e mapeamento de corrosão galvânica.',
+            secoesEspecificas: [
+              'Identificação da Estrutura (tipologia: tesoura, pórtico ou treliça; vão livre; área coberta)',
+              'Avaliação de Deformações e Indícios de Flambagem em Elementos Estruturais',
+              'Avaliação de Corrosão (localização, severidade, estimativa de perda de seção)',
+              'Medição de Flechas em Tesouras/Treliças/Pilares e Comparação ao Limite Normativo',
+              'Avaliação de Ligações Parafusadas e Soldadas',
+              'Avaliação da Fixação da Cobertura, Calhas e Sistema de Drenagem Pluvial',
+              'Avaliação de Contraventamentos'
+            ],
+            checklistInicial: [
+              'Tipologia estrutural identificada (tesoura, pórtico ou treliça)',
+              'Vão livre e área coberta conferidos',
+              'Deformações visíveis em elementos estruturais mapeadas',
+              'Indícios de flambagem em barras comprimidas verificados',
+              'Corrosão mapeada por elemento (localização e severidade)',
+              'Perda de seção por corrosão estimada',
+              'Flechas medidas em tesouras/treliças/pilares',
+              'Flechas comparadas ao limite normativo aplicável',
+              'Ligações parafusadas conferidas (torque, ausência de folga)',
+              'Ligações soldadas inspecionadas visualmente',
+              'Fixação da cobertura (telhas) verificada',
+              'Calhas e sistema de drenagem pluvial avaliados',
+              'Contraventamentos verificados quanto à integridade',
+              'Pintura anticorrosiva avaliada'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação da Estrutura (tipologia: tesoura, pórtico ou treliça; vão livre; área coberta)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Avaliação de Deformações e Indícios de Flambagem em Elementos Estruturais', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Avaliação de Corrosão (localização, severidade, estimativa de perda de seção)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Medição de Flechas em Tesouras/Treliças/Pilares e Comparação ao Limite Normativo', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Avaliação de Ligações Parafusadas e Soldadas', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Avaliação da Fixação da Cobertura, Calhas e Sistema de Drenagem Pluvial', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Avaliação de Contraventamentos', ordem: 7 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Integridade dos contraventamentos horizontais e verticais de cobertura', status: 'conforme', observacao: 'Tirantes tensionados sem folgas' },
-              { id: 'ck-2', descricao: 'Estado das ligações parafusadas e nós de emenda das tesouras principais', status: 'conforme', observacao: 'Parafusos ASTM A325 com torque inspecionado' }
+              { id: 'ck-1', descricao: 'Tipologia estrutural identificada (tesoura, pórtico ou treliça)', status: 'conforme', observacao: 'Galpão em pórticos de alma cheia em perfis W laminados' },
+              { id: 'ck-2', descricao: 'Vão livre e área coberta conferidos', status: 'conforme', observacao: 'Vão livre de 25 metros sem pilares intermediários' },
+              { id: 'ck-3', descricao: 'Deformações visíveis em elementos estruturais mapeadas', status: 'conforme', observacao: 'Alinhamento longitudinal e transversal preservados' },
+              { id: 'ck-4', descricao: 'Indícios de flambagem em barras comprimidas verificados', status: 'conforme', observacao: 'Sem indícios de flambagem local ou global' },
+              { id: 'ck-5', descricao: 'Corrosão mapeada por elemento (localização e severidade)', status: 'conforme', observacao: 'Focos superficiais localizados em bases de pilares' },
+              { id: 'ck-6', descricao: 'Perda de seção por corrosão estimada', status: 'conforme', observacao: 'Perda inferior a 2%, não comprometedora' },
+              { id: 'ck-7', descricao: 'Flechas medidas em tesouras/treliças/pilares', status: 'conforme', observacao: 'Flecha máxima em vão central de L/480' },
+              { id: 'ck-8', descricao: 'Flechas comparadas ao limite normativo aplicável', status: 'conforme', observacao: 'Atende ao limite normativo L/350 da NBR 8800' },
+              { id: 'ck-9', descricao: 'Ligações parafusadas conferidas (torque, ausência de folga)', status: 'conforme', observacao: 'Parafusos estruturais ASTM A325 conferidos' },
+              { id: 'ck-10', descricao: 'Ligações soldadas inspecionadas visualmente', status: 'conforme', observacao: 'Soldas de nós de emenda íntegras' },
+              { id: 'ck-11', descricao: 'Fixação da cobertura (telhas) verificada', status: 'conforme', observacao: 'Parafusos autobrocantes com arruelas de vedação preservadas' },
+              { id: 'ck-12', descricao: 'Calhas e sistema de drenagem pluvial avaliados', status: 'conforme', observacao: 'Calhas metálicas desobstruídas e sem vazamentos' },
+              { id: 'ck-13', descricao: 'Contraventamentos verificados quanto à integridade', status: 'conforme', observacao: 'Tirantes de cobertura e laterais devidamente tracionados' },
+              { id: 'ck-14', descricao: 'Pintura anticorrosiva avaliada', status: 'conforme', observacao: 'Primer epóxi e acabamento poliuretano em bom estado' }
             ]
           },
           {
             id: 'laudo-capacidade-piso',
             codigo: 'ESTR-PISO',
-            nome: 'Laudo de Capacidade de Carga de Pisos Industriais e Mezaninos',
-            normasRef: 'ABNT NBR 6120 (Cargas para o cálculo de edificações), NBR 8800',
+            nome: 'Laudo de Capacidade de Carga de Pisos Industriais e Mezaninos (NBR 8800 / NBR 6120)',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR 8800, ABNT NBR 6120',
+            textoBaseApresentacao: 'Determinação pericial da capacidade máxima admissível de carga concentrada e distribuída (kgf/m²) em mezaninos metálicos e pavimentos industriais.',
             apresentacaoPadrao: 'Determinação pericial da capacidade máxima admissível de carga concentrada e distribuída (kgf/m²) em mezaninos metálicos e pavimentos industriais.',
             metodologiaPadrao: 'Modelagem de cálculo estrutural com base nos perfis metálicos I/W instalados, vão livre e verificação de flechas sob carregamento.',
+            secoesEspecificas: [
+              'Identificação da Estrutura do Piso/Mezanino (tipo de laje/piso, vigas, pilares)',
+              'Levantamento da Capacidade de Projeto Original, quando disponível (memorial de cálculo)',
+              'Verificação da Capacidade de Suporte por m² Conforme Uso Pretendido (ABNT NBR 6120)',
+              'Avaliação para Armazenagem (empilhamento de materiais)',
+              'Avaliação para Tráfego de Empilhadeiras e Equipamentos Móveis (carga dinâmica/concentrada)',
+              'Parecer sobre Adequação ou Necessidade de Reforço Estrutural'
+            ],
+            checklistInicial: [
+              'Estrutura do piso/mezanino identificada (tipo, vigas, pilares)',
+              'Capacidade de projeto original levantada, quando existente',
+              'Carga atual/pretendida comparada à capacidade calculada',
+              'Sobrecarga de utilização verificada conforme ABNT NBR 6120',
+              'Avaliação de tráfego de empilhadeiras (carga dinâmica e concentrada) realizada',
+              'Deformações ou fissuras na estrutura do piso/mezanino verificadas',
+              'Guarda-corpo do mezanino conferido (altura, resistência)',
+              'Sinalização de carga máxima admissível afixada',
+              'Parecer sobre adequação ou necessidade de reforço estrutural emitido'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação da Estrutura do Piso/Mezanino (tipo de laje/piso, vigas, pilares)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Levantamento da Capacidade de Projeto Original, quando disponível', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação da Capacidade de Suporte por m² Conforme Uso Pretendido (NBR 6120)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Avaliação para Armazenagem (empilhamento de materiais)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Avaliação para Tráfego de Empilhadeiras e Equipamentos Móveis', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Parecer sobre Adequação ou Necessidade de Reforço Estrutural', ordem: 6 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Capacidade de carga distribuída calculada em conformidade com o projeto', status: 'conforme', observacao: 'Carga máxima homologada em 500 kgf/m²' },
-              { id: 'ck-2', descricao: 'Fixação e ancoragem das colunas de sustentação à laje base', status: 'conforme', observacao: 'Chumbadores químicos intactos' }
+              { id: 'ck-1', descricao: 'Estrutura do piso/mezanino identificada (tipo, vigas, pilares)', status: 'conforme', observacao: 'Mezanino com vigas principais W 310x38.7 e laje tipo steel deck' },
+              { id: 'ck-2', descricao: 'Capacidade de projeto original levantada, quando existente', status: 'conforme', observacao: 'Memorial de cálculo original previa 500 kgf/m²' },
+              { id: 'ck-3', descricao: 'Carga atual/pretendida comparada à capacidade calculada', status: 'conforme', observacao: 'Carregamento atuante verificado dentro dos limites admissíveis' },
+              { id: 'ck-4', descricao: 'Sobrecarga de utilização verificada conforme ABNT NBR 6120', status: 'conforme', observacao: 'Classificação de uso como depósito leve atendida' },
+              { id: 'ck-5', descricao: 'Avaliação de tráfego de empilhadeiras (carga dinâmica e concentrada) realizada', status: 'conforme', observacao: 'Tráfego restrito a transpaleteiras manuais homologado' },
+              { id: 'ck-6', descricao: 'Deformações ou fissuras na estrutura do piso/mezanino verificadas', status: 'conforme', observacao: 'Sem flechas residuais ou fissuras no concreto de capa' },
+              { id: 'ck-7', descricao: 'Guarda-corpo do mezanino conferido (altura, resistência)', status: 'conforme', observacao: 'Guarda-corpo com 1,20m e rodapé de 20cm conforme NR-12' },
+              { id: 'ck-8', descricao: 'Sinalização de carga máxima admissível afixada', status: 'conforme', observacao: 'Placas indicativas de 500 kgf/m² instaladas em pontos visíveis' },
+              { id: 'ck-9', descricao: 'Parecer sobre adequação ou necessidade de reforço estrutural emitido', status: 'conforme', observacao: 'Estrutura aprovada sem necessidade de reforço' }
             ]
           }
         ]
@@ -1596,24 +1773,102 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-inspecao-solda',
             codigo: 'SOLDA-VISUAL',
             nome: 'Laudo de Inspeção de Solda (Visual e Dimensional)',
-            normasRef: 'AWS D1.1 (Structural Welding Code - Steel), ASME Seção IX',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'AWS D1.1, ASME Seção IX',
+            textoBaseApresentacao: 'Inspeção técnica de juntas soldadas em estruturas industriais, caldeiraria e tubulações.',
             apresentacaoPadrao: 'Inspeção técnica de juntas soldadas em estruturas industriais, caldeiraria e tubulações.',
             metodologiaPadrao: 'Uso de gabaritos de solda tipo Cambridge para medição de perna, garganta, reforço de solda e identificação de mordeduras ou respingos.',
+            secoesEspecificas: [
+              'Identificação das Juntas Soldadas Inspecionadas (localização, tipo de junta)',
+              'Inspeção Visual (porosidade, mordedura, respingos, trincas superficiais)',
+              'Verificação Dimensional (perna de solda, comprimento do cordão, reforço)',
+              'Verificação de Indícios de Falta de Penetração/Fusão',
+              'Classificação de Aceitação/Rejeição por Junta Conforme Critério Normativo (AWS D1.1 ou equivalente)'
+            ],
+            checklistInicial: [
+              'Juntas soldadas identificadas e numeradas',
+              'Inspeção visual realizada em todas as juntas listadas',
+              'Porosidade superficial verificada',
+              'Mordedura (undercut) verificada',
+              'Respingos de solda verificados',
+              'Trincas superficiais verificadas',
+              'Dimensão da perna de solda (perna do filete) medida',
+              'Comprimento do cordão conferido',
+              'Reforço da solda de topo verificado',
+              'Sobreposição/desalinhamento de chapas verificado',
+              'Critério de aceitação/rejeição aplicado por junta',
+              'Registro fotográfico por junta inspecionada'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação das Juntas Soldadas Inspecionadas (localização, tipo de junta)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Inspeção Visual (porosidade, mordedura, respingos, trincas superficiais)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação Dimensional (perna de solda, comprimento do cordão, reforço)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Indícios de Falta de Penetração/Fusão', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Classificação de Aceitação/Rejeição por Junta Conforme Critério AWS D1.1', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Ausência de trincas, porosidades e mordeduras superficiais no cordão', status: 'conforme', observacao: 'Cordão contínuo e uniforme' },
-              { id: 'ck-2', descricao: 'Dimensões da perna de solda compatíveis com o projeto mecânico', status: 'conforme', observacao: 'Garganta de solda com espessura especificada' }
+              { id: 'ck-1', descricao: 'Juntas soldadas identificadas e numeradas', status: 'conforme', observacao: 'Mapeamento efetuado no desenho isométrico/estrutural' },
+              { id: 'ck-2', descricao: 'Inspeção visual realizada em todas as juntas listadas', status: 'conforme', observacao: '100% dos cordões vistoriados sob iluminação adequada' },
+              { id: 'ck-3', descricao: 'Porosidade superficial verificada', status: 'conforme', observacao: 'Sem presença de porosidades agrupadas ou vermiformes' },
+              { id: 'ck-4', descricao: 'Mordedura (undercut) verificada', status: 'conforme', observacao: 'Profundidade inferior a 0,5 mm, conforme tabela AWS D1.1' },
+              { id: 'ck-5', descricao: 'Respingos de solda verificados', status: 'conforme', observacao: 'Superfícies limpas e isentas de respingos aderidos' },
+              { id: 'ck-6', descricao: 'Trincas superficiais verificadas', status: 'conforme', observacao: 'Ausência total de trincas longitudinais ou de cratera' },
+              { id: 'ck-7', descricao: 'Dimensão da perna de solda (perna do filete) medida', status: 'conforme', observacao: 'Perna medida com gabarito tipo Cambridge de acordo com o EPS' },
+              { id: 'ck-8', descricao: 'Comprimento do cordão conferido', status: 'conforme', observacao: 'Extensão contínua sem interrupções não conformes' },
+              { id: 'ck-9', descricao: 'Reforço da solda de topo verificado', status: 'conforme', observacao: 'Reforço dentro do limite normativo de 1,5 a 3,0 mm' },
+              { id: 'ck-10', descricao: 'Sobreposição/desalinhamento de chapas verificado', status: 'conforme', observacao: 'Alinhamento com desalinhamento inferior a 10% da espessura' },
+              { id: 'ck-11', descricao: 'Critério de aceitação/rejeição aplicado por junta', status: 'conforme', observacao: 'Juntas aprovadas segundo critérios da norma AWS D1.1' },
+              { id: 'ck-12', descricao: 'Registro fotográfico por junta inspecionada', status: 'conforme', observacao: 'Fotografias em alta resolução arquivadas no relatório' }
             ]
           },
           {
             id: 'laudo-ensaios-end',
             codigo: 'SOLDA-END',
-            nome: 'Laudo de Ensaios Não Destrutivos (LP/PM/US/RX)',
-            normasRef: 'ABNT NBR NM 334 (LP), NBR NM 342 (PM), NBR ISO 9712',
+            nome: 'Laudo de Ensaios Não Destrutivos (LP / PM / US / RX)',
+            hrn: false,
+            temHrn: false,
+            normasRef: 'ABNT NBR NM 334 (LP), NBR NM 342 (PM), NBR ISO 9712, ASME V',
+            textoBaseApresentacao: 'Laudo de ensaio por Líquido Penetrante (LP), Partículas Magnéticas (PM) ou Ultrassom (US) para detecção de descontinuidades subsuperficiais.',
             apresentacaoPadrao: 'Laudo de ensaio por Líquido Penetrante (LP), Partículas Magnéticas (PM) ou Ultrassom (US) para detecção de descontinuidades subsuperficiais.',
             metodologiaPadrao: 'Limpeza prévia, aplicação de penetrante/revelador ou campo magnético com partículas fluorescentes e inspeção sob luz branca/negra.',
+            secoesEspecificas: [
+              'Definição do Método de Ensaio Aplicado por Junta/Ponto (Líquido Penetrante, Partícula Magnética, Ultrassom, Radiografia)',
+              'Metodologia de Execução do Ensaio (preparação de superfície, aplicação, tempo de revelação/exposição)',
+              'Resultados por Junta/Ponto Inspecionado',
+              'Classificação de Descontinuidades Encontradas (tipo, dimensão, localização)',
+              'Parecer de Aprovação/Reprovação Conforme Critério de Aceitação Aplicável'
+            ],
+            checklistInicial: [
+              'Método de ensaio definido por junta/ponto (LP/PM/US/RX)',
+              'Superfície preparada conforme exigência do método',
+              'Ensaio executado conforme procedimento aplicável',
+              'Resultados registrados por junta/ponto',
+              'Descontinuidades classificadas (tipo, dimensão, localização)',
+              'Critério de aceitação aplicado, com norma de referência informada',
+              'Certificado de qualificação do inspetor (nível 1/2, conforme SNQC/ABENDI) anexado',
+              'Equipamento de ensaio calibrado e com certificado válido',
+              'Parecer de aprovação/reprovação emitido por junta/ponto',
+              'Registro fotográfico/radiográfico anexado'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Definição do Método de Ensaio Aplicado por Junta/Ponto (LP, PM, US, RX)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Metodologia de Execução do Ensaio (preparação, aplicação, tempos)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Resultados por Junta/Ponto Inspecionado', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Classificação de Descontinuidades Encontradas (tipo, dimensão, localização)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Parecer de Aprovação/Reprovação Conforme Critério de Aceitação', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Ensaio por Líquido Penetrante executado em 100% das soldas críticas', status: 'conforme', observacao: 'Nenhuma indicação de trinca linear detectada' },
-              { id: 'ck-2', descricao: 'Mapeamento das juntas inspecionadas e registro fotográfico sob luz calibrada', status: 'conforme', observacao: 'Evidências anexadas ao dossiê técnico' }
+              { id: 'ck-1', descricao: 'Método de ensaio definido por junta/ponto (LP/PM/US/RX)', status: 'conforme', observacao: 'Ensaio por Líquido Penetrante Visível e Ultrassom Phased Array selecionados' },
+              { id: 'ck-2', descricao: 'Superfície preparada conforme exigência do método', status: 'conforme', observacao: 'Desengraxe e escovação mecânica efetuados' },
+              { id: 'ck-3', descricao: 'Ensaio executado conforme procedimento aplicável', status: 'conforme', observacao: 'Procedimento qualificado conforme ASME V Artigo 6' },
+              { id: 'ck-4', descricao: 'Resultados registrados por junta/ponto', status: 'conforme', observacao: 'Mapeamento completo das indicações detectadas' },
+              { id: 'ck-5', descricao: 'Descontinuidades classificadas (tipo, dimensão, localização)', status: 'conforme', observacao: 'Sem indicações lineares relevantes detectadas' },
+              { id: 'ck-6', descricao: 'Critério de aceitação aplicado, com norma de referência informada', status: 'conforme', observacao: 'Critério de aceitação ASME VIII Div 1 Apêndice 8' },
+              { id: 'ck-7', descricao: 'Certificado de qualificação do inspetor (nível 1/2, conforme SNQC/ABENDI) anexado', status: 'conforme', observacao: 'Inspetor END Nível 2 LP/US certificado ABENDI' },
+              { id: 'ck-8', descricao: 'Equipamento de ensaio calibrado e com certificado válido', status: 'conforme', observacao: 'Aparelho de ultrassom e blocos padrão calibrados com rastreabilidade RBC' },
+              { id: 'ck-9', descricao: 'Parecer de aprovação/reprovação emitido por junta/ponto', status: 'conforme', observacao: 'Juntas avaliadas aprovadas sem restrições' },
+              { id: 'ck-10', descricao: 'Registro fotográfico/radiográfico anexado', status: 'conforme', observacao: 'Relatório fotográfico sob luz branca > 1000 lux anexado' }
             ]
           }
         ]
