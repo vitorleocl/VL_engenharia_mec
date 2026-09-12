@@ -769,26 +769,115 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
           {
             id: 'laudo-terraplenagem-nr12',
             codigo: 'PESAD-TERRA',
-            nome: 'Laudo de Integridade Estrutural e Segurança Operacional (NR-12/NR-18)',
+            nome: 'Laudo de Integridade Estrutural e Segurança Operacional (NR-12 / NR-18)',
+            hrn: true,
+            temHrn: true,
             normasRef: 'NR-12, NR-18, ABNT NBR ISO 6165, NBR ISO 10262',
+            textoBaseApresentacao: 'Laudo de inspeção mecânica em escavadeiras hidráulicas, retroescavadeiras e pás-carregadeiras para liberação em canteiros de obras.',
             apresentacaoPadrao: 'Laudo de inspeção mecânica em escavadeiras hidráulicas, retroescavadeiras e pás-carregadeiras para liberação em canteiros de obras.',
             metodologiaPadrao: 'Inspeção de embuchamentos, pinos, cilindros hidráulicos, trincas estruturais em lanças e chassis e sistema de freio de serviço/estacionamento.',
+            secoesEspecificas: [
+              'Identificação do Equipamento (fabricante, modelo, nº de série, horímetro atual)',
+              'Apreciação de Risco (HRN) dos Perigos Residuais de Operação',
+              'Avaliação Estrutural (chassi, lança/braço, caçamba/implemento, estrutura de sustentação)',
+              'Avaliação do Sistema Hidráulico (mangueiras, cilindros, bomba, vazamentos)',
+              'Avaliação do Sistema de Translação (esteiras/pneus, rodas motrizes, roletes)',
+              'Avaliação de Comandos e Instrumentação de Cabine',
+              'Avaliação de Desgaste de Componentes Mecânicos de Articulação (pinos, buchas, mancais)'
+            ],
+            checklistInicial: [
+              'Horímetro registrado no momento da inspeção',
+              'Estrutura do chassi sem trincas ou deformações visíveis',
+              'Lança/braço e caçamba/implemento sem deformações estruturais',
+              'Sistema hidráulico sem vazamentos aparentes',
+              'Mangueiras hidráulicas sem desgaste, ressecamento ou abrasão',
+              'Cilindros hidráulicos sem vazamento nas hastes',
+              'Esteiras ou pneus com desgaste dentro do limite aceitável',
+              'Rodas motrizes e roletes avaliados quanto a desgaste',
+              'Freio de serviço testado',
+              'Freio de estacionamento testado',
+              'Comandos de cabine funcionais (alavancas, pedais, joystick)',
+              'Instrumentação do painel funcional (pressão, temperatura, combustível)',
+              'Cinto de segurança do operador presente e funcional',
+              'Buzina e alarme sonoro de ré funcionais',
+              'Extintor de incêndio a bordo, quando exigido',
+              'Pinos e buchas de articulação avaliados quanto a folga/desgaste',
+              'HRN calculado para os perigos residuais identificados',
+              'Estrutura ROPS/FOPS íntegra (referenciar laudo específico, se elaborado separadamente)'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Equipamento (fabricante, modelo, nº de série, horímetro atual)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Apreciação de Risco (HRN) dos Perigos Residuais de Operação', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Avaliação Estrutural (chassi, lança/braço, caçamba/implemento, estrutura de sustentação)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Avaliação do Sistema Hidráulico (mangueiras, cilindros, bomba, vazamentos)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Avaliação do Sistema de Translação (esteiras/pneus, rodas motrizes, roletes)', ordem: 5 },
+              { id: 'sec-6', titulo: '6. Avaliação de Comandos e Instrumentação de Cabine', ordem: 6 },
+              { id: 'sec-7', titulo: '7. Avaliação de Desgaste de Componentes Mecânicos de Articulação (pinos, buchas, mancais)', ordem: 7 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Folgas axiais e radiais em pinos e buchas da articulação de lança/braço', status: 'conforme', observacao: 'Folgas dentro das tolerâncias do fabricante' },
-              { id: 'ck-2', descricao: 'Ausência de trincas nas soldas estruturais dos chassis e contrapesos', status: 'conforme', observacao: 'Inspecionado visualmente e sem deformações' },
-              { id: 'ck-3', descricao: 'Sinal sonoro de marcha à ré e giroscópio de sinalização luminosa', status: 'conforme', observacao: 'Acionamento automático e audível a 15 metros' }
+              { id: 'ck-1', descricao: 'Horímetro registrado no momento da inspeção', status: 'conforme', observacao: 'Horímetro operacional registrado' },
+              { id: 'ck-2', descricao: 'Estrutura do chassi sem trincas ou deformações visíveis', status: 'conforme', observacao: 'Chassi inspecionado visualmente e sem trincas' },
+              { id: 'ck-3', descricao: 'Lança/braço e caçamba/implemento sem deformações estruturais', status: 'conforme', observacao: 'Geometria preservada e sem empenamentos' },
+              { id: 'ck-4', descricao: 'Sistema hidráulico sem vazamentos aparentes', status: 'conforme', observacao: 'Linhas pressurizadas sem gotejamentos' },
+              { id: 'ck-5', descricao: 'Mangueiras hidráulicas sem desgaste, ressecamento ou abrasão', status: 'conforme', observacao: 'Mangueiras íntegras e com malha protegida' },
+              { id: 'ck-6', descricao: 'Cilindros hidráulicos sem vazamento nas hastes', status: 'conforme', observacao: 'Hastes cromadas sem riscos e retentores estanques' },
+              { id: 'ck-7', descricao: 'Esteiras ou pneus com desgaste dentro do limite aceitável', status: 'conforme', observacao: 'Tensão de esteiras e garras dentro da tolerância' },
+              { id: 'ck-8', descricao: 'Rodas motrizes e roletes avaliados quanto a desgaste', status: 'conforme', observacao: 'Guias e roletes lubrificados e sem folgas anormais' },
+              { id: 'ck-9', descricao: 'Freio de serviço testado', status: 'conforme', observacao: 'Resposta de frenagem em rampa testada' },
+              { id: 'ck-10', descricao: 'Freio de estacionamento testado', status: 'conforme', observacao: 'Imobilização total com máquina desengatada' },
+              { id: 'ck-11', descricao: 'Comandos de cabine funcionais (alavancas, pedais, joystick)', status: 'conforme', observacao: 'Joysticks operando sem pontos mortos ou travamentos' },
+              { id: 'ck-12', descricao: 'Instrumentação do painel funcional (pressão, temperatura, combustível)', status: 'conforme', observacao: 'Indicadores e lâmpadas-piloto funcionais' },
+              { id: 'ck-13', descricao: 'Cinto de segurança do operador presente e funcional', status: 'conforme', observacao: 'Cinto abdominal/subabdominal com fecho íntegro' },
+              { id: 'ck-14', descricao: 'Buzina e alarme sonoro de ré funcionais', status: 'conforme', observacao: 'Alarme sonoro interligado à ré audível a 15m' },
+              { id: 'ck-15', descricao: 'Extintor de incêndio a bordo, quando exigido', status: 'conforme', observacao: 'Extintor com manômetro regular e fixação firme' },
+              { id: 'ck-16', descricao: 'Pinos e buchas de articulação avaliados quanto a folga/desgaste', status: 'conforme', observacao: 'Folgas radiais e axiais dentro dos limites do fabricante' },
+              { id: 'ck-17', descricao: 'HRN calculado para os perigos residuais identificados', status: 'conforme', observacao: 'Matriz HRN consolidada para riscos mecânicos e operacionais' },
+              { id: 'ck-18', descricao: 'Estrutura ROPS/FOPS íntegra (referenciar laudo específico, se elaborado separadamente)', status: 'conforme', observacao: 'Cabine de proteção íntegra e sem soldas clandestinas' }
             ]
           },
           {
             id: 'laudo-rops-fops',
             codigo: 'PESAD-ROPS',
-            nome: 'Laudo de Conformidade de Estruturas de Proteção (ROPS/FOPS)',
+            nome: 'Laudo de Conformidade de Estruturas de Proteção (ROPS / FOPS)',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ISO 3471 (ROPS), ISO 3449 (FOPS), NR-12 item 12.15',
+            textoBaseApresentacao: 'Atestação da integridade estrutural das cabines e proteções contra capotamento (ROPS) e queda de objetos (FOPS).',
             apresentacaoPadrao: 'Atestação da integridade estrutural das cabines e proteções contra capotamento (ROPS) e queda de objetos (FOPS).',
             metodologiaPadrao: 'Verificação da placa original de homologação, ausência de soldas clandestinas, corrosão ou furações não autorizadas nas colunas estruturais.',
+            secoesEspecificas: [
+              'Identificação e Certificação de Origem da Estrutura (placa de certificação ISO 3471/ISO 3449)',
+              'Inspeção Visual da Estrutura ROPS (trincas, deformação, corrosão)',
+              'Inspeção Visual da Estrutura FOPS, quando aplicável',
+              'Verificação de Fixação e Torque dos Parafusos de Fixação',
+              'Verificação de Compatibilidade da Estrutura com o Modelo do Equipamento'
+            ],
+            checklistInicial: [
+              'Placa de certificação ROPS presente e legível',
+              'Placa de certificação FOPS presente, quando aplicável',
+              'Estrutura sem trincas ou deformações visíveis',
+              'Solda da estrutura íntegra, sem fissuras',
+              'Parafusos de fixação com torque conferido',
+              'Compatibilidade da estrutura com o modelo/fabricante do equipamento confirmada',
+              'Ausência de furação ou adaptação não certificada na estrutura',
+              'Estrutura sem sinais de impacto anterior sem substituição/certificação'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação e Certificação de Origem da Estrutura (placa de certificação ISO 3471/ISO 3449)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Inspeção Visual da Estrutura ROPS (trincas, deformação, corrosão)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Inspeção Visual da Estrutura FOPS, quando aplicável', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Fixação e Torque dos Parafusos de Fixação', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Verificação de Compatibilidade da Estrutura com o Modelo do Equipamento', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Placa de identificação ROPS/FOPS preservada com número de série legível', status: 'conforme', observacao: 'Certificação OEM confirmada' },
-              { id: 'ck-2', descricao: 'Ausência de pontos de solda caseira ou deformações plásticas nas colunas', status: 'conforme', observacao: 'Estrutura íntegra' }
+              { id: 'ck-1', descricao: 'Placa de certificação ROPS presente e legível', status: 'conforme', observacao: 'Placa metálica OEM preservada com norma e dados do fabricante' },
+              { id: 'ck-2', descricao: 'Placa de certificação FOPS presente, quando aplicável', status: 'conforme', observacao: 'Certificação Nível I/II FOPS identificada' },
+              { id: 'ck-3', descricao: 'Estrutura sem trincas ou deformações visíveis', status: 'conforme', observacao: 'Colunas e arcos sem deformação plástica' },
+              { id: 'ck-4', descricao: 'Solda da estrutura íntegra, sem fissuras', status: 'conforme', observacao: 'Cordões de solda originais inspecionados sem descontinuidades' },
+              { id: 'ck-5', descricao: 'Parafusos de fixação com torque conferido', status: 'conforme', observacao: 'Torquímetro aferiu torque nominal nos parafusos de sustentação' },
+              { id: 'ck-6', descricao: 'Compatibilidade da estrutura com o modelo/fabricante do equipamento confirmada', status: 'conforme', observacao: 'Aplicação aprovada pelo manual de montagem do fabricante' },
+              { id: 'ck-7', descricao: 'Ausência de furação ou adaptação não certificada na estrutura', status: 'conforme', observacao: 'Sem furações adicionais, cortes ou enxertos não homologados' },
+              { id: 'ck-8', descricao: 'Estrutura sem sinais de impacto anterior sem substituição/certificação', status: 'conforme', observacao: 'Ausência de vestígios de capotamento ou abalroamento' }
             ]
           }
         ]
@@ -800,26 +889,105 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
           {
             id: 'laudo-carga-nr11',
             codigo: 'PESAD-NR11',
-            nome: 'Laudo de Liberação e Conformidade NR-11/NR-12',
+            nome: 'Laudo de Liberação e Conformidade NR-11 / NR-12',
+            hrn: true,
+            temHrn: true,
             normasRef: 'NR-11, NR-12, ABNT NBR 14768 (Muncks), NBR ISO 5053 (Empilhadeiras)',
+            textoBaseApresentacao: 'Laudo pericial com emissão de ART para liberação técnica de empilhadeiras a combustão/elétricas e caminhões guindautos (munck).',
             apresentacaoPadrao: 'Laudo pericial com emissão de ART para liberação técnica de empilhadeiras a combustão/elétricas e caminhões guindautos (munck).',
             metodologiaPadrao: 'Inspeção estática e dinâmica de mangueiras hidráulicas, garfos, torres de elevação, patolas de estabilização e dispositivos de alívio.',
+            secoesEspecificas: [
+              'Identificação do Equipamento e Capacidade Nominal (placa de carga)',
+              'Apreciação de Risco (HRN) dos Perigos Operacionais',
+              'Checklist Técnico de Freios, Direção e Sistema Hidráulico',
+              'Verificação de Dispositivos de Segurança e Alarme',
+              'Verificação de Garfos, Plataforma ou Cesto, conforme o tipo de equipamento'
+            ],
+            checklistInicial: [
+              'Capacidade nominal identificada na placa de carga',
+              'Freio de serviço testado',
+              'Freio de estacionamento testado',
+              'Direção sem folga excessiva',
+              'Sistema hidráulico de elevação sem vazamentos',
+              'Corrente/cilindro de elevação avaliado quanto a desgaste',
+              'Garfos sem trincas ou deformação (empilhadeiras)',
+              'Plataforma ou cesto sem deformação (PEMT/PTA)',
+              'Guarda-corpo e trava do cesto conferidos (PEMT/PTA)',
+              'Alarme sonoro de ré funcional',
+              'Luz giroflex/sinalizadora funcional',
+              'Cinto de segurança do operador/cesto presente',
+              'Dispositivo de parada de emergência testado',
+              'Estabilizadores testados, quando aplicável',
+              'HRN calculado para os perigos identificados'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Identificação do Equipamento e Capacidade Nominal (placa de carga)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Apreciação de Risco (HRN) dos Perigos Operacionais', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Checklist Técnico de Freios, Direção e Sistema Hidráulico', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Dispositivos de Segurança e Alarme', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Verificação de Garfos, Plataforma ou Cesto, conforme o tipo de equipamento', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Desgaste do talão dos garfos de empilhadeira (inferior a 10% da espessura original)', status: 'conforme', observacao: 'Medição em 42mm (original 45mm, desgaste em 6.6%)' },
-              { id: 'ck-2', descricao: 'Válvulas de retenção de segurança contra queda nos cilindros de elevação', status: 'conforme', observacao: 'Teste de estanqueidade sob pressão aprovado' },
-              { id: 'ck-3', descricao: 'Condições do cinto de segurança de 3 pontas e sensor de presença no assento', status: 'conforme', observacao: 'Intertravamento corta tração sem operador' }
+              { id: 'ck-1', descricao: 'Capacidade nominal identificada na placa de carga', status: 'conforme', observacao: 'Placa de diagrama de cargas e centro de gravidade perfeitamente legíveis' },
+              { id: 'ck-2', descricao: 'Freio de serviço testado', status: 'conforme', observacao: 'Eficiência de frenagem dinâmica aprovada sob carga' },
+              { id: 'ck-3', descricao: 'Freio de estacionamento testado', status: 'conforme', observacao: 'Freio mecânico imobilizou o equipamento na rampa' },
+              { id: 'ck-4', descricao: 'Direção sem folga excessiva', status: 'conforme', observacao: 'Direção hidrostática sem folgas axiais ou trancos' },
+              { id: 'ck-5', descricao: 'Sistema hidráulico de elevação sem vazamentos', status: 'conforme', observacao: 'Válvula de retenção e mangueiras sem perda de carga' },
+              { id: 'ck-6', descricao: 'Corrente/cilindro de elevação avaliado quanto a desgaste', status: 'conforme', observacao: 'Alongamento da corrente inferior a 2% do limite normativo' },
+              { id: 'ck-7', descricao: 'Garfos sem trincas ou deformação (empilhadeiras)', status: 'conforme', observacao: 'Talão dos garfos medido com paquímetro dentro de 94% da espessura original' },
+              { id: 'ck-8', descricao: 'Plataforma ou cesto sem deformação (PEMT/PTA)', status: 'conforme', observacao: 'Piso antiderrapante e estrutura do cesto íntegros' },
+              { id: 'ck-9', descricao: 'Guarda-corpo e trava do cesto conferidos (PEMT/PTA)', status: 'conforme', observacao: 'Guarda-corpo com altura de 1,10m e rodapé de 15cm conformes' },
+              { id: 'ck-10', descricao: 'Alarme sonoro de ré funcional', status: 'conforme', observacao: 'Sirene de ré sincronizada com a marcha à ré' },
+              { id: 'ck-11', descricao: 'Luz giroflex/sinalizadora funcional', status: 'conforme', observacao: 'Giroflex âmbar visível a 360 graus' },
+              { id: 'ck-12', descricao: 'Cinto de segurança do operador/cesto presente', status: 'conforme', observacao: 'Cinto e pontos de ancoragem para cinto tipo paraquedista conformes' },
+              { id: 'ck-13', descricao: 'Dispositivo de parada de emergência testado', status: 'conforme', observacao: 'Botão tipo cogumelo corta potência dos motores e elevação' },
+              { id: 'ck-14', descricao: 'Estabilizadores testados, quando aplicável', status: 'conforme', observacao: 'Válvulas de retenção das patolas e sapatas operacionais' },
+              { id: 'ck-15', descricao: 'HRN calculado para os perigos identificados', status: 'conforme', observacao: 'Matriz HRN aplicada para os riscos de tombamento e esmagamento' }
             ]
           },
           {
             id: 'laudo-teste-carga',
             codigo: 'LOAD-TEST',
             nome: 'Laudo de Teste de Carga (Load Test) e Estabilidade',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR 8400, NBR 14768, OSHA 1910.179',
+            textoBaseApresentacao: 'Relatório de prova de carga estática e dinâmica com massa aferida e dinamômetro calibrado para certificar a capacidade nominal.',
             apresentacaoPadrao: 'Relatório de prova de carga estática e dinâmica com massa aferida e dinamômetro calibrado para certificar a capacidade nominal.',
             metodologiaPadrao: 'Aplicação progressiva de 100% e 125% da carga nominal, monitoramento de deflexão e registro de estanqueidade hidráulica.',
+            secoesEspecificas: [
+              'Metodologia do Teste (percentual da carga nominal aplicado, tempo de sustentação)',
+              'Execução do Ensaio de Içamento/Elevação',
+              'Avaliação de Estabilidade sob Carga (ausência de tombamento/deformação)',
+              'Verificação de Sistemas de Segurança Durante o Teste (limitador de carga, alarme de sobrecarga)'
+            ],
+            checklistInicial: [
+              'Carga de teste definida (percentual conforme norma/fabricante, ex.: 110% da capacidade nominal)',
+              'Pesagem da carga de teste conferida',
+              'Ensaio realizado sem deformação permanente do equipamento',
+              'Estabilidade mantida sem indício de tombamento',
+              'Tempo de sustentação da carga cumprido conforme metodologia',
+              'Limitador de carga acionado corretamente durante o teste',
+              'Alarme de sobrecarga testado e funcional',
+              'Certificado de aferição do dinamômetro/célula de carga utilizado anexado',
+              'Relatório fotográfico do ensaio elaborado'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Metodologia do Teste (percentual da carga nominal aplicado, tempo de sustentação)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Execução do Ensaio de Içamento/Elevação', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Avaliação de Estabilidade sob Carga (ausência de tombamento/deformação)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Verificação de Sistemas de Segurança Durante o Teste (limitador de carga, alarme de sobrecarga)', ordem: 4 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Teste com carga estática a 125% da capacidade máxima por 10 minutos', status: 'conforme', observacao: 'Sem deslizamento de pistões ou empenamento' },
-              { id: 'ck-2', descricao: 'Teste dinâmico a 110% com ciclos completos de elevação e giro', status: 'conforme', observacao: 'Operação suave sem ruídos ou trepidações' }
+              { id: 'ck-1', descricao: 'Carga de teste definida (percentual conforme norma/fabricante, ex.: 110% da capacidade nominal)', status: 'conforme', observacao: 'Carga estática de 125% e dinâmica de 110% calculadas' },
+              { id: 'ck-2', descricao: 'Pesagem da carga de teste conferida', status: 'conforme', observacao: 'Pesagem conferida via célula de carga calibrada' },
+              { id: 'ck-3', descricao: 'Ensaio realizado sem deformação permanente do equipamento', status: 'conforme', observacao: 'Deflexão elástica reversível sem empenamento' },
+              { id: 'ck-4', descricao: 'Estabilidade mantida sem indício de tombamento', status: 'conforme', observacao: 'Apoios e pneus mantiveram contato e estabilidade contínua' },
+              { id: 'ck-5', descricao: 'Tempo de sustentação da carga cumprido conforme metodologia', status: 'conforme', observacao: 'Carga sustentada por 10 minutos sem queda de altura dos cilindros' },
+              { id: 'ck-6', descricao: 'Limitador de carga acionado corretamente durante o teste', status: 'conforme', observacao: 'Dispositivo bloqueou movimentos que aumentam o momento' },
+              { id: 'ck-7', descricao: 'Alarme de sobrecarga testado e funcional', status: 'conforme', observacao: 'Sinal sonoro e luminoso disparou no limiar de sobrecarga' },
+              { id: 'ck-8', descricao: 'Certificado de aferição do dinamômetro/célula de carga utilizado anexado', status: 'conforme', observacao: 'Certificado RBC anexado ao prontuário do laudo' },
+              { id: 'ck-9', descricao: 'Relatório fotográfico do ensaio elaborado', status: 'conforme', observacao: 'Registro fotográfico das fases de içamento e sustentação registrado' }
             ]
           }
         ]
@@ -832,12 +1000,49 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-pavimentacao',
             codigo: 'PESAD-PAV',
             nome: 'Laudo de Inspeção Periódica de Manutenção e Segurança',
+            hrn: false,
+            temHrn: false,
             normasRef: 'NR-12, ABNT NBR ISO 6165',
+            textoBaseApresentacao: 'Inspeção mecânica em rolos compactadores, vibroacabadoras e fresadoras de asfalto.',
             apresentacaoPadrao: 'Inspeção mecânica em rolos compactadores, vibroacabadoras e fresadoras de asfalto.',
             metodologiaPadrao: 'Avaliação dos sistemas de vibração excêntrica, raspadores de tambor, freios e isolamento térmico de motores.',
+            secoesEspecificas: [
+              'Avaliação de Freio de Emergência e Freio de Serviço',
+              'Avaliação de Sinalização Sonora e Visual',
+              'Verificação de Vazamentos Hidráulicos',
+              'Avaliação do Sistema de Vibração/Compactação (rolo compactador)',
+              'Avaliação do Sistema de Aquecimento de Massa Asfáltica (vibroacabadora, quando aplicável)'
+            ],
+            checklistInicial: [
+              'Freio de emergência testado',
+              'Freio de serviço testado',
+              'Sinalização sonora de ré funcional',
+              'Giroflex/luz de alerta funcional',
+              'Vazamentos hidráulicos verificados (cilindros, mangueiras, bomba)',
+              'Sistema de vibração/compactação testado',
+              'Tambor/rolo sem danos estruturais',
+              'Sistema de aquecimento de massa avaliado, quando aplicável (vibroacabadora)',
+              'Cabine do operador com visibilidade adequada',
+              'Extintor de incêndio a bordo conferido'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Avaliação de Freio de Emergência e Freio de Serviço', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Avaliação de Sinalização Sonora e Visual', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação de Vazamentos Hidráulicos', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Avaliação do Sistema de Vibração/Compactação (rolo compactador)', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Avaliação do Sistema de Aquecimento de Massa Asfáltica (vibroacabadora, quando aplicável)', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Isolamento de amortecedores de borracha do tambor compactador', status: 'conforme', observacao: 'Coxins sem trincas ou delaminação' },
-              { id: 'ck-2', descricao: 'Sistema de aspersão de água nos tambores e esteiras', status: 'conforme', observacao: 'Bicos desobstruídos e pressão adequada' }
+              { id: 'ck-1', descricao: 'Freio de emergência testado', status: 'conforme', observacao: 'Parada abrupta acionada com sucesso' },
+              { id: 'ck-2', descricao: 'Freio de serviço testado', status: 'conforme', observacao: 'Frenagem hidrostática suave e sem atrasos' },
+              { id: 'ck-3', descricao: 'Sinalização sonora de ré funcional', status: 'conforme', observacao: 'Buzina e alarme sonoro operacionais' },
+              { id: 'ck-4', descricao: 'Giroflex/luz de alerta funcional', status: 'conforme', observacao: 'Sinalizador rotativo amarelo funcional' },
+              { id: 'ck-5', descricao: 'Vazamentos hidráulicos verificados (cilindros, mangueiras, bomba)', status: 'conforme', observacao: 'Circuito hidráulico fechado sem pontos de vazamento' },
+              { id: 'ck-6', descricao: 'Sistema de vibração/compactação testado', status: 'conforme', observacao: 'Amplitudes alta e baixa de vibração operando normalmente' },
+              { id: 'ck-7', descricao: 'Tambor/rolo sem danos estruturais', status: 'conforme', observacao: 'Casca do tambor cilíndrica sem amassamentos ou desgastes profundos' },
+              { id: 'ck-8', descricao: 'Sistema de aquecimento de massa avaliado, quando aplicável (vibroacabadora)', status: 'conforme', observacao: 'Queimadores/resistências elétricas da mesa compactadora operando' },
+              { id: 'ck-9', descricao: 'Cabine do operador com visibilidade adequada', status: 'conforme', observacao: 'Espelhos e campo visual periférico desimpedidos' },
+              { id: 'ck-10', descricao: 'Extintor de incêndio a bordo conferido', status: 'conforme', observacao: 'Extintor pressurizado fixado ao alcance do operador' }
             ]
           }
         ]
@@ -850,25 +1055,98 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             id: 'laudo-acessorios-icamento',
             codigo: 'GUIND-ACES',
             nome: 'Laudo de Integridade Operacional para Acessórios de Içamento',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ABNT NBR 13541-1 (Cabos), NBR 15516 (Cintas), NBR 15597 (Manilhas)',
+            textoBaseApresentacao: 'Inspeção e descarte normativo de cabos de aço, cintas de poliéster, correntes grau 8/10, manilhas e ganchos forjados.',
             apresentacaoPadrao: 'Inspeção e descarte normativo de cabos de aço, cintas de poliéster, correntes grau 8/10, manilhas e ganchos forjados.',
             metodologiaPadrao: 'Inspeção dimensional de abertura de garganta de ganchos, contagem de arames rompidos em cabos e ensaio visual/dimensional.',
+            secoesEspecificas: [
+              'Inspeção de Cabos de Aço (fios rompidos, corrosão, lubrificação)',
+              'Inspeção de Ganchos e Travas de Segurança (catraca de segurança)',
+              'Inspeção de Cintas e Lingas (validade, integridade, capacidade)',
+              'Inspeção de Patolas e Estabilizadores',
+              'Inspeção de Roldanas e Tambor de Enrolamento'
+            ],
+            checklistInicial: [
+              'Cabo de aço sem fios rompidos acima do limite normativo',
+              'Cabo de aço lubrificado e sem corrosão excessiva',
+              'Gancho com trava de segurança (catraca) funcional',
+              'Gancho sem deformação ou desgaste no colo',
+              'Cintas/lingas dentro da validade e sem cortes ou desgaste',
+              'Capacidade das cintas/lingas compatível com a carga de trabalho',
+              'Patolas/estabilizadores testados quanto a acionamento e travamento',
+              'Base de apoio das patolas avaliada (chapas de apoio, solo)',
+              'Roldanas sem desgaste excessivo no canal',
+              'Tambor de enrolamento sem danos ou deformações',
+              'Sistema de freio do guincho testado'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Inspeção de Cabos de Aço (fios rompidos, corrosão, lubrificação)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Inspeção de Ganchos e Travas de Segurança (catraca de segurança)', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Inspeção de Cintas e Lingas (validade, integridade, capacidade)', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Inspeção de Patolas e Estabilizadores', ordem: 4 },
+              { id: 'sec-5', titulo: '5. Inspeção de Roldanas e Tambor de Enrolamento', ordem: 5 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Abertura da garganta do gancho (descarte se superior a 10% do nominal)', status: 'conforme', observacao: 'Garganta em 52mm (nominal 50mm, 4% de aumento - aprovado)' },
-              { id: 'ck-2', descricao: 'Trava de segurança do gancho com mola ativa', status: 'conforme', observacao: 'Trava fechada e firme' },
-              { id: 'ck-3', descricao: 'Etiqueta indelével de capacidade de carga e rastreabilidade nas cintas', status: 'conforme', observacao: 'Cintas com plaqueta de identificação e laudo do fabricante' }
+              { id: 'ck-1', descricao: 'Cabo de aço sem fios rompidos acima do limite normativo', status: 'conforme', observacao: 'Critério de descarte NBR ISO 4309 respeitado' },
+              { id: 'ck-2', descricao: 'Cabo de aço lubrificado e sem corrosão excessiva', status: 'conforme', observacao: 'Lubrificação asfáltica protetiva adequada' },
+              { id: 'ck-3', descricao: 'Gancho com trava de segurança (catraca) funcional', status: 'conforme', observacao: 'Lingueta da catraca fecha com mola íntegra' },
+              { id: 'ck-4', descricao: 'Gancho sem deformação ou desgaste no colo', status: 'conforme', observacao: 'Abertura da garganta dentro de 4% da dimensão nominal' },
+              { id: 'ck-5', descricao: 'Cintas/lingas dentro da validade e sem cortes ou desgaste', status: 'conforme', observacao: 'Cintas tubulares e planas sem desfiamento ou contaminação química' },
+              { id: 'ck-6', descricao: 'Capacidade das cintas/lingas compatível com a carga de trabalho', status: 'conforme', observacao: 'Carga máxima de trabalho (CMT) identificada na etiqueta azul' },
+              { id: 'ck-7', descricao: 'Patolas/estabilizadores testados quanto a acionamento e travamento', status: 'conforme', observacao: 'Extensão horizontal e cilindros verticais com trava hidráulica' },
+              { id: 'ck-8', descricao: 'Base de apoio das patolas avaliada (chapas de apoio, solo)', status: 'conforme', observacao: 'Sapatas com pranchas de madeira/poliuretano de distribuição de pressão' },
+              { id: 'ck-9', descricao: 'Roldanas sem desgaste excessivo no canal', status: 'conforme', observacao: 'Garganta das polias sem desgaste assimétrico ou trincas' },
+              { id: 'ck-10', descricao: 'Tambor de enrolamento sem danos ou deformações', status: 'conforme', observacao: 'Ranhoamento regular e no mínimo 3 voltas mortas de segurança' },
+              { id: 'ck-11', descricao: 'Sistema de freio do guincho testado', status: 'conforme', observacao: 'Freio automático multidisco segurou carga suspensa' }
             ]
           },
           {
             id: 'laudo-lmi-guindaste',
             codigo: 'GUIND-LMI',
             nome: 'Laudo de Aferição do Limitador de Momento de Carga (LMI)',
+            hrn: false,
+            temHrn: false,
             normasRef: 'ISO 10245-1, ABNT NBR 16463, NR-12',
+            textoBaseApresentacao: 'Aferição do sistema computadorizado indicador de momento de carga (LMI/PAT/Hirschmann) em guindastes rodoviários e telescópicos.',
             apresentacaoPadrao: 'Aferição do sistema computadorizado indicador de momento de carga (LMI/PAT/Hirschmann) em guindastes rodoviários e telescópicos.',
             metodologiaPadrao: 'Calibração dos sensores de ângulo, comprimento de lança e transdutores de pressão de cilindro mestre.',
+            secoesEspecificas: [
+              'Verificação do Sistema Eletrônico de Sensores (ângulo, extensão da lança, carga)',
+              'Teste de Aferição com Carga Conhecida em Diferentes Configurações de Lança',
+              'Verificação de Alarmes Visuais e Sonoros de Sobrecarga',
+              'Validação do Computador de Bordo (histórico de erros, calibração)'
+            ],
+            checklistInicial: [
+              'Sensor de ângulo da lança calibrado',
+              'Sensor de extensão/comprimento da lança calibrado',
+              'Célula de carga/sensor de carga calibrado',
+              'Teste realizado em ao menos três configurações de lança (curta, média, longa)',
+              'Alarme visual de sobrecarga acionado corretamente',
+              'Alarme sonoro de sobrecarga acionado corretamente',
+              'Corte automático de movimento perigoso testado, quando existente',
+              'Computador de bordo sem códigos de erro não resolvidos',
+              'Certificado de calibração dos sensores anexado',
+              'Teste registrado com data, resultado e responsável técnico'
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Verificação do Sistema Eletrônico de Sensores (ângulo, extensão da lança, carga)', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Teste de Aferição com Carga Conhecida em Diferentes Configurações de Lança', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Verificação de Alarmes Visuais e Sonoros de Sobrecarga', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Validação do Computador de Bordo (histórico de erros, calibração)', ordem: 4 }
+            ],
             checklistPadrao: [
-              { id: 'ck-1', descricao: 'Corte automático de movimentos perigosos ao atingir 100% da tabela de carga', status: 'conforme', observacao: 'Interrupção imediata dos comandos de descida e estiramento' },
-              { id: 'ck-2', descricao: 'Precisão do anemômetro de ponta de lança e alarme de velocidade de vento', status: 'conforme', observacao: 'Aferido com anemômetro padrão' }
+              { id: 'ck-1', descricao: 'Sensor de ângulo da lança calibrado', status: 'conforme', observacao: 'Inclinômetro digital aferido com nível eletrônico padrão' },
+              { id: 'ck-2', descricao: 'Sensor de extensão/comprimento da lança calibrado', status: 'conforme', observacao: 'Carretel de cabo de extensão com contagem métrica exata' },
+              { id: 'ck-3', descricao: 'Célula de carga/sensor de carga calibrado', status: 'conforme', observacao: 'Pressostatos dos cilindros de elevação calibrados' },
+              { id: 'ck-4', descricao: 'Teste realizado em ao menos três configurações de lança (curta, média, longa)', status: 'conforme', observacao: 'Ensaios em raio mínimo, intermediário e raio máximo executados' },
+              { id: 'ck-5', descricao: 'Alarme visual de sobrecarga acionado corretamente', status: 'conforme', observacao: 'Luz amarela (90%) e luz vermelha (100%) acenderam no display' },
+              { id: 'ck-6', descricao: 'Alarme sonoro de sobrecarga acionado corretamente', status: 'conforme', observacao: 'Buzzer contínuo disparou ao atingir 100% da tabela' },
+              { id: 'ck-7', descricao: 'Corte automático de movimento perigoso testado, quando existente', status: 'conforme', observacao: 'Válvula solenoide bloqueou descida e telescópio' },
+              { id: 'ck-8', descricao: 'Computador de bordo sem códigos de erro não resolvidos', status: 'conforme', observacao: 'Log de falhas limpo e parâmetros gravados na memória EEPROM' },
+              { id: 'ck-9', descricao: 'Certificado de calibração dos sensores anexado', status: 'conforme', observacao: 'Certificado de ensaio rastreável anexado' },
+              { id: 'ck-10', descricao: 'Teste registrado com data, resultado e responsável técnico', status: 'conforme', observacao: 'Ficha de calibração assinada pelo RT com ART' }
             ]
           }
         ]

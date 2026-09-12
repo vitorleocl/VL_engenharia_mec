@@ -26,7 +26,8 @@ import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { 
   sincronizarFirestoreNR12eNR13, 
   sincronizarFirestoreVeicular,
-  sincronizarFirestoreIncendio
+  sincronizarFirestoreIncendio,
+  sincronizarFirestoreMaquinasPesadas
 } from '../lib/firestoreTaxonomia';
 import { useAuth } from './AuthContext';
 
@@ -124,10 +125,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loaded = loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA);
     const cat1Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-1');
     const cat2Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-2');
+    const cat3Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-3');
     const cat4Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-4');
     return loaded.map((cat: CategoriaLaudoDef) => {
       if (cat.id === 'cat-1' && cat1Atualizada) return cat1Atualizada;
       if (cat.id === 'cat-2' && cat2Atualizada) return cat2Atualizada;
+      if (cat.id === 'cat-3' && cat3Atualizada) return cat3Atualizada;
       if (cat.id === 'cat-4' && cat4Atualizada) return cat4Atualizada;
       return cat;
     });
@@ -245,6 +248,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Incêndio] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreMaquinasPesadas().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Máquinas Pesadas] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Máquinas Pesadas] Sincronização em segundo plano:', err);
     });
   }, []);
 

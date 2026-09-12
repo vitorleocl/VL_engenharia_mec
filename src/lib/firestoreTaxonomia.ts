@@ -882,3 +882,331 @@ export async function sincronizarFirestoreIncendio(): Promise<{
     };
   }
 }
+
+export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo de Integridade Estrutural e Segurança Operacional (NR-12 / NR-18)
+  'laudo-de-integridade-estrutural-e-seguranca-operacional-nr-12-nr-18': {
+    id: 'laudo-de-integridade-estrutural-e-seguranca-operacional-nr-12-nr-18',
+    codigo: 'PESAD-TERRA',
+    nome: 'Laudo de Integridade Estrutural e Segurança Operacional (NR-12 / NR-18)',
+    hrn: true,
+    temHrn: true,
+    normasRef: 'NR-12, NR-18, ABNT NBR ISO 6165, NBR ISO 10262',
+    textoBaseApresentacao: 'Laudo de inspeção mecânica em escavadeiras hidráulicas, retroescavadeiras e pás-carregadeiras para liberação em canteiros de obras.',
+    apresentacaoPadrao: 'Laudo de inspeção mecânica em escavadeiras hidráulicas, retroescavadeiras e pás-carregadeiras para liberação em canteiros de obras.',
+    metodologiaPadrao: 'Inspeção de embuchamentos, pinos, cilindros hidráulicos, trincas estruturais em lanças e chassis e sistema de freio de serviço/estacionamento.',
+    secoesEspecificas: [
+      'Identificação do Equipamento (fabricante, modelo, nº de série, horímetro atual)',
+      'Apreciação de Risco (HRN) dos Perigos Residuais de Operação',
+      'Avaliação Estrutural (chassi, lança/braço, caçamba/implemento, estrutura de sustentação)',
+      'Avaliação do Sistema Hidráulico (mangueiras, cilindros, bomba, vazamentos)',
+      'Avaliação do Sistema de Translação (esteiras/pneus, rodas motrizes, roletes)',
+      'Avaliação de Comandos e Instrumentação de Cabine',
+      'Avaliação de Desgaste de Componentes Mecânicos de Articulação (pinos, buchas, mancais)'
+    ],
+    checklistInicial: [
+      'Horímetro registrado no momento da inspeção',
+      'Estrutura do chassi sem trincas ou deformações visíveis',
+      'Lança/braço e caçamba/implemento sem deformações estruturais',
+      'Sistema hidráulico sem vazamentos aparentes',
+      'Mangueiras hidráulicas sem desgaste, ressecamento ou abrasão',
+      'Cilindros hidráulicos sem vazamento nas hastes',
+      'Esteiras ou pneus com desgaste dentro do limite aceitável',
+      'Rodas motrizes e roletes avaliados quanto a desgaste',
+      'Freio de serviço testado',
+      'Freio de estacionamento testado',
+      'Comandos de cabine funcionais (alavancas, pedais, joystick)',
+      'Instrumentação do painel funcional (pressão, temperatura, combustível)',
+      'Cinto de segurança do operador presente e funcional',
+      'Buzina e alarme sonoro de ré funcionais',
+      'Extintor de incêndio a bordo, quando exigido',
+      'Pinos e buchas de articulação avaliados quanto a folga/desgaste',
+      'HRN calculado para os perigos residuais identificados',
+      'Estrutura ROPS/FOPS íntegra (referenciar laudo específico, se elaborado separadamente)'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Conformidade de Estruturas de Proteção (ROPS / FOPS)
+  'laudo-de-conformidade-de-estruturas-de-protecao-rops-fops': {
+    id: 'laudo-de-conformidade-de-estruturas-de-protecao-rops-fops',
+    codigo: 'PESAD-ROPS',
+    nome: 'Laudo de Conformidade de Estruturas de Proteção (ROPS / FOPS)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ISO 3471 (ROPS), ISO 3449 (FOPS), NR-12 item 12.15',
+    textoBaseApresentacao: 'Atestação da integridade estrutural das cabines e proteções contra capotamento (ROPS) e queda de objetos (FOPS).',
+    apresentacaoPadrao: 'Atestação da integridade estrutural das cabines e proteções contra capotamento (ROPS) e queda de objetos (FOPS).',
+    metodologiaPadrao: 'Verificação da placa original de homologação, ausência de soldas clandestinas, corrosão ou furações não autorizadas nas colunas estruturais.',
+    secoesEspecificas: [
+      'Identificação e Certificação de Origem da Estrutura (placa de certificação ISO 3471/ISO 3449)',
+      'Inspeção Visual da Estrutura ROPS (trincas, deformação, corrosão)',
+      'Inspeção Visual da Estrutura FOPS, quando aplicável',
+      'Verificação de Fixação e Torque dos Parafusos de Fixação',
+      'Verificação de Compatibilidade da Estrutura com o Modelo do Equipamento'
+    ],
+    checklistInicial: [
+      'Placa de certificação ROPS presente e legível',
+      'Placa de certificação FOPS presente, quando aplicável',
+      'Estrutura sem trincas ou deformações visíveis',
+      'Solda da estrutura íntegra, sem fissuras',
+      'Parafusos de fixação com torque conferido',
+      'Compatibilidade da estrutura com o modelo/fabricante do equipamento confirmada',
+      'Ausência de furação ou adaptação não certificada na estrutura',
+      'Estrutura sem sinais de impacto anterior sem substituição/certificação'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo de Liberação e Conformidade NR-11 / NR-12
+  'laudo-de-liberacao-e-conformidade-nr-11-nr-12': {
+    id: 'laudo-de-liberacao-e-conformidade-nr-11-nr-12',
+    codigo: 'PESAD-NR11',
+    nome: 'Laudo de Liberação e Conformidade NR-11 / NR-12',
+    hrn: true,
+    temHrn: true,
+    normasRef: 'NR-11, NR-12, ABNT NBR 14768 (Muncks), NBR ISO 5053 (Empilhadeiras)',
+    textoBaseApresentacao: 'Laudo pericial com emissão de ART para liberação técnica de empilhadeiras a combustão/elétricas e caminhões guindautos (munck).',
+    apresentacaoPadrao: 'Laudo pericial com emissão de ART para liberação técnica de empilhadeiras a combustão/elétricas e caminhões guindautos (munck).',
+    metodologiaPadrao: 'Inspeção estática e dinâmica de mangueiras hidráulicas, garfos, torres de elevação, patolas de estabilização e dispositivos de alívio.',
+    secoesEspecificas: [
+      'Identificação do Equipamento e Capacidade Nominal (placa de carga)',
+      'Apreciação de Risco (HRN) dos Perigos Operacionais',
+      'Checklist Técnico de Freios, Direção e Sistema Hidráulico',
+      'Verificação de Dispositivos de Segurança e Alarme',
+      'Verificação de Garfos, Plataforma ou Cesto, conforme o tipo de equipamento'
+    ],
+    checklistInicial: [
+      'Capacidade nominal identificada na placa de carga',
+      'Freio de serviço testado',
+      'Freio de estacionamento testado',
+      'Direção sem folga excessiva',
+      'Sistema hidráulico de elevação sem vazamentos',
+      'Corrente/cilindro de elevação avaliado quanto a desgaste',
+      'Garfos sem trincas ou deformação (empilhadeiras)',
+      'Plataforma ou cesto sem deformação (PEMT/PTA)',
+      'Guarda-corpo e trava do cesto conferidos (PEMT/PTA)',
+      'Alarme sonoro de ré funcional',
+      'Luz giroflex/sinalizadora funcional',
+      'Cinto de segurança do operador/cesto presente',
+      'Dispositivo de parada de emergência testado',
+      'Estabilizadores testados, quando aplicável',
+      'HRN calculado para os perigos identificados'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 4. Laudo de Teste de Carga (Load Test) e Estabilidade
+  'laudo-de-teste-de-carga-load-test-e-estabilidade': {
+    id: 'laudo-de-teste-de-carga-load-test-e-estabilidade',
+    codigo: 'LOAD-TEST',
+    nome: 'Laudo de Teste de Carga (Load Test) e Estabilidade',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 8400, NBR 14768, OSHA 1910.179',
+    textoBaseApresentacao: 'Relatório de prova de carga estática e dinâmica com massa aferida e dinamômetro calibrado para certificar a capacidade nominal.',
+    apresentacaoPadrao: 'Relatório de prova de carga estática e dinâmica com massa aferida e dinamômetro calibrado para certificar a capacidade nominal.',
+    metodologiaPadrao: 'Aplicação progressiva de 100% e 125% da carga nominal, monitoramento de deflexão e registro de estanqueidade hidráulica.',
+    secoesEspecificas: [
+      'Metodologia do Teste (percentual da carga nominal aplicado, tempo de sustentação)',
+      'Execução do Ensaio de Içamento/Elevação',
+      'Avaliação de Estabilidade sob Carga (ausência de tombamento/deformação)',
+      'Verificação de Sistemas de Segurança Durante o Teste (limitador de carga, alarme de sobrecarga)'
+    ],
+    checklistInicial: [
+      'Carga de teste definida (percentual conforme norma/fabricante, ex.: 110% da capacidade nominal)',
+      'Pesagem da carga de teste conferida',
+      'Ensaio realizado sem deformação permanente do equipamento',
+      'Estabilidade mantida sem indício de tombamento',
+      'Tempo de sustentação da carga cumprido conforme metodologia',
+      'Limitador de carga acionado corretamente durante o teste',
+      'Alarme de sobrecarga testado e funcional',
+      'Certificado de aferição do dinamômetro/célula de carga utilizado anexado',
+      'Relatório fotográfico do ensaio elaborado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 5. Laudo de Inspeção Periódica de Manutenção e Segurança
+  'laudo-de-inspecao-periodica-de-manutencao-e-seguranca': {
+    id: 'laudo-de-inspecao-periodica-de-manutencao-e-seguranca',
+    codigo: 'PESAD-PAV',
+    nome: 'Laudo de Inspeção Periódica de Manutenção e Segurança',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'NR-12, ABNT NBR ISO 6165',
+    textoBaseApresentacao: 'Inspeção mecânica em rolos compactadores, vibroacabadoras e fresadoras de asfalto.',
+    apresentacaoPadrao: 'Inspeção mecânica em rolos compactadores, vibroacabadoras e fresadoras de asfalto.',
+    metodologiaPadrao: 'Avaliação dos sistemas de vibração excêntrica, raspadores de tambor, freios e isolamento térmico de motores.',
+    secoesEspecificas: [
+      'Avaliação de Freio de Emergência e Freio de Serviço',
+      'Avaliação de Sinalização Sonora e Visual',
+      'Verificação de Vazamentos Hidráulicos',
+      'Avaliação do Sistema de Vibração/Compactação (rolo compactador)',
+      'Avaliação do Sistema de Aquecimento de Massa Asfáltica (vibroacabadora, quando aplicável)'
+    ],
+    checklistInicial: [
+      'Freio de emergência testado',
+      'Freio de serviço testado',
+      'Sinalização sonora de ré funcional',
+      'Giroflex/luz de alerta funcional',
+      'Vazamentos hidráulicos verificados (cilindros, mangueiras, bomba)',
+      'Sistema de vibração/compactação testado',
+      'Tambor/rolo sem danos estruturais',
+      'Sistema de aquecimento de massa avaliado, quando aplicável (vibroacabadora)',
+      'Cabine do operador com visibilidade adequada',
+      'Extintor de incêndio a bordo conferido'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 6. Laudo de Integridade Operacional para Acessórios de Içamento
+  'laudo-de-integridade-operacional-para-acessorios-de-icamento': {
+    id: 'laudo-de-integridade-operacional-para-acessorios-de-icamento',
+    codigo: 'GUIND-ACES',
+    nome: 'Laudo de Integridade Operacional para Acessórios de Içamento',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ABNT NBR 13541-1 (Cabos), NBR 15516 (Cintas), NBR 15597 (Manilhas)',
+    textoBaseApresentacao: 'Inspeção e descarte normativo de cabos de aço, cintas de poliéster, correntes grau 8/10, manilhas e ganchos forjados.',
+    apresentacaoPadrao: 'Inspeção e descarte normativo de cabos de aço, cintas de poliéster, correntes grau 8/10, manilhas e ganchos forjados.',
+    metodologiaPadrao: 'Inspeção dimensional de abertura de garganta de ganchos, contagem de arames rompidos em cabos e ensaio visual/dimensional.',
+    secoesEspecificas: [
+      'Inspeção de Cabos de Aço (fios rompidos, corrosão, lubrificação)',
+      'Inspeção de Ganchos e Travas de Segurança (catraca de segurança)',
+      'Inspeção de Cintas e Lingas (validade, integridade, capacidade)',
+      'Inspeção de Patolas e Estabilizadores',
+      'Inspeção de Roldanas e Tambor de Enrolamento'
+    ],
+    checklistInicial: [
+      'Cabo de aço sem fios rompidos acima do limite normativo',
+      'Cabo de aço lubrificado e sem corrosão excessiva',
+      'Gancho com trava de segurança (catraca) funcional',
+      'Gancho sem deformação ou desgaste no colo',
+      'Cintas/lingas dentro da validade e sem cortes ou desgaste',
+      'Capacidade das cintas/lingas compatível com a carga de trabalho',
+      'Patolas/estabilizadores testados quanto a acionamento e travamento',
+      'Base de apoio das patolas avaliada (chapas de apoio, solo)',
+      'Roldanas sem desgaste excessivo no canal',
+      'Tambor de enrolamento sem danos ou deformações',
+      'Sistema de freio do guincho testado'
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 7. Laudo de Aferição do Limitador de Momento de Carga (LMI)
+  'laudo-de-afericao-do-limitador-de-momento-de-carga-lmi': {
+    id: 'laudo-de-afericao-do-limitador-de-momento-de-carga-lmi',
+    codigo: 'GUIND-LMI',
+    nome: 'Laudo de Aferição do Limitador de Momento de Carga (LMI)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'ISO 10245-1, ABNT NBR 16463, NR-12',
+    textoBaseApresentacao: 'Aferição do sistema computadorizado indicador de momento de carga (LMI/PAT/Hirschmann) em guindastes rodoviários e telescópicos.',
+    apresentacaoPadrao: 'Aferição do sistema computadorizado indicador de momento de carga (LMI/PAT/Hirschmann) em guindastes rodoviários e telescópicos.',
+    metodologiaPadrao: 'Calibração dos sensores de ângulo, comprimento de lança e transdutores de pressão de cilindro mestre.',
+    secoesEspecificas: [
+      'Verificação do Sistema Eletrônico de Sensores (ângulo, extensão da lança, carga)',
+      'Teste de Aferição com Carga Conhecida em Diferentes Configurações de Lança',
+      'Verificação de Alarmes Visuais e Sonoros de Sobrecarga',
+      'Validação do Computador de Bordo (histórico de erros, calibração)'
+    ],
+    checklistInicial: [
+      'Sensor de ângulo da lança calibrado',
+      'Sensor de extensão/comprimento da lança calibrado',
+      'Célula de carga/sensor de carga calibrado',
+      'Teste realizado em ao menos três configurações de lança (curta, média, longa)',
+      'Alarme visual de sobrecarga acionado corretamente',
+      'Alarme sonoro de sobrecarga acionado corretamente',
+      'Corte automático de movimento perigoso testado, quando existente',
+      'Computador de bordo sem códigos de erro não resolvidos',
+      'Certificado de calibração dos sensores anexado',
+      'Teste registrado com data, resultado e responsável técnico'
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+export const ALIASES_TIPOS_MAQUINAS_PESADAS: Record<string, string> = {
+  'laudo-terraplenagem-nr12': 'laudo-de-integridade-estrutural-e-seguranca-operacional-nr-12-nr-18',
+  'pesad-terra': 'laudo-de-integridade-estrutural-e-seguranca-operacional-nr-12-nr-18',
+  'laudo-rops-fops': 'laudo-de-conformidade-de-estruturas-de-protecao-rops-fops',
+  'pesad-rops': 'laudo-de-conformidade-de-estruturas-de-protecao-rops-fops',
+  'laudo-carga-nr11': 'laudo-de-liberacao-e-conformidade-nr-11-nr-12',
+  'pesad-nr11': 'laudo-de-liberacao-e-conformidade-nr-11-nr-12',
+  'laudo-teste-carga': 'laudo-de-teste-de-carga-load-test-e-estabilidade',
+  'load-test': 'laudo-de-teste-de-carga-load-test-e-estabilidade',
+  'laudo-pavimentacao': 'laudo-de-inspecao-periodica-de-manutencao-e-seguranca',
+  'pesad-pav': 'laudo-de-inspecao-periodica-de-manutencao-e-seguranca',
+  'laudo-acessorios-icamento': 'laudo-de-integridade-operacional-para-acessorios-de-icamento',
+  'guind-aces': 'laudo-de-integridade-operacional-para-acessorios-de-icamento',
+  'laudo-lmi-guindaste': 'laudo-de-afericao-do-limitador-de-momento-de-carga-lmi',
+  'guind-lmi': 'laudo-de-afericao-do-limitador-de-momento-de-carga-lmi'
+};
+
+export async function sincronizarFirestoreMaquinasPesadas(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'maquinas-pesadas-equipamentos-moveis',
+    'máquinas-pesadas-equipamentos-móveis'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Máquinas Pesadas / Equipamentos Móveis',
+        icone: 'Truck',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_MAQUINAS_PESADAS_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_MAQUINAS_PESADAS).filter(k => ALIASES_TIPOS_MAQUINAS_PESADAS[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de máquinas pesadas sincronizados nas coleções Firestore categoriasLaudo/maquinas-pesadas-equipamentos-moveis/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de máquinas pesadas com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+

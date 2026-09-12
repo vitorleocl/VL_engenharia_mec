@@ -432,10 +432,21 @@ export const LaudosCentralView: React.FC = () => {
                                   className="bg-white dark:bg-[#0B1324] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-[#1565D8]/50 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
                                 >
                                   <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-100 dark:bg-blue-950 text-[#1565D8] dark:text-blue-300 border border-blue-200 dark:border-blue-900">
-                                        {tipo.codigo}
-                                      </span>
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-100 dark:bg-blue-950 text-[#1565D8] dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                                          {tipo.codigo}
+                                        </span>
+                                        {(tipo.hrn || tipo.temHrn) ? (
+                                          <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
+                                            HRN: SIM
+                                          </span>
+                                        ) : (
+                                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                            HRN: NÃO
+                                          </span>
+                                        )}
+                                      </div>
                                       <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
                                         <CheckSquare className="w-3 h-3 text-emerald-600" />
                                         <span>{tipo.checklistPadrao.length} itens</span>
