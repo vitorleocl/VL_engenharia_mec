@@ -11,6 +11,7 @@ import {
   Plus, 
   Trash2, 
   ShieldCheck, 
+  ClipboardCheck,
   Award, 
   Lock, 
   ChevronRight, 
@@ -43,9 +44,10 @@ import {
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { calculateHRN, HRN_LO_OPTIONS, HRN_FE_OPTIONS, HRN_DPH_OPTIONS, HRN_NP_OPTIONS } from '../../utils/hrn';
-import { Laudo, LaudoSecao, LaudoRevisao, HRNValues } from '../../types';
+import { Laudo, LaudoSecao, LaudoRevisao, HRNValues, ChecklistCampo } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
+import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
 
 const PRESET_SECTIONS = [
@@ -129,6 +131,7 @@ export const LaudoEditorView: React.FC = () => {
   const [modalNovaSecaoAberto, setModalNovaSecaoAberto] = useState(false);
   const [modalIaAberto, setModalIaAberto] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
+  const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
 
   // Form inputs for modals
   const [novaSecaoTitulo, setNovaSecaoTitulo] = useState('');

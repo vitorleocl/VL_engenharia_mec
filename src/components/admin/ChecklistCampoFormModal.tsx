@@ -1,0 +1,835 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  X, 
+  Save, 
+  CheckCircle2, 
+  AlertTriangle, 
+  MinusCircle, 
+  Camera, 
+  Plus, 
+  Trash2, 
+  MapPin, 
+  Building2, 
+  Cpu, 
+  FileText, 
+  UserCheck, 
+  Check, 
+  Sparkles,
+  RefreshCw,
+  Navigation
+} from 'lucide-react';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { ChecklistCampo, ChecklistCampoItem, ChecklistCampoItemStatus, CategoriaLaudoDef, TipoLaudoDef } from '../../types';
+import { RubricaSignatureCanvas } from './RubricaSignatureCanvas';
+
+interface ChecklistCampoFormModalProps {
+  checklistParaEditar?: ChecklistCampo | null;
+  onClose: () => void;
+  onSaved: (id: string) => void;
+}
+
+export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = ({
+  checklistParaEditar,
+  onClose,
+  onSaved,
+}) => {
+  const { clientes, ativos, categoriasLaudo, adicionarChecklistCampo, atualizarChecklistCampo } = useData();
+  const { currentUser } = useAuth();
+
+  // Entidades Selecionadas
+  const [clienteId, setClienteId] = useState<string>(checklistParaEditar?.clienteId || '');
+  const [ativoId, setAtivoId] = useState<string>(checklistParaEditar?.ativoId || '');
+  const [tipoLaudoId, setTipoLaudoId] = useState<string>(checklistParaEditar?.tipoLaudoId || '');
+
+  // Itens de Verificação
+  const [itens, setItens] = useState<ChecklistCampoItem[]>(checklistParaEditar?.itens || []);
+  const [itensExtras, setItensExtras] = useState<ChecklistCampoItem[]>(checklistParaEditar?.itensExtras || []);
+
+  // Rubrica & Responsável
+  const [rubricaUrl, setRubricaUrl] = useState<string | undefined>(checklistParaEditar?.rubricaUrl);
+  const [responsavelNome, setResponsavelNome] = useState<string>(
+    checklistParaEditar?.responsavelNome || currentUser?.nome || 'Eng. Vitor Leonardo'
+  );
+  const [responsavelCrea, setResponsavelCrea] = useState<string>(
+    checklistParaEditar?.responsavelCrea || (currentUser as any)?.crea || 'CREA-PE 1822299490'
+  );
+
+  // Geolocalização
+  const [geolocalizacao, setGeolocalizacao] = useState<{
+    lat: number;
+    lng: number;
+    precisao?: number;
+    enderecoAproximado?: string;
+  } | null>(checklistParaEditar?.geolocalizacao || null);
+  const [capturandoGps, setCapturandoGps] = useState(false);
+
+  // Outros estados
+  const [disponibilizadoParaCliente, setDisponibilizadoParaCliente] = useState<boolean>(
+    checklistParaEditar?.disponibilizadoParaCliente ?? false
+  );
+  const [novoItemDescricao, setNovoItemDescricao] = useState('');
+  const [erroValidacao, setErroValidacao] = useState<string | null>(null);
+
+  // Lista de tipos de laudos habilitados para preenchimento preliminar
+  const tiposHabilitados: { id: string; nome: string; categoriaId: string; categoriaNome: string; def: TipoLaudoDef }[] = [];
+  categoriasLaudo.forEach(cat => {
+    cat.subcategorias?.forEach(sub => {
+      sub.tipos?.forEach(tipo => {
+        if (tipo.permitePreenchimentoPreliminar !== false) {
+          tiposHabilitados.push({
+            id: tipo.id,
+            nome: tipo.nome,
+            categoriaId: cat.id,
+            categoriaNome: cat.nome,
+            def: tipo
+          });
+        }
+      });
+    });
+  });
+
+  // Ativos pertencentes ao cliente selecionado
+  const ativosDoCliente = ativos.filter(a => a.clienteId === clienteId);
+  const clienteSelecionado = clientes.find(c => c.id === clienteId);
+  const ativoSelecionado = ativos.find(a => a.id === ativoId);
+  const tipoSelecionadoObj = tiposHabilitados.find(t => t.id === tipoLaudoId);
+
+  // Auto-selecionar primeiro ativo caso o cliente mude
+  useEffect(() => {
+    if (clienteId && !checklistParaEditar) {
+      const ativosCli = ativos.filter(a => a.clienteId === clienteId);
+      if (ativosCli.length > 0 && (!ativoId || !ativosCli.some(a => a.id === ativoId))) {
+        setAtivoId(ativosCli[0].id);
+      }
+    }
+  }, [clienteId, ativos]);
+
+  // Carregar itens pré-definidos do tipo de laudo se estiver criando novo ou se itens estiverem vazios
+  useEffect(() => {
+    if (!checklistParaEditar && tipoLaudoId && itens.length === 0) {
+      const achado = tiposHabilitados.find(t => t.id === tipoLaudoId);
+      if (achado?.def) {
+        const itensCarregados: ChecklistCampoItem[] = [];
+        const listaBase = achado.def.checklistInicial || achado.def.checklistPadrao || [];
+
+        listaBase.forEach((item, idx) => {
+          const descricao = typeof item === 'string' ? item : item.descricao;
+          itensCarregados.push({
+            id: `chk-it-${idx + 1}`,
+            descricao,
+            status: 'conforme',
+            observacao: '',
+          });
+        });
+
+        if (itensCarregados.length > 0) {
+          setItens(itensCarregados);
+        }
+      }
+    }
+  }, [tipoLaudoId, checklistParaEditar]);
+
+  const handleTrocarTipo = (novoTipoId: string) => {
+    setTipoLaudoId(novoTipoId);
+    const achado = tiposHabilitados.find(t => t.id === novoTipoId);
+    if (achado?.def) {
+      const itensCarregados: ChecklistCampoItem[] = [];
+      const listaBase = achado.def.checklistInicial || achado.def.checklistPadrao || [];
+      listaBase.forEach((item, idx) => {
+        const descricao = typeof item === 'string' ? item : item.descricao;
+        itensCarregados.push({
+          id: `chk-it-${idx + 1}`,
+          descricao,
+          status: 'conforme',
+          observacao: '',
+        });
+      });
+      setItens(itensCarregados);
+    }
+  };
+
+  const handleItemStatusChange = (id: string, status: ChecklistCampoItemStatus, isExtra: boolean = false) => {
+    if (isExtra) {
+      setItensExtras(prev => prev.map(it => it.id === id ? { ...it, status } : it));
+    } else {
+      setItens(prev => prev.map(it => it.id === id ? { ...it, status } : it));
+    }
+  };
+
+  const handleItemObsChange = (id: string, observacao: string, isExtra: boolean = false) => {
+    if (isExtra) {
+      setItensExtras(prev => prev.map(it => it.id === id ? { ...it, observacao } : it));
+    } else {
+      setItens(prev => prev.map(it => it.id === id ? { ...it, observacao } : it));
+    }
+  };
+
+  const handleItemFotoUpload = (id: string, file: File, isExtra: boolean = false) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fotoUrl = reader.result as string;
+      if (isExtra) {
+        setItensExtras(prev => prev.map(it => it.id === id ? { ...it, fotoUrl, fotoNome: file.name } : it));
+      } else {
+        setItens(prev => prev.map(it => it.id === id ? { ...it, fotoUrl, fotoNome: file.name } : it));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoverFoto = (id: string, isExtra: boolean = false) => {
+    if (isExtra) {
+      setItensExtras(prev => prev.map(it => it.id === id ? { ...it, fotoUrl: undefined, fotoNome: undefined } : it));
+    } else {
+      setItens(prev => prev.map(it => it.id === id ? { ...it, fotoUrl: undefined, fotoNome: undefined } : it));
+    }
+  };
+
+  const handleAdicionarItemExtra = () => {
+    if (!novoItemDescricao.trim()) return;
+    const novo: ChecklistCampoItem = {
+      id: `chk-extra-${Date.now()}`,
+      descricao: novoItemDescricao.trim(),
+      status: 'conforme',
+      observacao: '',
+    };
+    setItensExtras(prev => [...prev, novo]);
+    setNovoItemDescricao('');
+  };
+
+  const handleRemoverItemExtra = (id: string) => {
+    setItensExtras(prev => prev.filter(it => it.id !== id));
+  };
+
+  const handleCapturarGps = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocalização não suportada neste navegador/dispositivo.');
+      return;
+    }
+    setCapturandoGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeolocalizacao({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          precisao: Math.round(pos.coords.accuracy),
+          enderecoAproximado: `Coordenadas: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`
+        });
+        setCapturandoGps(false);
+      },
+      (err) => {
+        console.warn('Erro GPS:', err);
+        setCapturandoGps(false);
+        alert('Não foi possível obter a localização. Permita o acesso ao GPS no dispositivo.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSalvar = (statusDesejado: 'rascunho' | 'finalizado') => {
+    setErroValidacao(null);
+
+    // Validações Obrigatórias
+    if (!clienteId) {
+      setErroValidacao('Selecione o Cliente (obrigatório).');
+      return;
+    }
+    if (!ativoId) {
+      setErroValidacao('Selecione o Ativo / Equipamento inspecionado (obrigatório).');
+      return;
+    }
+    if (!tipoLaudoId) {
+      setErroValidacao('Selecione o Tipo de Laudo correspondente (obrigatório).');
+      return;
+    }
+
+    if (statusDesejado === 'finalizado' && !rubricaUrl) {
+      setErroValidacao('Para finalizar o checklist in loco, é obrigatório assinar a rubrica técnica no quadro abaixo.');
+      return;
+    }
+
+    const tipoObj = tiposHabilitados.find(t => t.id === tipoLaudoId);
+
+    const payload = {
+      clienteId,
+      clienteNome: clienteSelecionado?.razaoSocial || clienteSelecionado?.nomeFantasia || 'Cliente',
+      clienteCnpj: clienteSelecionado?.cnpj || '',
+      ativoId,
+      ativoIdentificacao: ativoSelecionado ? `${ativoSelecionado.tag ? `[${ativoSelecionado.tag}] ` : ''}${ativoSelecionado.identificacao}` : 'Ativo',
+      categoriaLaudo: tipoObj?.categoriaId || 'cat-1',
+      tipoLaudoId,
+      tipoLaudoNome: tipoObj?.nome || tipoLaudoId,
+      itens,
+      itensExtras,
+      rubricaUrl,
+      rubricaTimestamp: rubricaUrl ? (checklistParaEditar?.rubricaTimestamp || new Date().toISOString()) : undefined,
+      responsavelUid: currentUser?.uid || 'usr-master',
+      responsavelNome,
+      responsavelCrea,
+      dataPreenchimento: checklistParaEditar?.dataPreenchimento || new Date().toISOString(),
+      geolocalizacao,
+      disponibilizadoParaCliente,
+      status: statusDesejado,
+      vinculadoALaudoId: checklistParaEditar?.vinculadoALaudoId || null,
+      vinculadoAOrcamentoId: checklistParaEditar?.vinculadoAOrcamentoId || null,
+    };
+
+    if (checklistParaEditar) {
+      atualizarChecklistCampo(checklistParaEditar.id, payload);
+      onSaved(checklistParaEditar.id);
+    } else {
+      const novoId = adicionarChecklistCampo(payload);
+      onSaved(novoId);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden my-auto border border-slate-200">
+        {/* Topo do Modal */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                {checklistParaEditar ? `Editar Checklist ${checklistParaEditar.numero}` : 'Novo Checklist de Campo In Loco'}
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                  Tablet & Mobile Otimizado
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Preenchimento rápido durante a visita técnica com fotos e rubrica
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Mensagem de Erro de Validação se houver */}
+        {erroValidacao && (
+          <div className="px-6 py-3 bg-rose-50 border-b border-rose-200 flex items-center gap-2 text-xs font-semibold text-rose-800">
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{erroValidacao}</span>
+          </div>
+        )}
+
+        {/* Corpo do Formulário com Scroll */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+          
+          {/* PASSO 1: SELEÇÃO DE CLIENTE, ATIVO E TIPO DE LAUDO */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                1. Identificação Obrigatória (Cliente & Ativo Inspecionado)
+              </h3>
+              <span className="text-[11px] text-slate-400 font-medium">Etapa 1 de 3</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Cliente */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Cliente <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={clienteId}
+                  onChange={(e) => setClienteId(e.target.value)}
+                  className="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">-- Selecione o Cliente --</option>
+                  {clientes.map(cli => (
+                    <option key={cli.id} value={cli.id}>
+                      {cli.razaoSocial} ({cli.cidade || 'PE'})
+                    </option>
+                  ))}
+                </select>
+
+                {clienteSelecionado && (
+                  <div className="mt-2 p-2 bg-blue-50/60 rounded-md border border-blue-100 text-[11px] text-slate-600 space-y-0.5">
+                    <p><strong>CNPJ:</strong> {clienteSelecionado.cnpj || 'Não cadastrado'}</p>
+                    <p><strong>Contato:</strong> {clienteSelecionado.contatoNome || 'Responsável'}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Ativo do Cliente */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ativo / Equipamento <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={ativoId}
+                  onChange={(e) => setAtivoId(e.target.value)}
+                  disabled={!clienteId}
+                  className="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">-- Selecione o Ativo --</option>
+                  {ativosDoCliente.map(atv => (
+                    <option key={atv.id} value={atv.id}>
+                      {atv.tag ? `[${atv.tag}] ` : ''}{atv.identificacao} - {atv.categoria}
+                    </option>
+                  ))}
+                </select>
+
+                {ativoSelecionado ? (
+                  <div className="mt-2 p-2 bg-emerald-50/60 rounded-md border border-emerald-100 text-[11px] text-slate-600 space-y-0.5">
+                    <p><strong>Fabricante:</strong> {ativoSelecionado.fabricante || 'N/D'}</p>
+                    <p><strong>Modelo/Ano:</strong> {ativoSelecionado.modelo || '—'} / {ativoSelecionado.anoFabricacao || '—'}</p>
+                  </div>
+                ) : clienteId && ativosDoCliente.length === 0 ? (
+                  <p className="mt-1 text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                    Nenhum ativo vinculado a este cliente. Cadastre ativos no menu <strong>Ativos</strong> antes da inspeção.
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Tipo de Laudo */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tipo de Laudo <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={tipoLaudoId}
+                  onChange={(e) => handleTrocarTipo(e.target.value)}
+                  className="w-full text-xs font-medium bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">-- Selecione o Tipo de Laudo --</option>
+                  {tiposHabilitados.map(tipo => (
+                    <option key={tipo.id} value={tipo.id}>
+                      {tipo.nome}
+                    </option>
+                  ))}
+                </select>
+
+                {tipoSelecionadoObj && (
+                  <div className="mt-2 p-2 bg-purple-50/60 rounded-md border border-purple-100 text-[11px] text-slate-600">
+                    <p><strong>Categoria:</strong> {tipoSelecionadoObj.categoriaNome}</p>
+                    <p className="text-purple-800 font-medium mt-0.5">
+                      ✓ Checklist preliminar habilitado
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* PASSO 2: CHECKLIST ITEM A ITEM COM STATUS, OBS E FOTO */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div>
+                <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  2. Itens de Inspeção Técnica In Loco ({itens.length + itensExtras.length} itens)
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Marque com toque rápido: Conforme, Não Conforme ou Não Aplicável
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  {itens.filter(i => i.status === 'conforme').length + itensExtras.filter(i => i.status === 'conforme').length} Conf.
+                </span>
+                <span className="flex items-center gap-1 text-rose-700 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  {itens.filter(i => i.status === 'nao_conforme').length + itensExtras.filter(i => i.status === 'nao_conforme').length} Não Conf.
+                </span>
+              </div>
+            </div>
+
+            {/* Lista dos Itens Pré-definidos */}
+            <div className="space-y-3">
+              {itens.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    item.status === 'nao_conforme'
+                      ? 'bg-rose-50/40 border-rose-200 shadow-xs'
+                      : item.status === 'conforme'
+                      ? 'bg-white border-slate-200 hover:border-slate-300'
+                      : 'bg-slate-50/70 border-slate-200'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-2.5">
+                    <div className="flex items-start gap-2.5 flex-1">
+                      <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-mono text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                        {item.descricao}
+                      </p>
+                    </div>
+
+                    {/* Botões de Status em Pastilha Otimizados para Toque */}
+                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleItemStatusChange(item.id, 'conforme')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                          item.status === 'conforme'
+                            ? 'bg-emerald-600 text-white shadow-xs scale-102'
+                            : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Conforme
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleItemStatusChange(item.id, 'nao_conforme')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                          item.status === 'nao_conforme'
+                            ? 'bg-rose-600 text-white shadow-xs scale-102 ring-2 ring-rose-200'
+                            : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700'
+                        }`}
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Não Conforme
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleItemStatusChange(item.id, 'nao_aplicavel')}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+                          item.status === 'nao_aplicavel'
+                            ? 'bg-slate-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        }`}
+                      >
+                        <MinusCircle className="w-3.5 h-3.5" />
+                        N/A
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Observação e Foto */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 mt-2">
+                    <div className="sm:col-span-2">
+                      <input
+                        type="text"
+                        placeholder="Observação técnica in loco (opcional)..."
+                        value={item.observacao || ''}
+                        onChange={(e) => handleItemObsChange(item.id, e.target.value)}
+                        className="w-full text-xs bg-slate-50/70 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {item.fotoUrl ? (
+                        <div className="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded border border-blue-200">
+                          <img
+                            src={item.fotoUrl}
+                            alt="Preview"
+                            className="w-7 h-7 object-cover rounded"
+                          />
+                          <span className="text-[10px] text-blue-800 font-medium truncate max-w-[90px]">
+                            {item.fotoNome || 'Foto.jpg'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverFoto(item.id)}
+                            className="text-rose-600 hover:text-rose-800 p-0.5 ml-auto"
+                            title="Remover foto"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors">
+                          <Camera className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Anexar Foto</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleItemFotoUpload(item.id, file);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Itens Extras adicionados pelo técnico */}
+            {itensExtras.length > 0 && (
+              <div className="pt-3 border-t border-slate-200 space-y-3">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Itens Adicionais Levantados em Campo ({itensExtras.length})
+                </h4>
+
+                {itensExtras.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`p-4 rounded-xl border transition-all ${
+                      item.status === 'nao_conforme'
+                        ? 'bg-rose-50/40 border-rose-200'
+                        : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-2">
+                      <div className="flex items-start gap-2 flex-1">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 font-mono text-[10px] flex items-center justify-center font-bold shrink-0 mt-0.5">
+                          E{idx + 1}
+                        </span>
+                        <p className="text-xs font-semibold text-slate-800 leading-snug">
+                          {item.descricao}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleItemStatusChange(item.id, 'conforme', true)}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
+                            item.status === 'conforme'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          Conforme
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemStatusChange(item.id, 'nao_conforme', true)}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
+                            item.status === 'nao_conforme'
+                              ? 'bg-rose-600 text-white'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          Não Conf.
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoverItemExtra(item.id)}
+                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded ml-1"
+                          title="Excluir item extra"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+                      <div className="sm:col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Observação técnica in loco..."
+                          value={item.observacao || ''}
+                          onChange={(e) => handleItemObsChange(item.id, e.target.value, true)}
+                          className="w-full text-xs bg-slate-50 border border-slate-200 rounded px-2.5 py-1"
+                        />
+                      </div>
+                      <div>
+                        {item.fotoUrl ? (
+                          <div className="flex items-center gap-1.5 text-[10px] text-blue-700">
+                            <img src={item.fotoUrl} alt="Foto" className="w-6 h-6 object-cover rounded" />
+                            <span>Foto salva</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoverFoto(item.id, true)}
+                              className="text-rose-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 rounded">
+                            <Camera className="w-3 h-3" />
+                            <span>Foto</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleItemFotoUpload(item.id, file, true);
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Adicionar Novo Item Extra */}
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="text"
+                placeholder="Adicionar item técnico extra observado in loco..."
+                value={novoItemDescricao}
+                onChange={(e) => setNovoItemDescricao(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdicionarItemExtra()}
+                className="flex-1 text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleAdicionarItemExtra}
+                className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg border border-blue-200 flex items-center gap-1 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Adicionar Item
+              </button>
+            </div>
+          </div>
+
+          {/* PASSO 3: GEOLOCALIZAÇÃO & RESPONSÁVEL TÉCNICO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Geolocalização */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-red-500" />
+                  Geolocalização da Visita Técnica
+                </label>
+                <button
+                  type="button"
+                  onClick={handleCapturarGps}
+                  disabled={capturandoGps}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 transition-colors"
+                >
+                  <Navigation className={`w-3.5 h-3.5 ${capturandoGps ? 'animate-spin' : ''}`} />
+                  {capturandoGps ? 'Capturando GPS...' : 'Capturar GPS'}
+                </button>
+              </div>
+
+              {geolocalizacao ? (
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
+                  <p className="font-mono text-slate-800 font-semibold">
+                    Lat: {geolocalizacao.lat.toFixed(6)} | Lng: {geolocalizacao.lng.toFixed(6)}
+                  </p>
+                  {geolocalizacao.precisao && (
+                    <p className="text-[11px] text-slate-500">
+                      Precisão do GPS: ±{geolocalizacao.precisao} metros
+                    </p>
+                  )}
+                  <p className="text-[11px] text-emerald-700 font-medium">
+                    ✓ Posição geográfica registrada in loco
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-dashed border-slate-200">
+                  Clique em "Capturar GPS" para registrar as coordenadas do local da inspeção.
+                </p>
+              )}
+            </div>
+
+            {/* Responsável Técnico */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-blue-600" />
+                Responsável Técnico In Loco
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] text-slate-500 mb-0.5">Nome do Perito / Técnico</label>
+                  <input
+                    type="text"
+                    value={responsavelNome}
+                    onChange={(e) => setResponsavelNome(e.target.value)}
+                    className="w-full text-xs font-medium bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-500 mb-0.5">Registro CREA / CFT</label>
+                  <input
+                    type="text"
+                    value={responsavelCrea}
+                    onChange={(e) => setResponsavelCrea(e.target.value)}
+                    className="w-full text-xs font-medium bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="disponibilizarCli"
+                  checked={disponibilizadoParaCliente}
+                  onChange={(e) => setDisponibilizadoParaCliente(e.target.checked)}
+                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="disponibilizarCli" className="text-xs text-slate-700 cursor-pointer select-none">
+                  Disponibilizar PDF do checklist preliminar no Portal do Cliente
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* PASSO 4: RUBRICA TÉCNICA TOUCH / MOUSE */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+            <RubricaSignatureCanvas
+              initialSignature={rubricaUrl}
+              onSave={(url) => setRubricaUrl(url)}
+            />
+          </div>
+
+        </div>
+
+        {/* Rodapé do Modal com Ações */}
+        <div className="px-6 py-4 border-t border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-slate-500">
+            {rubricaUrl ? (
+              <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                <Check className="w-4 h-4" /> Rubrica capturada com sucesso
+              </span>
+            ) : (
+              <span>Rubrica pendente para finalização</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-slate-300"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSalvar('rascunho')}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-300"
+            >
+              <Save className="w-3.5 h-3.5 text-slate-600" />
+              Salvar Rascunho
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSalvar('finalizado')}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Finalizar Checklist In Loco
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

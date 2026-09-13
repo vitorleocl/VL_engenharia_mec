@@ -1,4 +1,4 @@
-import { ModuloLaudoCatalogo, Cliente, Ativo, Orcamento, AgendaVistoria, Laudo, LaudoTemplate } from '../types';
+import { ModuloLaudoCatalogo, Cliente, Ativo, Orcamento, AgendaVistoria, Laudo, LaudoTemplate, ChecklistCampo } from '../types';
 
 export const MODULOS_LAUDO_CATALOGO: ModuloLaudoCatalogo[] = [
   {
@@ -552,3 +552,127 @@ export const TEMPLATES_INICIAIS: LaudoTemplate[] = [
     ]
   }
 ];
+
+export const CHECKLISTS_CAMPO_INICIAIS: ChecklistCampo[] = [
+  {
+    id: 'chk-01',
+    numero: 'CHK-2026-001',
+    clienteId: 'cli-01',
+    clienteNome: 'Indústria Metalúrgica Ramos Ltda',
+    clienteCnpj: '12.345.678/0001-90',
+    ativoId: 'atv-01',
+    ativoIdentificacao: 'PR-200 (Prensa Hidráulica 200T)',
+    categoriaLaudo: 'cat-1',
+    tipoLaudoId: 'laudo-nr12-geral',
+    tipoLaudoNome: 'Laudo de Conformidade Técnica à NR-12 (Geral para Máquinas)',
+    itens: [
+      {
+        id: 'chk-i1',
+        descricao: 'Botão de parada de emergência tipo cogumelo com retenção e monitoramento por relé categoria 4',
+        status: 'conforme',
+        observacao: 'Testado sob carga nos dois quadrantes operacionais. Atuação em 0,18 segundos.'
+      },
+      {
+        id: 'chk-i2',
+        descricao: 'Cortina de luz ou sensor óptico de segurança no vão de prensagem e alimentação de material',
+        status: 'nao_conforme',
+        observacao: 'Cortina óptica apresentando ligeiro desalinhamento no feixe inferior. Recomendado realinhamento imediato.'
+      },
+      {
+        id: 'chk-i3',
+        descricao: 'Proteções físicas fixas enclausurando zonas de risco de transmissão mecânica (volantes e correias)',
+        status: 'conforme',
+        observacao: 'Telas em chapa perfurada com distanciamento conforme NBR ISO 13857.'
+      },
+      {
+        id: 'chk-i4',
+        descricao: 'Bloco hidráulico de segurança com monitoramento de posição das válvulas de retenção de queda',
+        status: 'conforme',
+        observacao: 'Válvula de retenção operante e sem escorregamento do martelo com sistema despressurizado.'
+      },
+      {
+        id: 'chk-i5',
+        descricao: 'Dispositivo de comando bimanual com sincronismo temporal de acionamento (NBR 14152)',
+        status: 'conforme',
+        observacao: 'Operação bimanual com anti-repetição de ciclo validada com sucesso.'
+      }
+    ],
+    itensExtras: [
+      {
+        id: 'chk-extra-1',
+        descricao: 'Conexão do manômetro secundário do bloco hidráulico',
+        status: 'nao_conforme',
+        observacao: 'Constatado pequeno gotejamento de óleo hidráulico ISO VG 68 na rosca do manômetro auxiliar.'
+      }
+    ],
+    rubricaUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M10,40 Q40,5 70,35 T130,20 Q160,50 190,15" fill="none" stroke="%230B1E3D" stroke-width="2.5"/></svg>',
+    rubricaTimestamp: '2026-09-12T14:45:00Z',
+    responsavelUid: 'master-vitor',
+    responsavelNome: 'Eng. Vitor Leonardo',
+    responsavelCrea: 'CREA-PE 1822299490',
+    dataPreenchimento: '2026-09-12T14:30:00Z',
+    geolocalizacao: {
+      lat: -8.2831,
+      lng: -34.9982,
+      precisao: 12,
+      enderecoAproximado: 'Complexo Industrial Portuário de Suape, Ipojuca - PE'
+    },
+    disponibilizadoParaCliente: true,
+    status: 'finalizado',
+    vinculadoALaudoId: null,
+    vinculadoAOrcamentoId: null,
+    criadoEm: '2026-09-12T14:00:00Z',
+    atualizadoEm: '2026-09-12T14:45:00Z'
+  },
+  {
+    id: 'chk-02',
+    numero: 'CHK-2026-002',
+    clienteId: 'cli-02',
+    clienteNome: 'Construtora & Locadora Delta S/A',
+    clienteCnpj: '98.765.432/0001-11',
+    ativoId: 'atv-02',
+    ativoIdentificacao: 'MNK-45 (Caminhão Guindaste Munck)',
+    categoriaLaudo: 'cat-2',
+    tipoLaudoId: 'laudo-caminhao-munck',
+    tipoLaudoNome: 'Laudo Pericial de Guindaste Veicular Articulado (Caminhão Munck)',
+    itens: [
+      {
+        id: 'chk-2-i1',
+        descricao: 'Integridade física do chassi e sobrechassi, ausência de trincas nas soldas dos grampos de fixação',
+        status: 'conforme',
+        observacao: 'Grampos com torque conferido e cordões de solda íntegros.'
+      },
+      {
+        id: 'chk-2-i2',
+        descricao: 'Sapatas estabilizadoras dianteiras e traseiras com válvulas de contrabalanço sem vazamento',
+        status: 'conforme',
+        observacao: 'Cilindros estabilizadores sustentando a carga sem recuo por 15 minutos.'
+      },
+      {
+        id: 'chk-2-i3',
+        descricao: 'Gancho forjado com trava de segurança em perfeito fechamento e placa de capacidade legível',
+        status: 'nao_conforme',
+        observacao: 'Mola da trava de segurança do gancho com fadiga mecânica, não retornando espontaneamente.'
+      }
+    ],
+    itensExtras: [],
+    rubricaUrl: undefined,
+    responsavelUid: 'usr-colab-1',
+    responsavelNome: 'Lucas Silveira',
+    responsavelCrea: 'Téc. Mecânica CFT-PE',
+    dataPreenchimento: '2026-09-13T09:15:00Z',
+    geolocalizacao: {
+      lat: -8.05428,
+      lng: -34.8813,
+      precisao: 8,
+      enderecoAproximado: 'Av. Mascarenhas de Morais, Recife - PE'
+    },
+    disponibilizadoParaCliente: false,
+    status: 'rascunho',
+    vinculadoALaudoId: null,
+    vinculadoAOrcamentoId: null,
+    criadoEm: '2026-09-13T09:00:00Z',
+    atualizadoEm: '2026-09-13T09:30:00Z'
+  }
+];
+

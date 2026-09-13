@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
+  ClipboardCheck,
   Users, 
   Cpu, 
   FileSpreadsheet, 
@@ -61,6 +62,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: FileText,
       visible: true,
       badge: '14 Módulos',
+    },
+    {
+      label: 'Checklist de Campo',
+      path: '/admin/checklists-campo',
+      icon: ClipboardCheck,
+      visible: true,
+      badge: 'In Loco',
     },
     {
       label: 'Clientes',

@@ -11,7 +11,8 @@ import {
   Usuario,
   UsoIAMetricas,
   CategoriaLaudoDef,
-  TipoLaudoDef
+  TipoLaudoDef,
+  ChecklistCampo
 } from '../types';
 import { 
   CLIENTES_INICIAIS, 
@@ -20,6 +21,7 @@ import {
   AGENDA_INICIAL, 
   LAUDOS_INICIAIS, 
   TEMPLATES_INICIAIS,
+  CHECKLISTS_CAMPO_INICIAIS,
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
@@ -100,6 +102,14 @@ interface DataContextType {
   // IA Tracking
   registrarUsoIA: (tipoOuQtd?: string | number, quantidade?: number) => void;
   atualizarLimiteIA: (novoLimite: number) => void;
+
+  // Checklist de Campo Actions
+  checklistsCampo: ChecklistCampo[];
+  adicionarChecklistCampo: (dados: Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'>) => string;
+  atualizarChecklistCampo: (id: string, dados: Partial<ChecklistCampo>) => void;
+  removerChecklistCampo: (id: string) => void;
+  finalizarChecklistCampo: (id: string, rubricaUrl?: string) => void;
+  alternarPermitePreenchimentoPreliminar: (tipoId: string, permite: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -130,6 +140,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
   const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
+  const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => 
+    loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS)
+  );
   const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => {
     const loaded = loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA);
     const cat1Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-1');
@@ -241,6 +254,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_agenda', agenda), [agenda]);
   useEffect(() => saveStorage('vl_laudos', laudos), [laudos]);
   useEffect(() => saveStorage('vl_templates', templates), [templates]);
+  useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
   useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
@@ -868,6 +882,108 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsoIA(prev => ({ ...prev, limiteMensal: novoLimite }));
   };
 
+  // Checklist de Campo Handlers
+  const gerarNumeroChecklistCampo = (): string => {
+    const anoAtual = new Date().getFullYear();
+    const prefixo = `CHK-${anoAtual}-`;
+    let maxNum = 0;
+    checklistsCampo.forEach(c => {
+      if (c.numero && c.numero.startsWith(prefixo)) {
+        const parteNum = parseInt(c.numero.replace(prefixo, ''), 10);
+        if (!isNaN(parteNum) && parteNum > maxNum) {
+          maxNum = parteNum;
+        }
+      }
+    });
+    return `${prefixo}${String(maxNum + 1).padStart(3, '0')}`;
+  };
+
+  const adicionarChecklistCampo = (dados: Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'>): string => {
+    const id = `chk-${Date.now()}`;
+    const numero = gerarNumeroChecklistCampo();
+    const agora = new Date().toISOString();
+    const novo: ChecklistCampo = {
+      ...dados,
+      id,
+      numero,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    };
+    setChecklistsCampo(prev => [novo, ...prev]);
+    registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
+
+    if (db) {
+      try {
+        setDoc(doc(db, 'checklistsCampo', id), novo).catch(err => {
+          console.warn('Sync Firestore checklistCampo:', err);
+        });
+      } catch (e) {
+        console.warn('Firestore write error:', e);
+      }
+    }
+    return id;
+  };
+
+  const atualizarChecklistCampo = (id: string, dados: Partial<ChecklistCampo>) => {
+    const agora = new Date().toISOString();
+    setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dados, atualizadoEm: agora } : c));
+    registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
+
+    if (db) {
+      try {
+        setDoc(doc(db, 'checklistsCampo', id), { ...dados, atualizadoEm: agora }, { merge: true }).catch(err => {
+          console.warn('Sync Firestore checklistCampo:', err);
+        });
+      } catch (e) {
+        console.warn('Firestore write error:', e);
+      }
+    }
+  };
+
+  const removerChecklistCampo = (id: string) => {
+    setChecklistsCampo(prev => prev.filter(c => c.id !== id));
+    registrarLog('checklistsCampo', id, 'excluir', `Checklist de Campo excluído: ${id}`);
+  };
+
+  const finalizarChecklistCampo = (id: string, rubricaUrl?: string) => {
+    const agora = new Date().toISOString();
+    setChecklistsCampo(prev => prev.map(c => {
+      if (c.id === id) {
+        return {
+          ...c,
+          status: 'finalizado',
+          rubricaUrl: rubricaUrl || c.rubricaUrl,
+          rubricaTimestamp: rubricaUrl ? agora : c.rubricaTimestamp,
+          atualizadoEm: agora
+        };
+      }
+      return c;
+    }));
+    registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado com assinatura de rubrica: ${id}`);
+    if (db) {
+      try {
+        setDoc(doc(db, 'checklistsCampo', id), {
+          status: 'finalizado',
+          ...(rubricaUrl ? { rubricaUrl, rubricaTimestamp: agora } : {}),
+          atualizadoEm: agora
+        }, { merge: true }).catch(err => console.warn('Firestore sync err:', err));
+      } catch (e) {
+        console.warn('Firestore err:', e);
+      }
+    }
+  };
+
+  const alternarPermitePreenchimentoPreliminar = (tipoId: string, permite: boolean) => {
+    setCategoriasLaudo(prev => prev.map(cat => ({
+      ...cat,
+      subcategorias: cat.subcategorias.map(sub => ({
+        ...sub,
+        tipos: sub.tipos.map(tp => tp.id === tipoId ? { ...tp, permitePreenchimentoPreliminar: permite } : tp)
+      }))
+    })));
+    registrarLog('taxonomiaLaudos', tipoId, 'editar', `Permissão de checklist preliminar alterada para ${permite} no tipo: ${tipoId}`);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -912,6 +1028,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         marcarContatoRespondido,
         registrarUsoIA,
         atualizarLimiteIA,
+        checklistsCampo,
+        adicionarChecklistCampo,
+        atualizarChecklistCampo,
+        removerChecklistCampo,
+        finalizarChecklistCampo,
+        alternarPermitePreenchimentoPreliminar,
       }}
     >
       {children}

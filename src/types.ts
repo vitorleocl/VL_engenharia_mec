@@ -134,6 +134,7 @@ export interface Orcamento {
     responsavelCliente: string;
     ipOuHash?: string;
   };
+  checklistCampoOrigemId?: string;
   criadoEm: string;
 }
 
@@ -251,6 +252,7 @@ export interface TipoLaudoDef {
   hrn?: boolean;
   textoBaseApresentacao?: string;
   permitePreenchimentoIA?: boolean;
+  permitePreenchimentoPreliminar?: boolean;
   secoesEspecificas?: (string | SecaoEspecificaDef)[];
   checklistInicial?: (string | ItemChecklistDef)[];
 }
@@ -379,6 +381,52 @@ export interface Laudo {
   usoIA: { chamadas: number };
   iniciadoComIA?: boolean;
   modoCriacao?: 'em_branco' | 'sugestao_ia';
+  checklistCampoOrigemId?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplicavel';
+
+export interface ChecklistCampoItem {
+  id: string;
+  descricao: string;
+  status: ChecklistCampoItemStatus;
+  observacao?: string;
+  fotoUrl?: string;
+  fotoNome?: string;
+}
+
+export interface ChecklistCampo {
+  id: string;
+  numero: string; // Ex: CHK-2026-001
+  clienteId: string;
+  clienteNome?: string;
+  clienteCnpj?: string;
+  ativoId: string;
+  ativoIdentificacao?: string;
+  categoriaLaudo: string;
+  tipoLaudoId: string;
+  tipoLaudoNome?: string;
+  itens: ChecklistCampoItem[];
+  itensExtras: ChecklistCampoItem[];
+  rubricaUrl?: string;
+  rubricaTimestamp?: string;
+  responsavelUid: string;
+  responsavelNome?: string;
+  responsavelCrea?: string;
+  dataPreenchimento: string;
+  geolocalizacao?: {
+    lat: number;
+    lng: number;
+    precisao?: number;
+    enderecoAproximado?: string;
+  } | null;
+  pdfUrl?: string;
+  disponibilizadoParaCliente: boolean;
+  status: 'rascunho' | 'finalizado';
+  vinculadoALaudoId?: string | null;
+  vinculadoAOrcamentoId?: string | null;
   criadoEm: string;
   atualizadoEm: string;
 }
