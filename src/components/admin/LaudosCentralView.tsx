@@ -111,6 +111,7 @@ export const LaudosCentralView: React.FC = () => {
   const [ativoId, setAtivoId] = useState('');
   const [dataInspecao, setDataInspecao] = useState(new Date().toISOString().slice(0, 10));
   const [artNumero, setArtNumero] = useState('');
+  const [modoPreenchimento, setModoPreenchimento] = useState<'em_branco' | 'sugestao_ia'>('sugestao_ia');
 
   // PDF Export Modal state
   const [laudoPdfExportar, setLaudoPdfExportar] = useState<Laudo | null>(null);
@@ -146,6 +147,7 @@ export const LaudosCentralView: React.FC = () => {
     setAtivoId('');
     setDataInspecao(new Date().toISOString().slice(0, 10));
     setArtNumero('');
+    setModoPreenchimento('sugestao_ia');
     setModalTaxonomiaAberto(true);
   };
 
@@ -161,6 +163,7 @@ export const LaudosCentralView: React.FC = () => {
         ativoId: ativoId || '',
         artNumero,
         dataInspecao,
+        modoPreenchimento,
       });
 
       setModalTaxonomiaAberto(false);
@@ -717,6 +720,68 @@ export const LaudosCentralView: React.FC = () => {
                     placeholder="Ex: PE2026123456"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-mono"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Modo de Inicialização do Laudo
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setModoPreenchimento('sugestao_ia')}
+                    className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                      modoPreenchimento === 'sugestao_ia'
+                        ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      modoPreenchimento === 'sugestao_ia' 
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}>
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                        Assistido por IA
+                        <span className="text-[9px] px-1.5 py-0.2 font-extrabold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                          Recomendado
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                        Sugestões normativas pré-carregadas e marcação de pendências para validação em campo.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModoPreenchimento('em_branco')}
+                    className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                      modoPreenchimento === 'em_branco'
+                        ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      modoPreenchimento === 'em_branco' 
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}>
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-slate-900 dark:text-white">
+                        Em Branco (Manual)
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                        Checklist pendente e seções limpas para preenchimento manual completo pelo perito.
+                      </p>
+                    </div>
+                  </button>
                 </div>
               </div>
 
