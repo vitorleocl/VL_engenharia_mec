@@ -188,6 +188,102 @@ Gere a análise técnica em formato JSON estruturado com parecerTecnico, riscosI
   }
 });
 
+// Endpoint para Redação Técnica e Expansão Pericial de Seções de Laudo
+app.post("/api/ai/redigir-secao-laudo", async (req, res) => {
+  try {
+    const { 
+      tituloSecao, 
+      tipoLaudo, 
+      normasRef, 
+      clienteNome, 
+      ativoIdentificacao, 
+      promptUsuario,
+      conteudoAtual
+    } = req.body;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      // Fallback sem chave: retorna resposta enriquecida e estruturada
+      return res.json({
+        conteudoHtml: `<div class="p-3 bg-blue-50/70 border-l-4 border-blue-600 rounded-r my-2 space-y-1">
+          <p><strong>Fundamentação Pericial (${tituloSecao || 'Inspeção Técnica'}):</strong></p>
+          <p>Com amparo nas diretrizes de ${normasRef || 'ABNT NBR e Normas Regulamentadoras vigentes'}, procedeu-se à averiguação do ativo <em>${ativoIdentificacao || 'especificado'}</em>. Conclui-se pelo atendimento aos padrões de segurança mecânica e estabilidade operacional.</p>
+        </div>`,
+        mock: true
+      });
+    }
+
+    const ai = new GoogleGenAI({ 
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+
+    const promptSystem = `Você é um Engenheiro Mecânico Perito e Consultor Técnico Especialista (CREA-PE 182229949-0).
+Sua tarefa é redigir ou expandir tecnicamente o conteúdo de uma SEÇÃO ESPECÍFICA de um laudo pericial de engenharia mecânica.
+Diretrizes mandatórias:
+1. Retorne texto em HTML limpo, usando tags como <p>, <ul>, <li>, <strong>, <em> e, se conveniente para clareza técnica, tabelas estruturadas (<table class="tiptap-table border-collapse border border-slate-300 w-full my-3">).
+2. Não use marcadores de markdown como \`\`\`html ou blocos de código; retorne estritamente o HTML interno pronto para o editor de texto rico.
+3. Use vocabulário pericial formal, fundamentado nas normas ABNT e NRs cabíveis, com termos de engenharia diagnóstica (tensões, salvaguardas, integridade mecânica, ensaios).
+4. O tom deve ser pericial conclusivo e assertivo.`;
+
+    const promptInput = `Redija o conteúdo técnico para a seguinte seção:
+- Título da Seção: "${tituloSecao}"
+- Tipo de Laudo: "${tipoLaudo || 'Laudo Técnico Pericial de Engenharia Mecânica'}"
+- Normas de Referência: "${normasRef || 'ABNT NBR e Normas Regulamentadoras vigentes'}"
+- Ativo/Equipamento Periciado: "${ativoIdentificacao || 'Equipamento periciado'}"
+- Cliente/Empresa: "${clienteNome || 'Contratante'}"
+${conteudoAtual ? `- Conteúdo Técnico já existente na seção para expandir/aprimorar:\n"""${conteudoAtual}"""` : ''}
+${promptUsuario ? `- Instrução Específica do Engenheiro:\n"""${promptUsuario}"""` : ''}
+
+Elabore a redação pericial completa, técnica e aprofundada para esta seção.`;
+
+    const modelsToTry = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+    let htmlGerado = "";
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: "user", parts: [{ text: promptSystem + "\n\n" + promptInput }] }],
+          config: {
+            temperature: 0.3
+          }
+        });
+        if (response?.text) {
+          htmlGerado = response.text.trim();
+          // Remove potential ```html wrapping
+          htmlGerado = htmlGerado.replace(/^```html\s*/i, '').replace(/\s*```$/i, '');
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`Tentativa com modelo ${model} falhou:`, err?.message || err);
+      }
+    }
+
+    if (!htmlGerado) {
+      throw new Error("Não foi possível gerar redação pelo serviço de IA.");
+    }
+
+    monthlyAICalls++;
+    return res.json({
+      conteudoHtml: htmlGerado,
+      mock: false,
+      currentUsage: monthlyAICalls,
+      limit: MONTHLY_LIMIT
+    });
+  } catch (err: any) {
+    console.error("Erro na redação de seção por IA:", err);
+    return res.status(500).json({
+      error: "Falha na geração de redação: " + (err?.message || "Erro desconhecido")
+    });
+  }
+});
+
 // Official Proposal Generator Endpoint (13 Mandatory Sections)
 app.post("/api/ai/generate-proposal", async (req, res) => {
   try {

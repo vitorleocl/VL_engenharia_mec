@@ -46,6 +46,7 @@ import { calculateHRN, HRN_LO_OPTIONS, HRN_FE_OPTIONS, HRN_DPH_OPTIONS, HRN_NP_O
 import { Laudo, LaudoSecao, LaudoRevisao, HRNValues } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
+import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
 
 const PRESET_SECTIONS = [
   { 
@@ -406,38 +407,94 @@ export const LaudoEditorView: React.FC = () => {
   };
 
   // Assistente IA Redação Técnica
-  const handleAplicarIa = () => {
+  const handleAplicarIa = async () => {
+    if (!secaoAtiva) return;
     setCarregandoIa(true);
     registrarUsoIA('Assistente Técnico IA', 1);
 
-    setTimeout(() => {
-      let sugestao = '';
-      if (promptIa.includes('ABNT') || promptIa.includes('normas')) {
-        sugestao = `<div class="p-3 bg-blue-50/70 border-l-4 border-blue-600 rounded-r my-3"><p><strong>Fundamentação Técnica e Normativa (ABNT / NRs):</strong></p><p>A avaliação pericial procedeu à verificação sistemática dos componentes críticos segundo a ABNT NBR ISO 12100 e NR-12, constatando integridade mecânica das proteções, ausência de folgas axiais nos eixos e correto funcionamento dos relés de segurança de categoria 4.</p></div>`;
-      } else if (promptIa.includes('conclusão') || promptIa.includes('conclusivo')) {
-        sugestao = `<div class="p-3 bg-emerald-50/70 border-l-4 border-emerald-600 rounded-r my-3"><p><strong>Parecer Conclusivo Pericial:</strong></p><p>Face aos exames periciais realizados no ativo identificado, conclui-se que o mesmo atende satisfatoriamente às exigências de segurança e estabilidade estrutural preconizadas pelas normas técnicas vigentes. Atesta-se a plena aptidão operacional sob as condições de manutenção preventiva informadas.</p></div>`;
-      } else {
-        sugestao = `<div class="p-3 bg-slate-50 border border-slate-200 rounded my-3"><p><strong>Apreciação Pericial Complementar:</strong></p><p>Recomenda-se a realização de aferição anual com calibração de instrumentos de alívio e registros rastreáveis em livro próprio de inspeção técnica mecânica.</p></div>`;
+    try {
+      const res = await fetch('/api/ai/redigir-secao-laudo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tituloSecao: secaoAtiva.titulo,
+          tipoLaudo: taxonomyDetails.tipoNome,
+          normasRef: laudoState.normasReferencia,
+          clienteNome: cliente?.razaoSocial,
+          ativoIdentificacao: ativo?.identificacao,
+          promptUsuario: promptIa,
+          conteudoAtual: secaoAtiva.conteudoHtml || ''
+        })
+      });
+
+      let htmlGerado = '';
+      if (res.ok) {
+        const data = await res.json();
+        htmlGerado = data.conteudoHtml || '';
       }
 
-      if (secaoAtiva) {
-        const novoConteudo = (secaoAtiva.conteudoHtml || '') + sugestao;
-        const novasSecoes = laudoState.secoes.map(s => {
-          if (s.id === secaoAtiva.id) {
-            return { ...s, conteudoHtml: novoConteudo };
+      // Se por algum motivo o backend não responder ou retornar vazio, usamos o motor pericial autônomo offline
+      if (!htmlGerado) {
+        htmlGerado = gerarMinutaTecnicaSecao(
+          secaoAtiva.titulo,
+          { nome: taxonomyDetails.tipoNome, normasRef: laudoState.normasReferencia },
+          { 
+            clienteNome: cliente?.razaoSocial, 
+            ativoIdentificacao: ativo?.identificacao,
+            promptUsuario: promptIa
           }
-          return s;
-        });
-
-        agendarAutoSave({
-          ...laudoState,
-          secoes: novasSecoes,
-        });
+        );
       }
 
+      const conteudoAnterior = secaoAtiva.conteudoHtml ? secaoAtiva.conteudoHtml.trim() : '';
+      const novoConteudo = conteudoAnterior && conteudoAnterior !== '<p></p>'
+        ? `${conteudoAnterior}<div class="my-3">${htmlGerado}</div>`
+        : htmlGerado;
+
+      const novasSecoes = laudoState.secoes.map(s => {
+        if (s.id === secaoAtiva.id) {
+          return { ...s, conteudoHtml: novoConteudo };
+        }
+        return s;
+      });
+
+      agendarAutoSave({
+        ...laudoState,
+        secoes: novasSecoes,
+      });
+    } catch (err) {
+      console.warn('Falha na requisição da IA, aplicando motor técnico autônomo:', err);
+      // Fallback pericial robusto garantido
+      const htmlFallback = gerarMinutaTecnicaSecao(
+        secaoAtiva.titulo,
+        { nome: taxonomyDetails.tipoNome, normasRef: laudoState.normasReferencia },
+        { 
+          clienteNome: cliente?.razaoSocial, 
+          ativoIdentificacao: ativo?.identificacao,
+          promptUsuario: promptIa
+        }
+      );
+
+      const conteudoAnterior = secaoAtiva.conteudoHtml ? secaoAtiva.conteudoHtml.trim() : '';
+      const novoConteudo = conteudoAnterior && conteudoAnterior !== '<p></p>'
+        ? `${conteudoAnterior}<div class="my-3">${htmlFallback}</div>`
+        : htmlFallback;
+
+      const novasSecoes = laudoState.secoes.map(s => {
+        if (s.id === secaoAtiva.id) {
+          return { ...s, conteudoHtml: novoConteudo };
+        }
+        return s;
+      });
+
+      agendarAutoSave({
+        ...laudoState,
+        secoes: novasSecoes,
+      });
+    } finally {
       setCarregandoIa(false);
       setModalIaAberto(false);
-    }, 700);
+    }
   };
 
   // Finalize Laudo
@@ -1080,8 +1137,34 @@ export const LaudoEditorView: React.FC = () => {
                     <span>Editar Título</span>
                   </button>
                   <button
+                    type="button"
+                    onClick={() => {
+                      if (!secaoAtiva) return;
+                      const minuta = gerarMinutaTecnicaSecao(
+                        secaoAtiva.titulo,
+                        { nome: taxonomyDetails.tipoNome, normasRef: laudoState.normasReferencia },
+                        { clienteNome: cliente?.razaoSocial, ativoIdentificacao: ativo?.identificacao }
+                      );
+                      const novasSecoes = laudoState.secoes.map(s => {
+                        if (s.id === secaoAtiva.id) {
+                          return { ...s, conteudoHtml: minuta };
+                        }
+                        return s;
+                      });
+                      agendarAutoSave({
+                        ...laudoState,
+                        secoes: novasSecoes,
+                      });
+                    }}
+                    title="Preencher com minuta técnica padrão de engenharia para esta seção"
+                    className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Minuta Padrão</span>
+                  </button>
+                  <button
                     onClick={() => setModalIaAberto(true)}
-                    className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                     <span>Expandir com IA</span>

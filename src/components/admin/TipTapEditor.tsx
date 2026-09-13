@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Table } from '@tiptap/extension-table';
@@ -121,6 +121,15 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
       }
     },
   });
+
+  // Sincroniza o conteúdo quando atualizado externamente (ex: IA, presets, minuta rápida)
+  useEffect(() => {
+    if (!editor || readOnly) return;
+    const currentHtml = editor.getHTML();
+    if (contentHtml !== undefined && contentHtml !== currentHtml) {
+      editor.commands.setContent(contentHtml || '<p></p>', { emitUpdate: false });
+    }
+  }, [editor, contentHtml, readOnly]);
 
   // Handle local image upload via file input
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

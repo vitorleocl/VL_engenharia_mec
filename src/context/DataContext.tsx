@@ -23,6 +23,7 @@ import {
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
+import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { 
   sincronizarFirestoreNR12eNR13, 
   sincronizarFirestoreVeicular,
@@ -658,7 +659,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: s.id,
             titulo: s.titulo,
             ordem: s.ordem,
-            conteudoHtml: ehModoIA ? (s.conteudoHtml || '') : '',
+            conteudoHtml: ehModoIA 
+              ? (s.conteudoHtml || gerarMinutaTecnicaSecao(s.titulo, tipoEncontrado, { clienteNome: cliente?.razaoSocial, ativoIdentificacao: ativo?.identificacao }))
+              : '',
             itens: [],
             fotos: []
           }))
@@ -666,8 +669,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const titulo = typeof sec === 'string' ? sec : sec.titulo;
             const conteudoSugerido = typeof sec === 'object' && sec.conteudoSugeridoIA ? sec.conteudoSugeridoIA : '';
             let conteudoHtml = '';
-            if (ehModoIA && conteudoSugerido) {
-              conteudoHtml = `<p class="leading-relaxed">${conteudoSugerido.replace(/\n\n/g, '</p><p class="leading-relaxed mt-3">').replace(/\n/g, '<br/>')}</p>`;
+            if (ehModoIA) {
+              if (conteudoSugerido) {
+                conteudoHtml = `<p class="leading-relaxed">${conteudoSugerido.replace(/\n\n/g, '</p><p class="leading-relaxed mt-3">').replace(/\n/g, '<br/>')}</p>`;
+              } else {
+                conteudoHtml = gerarMinutaTecnicaSecao(titulo, tipoEncontrado, { clienteNome: cliente?.razaoSocial, ativoIdentificacao: ativo?.identificacao });
+              }
             }
             return {
               id: `sec-${idx + 1}`,
