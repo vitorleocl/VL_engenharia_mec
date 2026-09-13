@@ -20,6 +20,7 @@ import { DashboardView } from './components/admin/DashboardView';
 import { ClientesView } from './components/admin/ClientesView';
 import { AtivosView } from './components/admin/AtivosView';
 import { OrcamentosView } from './components/admin/OrcamentosView';
+import { OrcamentoEditorView } from './components/admin/OrcamentoEditorView';
 import { AgendaView } from './components/admin/AgendaView';
 import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
@@ -112,6 +113,22 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <OrcamentosView />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/orcamentos/:id"
+                element={
+                  <AdminLayout>
+                    <OrcamentoEditorView />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/orcamentos/:id/editar"
+                element={
+                  <AdminLayout>
+                    <OrcamentoEditorView />
                   </AdminLayout>
                 }
               />

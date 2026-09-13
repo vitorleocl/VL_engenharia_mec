@@ -17,13 +17,15 @@ import {
   Sparkles,
   Loader2,
   Eye,
-  Trash2
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Orcamento, PropostaPagina } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { PropostaViewerModal } from './PropostaViewerModal';
+import { converterPaginasParaSecoes } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentosView: React.FC = () => {
   const { 
@@ -103,8 +105,10 @@ export const OrcamentosView: React.FC = () => {
 
       const data = await resp.json();
       if (data.paginas && Array.isArray(data.paginas)) {
+        const secoesConvertidas = converterPaginasParaSecoes(data.paginas);
         atualizarOrcamento(orc.id, {
           paginasProposta: data.paginas,
+          secoes: secoesConvertidas,
           propostaGeradaEm: new Date().toISOString(),
           status: orc.status === 'rascunho' ? 'enviado' : orc.status,
         });
@@ -114,6 +118,7 @@ export const OrcamentosView: React.FC = () => {
         const atualizado = {
           ...orc,
           paginasProposta: data.paginas,
+          secoes: secoesConvertidas,
           propostaGeradaEm: new Date().toISOString(),
         };
         setPropostaModalOrcamento(atualizado);
@@ -327,17 +332,29 @@ export const OrcamentosView: React.FC = () => {
                 )}
               </div>
 
-              {/* Primary View Proposal Button */}
+              {/* Primary View Proposal & Edit Proposal Buttons */}
               <div className="flex flex-col gap-1.5">
-                <button
-                  onClick={() => setPropostaModalOrcamento(orc)}
-                  className="w-full py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Visualizar Proposta (13 Págs)</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPropostaModalOrcamento(orc)}
+                    className="py-2 px-2.5 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    title="Visualizar documento pronto para impressão e exportação"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Visualizar PDF</span>
+                  </button>
 
-                {(!orc.paginasProposta || orc.paginasProposta.length === 0) && (
+                  <button
+                    onClick={() => navigate(`/admin/orcamentos/${orc.id}/editar`)}
+                    className="py-2 px-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    title="Abrir editor rico para capa e seções"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Editar Seções</span>
+                  </button>
+                </div>
+
+                {(!orc.paginasProposta || orc.paginasProposta.length === 0) && (!orc.secoes || orc.secoes.length === 0) && (
                   <button
                     onClick={() => gerarPropostaCompletaComIA(orc)}
                     disabled={gerandoPropostaId === orc.id}
@@ -407,6 +424,10 @@ export const OrcamentosView: React.FC = () => {
           onClose={() => setPropostaModalOrcamento(null)}
           onStatusChange={atualizarStatusOrcamento}
           onGerarLaudo={handleGerarLaudo}
+          onEditarProposta={(orc) => {
+            setPropostaModalOrcamento(null);
+            navigate(`/admin/orcamentos/${orc.id}/editar`);
+          }}
         />
       )}
 

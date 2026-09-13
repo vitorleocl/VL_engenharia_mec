@@ -74,6 +74,25 @@ export interface PropostaPagina {
   conteudoHtml: string;
 }
 
+export interface OrcamentoSecao {
+  id: string; // ex: 'capa', 'missao', 'principios', 'entregamos', 'problemas', 'catalogo', 'identificacao', 'equipe', 'etapa1', 'etapa2', 'operacional', 'etapa3', 'contato'
+  numero: number;
+  titulo: string;
+  subtitulo?: string;
+  conteudoHtml: string;
+}
+
+export interface OrcamentoHistorico {
+  editadoEm: string;
+  editadoPorUid: string;
+  editadoPorNome?: string;
+  resumoAlteracao: string;
+  versaoAnterior?: {
+    secoes?: OrcamentoSecao[];
+    imagemCapaUrl?: string;
+  };
+}
+
 export interface Orcamento {
   id: string;
   codigoProposta?: string; // ex: PROP-2026-001
@@ -103,6 +122,10 @@ export interface Orcamento {
   tipoLaudoVinculadoId?: string;
   fotosDescricao?: string;
   propostaGeradaEm?: string;
+  imagemCapaUrl?: string;
+  imagemCapaLegenda?: string;
+  secoes?: OrcamentoSecao[];
+  historico?: OrcamentoHistorico[];
   paginas?: PropostaPagina[];
   paginasProposta?: PropostaPagina[];
   aceiteDigital?: {

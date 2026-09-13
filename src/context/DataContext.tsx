@@ -36,6 +36,8 @@ import {
   sincronizarFirestorePericiasAvaliacaoBens,
   sincronizarFirestoreGeradoresAcessibilidadeRuido
 } from '../lib/firestoreTaxonomia';
+import { db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -433,6 +435,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const atualizarOrcamento = (id: string, dados: Partial<Orcamento>) => {
     setOrcamentos(prev => prev.map(o => o.id === id ? { ...o, ...dados } : o));
     registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
+    if (db) {
+      try {
+        setDoc(doc(db, 'orcamentos', id), dados, { merge: true }).catch(err => {
+          console.warn('Sync Firestore orcamentos (salvo localmente):', err);
+        });
+      } catch (e) {
+        console.warn('Firestore write error:', e);
+      }
+    }
   };
 
   const atualizarStatusOrcamento = (id: string, status: Orcamento['status']) => {

@@ -15,7 +15,8 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
-  Loader2
+  Loader2,
+  Edit3
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
@@ -28,6 +29,7 @@ interface PropostaViewerModalProps {
   onClose: () => void;
   onStatusChange?: (id: string, novoStatus: Orcamento['status']) => void;
   onGerarLaudo?: (orc: Orcamento) => void;
+  onEditarProposta?: (orc: Orcamento) => void;
 }
 
 function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
@@ -296,6 +298,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onClose,
   onStatusChange,
   onGerarLaudo,
+  onEditarProposta,
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
@@ -303,20 +306,41 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
-  // Compute pages: use provided pages or generate the complete standard 13-page structure
+  // Compute pages: prioritize editable secoes, then paginasProposta, or generate standard 13 pages
   const paginas: PropostaPagina[] = useMemo(() => {
-    const originais = (orcamento.paginasProposta && orcamento.paginasProposta.length > 0)
-      ? orcamento.paginasProposta
-      : (orcamento.paginas && orcamento.paginas.length > 0)
-      ? orcamento.paginas
-      : null;
+    let originais: PropostaPagina[] | null = null;
 
-    if (!originais) {
-      return gerarPaginasPadrao(orcamento);
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      originais = orcamento.secoes.map(s => ({
+        numero: s.numero,
+        titulo: s.titulo,
+        subtitulo: s.subtitulo,
+        conteudoHtml: s.conteudoHtml,
+      }));
+    } else if (orcamento.paginasProposta && orcamento.paginasProposta.length > 0) {
+      originais = orcamento.paginasProposta;
+    } else if (orcamento.paginas && orcamento.paginas.length > 0) {
+      originais = orcamento.paginas;
     }
 
-    // Ensure Page 2 has the photo and credentials if it was missing
-    return originais.map(p => {
+    const listaBase = originais || gerarPaginasPadrao(orcamento);
+
+    return listaBase.map(p => {
+      // In Page 1, render cover photo if provided and not already included
+      if (p.numero === 1 && orcamento.imagemCapaUrl && !p.conteudoHtml.includes(orcamento.imagemCapaUrl)) {
+        const fotoHtml = `
+          <div class="mb-4 rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-60 bg-slate-50 text-center flex flex-col items-center justify-center">
+            <img src="${orcamento.imagemCapaUrl}" alt="Ativo / Local da Proposta" class="w-full max-h-52 object-cover" />
+            ${orcamento.imagemCapaLegenda ? `<p class="text-[10px] text-slate-500 font-mono py-1 px-3 bg-slate-100 w-full text-center border-t border-slate-200">${orcamento.imagemCapaLegenda}</p>` : ''}
+          </div>
+        `;
+        return {
+          ...p,
+          conteudoHtml: `${fotoHtml}${p.conteudoHtml}`,
+        };
+      }
+
+      // Ensure Page 2 has the photo and credentials if it was missing
       if (p.numero === 2 && !p.conteudoHtml.includes('vitor-leonardo.png')) {
         return {
           ...p,
@@ -453,6 +477,18 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 Visualização Contínua
               </button>
             </div>
+
+            {/* Editar Proposta button */}
+            {onEditarProposta && (
+              <button
+                onClick={() => onEditarProposta(orcamento)}
+                className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 border border-amber-500 cursor-pointer"
+                title="Editar seções e capa no editor rico"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span className="hidden md:inline">Editar Seções</span>
+              </button>
+            )}
 
             {/* Print button */}
             <button
