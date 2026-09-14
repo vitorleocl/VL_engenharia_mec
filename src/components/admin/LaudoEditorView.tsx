@@ -679,7 +679,10 @@ export const LaudoEditorView: React.FC = () => {
             ${todosItens.map((it, idx) => `
               <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                 <td style="padding: 6px 8px; font-weight: bold; text-align: center;">${idx + 1}</td>
-                <td style="padding: 6px 8px;">${it.descricao}</td>
+                <td style="padding: 6px 8px;">
+                  <div>${it.descricao}</div>
+                  ${it.valorResposta ? `<div style="font-size: 11px; color: #0369a1; font-weight: bold; margin-top: 2px;">Apurado: ${it.valorResposta} ${it.unidade && it.unidade !== 'texto' ? it.unidade : ''} ${it.criterioReferencia ? `(Ref: ${it.criterioReferencia})` : ''}</div>` : (it.criterioReferencia ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Ref: ${it.criterioReferencia}</div>` : '')}
+                </td>
                 <td style="padding: 6px 8px; text-align: center;">
                   <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; color: ${it.status === 'conforme' ? '#166534' : it.status === 'nao_conforme' ? '#991b1b' : '#475569'}; background-color: ${it.status === 'conforme' ? '#dcfce7' : it.status === 'nao_conforme' ? '#fee2e2' : '#f1f5f9'};">
                     ${it.status === 'conforme' ? 'CONFORME' : it.status === 'nao_conforme' ? 'NÃO CONFORME' : 'N/A'}

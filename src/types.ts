@@ -210,12 +210,22 @@ export interface EvidenciaFoto {
   autorUid?: string;
 }
 
+export type TipoRespostaChecklist = 'C_NC_NA' | 'VALOR' | 'SELECAO' | 'FOTO';
+
 export interface TipoLaudoItemChecklist {
   id: string;
   descricao: string;
+  campo?: string;
   status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente';
   observacao?: string;
   fotoUrl?: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;
+  opcoes?: string[];
+  criterioReferencia?: string;
+  obrigatorioFoto?: boolean;
+  exigeFotoSeNaoConforme?: boolean;
+  valorResposta?: string;
 }
 
 export interface TipoLaudoSecaoPadrao {
@@ -233,9 +243,17 @@ export interface SecaoEspecificaDef {
 }
 
 export interface ItemChecklistDef {
-  item: string;
+  campo?: string;
+  item?: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;
+  opcoes?: string[];
+  criterioReferencia?: string;
+  obrigatorioFoto?: boolean;
+  exigeFotoSeNaoConforme?: boolean;
   statusSugeridoIA?: StatusSugeridoIA;
   observacaoSugeridaIA?: string;
+  valorSugeridoIA?: string | number;
 }
 
 export interface TipoLaudoDef {
@@ -391,10 +409,18 @@ export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplica
 export interface ChecklistCampoItem {
   id: string;
   descricao: string;
+  campo?: string;
   status: ChecklistCampoItemStatus;
   observacao?: string;
   fotoUrl?: string;
   fotoNome?: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;
+  opcoes?: string[];
+  criterioReferencia?: string;
+  obrigatorioFoto?: boolean;
+  exigeFotoSeNaoConforme?: boolean;
+  valorResposta?: string;
 }
 
 export interface ChecklistCampo {

@@ -6,10 +6,20 @@ export interface SecaoEspecificaFirestore {
   conteudoSugeridoIA?: string;
 }
 
+export type TipoRespostaChecklist = 'C_NC_NA' | 'VALOR' | 'SELECAO' | 'FOTO';
+
 export interface ItemChecklistInicialFirestore {
-  item: string;
+  campo?: string;
+  item?: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;
+  opcoes?: string[];
+  criterioReferencia?: string;
+  obrigatorioFoto?: boolean;
+  exigeFotoSeNaoConforme?: boolean;
   statusSugeridoIA?: 'Conforme' | 'Não Conforme' | 'Não Aplicável' | 'Pendente de Verificação em Campo';
   observacaoSugeridaIA?: string;
+  valorSugeridoIA?: string | number;
 }
 
 export interface DocumentoTipoLaudoFirestore {
@@ -612,21 +622,16 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Recomendações Preliminares e Memorial Descritivo para Elaboração do Projeto de PPCI'
     ],
     checklistInicial: [
-      'Planta baixa atualizada e compatível com a edificação real',
-      'Área construída por pavimento medida/conferida',
-      'Altura da edificação determinada',
-      'Número de pavimentos e uso de cada um identificado',
-      'Classificação de ocupação (Grupo/Divisão) definida conforme IT estadual',
-      'Carga de incêndio de referência da ocupação identificada',
-      'Isolamento de risco (afastamento entre edificações) avaliado',
-      'Acesso de viaturas do Corpo de Bombeiros verificado (largura, raio de giro, resistência do piso)',
-      'Reservatório de água para incêndio identificado (capacidade e exclusividade)',
-      'Sistema de hidrantes existente avaliado (se houver)',
-      'Sistema de alarme/detecção existente avaliado (se houver)',
-      'Saídas de emergência mapeadas preliminarmente',
-      'SPDA (sistema de proteção contra descargas atmosféricas) avaliado',
-      'Compartimentação horizontal/vertical avaliada',
-      'Registro fotográfico do estado atual da edificação'
+      { campo: "Ocupação e Uso — Classificação da edificação conforme tabela de ocupação (Tabela 1 do Decreto Estadual/ITs)", tipoResposta: "SELECAO", opcoes: ["Grupo A", "Grupo B", "Grupo C", "Grupo D", "Grupo E", "Grupo F", "Grupo G", "Grupo H", "Grupo I", "Grupo J", "Grupo L", "Grupo M"] },
+      { campo: "Carga de Incêndio — Levantamento dos materiais predominantes e cálculo da carga térmica", tipoResposta: "VALOR", unidade: "MJ/m²" },
+      { campo: "Área Construída Total", tipoResposta: "VALOR", unidade: "m²" },
+      { campo: "Altura da Edificação (ascendente/descendente)", tipoResposta: "VALOR", unidade: "m" },
+      { campo: "Separação entre Edificações — Distância de isolamento de risco entre blocos conforme IT", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "Conforme IT aplicável ao estado/UF" },
+      { campo: "Acesso de Viaturas — Largura livre da via", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "> 6,0 m" },
+      { campo: "Acesso de Viaturas — Altura livre da via", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "> 4,5 m" },
+      { campo: "Acesso de Viaturas — Condição geral de acesso do Corpo de Bombeiros", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Resistência ao Fogo da Estrutura — TRRF de pilares e vigas (metálica/concreto)", tipoResposta: "VALOR", unidade: "min" },
+      { campo: "Controle de Materiais de Acabamento (CMAR) — Classe dos materiais de piso, parede e teto", tipoResposta: "SELECAO", opcoes: ["Classe A", "Classe B", "Classe C", "Classe D", "Classe E", "Classe F"] }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -651,16 +656,13 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Estimativa do Tempo de Escoamento da População'
     ],
     checklistInicial: [
-      'População calculada por pavimento conforme uso/ocupação',
-      'Largura das saídas calculada em unidades de passagem',
-      'Número de saídas exigidas comparado ao número existente',
-      'Distância máxima a percorrer verificada dentro do limite normativo',
-      'Carga de incêndio calculada por ocupação (MJ/m²)',
-      'Escadas de emergência dimensionadas (largura mínima, corrimãos)',
-      'Portas corta-fogo dimensionadas e localizadas corretamente',
-      'Sinalização de rota de fuga fotoluminescente especificada',
-      'Tempo de escoamento estimado calculado',
-      'Compatibilidade do dimensionamento com o uso real da edificação verificada'
+      { campo: "População Calculada (lotação) por pavimento", tipoResposta: "VALOR", unidade: "texto" },
+      { campo: "Largura das Saídas de Emergência", tipoResposta: "VALOR", unidade: "m" },
+      { campo: "Distância Máxima a Percorrer até a Saída", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "Conforme IT/NBR 9077 aplicável à ocupação" },
+      { campo: "Carga de Incêndio Calculada por Ocupação", tipoResposta: "VALOR", unidade: "MJ/m²" },
+      { campo: "Tempo de Escoamento Estimado", tipoResposta: "VALOR", unidade: "min" },
+      { campo: "Sinalização de Rota de Fuga", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Dimensionamento das Escadas (largura/capacidade de escoamento)", tipoResposta: "VALOR", unidade: "m" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -688,27 +690,24 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Relação de Pendências e Prazo de Regularização para Protocolo Junto ao Corpo de Bombeiros'
     ],
     checklistInicial: [
-      'Extintores com tipo/carga adequados ao risco, validade em dia e sinalizados',
-      'Distância de caminhamento até o extintor dentro do limite normativo',
-      'Hidrantes testados (pressão e vazão no ponto mais desfavorável)',
-      'Mangueiras, esguicho e chave storz conferidos',
-      'Reservatório de incêndio com nível adequado',
-      'Bomba de incêndio testada (partida automática e pressão nominal)',
-      'Sprinklers inspecionados visualmente (obstrução, corrosão, cobertura), quando exigidos',
-      'Central de alarme testada (todos os laços)',
-      'Acionadores manuais testados',
-      'Detectores de fumaça/calor testados',
-      'Sirenes/estrobos testados quanto a audibilidade e visibilidade',
-      'Iluminação de emergência testada (autonomia mínima conforme norma)',
-      'Sinalização de emergência fotoluminescente conferida',
-      'SPDA inspecionado visualmente (continuidade elétrica, aterramento)',
-      'Portas corta-fogo testadas (fechamento automático, barra antipânico)',
-      'Saídas de emergência desobstruídas e sinalizadas',
-      'Compartimentação horizontal/vertical verificada',
-      'Escada de emergência pressurizada testada, quando exigida',
-      'Brigada de incêndio treinada e com certificado válido',
-      'Plano de emergência elaborado e disponível no local',
-      'Relação de pendências elaborada com prazo de regularização'
+      { campo: "Validade das ARTs/RRTs de execução/manutenção (instalações elétricas, gás, SPDA)", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Certificado de Licença Anterior — existência e ausência de alterações estruturais/uso não autorizadas", tipoResposta: "C_NC_NA" },
+      { campo: "Sinalização de Emergência — placas fotoluminescentes em rotas, saídas, extintores e botoeiras", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Iluminação de Emergência — funcionamento contínuo dos pontos", tipoResposta: "C_NC_NA" },
+      { campo: "Iluminação de Emergência — autonomia em teste de corte de energia", tipoResposta: "VALOR", unidade: "h", criterioReferencia: "> 1,5 h" },
+      { campo: "Desobstrução de Rotas de Fuga — corredores e escadas", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Extintores — Adequação da carga à classe de risco do local", tipoResposta: "SELECAO", opcoes: ["Classe A", "Classe B", "Classe C", "Classe D", "Classe K"] },
+      { campo: "Extintores — Sinalização de solo e parede", tipoResposta: "C_NC_NA" },
+      { campo: "Extintores — Altura de fixação do suporte", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "entre 0,20 m (piso) e 1,60 m (topo)" },
+      { campo: "Extintores — Pressão do manômetro na faixa verde", tipoResposta: "C_NC_NA" },
+      { campo: "Extintores — Lacre e pino de segurança íntegros", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Extintores — Validade da carga", tipoResposta: "VALOR", unidade: "texto" },
+      { campo: "Extintores — Validade do ensaio hidrostático", tipoResposta: "VALOR", unidade: "texto" },
+      { campo: "Extintores — Estado geral do casco e mangueira", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Central de Alarme — modo de operação, falhas de laço e bateria de backup", tipoResposta: "C_NC_NA" },
+      { campo: "Botoeiras/Acionadores Manuais — instalação entre 0,90 m e 1,20 m do piso", tipoResposta: "C_NC_NA" },
+      { campo: "Avisadores Sonoros — pressão sonora acima do ruído de fundo", tipoResposta: "VALOR", unidade: "dBA", criterioReferencia: "> 15 dBA acima do ruído de fundo" },
+      { campo: "Detectores de Fumaça/Temperatura — LED de supervisão e ausência de contaminação no sensor", tipoResposta: "C_NC_NA" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -732,15 +731,11 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Enquadramento como Baixo Risco ou Microempresa conforme IT estadual'
     ],
     checklistInicial: [
-      'Extintor adequado à classe de risco (A/B/C) presente',
-      'Quantidade de extintores compatível com a área do estabelecimento',
-      'Extintor dentro da validade e sinalizado',
-      'Saída de emergência sinalizada e desobstruída',
-      'Instalação elétrica aparentemente regular (sem fios expostos)',
-      'Quadro elétrico identificado (disjuntores nomeados)',
-      'Lotação do estabelecimento compatível com a área',
-      'Iluminação de emergência básica presente, quando exigida',
-      'Enquadramento em baixo risco/microempresa confirmado conforme IT aplicável'
+      { campo: "Extintores adequados ao tipo de risco do estabelecimento", tipoResposta: "SELECAO", opcoes: ["Classe A", "Classe B", "Classe C", "Classe D", "Classe K"] },
+      { campo: "Saída de emergência sinalizada", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Instalação elétrica aparentemente regular (inspeção visual)", tipoResposta: "C_NC_NA" },
+      { campo: "Quadro de área/lotação compatível com o enquadramento de baixo risco", tipoResposta: "C_NC_NA" },
+      { campo: "Enquadramento como Baixo Risco/Microempresa confirmado", tipoResposta: "C_NC_NA" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -766,18 +761,17 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Ficha de Comissionamento com Resultados Registrados e Assinatura do Responsável Técnico'
     ],
     checklistInicial: [
-      'Teste de vazão e pressão realizado no hidrante mais desfavorável',
-      'Bomba de incêndio testada (partida automática e pressão nominal)',
-      'Reservatório de incêndio com nível conferido antes do teste',
-      'Sprinklers inspecionados visualmente (obstrução, corrosão, cobertura)',
-      'Central de alarme testada em todos os laços',
-      'Acionadores manuais testados individualmente',
-      'Detectores de fumaça/calor testados',
-      'Sirenes testadas quanto à audibilidade',
-      'Sinalizadores visuais (estrobo) testados quanto à visibilidade',
-      'Iluminação de emergência testada quanto à autonomia mínima',
-      'Luminância da iluminação de emergência medida',
-      'Ficha de comissionamento preenchida e assinada pelo responsável técnico'
+      { campo: "Acesso ao Abrigo do Hidrante — visível, desobstruído e sinalizado", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Mangueiras de Incêndio — tipo correto (Tipo 1 a 5) e quantidade exigida por ponto", tipoResposta: "SELECAO", opcoes: ["Tipo 1", "Tipo 2", "Tipo 3", "Tipo 4", "Tipo 5"] },
+      { campo: "Mangueiras de Incêndio — ausência de mofo/desgaste", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Chave de Mangueira (Storz) e esguicho funcionais", tipoResposta: "C_NC_NA" },
+      { campo: "Teste de Pressão Estática no ponto mais desfavorável", tipoResposta: "VALOR", unidade: "kgf/cm²" },
+      { campo: "Teste de Pressão Dinâmica no ponto mais desfavorável", tipoResposta: "VALOR", unidade: "kgf/cm²" },
+      { campo: "Válvula Angular (Registro) — ausência de vazamentos e facilidade de abertura", tipoResposta: "C_NC_NA" },
+      { campo: "Automação da Bomba de Incêndio — acionamento automático por queda de pressão (pressostato)", tipoResposta: "C_NC_NA" },
+      { campo: "Sprinklers — inspeção visual (bulbos, obstruções, pintura)", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Detectores de fumaça — teste de acionamento", tipoResposta: "C_NC_NA" },
+      { campo: "Bateria da Central — autonomia após desconexão da rede CA", tipoResposta: "VALOR", unidade: "h", criterioReferencia: "mínimo 24h + 15min de alarme" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -801,15 +795,12 @@ export const TIPOS_INCENDIO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Verificação de Sinalização e Proteção Contra Impacto de Veículos'
     ],
     checklistInicial: [
-      'Central de gás identificada e sinalizada ("Gás Inflamável")',
-      'Pressão de teste aplicada conforme norma aplicável',
-      'Tempo de estabilização respeitado',
-      'Ausência de queda de pressão confirmada (estanqueidade aprovada)',
-      'Conexões e válvulas inspecionadas visualmente (ausência de vazamento/corrosão)',
-      'Regulador de pressão conferido e dentro do prazo de manutenção',
-      'Ventilação do abrigo/central de gás avaliada como adequada',
-      'Proteção contra impacto de veículos verificada, quando aplicável',
-      'Certificado de calibração do manômetro utilizado no teste anexado'
+      { campo: "Central de Gás (Abrigo) — localização ventilada, afastada de ralos/fontes de ignição, sinalizada", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Válvula de Bloqueio Rápido — presença e operacionalidade (manual e solenoide de emergência)", tipoResposta: "C_NC_NA" },
+      { campo: "Teste de Estanqueidade — queda de pressão durante ensaio pneumático", tipoResposta: "VALOR", unidade: "kPa" },
+      { campo: "Tubulação — pintura na cor amarela (NBR 6493) e fixação por braçadeiras", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true },
+      { campo: "Exaustão e Ventilação dos Equipamentos — duto de exaustão de gases e aberturas inferiores/superiores na central", tipoResposta: "C_NC_NA" },
+      { campo: "Conexões e Válvulas — estado de conservação geral", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true }
     ],
     atualizadoEm: new Date().toISOString()
   }

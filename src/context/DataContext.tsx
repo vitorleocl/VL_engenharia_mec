@@ -643,7 +643,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             observacao: ehModoIA ? item.observacao : ''
           }))
         : (tipoEncontrado?.checklistInicial || []).map((itemDef, idx) => {
-            const descricao = typeof itemDef === 'string' ? itemDef : itemDef.item;
+            const descricao = typeof itemDef === 'string' 
+              ? itemDef 
+              : (itemDef.campo || itemDef.item || '');
             let status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente' = 'pendente';
             let observacao = '';
 
@@ -671,6 +673,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return {
               id: `ck-${idx + 1}`,
               descricao,
+              campo: typeof itemDef === 'object' ? itemDef.campo : undefined,
+              tipoResposta: typeof itemDef === 'object' ? itemDef.tipoResposta : undefined,
+              unidade: typeof itemDef === 'object' ? itemDef.unidade : undefined,
+              opcoes: typeof itemDef === 'object' ? itemDef.opcoes : undefined,
+              criterioReferencia: typeof itemDef === 'object' ? itemDef.criterioReferencia : undefined,
+              obrigatorioFoto: typeof itemDef === 'object' ? itemDef.obrigatorioFoto : undefined,
+              exigeFotoSeNaoConforme: typeof itemDef === 'object' ? itemDef.exigeFotoSeNaoConforme : undefined,
               status,
               observacao
             };

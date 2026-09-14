@@ -312,7 +312,21 @@ contato@vlengenharia.com.br
                         {idx + 1}
                       </td>
                       <td className="py-2.5 px-3 font-medium text-slate-800 leading-snug">
-                        {item.descricao}
+                        <p>{item.descricao}</p>
+                        {(item.valorResposta || item.criterioReferencia) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+                            {item.valorResposta && (
+                              <span className="bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-bold">
+                                Apurado: {item.valorResposta} {item.unidade && item.unidade !== 'texto' ? item.unidade : ''}
+                              </span>
+                            )}
+                            {item.criterioReferencia && (
+                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                Ref.: {item.criterioReferencia}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <span
