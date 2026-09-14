@@ -254,9 +254,9 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     const payload = {
       clienteId,
       clienteNome: clienteSelecionado?.razaoSocial || clienteSelecionado?.nomeFantasia || 'Cliente',
-      clienteCnpj: clienteSelecionado?.cnpj || '',
+      clienteCnpj: clienteSelecionado?.cnpj || clienteSelecionado?.cpfCnpj || '',
       ativoId,
-      ativoIdentificacao: ativoSelecionado ? `${ativoSelecionado.tag ? `[${ativoSelecionado.tag}] ` : ''}${ativoSelecionado.identificacao}` : 'Ativo',
+      ativoIdentificacao: ativoSelecionado ? `${ativoSelecionado.identificacao} (${ativoSelecionado.tipo})` : 'Ativo',
       categoriaLaudo: tipoObj?.categoriaId || 'cat-1',
       tipoLaudoId,
       tipoLaudoNome: tipoObj?.nome || tipoLaudoId,
@@ -349,15 +349,15 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                   <option value="">-- Selecione o Cliente --</option>
                   {clientes.map(cli => (
                     <option key={cli.id} value={cli.id}>
-                      {cli.razaoSocial} ({cli.cidade || 'PE'})
+                      {cli.razaoSocial} ({cli.endereco?.cidade || 'PE'})
                     </option>
                   ))}
                 </select>
 
                 {clienteSelecionado && (
                   <div className="mt-2 p-2 bg-blue-50/60 rounded-md border border-blue-100 text-[11px] text-slate-600 space-y-0.5">
-                    <p><strong>CNPJ:</strong> {clienteSelecionado.cnpj || 'Não cadastrado'}</p>
-                    <p><strong>Contato:</strong> {clienteSelecionado.contatoNome || 'Responsável'}</p>
+                    <p><strong>CNPJ:</strong> {clienteSelecionado.cnpj || clienteSelecionado.cpfCnpj || 'Não cadastrado'}</p>
+                    <p><strong>Contato:</strong> {clienteSelecionado.contatos?.[0]?.nome || 'Responsável'}</p>
                   </div>
                 )}
               </div>
@@ -376,7 +376,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                   <option value="">-- Selecione o Ativo --</option>
                   {ativosDoCliente.map(atv => (
                     <option key={atv.id} value={atv.id}>
-                      {atv.tag ? `[${atv.tag}] ` : ''}{atv.identificacao} - {atv.categoria}
+                      {atv.identificacao} - {atv.tipo}
                     </option>
                   ))}
                 </select>
@@ -384,7 +384,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                 {ativoSelecionado ? (
                   <div className="mt-2 p-2 bg-emerald-50/60 rounded-md border border-emerald-100 text-[11px] text-slate-600 space-y-0.5">
                     <p><strong>Fabricante:</strong> {ativoSelecionado.fabricante || 'N/D'}</p>
-                    <p><strong>Modelo/Ano:</strong> {ativoSelecionado.modelo || '—'} / {ativoSelecionado.anoFabricacao || '—'}</p>
+                    <p><strong>Modelo/Ano:</strong> {ativoSelecionado.modelo || '—'} / {ativoSelecionado.ano || '—'}</p>
                   </div>
                 ) : clienteId && ativosDoCliente.length === 0 ? (
                   <p className="mt-1 text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">

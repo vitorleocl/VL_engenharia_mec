@@ -32,7 +32,7 @@ import { ChecklistCampoPdfModal } from './ChecklistCampoPdfModal';
 import { ChecklistPermissoesModal } from './ChecklistPermissoesModal';
 
 export const ChecklistCampoView: React.FC = () => {
-  const { checklistsCampo, clientes, removerChecklistCampo, criarLaudoPorTaxonomia, adicionarOrcamento } = useData();
+  const { checklistsCampo, clientes, removerChecklistCampo, atualizarChecklistCampo, criarLaudoPorTaxonomia, adicionarOrcamento } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -104,18 +104,20 @@ export const ChecklistCampoView: React.FC = () => {
     const novoOrcId = adicionarOrcamento({
       clienteId: chk.clienteId,
       clienteNome: chk.clienteNome,
-      clienteCnpj: chk.clienteCnpj,
+      cnpjCliente: chk.clienteCnpj,
       ativoId: chk.ativoId,
       ativoIdentificacao: chk.ativoIdentificacao,
       servico: chk.tipoLaudoNome || chk.tipoLaudoId,
       descricaoEscopo: `Proposta Técnico-Comercial de Adequação Técnica com base nas constatações in loco do Checklist de Campo ${chk.numero}.`,
-      valorTotal: valorEstimado,
-      status: 'em_elaboracao',
+      valor: valorEstimado,
+      status: 'rascunho',
       checklistCampoOrigemId: chk.id,
       validadeDias: 15,
       condicoesPagamento: '30% de entrada e 70% na emissão do Laudo conclusivo com ART.',
-      prazoExecucaoDias: 10,
+      prazoDias: 10,
     });
+
+    atualizarChecklistCampo(chk.id, { vinculadoAOrcamentoId: novoOrcId });
 
     navigate(`/admin/orcamentos/${novoOrcId}/editar`);
   };

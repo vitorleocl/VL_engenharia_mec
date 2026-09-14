@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Save, 
@@ -91,8 +91,9 @@ const PRESET_SECTIONS = [
 
 export const LaudoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { laudos, clientes, ativos, categoriasLaudo, atualizarLaudo, finalizarLaudo, registrarUsoIA } = useData();
+  const { laudos, clientes, ativos, categoriasLaudo, atualizarLaudo, finalizarLaudo, registrarUsoIA, checklistsCampo } = useData();
   const { currentUser } = useAuth();
 
   const laudoOriginal = laudos.find(l => l.id === id);
@@ -650,6 +651,105 @@ export const LaudoEditorView: React.FC = () => {
     });
   };
 
+  const handleImportarChecklist = (chk: ChecklistCampo) => {
+    if (!laudoState) return;
+
+    const todosItens = [...(chk.itens || []), ...(chk.itensExtras || [])];
+    const naoConformes = todosItens.filter(i => i.status === 'nao_conforme');
+    const conformes = todosItens.filter(i => i.status === 'conforme');
+
+    const tabelaHtml = `
+      <div style="margin: 16px 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background-color: #f8fafc;">
+        <h4 style="font-weight: bold; color: #1e3a8a; margin-bottom: 6px; font-size: 14px;">
+          Evidências In Loco — Checklist de Campo ${chk.numero}
+        </h4>
+        <p style="font-size: 12px; color: #475569; margin-bottom: 10px;">
+          Inspeção realizada em <strong>${new Date(chk.dataPreenchimento).toLocaleDateString('pt-BR')}</strong> por <strong>${chk.responsavelNome || 'Eng. Vitor Leonardo'}</strong> (${chk.responsavelCrea || 'CREA-PE'}). Resumo: <strong>${conformes.length}</strong> itens conformes, <strong style="color: #dc2626;">${naoConformes.length}</strong> não conformidades constatadas in loco.
+        </p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="background-color: #e2e8f0; border-bottom: 2px solid #cbd5e1; text-align: left;">
+              <th style="padding: 6px 8px; width: 40px; text-align: center;">Item</th>
+              <th style="padding: 6px 8px;">Requisito Normativo Avaliado</th>
+              <th style="padding: 6px 8px; width: 110px; text-align: center;">Status</th>
+              <th style="padding: 6px 8px;">Observações In Loco</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${todosItens.map((it, idx) => `
+              <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                <td style="padding: 6px 8px; font-weight: bold; text-align: center;">${idx + 1}</td>
+                <td style="padding: 6px 8px;">${it.descricao}</td>
+                <td style="padding: 6px 8px; text-align: center;">
+                  <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; color: ${it.status === 'conforme' ? '#166534' : it.status === 'nao_conforme' ? '#991b1b' : '#475569'}; background-color: ${it.status === 'conforme' ? '#dcfce7' : it.status === 'nao_conforme' ? '#fee2e2' : '#f1f5f9'};">
+                    ${it.status === 'conforme' ? 'CONFORME' : it.status === 'nao_conforme' ? 'NÃO CONFORME' : 'N/A'}
+                  </span>
+                </td>
+                <td style="padding: 6px 8px; color: #334155;">${it.observacao || 'Sem anotações complementares.'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const novasFotos = todosItens
+      .filter(it => it.fotoUrl)
+      .map((it, idx) => ({
+        id: `foto-chk-${Date.now()}-${idx}`,
+        url: it.fotoUrl!,
+        legenda: `Evidência de Campo (${chk.numero}): ${it.descricao}${it.observacao ? ` - ${it.observacao}` : ''}`,
+        dataRegistro: chk.dataPreenchimento
+      }));
+
+    let secaoAlvoId = secaoAtivaId;
+    const secaoConstatacoes = laudoState.secoes.find(s => 
+      s.tipo === 'constatacoes' || 
+      s.tipo === 'inspecao_visual' || 
+      s.titulo.toLowerCase().includes('inspeção') || 
+      s.titulo.toLowerCase().includes('vistoria') ||
+      s.titulo.toLowerCase().includes('corpo técnico')
+    );
+    if (secaoConstatacoes) {
+      secaoAlvoId = secaoConstatacoes.id;
+    }
+
+    const novasSecoes = laudoState.secoes.map(sec => {
+      if (sec.id === secaoAlvoId) {
+        return {
+          ...sec,
+          conteudoHtml: (sec.conteudoHtml || '') + tabelaHtml,
+          fotos: [...(sec.fotos || []), ...novasFotos]
+        };
+      }
+      return sec;
+    });
+
+    const laudoAtualizado: Laudo = {
+      ...laudoState,
+      secoes: novasSecoes,
+    };
+
+    setLaudoState(laudoAtualizado);
+    setSecaoAtivaId(secaoAlvoId);
+    executarSalvar(laudoAtualizado, `Importação de dados do Checklist ${chk.numero}`);
+    setModalImportarChecklistAberto(false);
+  };
+
+  // URL param checklistOrigem effect
+  const checklistOrigemId = searchParams.get('checklistOrigem');
+  useEffect(() => {
+    if (checklistOrigemId && checklistsCampo && checklistsCampo.length > 0 && laudoState) {
+      const chk = checklistsCampo.find(c => c.id === checklistOrigemId);
+      if (chk) {
+        const jaConsta = laudoState.secoes.some(s => s.conteudoHtml?.includes(chk.numero));
+        if (!jaConsta) {
+          handleImportarChecklist(chk);
+        }
+      }
+    }
+  }, [checklistOrigemId, checklistsCampo, laudoState?.id]);
+
   return (
     <div className="space-y-4 pb-12">
       
@@ -753,6 +853,16 @@ export const LaudoEditorView: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
               <span>Redação IA</span>
+            </button>
+
+            {/* Importar Checklist In Loco */}
+            <button
+              onClick={() => setModalImportarChecklistAberto(true)}
+              className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-[#1565D8] dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 cursor-pointer shadow-xs"
+              title="Importar anotações e fotos de um Checklist de Campo"
+            >
+              <ClipboardCheck className="w-3.5 h-3.5 text-[#1565D8]" />
+              <span>Importar Checklist</span>
             </button>
 
             {/* Exportar PDF */}
@@ -1902,6 +2012,19 @@ export const LaudoEditorView: React.FC = () => {
           ativo={ativo}
           isOpen={modalPdfAberto}
           onClose={() => setModalPdfAberto(false)}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: IMPORTAR CHECKLIST DE CAMPO                                        */}
+      {/* ========================================================================= */}
+      {modalImportarChecklistAberto && (
+        <ImportarChecklistCampoModal
+          contexto="laudo"
+          clienteId={laudoState.clienteId}
+          ativoId={laudoState.ativoId}
+          onClose={() => setModalImportarChecklistAberto(false)}
+          onImportar={handleImportarChecklist}
         />
       )}
 
