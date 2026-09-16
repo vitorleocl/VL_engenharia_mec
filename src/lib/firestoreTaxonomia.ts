@@ -61,25 +61,23 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Cronograma de Implementação das Medidas'
     ],
     checklistInicial: [
-      'Placa de identificação da máquina localizada e legível',
-      'Manual de instruções do fabricante disponível',
-      'Todas as fases de vida da máquina mapeadas (operação, setup, limpeza, manutenção)',
-      'Perigos mecânicos identificados por ponto de operação',
-      'Perigos elétricos identificados (partes energizadas, aterramento)',
-      'Perigos térmicos identificados (superfícies quentes/frias)',
-      'Nível de ruído avaliado (dosimetria, se aplicável)',
-      'Nível de vibração avaliado (se aplicável)',
-      'Perigos ergonômicos identificados (posturas, movimentos repetitivos)',
-      'LO (probabilidade de ocorrência) atribuído por perigo',
-      'FE (frequência de exposição) atribuído por perigo',
-      'DPH (grau de dano possível) atribuído por perigo',
-      'NP (número de pessoas expostas) atribuído por perigo',
-      'HRN calculado e classificado por perigo',
-      'Medidas de controle existentes registradas',
-      'Medidas de controle recomendadas priorizadas por hierarquia de controle',
-      'Risco residual reavaliado após medidas propostas',
-      'Cronograma de implementação definido com responsáveis e prazos',
-      'PGR/PPRA da empresa correlacionado (referência cruzada, se aplicável)'
+      { campo: "Plaqueta de Identificação — Presença de placa visível com Razão Social, CNPJ, modelo, número de série, ano de fabricação e massa (kg)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.1.7 (Indelével e legível)" },
+      { campo: "Avaliação HRN — Probability of Occurrence (LO)", tipoResposta: "SELECAO", opcoes: ["0,03 - Quase impossível", "0,1 - Altamente improvável", "0,5 - Improvável", "1 - Possível", "2 - Provável", "5 - Quase certo", "10 - Certo", "15 - Inevitável"], criterioReferencia: "Metodologia HRN / ISO 12100 (0,03 a 15)" },
+      { campo: "Avaliação HRN — Frequency of Exposure (FE)", tipoResposta: "SELECAO", opcoes: ["0,5 - Anual", "1 - Mensal", "1,5 - Semanal", "2,5 - Diária", "4 - Contínua / Horária", "5 - Constante"], criterioReferencia: "Metodologia HRN / ISO 12100 (0,5 a 5)" },
+      { campo: "Avaliação HRN — Degree of Possible Harm (DPH)", tipoResposta: "SELECAO", opcoes: ["0,25 - Arranhão / escoriação leve", "0,5 - Laceração / corte leve", "1 - Fratura pequena / reversível", "2 - Fratura grave / perda de falange", "4 - Perda de membro ou olho", "8 - Amputações múltiplas / sequela permanente", "15 - Fatalidade"], criterioReferencia: "Metodologia HRN / ISO 12100 (0,25 a 15)" },
+      { campo: "Avaliação HRN — Number of Persons at Risk (NP)", tipoResposta: "SELECAO", opcoes: ["1 - Uma pessoa exposta", "2 - Duas pessoas expostas", "4 - Três a sete pessoas", "8 - Oito a doze pessoas", "12 - Mais de doze pessoas"], criterioReferencia: "Metodologia HRN / ISO 12100 (1 a 12)" },
+      { campo: "Score HRN Calculado (LO × FE × DPH × NP)", tipoResposta: "VALOR", unidade: "pontos", criterioReferencia: "Trivial (<1), Tolerável (1-5), Moderado (6-50), Substancial (51-500), Intolerável (>500)" },
+      { campo: "Categoria de Segurança (NBR ISO 13849-1 / NBR 14153) — Categoria requerida versus instalada", tipoResposta: "SELECAO", opcoes: ["Cat B / PL a", "Cat 1 / PL b", "Cat 2 / PL c", "Cat 3 / PL d", "Cat 4 / PL e"], criterioReferencia: "ABNT NBR ISO 13849-1 e NBR 14153" },
+      { campo: "Proteções Físicas Fixas — Proteções enclausurantes resistentes, fixadas com parafusos ou elementos que exijam ferramentas para remoção", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.5.2 e NBR ISO 14120" },
+      { campo: "Proteções Físicas Móveis Intertravadas — Presença de chaves de segurança com ruptura positiva e sinal codificado ligadas à CLP de segurança/relé", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 14119 e NR-12 item 12.5.3" },
+      { campo: "Distância de Segurança das Proteções (NBR ISO 13857) — Medição da distância entre a barreira/proteção e a zona de perigo (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Tabelas 1 a 4 da ABNT NBR ISO 13857" },
+      { campo: "Dispositivos Optoeletrônicos (Cortinas de Luz / Laser) — Muting/blanking configurados, altura do facho e teste de parada ao interromper o feixe", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR IEC 61496-1/-2" },
+      { campo: "Botões de Parada de Emergência — Formato cogumelo, retenção mecânica, ação de desengate giratório/chave, na cor vermelha sobre fundo amarelo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 13850 e NR-12 item 12.6" },
+      { campo: "Reset Manual — Rearme manual obrigatório após parada de emergência ou atuação de proteção móvel (impossibilidade de partida automática)", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.6.8" },
+      { campo: "Comandos Bimanuais (se aplicável) — Atuação síncrona (< 0,5 s), proteção contra acionamento involuntário (antiburla) e posição fora da zona de perigo", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 14152 / tempo síncrono < 0,5 s" },
+      { campo: "Sistemas Hidráulicos e Pneumáticos — Presença de válvulas de alívio, retenção pilotada, manômetros e proteção contra chicoteamento de mangueiras", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.8 / ISO 4413 / ISO 4414" },
+      { campo: "Ergonomia e Posto de Trabalho — Iluminação adequada, comandos ao alcance do operador, ausência de cantos vivos ou posições forçadas", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 item 12.9 e NR-17" },
+      { campo: "Manual e Sinalização de Segurança — Manual em português (BR) disponível no local, pictogramas de alerta de risco colados na máquina", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 itens 12.11 e 12.12" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -105,19 +103,17 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Plano de Adequação com Priorização por Nível de Risco'
     ],
     checklistInicial: [
-      'Todos os pontos de operação/perigo mapeados',
-      'Proteções fixas existentes avaliadas (fixação, resistência, ausência de aberturas perigosas)',
-      'Proteções móveis intertravadas avaliadas (tipo de chave de segurança, categoria)',
-      'Cortinas de luz avaliadas (resolução, categoria, distância de instalação)',
-      'Tapetes de segurança avaliados (se houver)',
-      'HRN calculado por ponto de perigo desprotegido/inadequado',
-      'Distância de segurança calculada conforme NBR ISO 13857',
-      'Tempo de parada da máquina medido/estimado',
-      'Categoria do sistema de comando de segurança definida (PL/Categoria)',
-      'Especificação técnica das proteções recomendadas elaborada',
-      'Compatibilidade elétrica das novas proteções com o painel existente avaliada',
-      'Plano de adequação priorizado por nível de risco',
-      'Prazo de implementação definido por item'
+      { campo: "Proteções Físicas Fixas — Fixações enclausurantes resistentes que exijam ferramentas específicas para remoção", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.5.2 e NBR ISO 14120" },
+      { campo: "Proteções Móveis com Intertravamento — Chaves com ruptura positiva, trava mecânica e sinal codificado ligado ao relé de segurança", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 14119" },
+      { campo: "Distância de Segurança das Proteções (NBR ISO 13857) — Medição exata da barreira à zona perigosa (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Conforme tabelas da ABNT NBR ISO 13857" },
+      { campo: "Tempo de Parada do Movimento Perigoso (NBR ISO 13855)", tipoResposta: "VALOR", unidade: "ms", criterioReferencia: "Tempo de parada suficiente antes do alcance do membro" },
+      { campo: "Dispositivos Optoeletrônicos de Proteção — Cortinas de luz / feixes fotoelétricos com alinhamento e resolução aferidos", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR IEC 61496-1/-2" },
+      { campo: "Categoria de Segurança do Comando (NBR ISO 13849-1)", tipoResposta: "SELECAO", opcoes: ["Cat B / PL a", "Cat 1 / PL b", "Cat 2 / PL c", "Cat 3 / PL d", "Cat 4 / PL e"], criterioReferencia: "Categoria requerida atendida pelo circuito elétrico" },
+      { campo: "Botões de Parada de Emergência — Ação positiva, cogumelo vermelho com fundo amarelo e desengate giratório", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 13850 e NR-12 item 12.6" },
+      { campo: "Reset Manual — Circuito de rearme manual obrigatório após desarme (sem partida intempestiva)", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.6.8" },
+      { campo: "Comandos Bimanuais — Atuação simultânea (< 0,5 s) e proteção mecânica contra acionamento involuntário", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 14152" },
+      { campo: "Proteção contra Chicoteamento de Mangueiras e Falhas Pneumáticas/Hidráulicas", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.8 / ISO 4413 / ISO 4414" },
+      { campo: "Sinalização de Segurança e Pictogramas nos Pontos de Risco Residual", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.11" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -142,16 +138,17 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Registro de Treinamento dos Operadores na Nova Configuração'
     ],
     checklistInicial: [
-      'Alteração/modernização documentada tecnicamente (memorial descritivo)',
-      'Novos perigos introduzidos pela alteração identificados',
-      'HRN recalculado para perigos novos/alterados',
-      'Novas proteções testadas funcionalmente (acionamento, parada, rearme)',
-      'Intertravamentos pós-retrofit testados',
-      'Esquema elétrico/pneumático atualizado conferido',
-      'Manual de instruções da máquina atualizado',
-      'PPRA/PGR da empresa atualizado com a nova configuração',
-      'Operadores treinados na nova configuração (registro de treinamento)',
-      'Sinalização de segurança atualizada na máquina'
+      { campo: "Plaqueta de Identificação e Memorial Descritivo do Retrofit Executado", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 item 12.1.7 e ART de instalação" },
+      { campo: "Validação Funcional das Proteções Fixas e Enclausuramentos Instalados", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 14120" },
+      { campo: "Validação Funcional das Chaves de Intertravamento e Travamento de Portas", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 14119" },
+      { campo: "Distância de Segurança Pós-Retrofit (NBR ISO 13857)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Conforme norma ABNT NBR ISO 13857" },
+      { campo: "Dispositivos Optoeletrônicos / Muting / Blanking com Teste de Parada e Interrupção", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NBR IEC 61496-1/-2" },
+      { campo: "Categoria de Segurança Requerida vs Instalada Pós-Retrofit", tipoResposta: "SELECAO", opcoes: ["Cat B / PL a", "Cat 1 / PL b", "Cat 2 / PL c", "Cat 3 / PL d", "Cat 4 / PL e"], criterioReferencia: "ABNT NBR ISO 13849-1/-2" },
+      { campo: "Sistema de Parada de Emergência e Reset Manual pós-retrofit", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 13850 e NR-12 item 12.6" },
+      { campo: "Circuitos Pneumáticos e Hidráulicos de Parada Segura (Válvulas redundantes de alívio)", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 4413 / ISO 4414" },
+      { campo: "Esquema Elétrico e Diagrama Unifilar Atualizado pós-adequação", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 item 12.3 e NR-10" },
+      { campo: "Manual e Procedimentos de Trabalho Atualizados em Português-BR", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 itens 12.11 e 12.13" },
+      { campo: "Registro de Capacitação e Treinamento dos Operadores na Nova Configuração", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 item 12.16 e Anexo II" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -178,23 +175,20 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Definição da Periodicidade da Próxima Inspeção (conforme categoria e resultado)'
     ],
     checklistInicial: [
-      'Placa de identificação localizada, legível e compatível com o prontuário',
-      'PMTA (Pressão Máxima de Trabalho Admissível) confirmada',
-      'Volume do vaso confirmado',
-      'Grupo do fluido (categoria) identificado conforme Anexo I',
-      'Categoria do vaso calculada (P × V)',
-      'Inspeção externa realizada (carcaça, isolamento, suportes)',
-      'Inspeção interna realizada, quando acessível',
-      'Medição de espessura por ultrassom realizada em pontos definidos',
-      'Ensaio de líquido penetrante em soldas críticas (se aplicável)',
-      'Válvula de segurança identificada e calibração conferida',
-      'Válvula de segurança dentro do prazo de calibração',
-      'Corrosão externa/interna mapeada e quantificada',
-      'Taxa de corrosão calculada',
-      'Vida útil remanescente estimada',
-      'Periodicidade da próxima inspeção definida',
-      'Prontuário do vaso disponível e atualizado',
-      'ART de inspeção anterior verificada (se houver)'
+      { campo: "Prontuário do Fabricante — Presença do código de projeto (ASME Seção VIII, NR-13), folha de dados, desenho geral e PMTA", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.5.1.6" },
+      { campo: "Registro de Segurança (Livro de RNC/Ocorrências) — Atualizado, assinado e sob responsabilidade do PH", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.5.1.8" },
+      { campo: "Placa de Identificação Indestrutível — Fixada no corpo, contendo PMTA, pressão de teste hidrostático, número do vaso, código e ano", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.5.1.4 (Indelével)" },
+      { campo: "Categoria do Equipamento — Categoria do vaso (I a V) calculada pelo produto P × V (MPa · m³)", tipoResposta: "SELECAO", opcoes: ["Categoria I (P×V >= 8 ou Fluido Grupo 1)", "Categoria II (P×V >= 2 e < 8)", "Categoria III (P×V >= 1 e < 2)", "Categoria IV (P×V >= 0,25 e < 1)", "Categoria V (P×V < 0,25)"], criterioReferencia: "NR-13 Anexo I (Classificação de Vasos)" },
+      { campo: "Pressão Máxima de Trabalho Admissível (PMTA) — Valor nominal indicado no prontuário ou recalculado", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "Conforme placa e memória de cálculo" },
+      { campo: "Válvula de Segurança (PSV) — Presença de lacre intacto e plaqueta da última calibração", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.5.1.2" },
+      { campo: "Válvula de Segurança (PSV) — Pressão de abertura/disparo aferida", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "<= PMTA do vaso de pressão" },
+      { campo: "Válvula de Segurança (PSV) — Data da última calibração em bancada/campo", tipoResposta: "VALOR", unidade: "data", criterioReferencia: "Dentro do prazo normativo (máximo 12 a 36 meses conforme categoria)" },
+      { campo: "Manômetro de Operação — Escala com marcação visível da PMTA (faixa no terço médio) e precisão operacional", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.5.1.3" },
+      { campo: "Dispositivo de Drenagem — Presença e operatividade de dreno manual ou purgador automático no ponto mais baixo", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.5.1.2 alínea d" },
+      { campo: "Inspeção Externa (Corpo, Tampos e Suportes) — Ausência de deformações, trincas, mossa, corrosão acentuada ou avarias em chumbadores", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.5.4" },
+      { campo: "Medição de Espessura por Ultrassom (MEUS) — Espessura do Costado (mínima encontrada em mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "> Espessura mínima calculada de projeto" },
+      { campo: "Medição de Espessura por Ultrassom (MEUS) — Espessura do Tampo Superior/Inferior (mínima encontrada em mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "> Espessura mínima calculada de projeto" },
+      { campo: "Medição de Espessura por Ultrassom (MEUS) — Espessura Mínima Admissível Calculada (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Calculada pela fórmula ASME Sec VIII Div 1" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -220,18 +214,21 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Atualização do Livro de Registro de Segurança de Caldeiras'
     ],
     checklistInicial: [
-      'Categoria da caldeira identificada (conforme potência/pressão)',
-      'Inspeção externa da carcaça e estrutura realizada',
-      'Isolamento térmico avaliado',
-      'Inspeção interna da fornalha realizada',
-      'Feixe tubular inspecionado (incrustações, corrosão)',
-      'Teste hidrostático executado (quando aplicável) e resultado registrado',
-      'Válvula(s) de segurança calibrada(s) e dentro do prazo',
-      'Controles de nível de água testados',
-      'Pressostatos e manômetros calibrados/aferidos',
-      'Sistema de controle de queima verificado',
-      'Livro de registro de segurança atualizado',
-      'Operador de caldeira com certificação válida (NR-13, Anexo II) verificado'
+      { campo: "Prontuário do Fabricante — Presença do código de projeto (ASME Seção I, NR-13), folha de dados, desenho e PMTA", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.4.1.5" },
+      { campo: "Registro de Segurança (Livro de Caldeira) — Atualizado, assinado e sob responsabilidade do Profissional Habilitado (PH)", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.4.1.7" },
+      { campo: "Placa de Identificação Indestrutível — Fixada na carcaça, contendo PMTA, capacidade de produção de vapor, código e ano", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.4.1.3" },
+      { campo: "Categoria do Equipamento — Enquadramento conforme NR-13 (Categoria A ou B)", tipoResposta: "SELECAO", opcoes: ["Categoria A (Pressão de operação >= 1960 kPa / 19,98 kgf/cm²)", "Categoria B (Demais caldeiras não enquadradas na Cat A)"], criterioReferencia: "NR-13 item 13.4.1.2" },
+      { campo: "Pressão Máxima de Trabalho Admissível (PMTA)", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "Valor nominal de prontuário" },
+      { campo: "Injetores e Alimentação de Água — Existência de no mínimo 2 sistemas independentes de alimentação sob pressão", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.4.1.3 alínea c" },
+      { campo: "Indicadores de Nível de Água — Mínimo de 2 indicadores diretos de nível funcionais e purga dos visores operável", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.4.1.3 alínea d" },
+      { campo: "Intertravamento de Queimador/Combustão — Bloqueio automático de combustível por baixo nível de água ou falha de chama", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.4.1.4" },
+      { campo: "Calibração de Instrumentos e PSVs — Mínimo de 2 válvulas de segurança acopladas para caldeiras Cat A/B com lacre e plaqueta", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.4.1.3 alínea b" },
+      { campo: "Válvula de Segurança (PSV) 1 — Pressão de abertura/disparo aferida (kgf/cm²)", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "<= PMTA" },
+      { campo: "Válvula de Segurança (PSV) 2 — Pressão de abertura/disparo aferida (kgf/cm²)", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "<= 1,03 × PMTA" },
+      { campo: "Data da Última Calibração das Válvulas de Segurança", tipoResposta: "VALOR", unidade: "data", criterioReferencia: "Conforme prazo máximo normativo da NR-13" },
+      { campo: "Manômetro de Operação — Escala com indicação visível da PMTA e aferição vigente", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.4.1.3 alínea a" },
+      { campo: "Inspeção Interna e Externa — Ausência de superaquecimento, incrustações, trincas nos espelhos ou vazamento nos tubos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.4.4" },
+      { campo: "Medição de Espessura por Ultrassom do Tubo/Casco (mínima encontrada em mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "> Espessura mínima admissível de cálculo" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -257,17 +254,17 @@ export const TIPOS_NR12_NR13_FIRESTORE: Record<string, DocumentoTipoLaudoFiresto
       'Cálculo da Taxa de Corrosão e Estimativa de Vida Útil Remanescente'
     ],
     checklistInicial: [
-      'Rede/tanque mapeado e identificado (TAG, isométrico ou desenho esquemático)',
-      'Pontos críticos de inspeção definidos (soldas, curvas, derivações)',
-      'Inspeção visual externa realizada',
-      'Corrosão externa mapeada e quantificada',
-      'Espessura medida por ultrassom em todos os pontos críticos definidos',
-      'Suportes e ancoragens avaliados (fixação, corrosão, alinhamento)',
-      'Isolamento térmico avaliado (integridade, presença de umidade)',
-      'Proteção catódica avaliada, quando aplicável (tanques enterrados)',
-      'Taxa de corrosão calculada',
-      'Vida útil remanescente estimada',
-      'Registro fotográfico completo por ponto de inspeção'
+      { campo: "Plano de Inspeção de Tubulações — Mapeamento de linhas (padrão de cores NBR 6493), identificação de fluido e sentido do fluxo", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.6.1 e NBR 6493" },
+      { campo: "Registro de Segurança e Histórico de Manutenção de Linhas e Tanques", tipoResposta: "C_NC_NA", criterioReferencia: "NR-13 item 13.6.2" },
+      { campo: "Fluido e Classe de Risco da Tubulação / Tanque", tipoResposta: "SELECAO", opcoes: ["Classe A (Fluidos inflamáveis, tóxicos com limite tolerância <= 20 ppm, hidrogênio)", "Classe B (Fluidos combustíveis temp fulgor < 93ºC, gases tóxicos)", "Classe C (Vapor de água, gases asfixiantes simples, ar comprimido)", "Classe D (Água e outros fluidos não classificados)"], criterioReferencia: "NR-13 Anexo II item 1.1" },
+      { campo: "Pressão de Operação e Projeto da Linha (kgf/cm² ou bar)", tipoResposta: "VALOR", unidade: "kgf/cm²", criterioReferencia: "Conforme folha de dados da linha" },
+      { campo: "Pontos de Inspeção de Corrosão (PIC) — Mapeamento e medição ultrassônica de curvas e derivações críticas", tipoResposta: "C_NC_NA", criterioReferencia: "ASME B31.3 / API 570" },
+      { campo: "Espessura Mínima Medida nos Pontos Críticos (PICs)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Medição de campo por ultrassom" },
+      { campo: "Espessura Mínima Admissível Calculada para a Linha (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Espessura de aposentadoria conforme ASME B31.3" },
+      { campo: "Suportação e Guias Mecânicas — Integridade de molas pendulares, berços e tirantes sem flambagem ou restrição", tipoResposta: "C_NC_NA", criterioReferencia: "ASME B31.3" },
+      { campo: "Válvulas de Alívio (PSVs) e Bloqueio de Linha — Estanqueidade, identificação de manobra e calibração de PSVs", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-13 item 13.6.1.2" },
+      { campo: "Juntas de Expansão e Flanges — Ausência de gotejamentos, desvios angulares ou parafusos com torque inadequado", tipoResposta: "C_NC_NA", criterioReferencia: "ASME B31.3" },
+      { campo: "Inspeção Visual Externa (Corrosão sob Isolamento - CSI e atmosférica)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "API 570 / NBR 15217" }
     ],
     atualizadoEm: new Date().toISOString()
   }
@@ -908,24 +905,17 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Avaliação de Desgaste de Componentes Mecânicos de Articulação (pinos, buchas, mancais)'
     ],
     checklistInicial: [
-      'Horímetro registrado no momento da inspeção',
-      'Estrutura do chassi sem trincas ou deformações visíveis',
-      'Lança/braço e caçamba/implemento sem deformações estruturais',
-      'Sistema hidráulico sem vazamentos aparentes',
-      'Mangueiras hidráulicas sem desgaste, ressecamento ou abrasão',
-      'Cilindros hidráulicos sem vazamento nas hastes',
-      'Esteiras ou pneus com desgaste dentro do limite aceitável',
-      'Rodas motrizes e roletes avaliados quanto a desgaste',
-      'Freio de serviço testado',
-      'Freio de estacionamento testado',
-      'Comandos de cabine funcionais (alavancas, pedais, joystick)',
-      'Instrumentação do painel funcional (pressão, temperatura, combustível)',
-      'Cinto de segurança do operador presente e funcional',
-      'Buzina e alarme sonoro de ré funcionais',
-      'Extintor de incêndio a bordo, quando exigido',
-      'Pinos e buchas de articulação avaliados quanto a folga/desgaste',
-      'HRN calculado para os perigos residuais identificados',
-      'Estrutura ROPS/FOPS íntegra (referenciar laudo específico, se elaborado separadamente)'
+      { campo: "Estruturas de Proteção na Cabine — ROPS (Proteção contra Capotamento - NBR ISO 3471)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 3471 / NR-12 Anexo XI" },
+      { campo: "Estruturas de Proteção na Cabine — FOPS (Proteção contra Queda de Objetos - NBR ISO 3449)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 3449 Nível I ou II" },
+      { campo: "Cinto de Segurança — Cinto de 2 ou 3 pontos com fecho rápido, sem desfiamentos e mecanismo de retração operável", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 item 12.15 e NBR ISO 6683" },
+      { campo: "Sistema de Visibilidade — Retrovisores externos, espelhos convexos internos e câmera de ré em pleno funcionamento", tipoResposta: "C_NC_NA", criterioReferencia: "NBR ISO 5006" },
+      { campo: "Alarmes Sonoros e Luminosos — Alarme sonoro de marcha à ré acoplado, buzina e giroflex/beacon de teto", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 item 12.12 e NR-18" },
+      { campo: "Freio de Estacionamento e Emergência — Teste dinâmico de retenção da máquina em rampa com carga nominal", tipoResposta: "C_NC_NA", criterioReferencia: "NBR ISO 3450 / 100% de retenção estática" },
+      { campo: "Sistema Hidráulico (Cilindros, Mangueiras e Comandos) — Ausência de vazamentos em retentores, trincas em hastes e válvulas de bloqueio anti-queda", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 4413 e NR-12 item 12.8" },
+      { campo: "Material de Desgaste — Desgaste de Esteiras/Pneus (profundidade de sulco em mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Profundidade mínima do sulco conforme especificação do fabricante" },
+      { campo: "Material de Desgaste — Folga em Pinos e Buchas da Concha/Caçamba (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Folga radial/axial máxima admissível < 2,5 mm" },
+      { campo: "Extintor de Incêndio Veicular — Carga válida, manômetro no verde, suporte resistente com trava rápida", tipoResposta: "C_NC_NA", criterioReferencia: "NR-18 e Resoluções CONTRAN" },
+      { campo: "Chave Geral (Chave Geral de Bateria) — Presença de chave seccionadora master acessível externa/internamente", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e NBR IEC 60204-1" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -949,14 +939,13 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Verificação de Compatibilidade da Estrutura com o Modelo do Equipamento'
     ],
     checklistInicial: [
-      'Placa de certificação ROPS presente e legível',
-      'Placa de certificação FOPS presente, quando aplicável',
-      'Estrutura sem trincas ou deformações visíveis',
-      'Solda da estrutura íntegra, sem fissuras',
-      'Parafusos de fixação com torque conferido',
-      'Compatibilidade da estrutura com o modelo/fabricante do equipamento confirmada',
-      'Ausência de furação ou adaptação não certificada na estrutura',
-      'Estrutura sem sinais de impacto anterior sem substituição/certificação'
+      { campo: "Placa de Certificação ROPS (NBR ISO 3471) — Indicação legível de massa máxima e homologação do fabricante", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 3471 (Indelével)" },
+      { campo: "Placa de Certificação FOPS (NBR ISO 3449) — Nível de proteção contra impactos Nível I ou Nível II", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 3449 (Indelével)" },
+      { campo: "Integridade das Colunas e Arcos ROPS — Ausência de trincas, soldas clandestinas, cortes ou furações não autorizadas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Proibida qualquer modificação estrutural (ISO 3471)" },
+      { campo: "Integridade da Grelha/Teto Protetor FOPS — Ausência de deformação plástica permanente pós-impacto", tipoResposta: "C_NC_NA", exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 3449" },
+      { campo: "Parafusos e Fixações ao Chassi — Elementos de fixação originais com torque de aperto conferido", tipoResposta: "C_NC_NA", criterioReferencia: "Torque conforme especificação do manual técnico" },
+      { campo: "Cinto de Segurança do Operador — Fixação de ancoragem resistente garantindo zona de sobrevivência (DLV)", tipoResposta: "C_NC_NA", criterioReferencia: "NBR ISO 6683 e ISO 3164" },
+      { campo: "Compatibilidade da Estrutura com o Modelo e Massa do Equipamento", tipoResposta: "C_NC_NA", criterioReferencia: "Massa do equipamento <= Massa máxima ensaiada da estrutura" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -980,21 +969,18 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Verificação de Garfos, Plataforma ou Cesto, conforme o tipo de equipamento'
     ],
     checklistInicial: [
-      'Capacidade nominal identificada na placa de carga',
-      'Freio de serviço testado',
-      'Freio de estacionamento testado',
-      'Direção sem folga excessiva',
-      'Sistema hidráulico de elevação sem vazamentos',
-      'Corrente/cilindro de elevação avaliado quanto a desgaste',
-      'Garfos sem trincas ou deformação (empilhadeiras)',
-      'Plataforma ou cesto sem deformação (PEMT/PTA)',
-      'Guarda-corpo e trava do cesto conferidos (PEMT/PTA)',
-      'Alarme sonoro de ré funcional',
-      'Luz giroflex/sinalizadora funcional',
-      'Cinto de segurança do operador/cesto presente',
-      'Dispositivo de parada de emergência testado',
-      'Estabilizadores testados, quando aplicável',
-      'HRN calculado para os perigos identificados'
+      { campo: "Gaiola de Proteção do Operador (FOPS/Cabine) — Integridade da grelha de proteção superior e do protetor de carga (encosto)", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 item 11.1.6 e NBR ISO 6055" },
+      { campo: "Garfos de Carga — Medição de desgaste de calcanhar do garfo (máximo 10% do nominal) (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Desgaste máximo admissível <= 10% da espessura nominal (NBR ISO 5057)" },
+      { campo: "Garfos de Carga — Teste de trincas e alinhamento entre pontas de garfos (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Diferença de altura entre pontas <= 0,5% do comprimento do garfo" },
+      { campo: "Correntes e Cabos de Elevação — Ausência de elos travados, corrosão, desgaste de pinos e alongamento", tipoResposta: "C_NC_NA", criterioReferencia: "Alongamento máximo admissível <= 2% a 3% do passo" },
+      { campo: "Gráfico de Carga e Placa de Capacidade — Tabela legível com centro de gravidade (CG) em mm e capacidade em kg", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e NR-12 item 12.1.7" },
+      { campo: "Sensor de Presença no Banco (Dead-Man Switch) — Neutralização imediata da tração/mastro quando o operador se levanta", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e NBR ISO 3691-1" },
+      { campo: "Plataformas Elevatórias (PTA/PEMT) — Ancoragem para Cinto Paraquedista identificada e ensaiada", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 16776 e NR-18" },
+      { campo: "Plataformas Elevatórias (PTA/PEMT) — Botão de Emergência e Válvula de Descida Manual da base funcionais", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 16776" },
+      { campo: "Plataformas Elevatórias (PTA/PEMT) — Inclinômetro e Sensor de Sobreposição (Alarme e travamento)", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 16776" },
+      { campo: "Plataformas Elevatórias (PTA/PEMT) — Porta de Acesso ao Cesto (Fechamento automático e trava interna)", tipoResposta: "C_NC_NA", criterioReferencia: "NR-18 e NBR 16776" },
+      { campo: "Sistema de Freios e Alarmes (Alarme de ré sonoro e giroflex de sinalização)", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 e NR-12" },
+      { campo: "Extintor de Incêndio Veicular e Chave Seccionadora Geral", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 e NR-12" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -1017,15 +1003,15 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Verificação de Sistemas de Segurança Durante o Teste (limitador de carga, alarme de sobrecarga)'
     ],
     checklistInicial: [
-      'Carga de teste definida (percentual conforme norma/fabricante, ex.: 110% da capacidade nominal)',
-      'Pesagem da carga de teste conferida',
-      'Ensaio realizado sem deformação permanente do equipamento',
-      'Estabilidade mantida sem indício de tombamento',
-      'Tempo de sustentação da carga cumprido conforme metodologia',
-      'Limitador de carga acionado corretamente durante o teste',
-      'Alarme de sobrecarga testado e funcional',
-      'Certificado de aferição do dinamômetro/célula de carga utilizado anexado',
-      'Relatório fotográfico do ensaio elaborado'
+      { campo: "Capacidade Nominal Registrada na Placa/Tabela de Carga (kg)", tipoResposta: "VALOR", unidade: "kg", criterioReferencia: "Capacidade de trabalho nominal de projeto" },
+      { campo: "Carga de Prova Estática Aplicada (125% da nominal) (kg)", tipoResposta: "VALOR", unidade: "kg", criterioReferencia: "1,25 × Capacidade Nominal (NBR 8400)" },
+      { campo: "Carga de Prova Dinâmica Aplicada (110% da nominal) (kg)", tipoResposta: "VALOR", unidade: "kg", criterioReferencia: "1,10 × Capacidade Nominal (NBR 8400)" },
+      { campo: "Tempo de Sustentação da Carga sem Arreio ou Queda (min)", tipoResposta: "VALOR", unidade: "min", criterioReferencia: "Mínimo de 10 minutos de sustentação estática contínua" },
+      { campo: "Deflexão / Deformação Residual da Estrutura após Alívio da Carga (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Deformação permanente residual = 0 mm" },
+      { campo: "Estabilidade Mantida e Ausência de Tombamento ou Deslocamento das Sapatas", tipoResposta: "C_NC_NA", criterioReferencia: "Sem perda de contato de sapatas ou alívio crítico" },
+      { campo: "Célula de Carga / Dinamômetro Digital com Certificado de Calibração RBC Válido", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Calibração acreditada RBC/INMETRO vigente" },
+      { campo: "Atuação do Limitador de Momento de Carga (LMI) / Alarme aos 100% da Capacidade", tipoResposta: "C_NC_NA", criterioReferencia: "Corte automático de movimentos agravantes aos 100%" },
+      { campo: "Relatório Fotográfico da Prova de Carga nos Diferentes Raios e Ângulos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Registro fotográfico comprobatório obrigatório" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -1049,16 +1035,13 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Avaliação do Sistema de Aquecimento de Massa Asfáltica (vibroacabadora, quando aplicável)'
     ],
     checklistInicial: [
-      'Freio de emergência testado',
-      'Freio de serviço testado',
-      'Sinalização sonora de ré funcional',
-      'Giroflex/luz de alerta funcional',
-      'Vazamentos hidráulicos verificados (cilindros, mangueiras, bomba)',
-      'Sistema de vibração/compactação testado',
-      'Tambor/rolo sem danos estruturais',
-      'Sistema de aquecimento de massa avaliado, quando aplicável (vibroacabadora)',
-      'Cabine do operador com visibilidade adequada',
-      'Extintor de incêndio a bordo conferido'
+      { campo: "Freio de Serviço e Freio de Estacionamento — Teste com retenção estática plena", tipoResposta: "C_NC_NA", criterioReferencia: "NBR ISO 3450" },
+      { campo: "Sinalização Sonora de Marcha à Ré e Giroflex de Advertência 360 Graus", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e NR-18" },
+      { campo: "Sistema Hidráulico sem Vazamentos em Cilindros, Bombas e Motores Hidrostáticos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 4413" },
+      { campo: "Sistema de Vibração / Compactação Excêntrica Testado e Funcional", tipoResposta: "C_NC_NA", criterioReferencia: "Conforme manual de operação do fabricante" },
+      { campo: "Raspadores de Tambor e Bicos de Aspersão de Água íntegros", tipoResposta: "C_NC_NA", criterioReferencia: "Manutenção e integridade de raspagem" },
+      { campo: "Profundidade de Sulco de Pneus ou Tambor de Aço sem Deformação Plástica (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Conforme limite de desgaste do fabricante" },
+      { campo: "Extintor de Incêndio Veicular e Chave Geral de Seccionamento", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e NR-18" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -1082,17 +1065,14 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Inspeção de Roldanas e Tambor de Enrolamento'
     ],
     checklistInicial: [
-      'Cabo de aço sem fios rompidos acima do limite normativo',
-      'Cabo de aço lubrificado e sem corrosão excessiva',
-      'Gancho com trava de segurança (catraca) funcional',
-      'Gancho sem deformação ou desgaste no colo',
-      'Cintas/lingas dentro da validade e sem cortes ou desgaste',
-      'Capacidade das cintas/lingas compatível com a carga de trabalho',
-      'Patolas/estabilizadores testados quanto a acionamento e travamento',
-      'Base de apoio das patolas avaliada (chapas de apoio, solo)',
-      'Roldanas sem desgaste excessivo no canal',
-      'Tambor de enrolamento sem danos ou deformações',
-      'Sistema de freio do guincho testado'
+      { campo: "Gancho de Carga (NBR ISO 16877) — Presença e ação da trava de segurança do gancho", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 16877 / Trava obrigatória sem folgas" },
+      { campo: "Gancho de Carga — Medição de abertura da garganta do gancho em relação ao valor original (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Aumento máximo admissível <= 10% ou 5 mm (descarte imediato se excedido)" },
+      { campo: "Gancho de Carga — Teste de torção do gancho e giro livre no moitão", tipoResposta: "C_NC_NA", criterioReferencia: "Descarte imediato com torção > 0 graus" },
+      { campo: "Cabo de Aço — Diâmetro nominal medido do cabo de aço (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Redução máxima do diâmetro <= 7% do diâmetro nominal (NBR ISO 4309)" },
+      { campo: "Cabo de Aço — Contagem de fios rompidos e deformações (gaiola de passarinho, nó, amassamento)", tipoResposta: "C_NC_NA", criterioReferencia: "Conforme limites de descarte da NBR ISO 4309" },
+      { campo: "Tambor de Guincho — Mínimo de 3 voltas mortas de cabo no tambor na descida máxima", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 e NBR 8400 (Mínimo de 3 voltas de segurança)" },
+      { campo: "Cintas de Poliéster e Lingas de Elevação — Etiqueta de identificação legível, validade e ausência de cortes", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 15516-1/-2" },
+      { campo: "Manilhas e Pinos Roscados — Ausência de deformações no corpo, desgaste nos pinos e indicação de carga", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR 15597" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -1115,16 +1095,22 @@ export const TIPOS_MAQUINAS_PESADAS_FIRESTORE: Record<string, DocumentoTipoLaudo
       'Validação do Computador de Bordo (histórico de erros, calibração)'
     ],
     checklistInicial: [
-      'Sensor de ângulo da lança calibrado',
-      'Sensor de extensão/comprimento da lança calibrado',
-      'Célula de carga/sensor de carga calibrado',
-      'Teste realizado em ao menos três configurações de lança (curta, média, longa)',
-      'Alarme visual de sobrecarga acionado corretamente',
-      'Alarme sonoro de sobrecarga acionado corretamente',
-      'Corte automático de movimento perigoso testado, quando existente',
-      'Computador de bordo sem códigos de erro não resolvidos',
-      'Certificado de calibração dos sensores anexado',
-      'Teste registrado com data, resultado e responsável técnico'
+      { campo: "Sapatas e Patolas Extensíveis — Funcionamento dos cilindros de patolamento e travas mecânicas de transporte", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 14768 / NR-11" },
+      { campo: "Presença e Integridade de Pranchotas de Apoio para distribuição de carga no solo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Dimensionamento conforme pressão admissível do solo" },
+      { campo: "Indicador de Nível (Inclinômetro / Bolha) instalado junto ao comando de patolamento operacional", tipoResposta: "C_NC_NA", criterioReferencia: "Nivelamento obrigatório <= 1% de inclinação" },
+      { campo: "Subchassi e Talas de Fixação — Ausência de trincas na solda de união ao chassi e parafusos torqueados", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Inspeção visual e aperto de grampos" },
+      { campo: "Lança Telescópica / Articulada — Ausência de empenamento, trincas em soldas de secção e desgaste em patins", tipoResposta: "C_NC_NA", criterioReferencia: "NBR 14768 / NBR 8400" },
+      { campo: "Gancho de Carga (NBR ISO 16877) — Presença e ação da trava de segurança do gancho", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR ISO 16877" },
+      { campo: "Gancho de Carga — Medição de abertura da garganta do gancho em relação ao valor original (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "<= 10% ou 5 mm do valor nominal" },
+      { campo: "Gancho de Carga — Teste de torção do gancho e giro livre no moitão", tipoResposta: "C_NC_NA", criterioReferencia: "Sem torção no colo do gancho" },
+      { campo: "Cabo de Aço e Tambor de Guincho — Diâmetro nominal medido do cabo de aço (mm)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Redução <= 7% do diâmetro original" },
+      { campo: "Cabo de Aço — Contagem de fios rompidos e deformações (gaiola de passarinho, nó, amassamento)", tipoResposta: "C_NC_NA", criterioReferencia: "NBR ISO 4309" },
+      { campo: "Tambor de Guincho — Mínimo de 3 voltas mortas de cabo no tambor na descida máxima", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 e NBR 8400" },
+      { campo: "Limitador de Momento de Carga (LMI) — Corte de movimento quando o torque atinge 100% do limite nominal", tipoResposta: "C_NC_NA", criterioReferencia: "Corte mandatório de movimentos agravantes (ISO 10245)" },
+      { campo: "Limitador de Momento de Carga (LMI) — Leitura de raio, ângulo e peso da carga calibrados no painel digital", tipoResposta: "C_NC_NA", criterioReferencia: "Desvio máximo admissível <= 2%" },
+      { campo: "Chave Fim de Curso do Moitão (Anti-Two-Block) — Interruptor de parada imediata de elevação", tipoResposta: "C_NC_NA", criterioReferencia: "Operação obrigatória com corte de guincho" },
+      { campo: "Anemômetro — Sensor de velocidade do vento operacional e alarme ajustado (> 9,8 m/s ou 35 km/h)", tipoResposta: "VALOR", unidade: "m/s", criterioReferencia: "< 9,8 m/s (35 km/h) ou limite da tabela do fabricante" },
+      { campo: "Tabela de Carga Operacional — Tabela legível colada no posto do operador expressando raio, lança e carga", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e NR-12 item 12.1.7" }
     ],
     atualizadoEm: new Date().toISOString()
   }
