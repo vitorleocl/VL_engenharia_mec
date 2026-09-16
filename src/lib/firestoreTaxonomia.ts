@@ -300,26 +300,34 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Plano Corretivo por Veículo, com Priorização e Prazo'
     ],
     checklistInicial: [
-      'Pneus: profundidade dos sulcos, calibragem, estado de conservação (todos, incluindo estepe)',
-      'Freios: eficiência de frenagem, freio de mão/estacionamento',
-      'Sistema de direção: folga, alinhamento, ruídos anormais',
-      'Suspensão: amortecedores, molas, buchas',
-      'Sistema elétrico: bateria, alternador, chicote',
-      'Iluminação: faróis, lanternas, luz de freio, pisca-alerta, luz de ré',
-      'Buzina funcional',
-      'Limpador e lavador de para-brisa funcionais',
-      'Retrovisores (interno e externos) íntegros',
-      'Para-brisa e vidros sem trincas que comprometam a visão',
-      'Cintos de segurança em todos os assentos, funcionais',
-      'Extintor de incêndio dentro da validade (quando exigido pela categoria)',
-      'Triângulo de sinalização e macaco/chave de roda presentes',
-      'Estado da lataria/estrutura (corrosão, amassados que comprometam segurança)',
-      'Vazamentos de fluidos (óleo, freio, arrefecimento) verificados',
-      'Nível de fluidos conferido (óleo do motor, freio, arrefecimento)',
-      'Sistema de escapamento e emissão de gases avaliado',
-      'Documentação do veículo (CRLV) conferida e regular',
-      'Quilometragem e histórico de manutenção registrados',
-      'Item(ns) não conforme(s) classificado(s) por severidade/urgência'
+      { campo: "Chassi gravado (sem sinais de remarcação), número do motor, placa, CRLV e Hodômetro", tipoResposta: "VALOR", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Conferência física dos caracteres de identificação e CRLV" },
+      { campo: "Faróis principais (alto/baixo), luzes de posição (lanterna), faróis de neblina e DRL", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONTRAN nº 970/2022" },
+      { campo: "Luzes de freio, indicação de direção (pisca), luz de ré e luz de placa", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONTRAN nº 970/2022" },
+      { campo: "Alinhamento do facho luminoso dos faróis e integridade das lentes", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONTRAN nº 970/2022" },
+      { campo: "Faixas retrorrefletivas (quando aplicável a veículos de carga/utilitários)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 948/2022" },
+      { campo: "Profundidade dos sulcos da banda de rodagem (TWI) de todos os pneus em serviço", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 913/2022 (mínimo 1,6 mm)" },
+      { campo: "Pneu sobressalente (estepe) — Calibragem, profundidade de sulco (≥ 1,6 mm) e fixação", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Resolução CONTRAN nº 913/2022" },
+      { campo: "Estado geral das rodas (ausência de trincas, empenamentos ou soldas) e aperto dos parafusos", tipoResposta: "C_NC_NA", criterioReferencia: "Integridade estrutural das rodas" },
+      { campo: "Freio de serviço — Eficiência de frenagem em teste dinâmico e resposta do pedal", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONTRAN nº 960/2022" },
+      { campo: "Freio de estacionamento — Retenção estática eficaz do veículo carregado", tipoResposta: "C_NC_NA", criterioReferencia: "Alavanca/mecanismo elétrico de freio" },
+      { campo: "Nível, estado e ponto de ebulição do fluido de freio", tipoResposta: "VALOR", unidade: "°C", criterioReferencia: "DOT 3 / DOT 4 / DOT 5.1 (norma ABNT NBR 9292)" },
+      { campo: "Espessura das pastilhas e lonas de freio / estado dos discos e tambores", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Espessura mínima conforme especificação do fabricante" },
+      { campo: "Sistema pneumático de freio (caminhões/ônibus) — Pressão de trabalho, válvulas e tempo de recarga", tipoResposta: "VALOR", unidade: "bar", criterioReferencia: "Estanqueidade e pressão de operação" },
+      { campo: "Folga no volante de direção e alinhamento do trem dianteiro", tipoResposta: "C_NC_NA", criterioReferencia: "Folga máxima admissível conforme manual" },
+      { campo: "Articulações, terminais de direção, barras de ligação e coifas", tipoResposta: "C_NC_NA", criterioReferencia: "Inspeção visual e tátil sob esforço" },
+      { campo: "Estado dos amortecedores (ausência de vazamentos hidráulicos e eficácia no teste de oscilação)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Sem vazamento de óleo ou folga nas buchas" },
+      { campo: "Molas helicoidais, feixes de molas, lâminas e bolsas de ar (sem trincas ou arqueamento incorreto)", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONTRAN nº 960/2022" },
+      { campo: "Buchas de bandeja, pivôs de suspensão e barra estabilizadora", tipoResposta: "C_NC_NA", criterioReferencia: "Ausência de folgas axiais e radiais" },
+      { campo: "Longarinas, travessas e subchassi (ausência de trincas, soldas irregulares, corrosão severa)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Integridade estrutural do chassi/monobloco" },
+      { campo: "Assoalho, caixas de roda e para-lamas (fixação e ausência de deformações graves)", tipoResposta: "C_NC_NA", criterioReferencia: "Segurança de carroceria" },
+      { campo: "Nível de emissão de fumaça preta em aceleração livre (veículos diesel) — Escala Ringelmann", tipoResposta: "VALOR", unidade: "padrão Ringelmann", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONAMA nº 418/2009 e Portaria IBAMA" },
+      { campo: "Sistema de escapamento (integridade do catalisador, silencioso e ausência de ruído excessivo)", tipoResposta: "C_NC_NA", criterioReferencia: "Resolução CONAMA nº 418/2009" },
+      { campo: "Tensão da bateria em repouso e sob carga do alternador", tipoResposta: "VALOR", unidade: "V", criterioReferencia: "Faixa 12,4V - 14,5V (sistemas 12V) ou 24V - 28,5V" },
+      { campo: "Integridade de chicotes elétricos, caixa de fusíveis e aterramentos", tipoResposta: "C_NC_NA", criterioReferencia: "Sem fios desencapados ou emendas sem isolamento" },
+      { campo: "Cintos de segurança de 3 pontos em todos os assentos com retenção inercial funcional", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 960/2022" },
+      { campo: "Airbags frontais e laterais (luz espia no painel apaga após teste de partida)", tipoResposta: "C_NC_NA", criterioReferencia: "Sem avarias no sistema SRS" },
+      { campo: "Triângulo de sinalização, macaco compatível com a carga e chave de roda", tipoResposta: "C_NC_NA", criterioReferencia: "Equipamentos obrigatórios CTB Art. 105" },
+      { campo: "Extintor de incêndio tipo ABC (quando aplicável ou exigido) com manômetro na faixa verde e lacre", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 919/2022" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -345,22 +353,24 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Conformidade com ABNT NBR 17075:2022 (item a item da norma)'
     ],
     checklistInicial: [
-      'Cinto de segurança individual funcional em todos os assentos',
-      'Lotação máxima respeitada e sinalizada',
-      'Tacógrafo/registrador instantâneo instalado e funcional',
-      'Porta de emergência sinalizada, desobstruída e com abertura testada',
-      'Extintor de incêndio dentro da validade e de fácil acesso',
-      'Pintura externa na cor amarela padronizada (Resolução CONTRAN aplicável)',
-      'Faixa "ESCOLAR" frontal e traseira visível',
-      'Identificação da empresa/órgão responsável afixada',
-      'Idade do veículo dentro do limite legal aplicável',
-      'Pneus, freios e direção avaliados (item técnico geral do veículo)',
-      'Sistema de iluminação e sinalização (incluindo luz de parada obrigatória, quando exigida) conferido',
-      'Piso/assoalho sem furos, corrosão ou riscos de tropeço',
-      'Ausência de partes cortantes/pontiagudas no interior',
-      'Monitor/condutor com credenciais e documentação exigida por lei verificados',
-      'Sistema de comunicação de emergência (rádio/celular) disponível a bordo',
-      'Conformidade item a item com a ABNT NBR 17075:2022 registrada'
+      { campo: "Autorização do DETRAN / Município para transporte escolar e regularidade do CRLV", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "CTB Art. 136, inciso II e normas municipais" },
+      { campo: "Idade do veículo dentro do limite legal/regulamentar aplicável", tipoResposta: "VALOR", unidade: "anos", criterioReferencia: "Limite regulamentar municipal/estadual (ex: máx. 10 a 15 anos)" },
+      { campo: "Lotação máxima e capacidade nominal de passageiros escolares afixada e respeitada", tipoResposta: "VALOR", unidade: "passageiros", criterioReferencia: "CTB Art. 136 e certificado de registro do veículo" },
+      { campo: "Tacógrafo — Registrador instantâneo e inalterável de velocidade e tempo instalado, operante e selado", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "CTB Art. 136, inciso IV" },
+      { campo: "Tacógrafo — Certificado de Verificação Metrológica do INMETRO vigente", tipoResposta: "VALOR", unidade: "data/nº", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Portarias INMETRO / validade bianual" },
+      { campo: "Tacógrafo — Discos, fita ou registros eletrônicos de bordo em conformidade técnica", tipoResposta: "C_NC_NA", criterioReferencia: "Resoluções CONTRAN aplicáveis ao registrador" },
+      { campo: "Pintura e Caracterização Externa — Faixa horizontal amarela de 40 cm com a inscrição 'ESCOLAR' em preto", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "CTB Art. 136, inciso III (meia altura da carroceria)" },
+      { campo: "Pintura e Caracterização Externa — Sinalização refletiva e dísticos com dimensões e legibilidade regulamentares", tipoResposta: "C_NC_NA", criterioReferencia: "Faixas retrorrefletivas laterais e traseiras" },
+      { campo: "Identificação da empresa/prestador autônomo e número de registro municipal afixados", tipoResposta: "C_NC_NA", criterioReferencia: "Normas da secretaria municipal de transportes" },
+      { campo: "Cintos de Segurança — Cintos individuais para todos os assentos (quantidade e retenção inercial)", tipoResposta: "VALOR", unidade: "unidades", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "CTB Art. 136, inciso V (igual à lotação)" },
+      { campo: "Janelas e Vidros — Janelas corrediças com abertura máxima limitada a 10 cm na parte superior", tipoResposta: "VALOR", unidade: "cm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "CTB Art. 136, item limitador de abertura (≤ 10 cm)" },
+      { campo: "Saídas de Emergência — Portas e janelas de emergência e alçapão de teto sinalizados e desobstruídos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Mecanismo de abertura rápida testado / ABNT NBR 15320" },
+      { campo: "Dispositivo de Visão Indireta — Espelhos retrovisores convexos adicionais ou câmera/sensor de ré", tipoResposta: "C_NC_NA", criterioReferencia: "Visibilidade completa dos pontos cegos ao redor do veículo" },
+      { campo: "Luzes de Advertência — Luzes intermitentes de advertência (pisca-alerta / lanternas de parada)", tipoResposta: "C_NC_NA", criterioReferencia: "CTB Art. 136, inciso VI" },
+      { campo: "Piso/assoalho com revestimento antiderrapante e ausência de cantos vivos ou pontas cortantes", tipoResposta: "C_NC_NA", criterioReferencia: "Segurança física dos alunos e acessibilidade" },
+      { campo: "Extintor de Incêndio — Extintor tipo ABC com manômetro no verde e lacre, ao alcance do condutor", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 919/2022" },
+      { campo: "Condutor — CNH categoria D ou E com credencial e curso específico de condutor escolar vigente", tipoResposta: "C_NC_NA", criterioReferencia: "CTB Art. 138 (maior de 21 anos, sem infrações graves/gravíssimas)" },
+      { campo: "Conformidade item a item com a ABNT NBR 17075:2022 (transporte escolar)", tipoResposta: "C_NC_NA", criterioReferencia: "Requisitos de segurança construtiva da norma brasileira" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -386,22 +396,25 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Parecer Técnico Conclusivo sobre Viabilidade de Regularização'
     ],
     checklistInicial: [
-      'Numeração de chassi conferida e sem indícios de adulteração',
-      'Histórico do sinistro (natureza, data, extensão inicial) levantado',
-      'Álbum fotográfico completo por categoria realizado',
-      'Colunas (A, B, C) avaliadas estruturalmente',
-      'Soleiras e assoalho avaliados',
-      'Teto e estrutura superior avaliados',
-      'Longarinas e travessas avaliadas',
-      'Sistema de direção avaliado pós-sinistro',
-      'Sistema de freios avaliado pós-sinistro',
-      'Suspensão avaliada pós-sinistro',
-      'Airbags e pré-tensionadores avaliados (acionados/não acionados, substituição)',
-      'Sistema elétrico/eletrônico avaliado (módulos, chicotes)',
-      'Componentes substituídos identificados e comparados à especificação original',
-      'Classificação de monta (Pequena/Média/Grande) justificada tecnicamente',
-      'Memorial descritivo da reclassificação elaborado',
-      'Parecer conclusivo sobre viabilidade de regularização junto ao DETRAN'
+      { campo: "Boletim de Ocorrência Policial e Relatório de Avarias do DETRAN/Polícia Rodoviária", tipoResposta: "VALOR", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN nº 810/2020 e Portarias SENATRAN" },
+      { campo: "Classificação Inicial de Dano atribuída pela autoridade de trânsito no ato do sinistro", tipoResposta: "SELECAO", opcoes: ["Pequena Monta", "Média Monta", "Grande Monta"], criterioReferencia: "Relatório de avarias inicial a ser reclassificado" },
+      { campo: "Gravação do Chassi e Motor — Autenticidade, integridade dos caracteres e ausência de adulteração", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Conferência ótica/metalográfica das gravações originais" },
+      { campo: "Região Dianteira — Painel frontal, travessas dianteiras, para-choque e alma metálica", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 1)" },
+      { campo: "Longarinas Dianteiras (Esquerda e Direita) — Avaliação de vincos, amassamento, trincas ou corte", tipoResposta: "SELECAO", opcoes: ["Sem Danos", "Dano Leve Recuperável", "Deformação Estrutural Grave", "Perda Total"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 2)" },
+      { campo: "Torres dos Amortecedores e Caixas de Roda Dianteiras", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 3)" },
+      { campo: "Colunas A (Dianteiras / Moldura do Para-brisa) Esquerda e Direita", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 4)" },
+      { campo: "Colunas B (Centrais / Batentes das Portas) Esquerda e Direita", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 5)" },
+      { campo: "Colunas C/D (Traseiras) Esquerda e Direita", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 6)" },
+      { campo: "Soleiras e Caixas de Ar Inferiores (ausência de torção, amassamento ou esmagamento)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 7)" },
+      { campo: "Assoalho e Túnel Central da Carroceria / Monobloco", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 8)" },
+      { campo: "Armação do Teto e Travessas Superiores da Carroceria", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 9)" },
+      { campo: "Longarinas Traseiras e Painel Traseiro", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONTRAN 810/2020 - Anexo I (Item 10)" },
+      { campo: "Módulos de Airbag (Frontais, Laterais, Cortina) — Estado e integridade dos atuadores", tipoResposta: "SELECAO", opcoes: ["Não Acionados / Íntegros", "Acionados Parcialmente", "Todos Acionados"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Sistemas de retenção suplementar suplementares" },
+      { campo: "Pré-tensionadores dos cintos de segurança (disparo pirotécnico e travamento)", tipoResposta: "C_NC_NA", criterioReferencia: "Substituição obrigatória se detonados" },
+      { campo: "Desvio Dimensional nas Diagonais do Chassi / Monobloco (comparadas às cotas de fábrica)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Tolerância milimétrica em mesa de estiramento / gabarito" },
+      { campo: "Mecanismo de Direção e Geometria da Suspensão quanto a empenamento estrutural", tipoResposta: "C_NC_NA", criterioReferencia: "Alinhamento e tolerâncias dinâmicas de direção" },
+      { campo: "Enquadramento Técnico Final de Monta (Critérios Formais da Resolução CONTRAN nº 810/2020)", tipoResposta: "SELECAO", opcoes: ["Pequena Monta (Dano Leve - Sem Afetação Estrutural)", "Média Monta (Recuperável com Emissão de CSV)", "Grande Monta (Perda Total / Irrecuperável)"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Pontuação oficial do Relatório de Avarias do CONTRAN" },
+      { campo: "Parecer Conclusivo sobre Viabilidade Técnica de Recuperação e Segurança Viária", tipoResposta: "C_NC_NA", criterioReferencia: "Aptidão técnica para desclassificação de monta junto ao DETRAN" }
     ],
     atualizadoEm: new Date().toISOString()
   },
@@ -428,22 +441,22 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       'Parecer Conclusivo (viabilidade técnico-econômica de reparo ou indicativo de perda total)'
     ],
     checklistInicial: [
-      'Ponto de impacto identificado e extensão do dano delimitada',
-      'Motor e componentes mecânicos avaliados quanto a danos',
-      'Câmbio e transmissão avaliados quanto a danos',
-      'Sistema de arrefecimento avaliado (radiador, mangueiras)',
-      'Suspensão avaliada (danos por impacto)',
-      'Estrutura do chassi/monobloco inspecionada visualmente',
-      'Indícios de corte e solda emendada verificados',
-      'Alinhamento do monobloco medido e comparado às cotas de fábrica',
-      'Airbags avaliados (acionamento, substituição, integridade dos sensores)',
-      'Pré-tensionadores de cinto avaliados',
-      'Estruturas de absorção de impacto (para-choques, longarinas) avaliadas',
-      'Sistema elétrico/eletrônico avaliado quanto a danos',
-      'Histórico de sinistros anteriores do veículo consultado',
-      'Álbum fotográfico categorizado (frontal, traseira, laterais, interior, estrutura) elaborado',
-      'Comparação de custo de reparo x valor de mercado do veículo realizada',
-      'Parecer conclusivo sobre viabilidade de reparo ou perda total emitido'
+      { campo: "Data, Local, Condições Climáticas e Pista no Momento do Sinistro", tipoResposta: "VALOR", criterioReferencia: "ABNT NBR 13771 e boletins oficiais de trânsito" },
+      { campo: "Ponto Inicial de Contato e Dinâmica Cinemática da Colisão", tipoResposta: "SELECAO", opcoes: ["Colisão Frontal", "Colisão Fronto-Lateral", "Colisão Traseira", "Colisão Lateral", "Capotamento", "Abalroamento Múltiplo"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Vetor resultante da energia cinética de deformação" },
+      { campo: "Conjunto Motopropulsor — Avarias no bloco do motor, cárter, cabeçote, coletores e suportes", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Inspeção de trincas mecânicas no bloco e periféricos" },
+      { campo: "Conjunto de Transmissão — Câmbio, carcaça, semi-eixos, homocinéticas e eixo cardan", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Integridade das carcaças fundidas e eixos rotativos" },
+      { campo: "Sistema de Arrefecimento — Radiador, eletroventilador, condensador e mangueiras", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Perda de estanqueidade e deformação por esmagamento" },
+      { campo: "Suspensão e Direção — Braços oscilantes, amortecedores, manga de eixo, pivôs e caixa", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Fraturas dúcteis vs frágeis e empenamentos" },
+      { campo: "Exame Metalográfico / Macroscópico de Componentes Rompidos (falha prévia vs choque)", tipoResposta: "C_NC_NA", criterioReferencia: "Caracterização da superfície de fratura (fadiga vs impacto instantâneo)" },
+      { campo: "Estrutura do Monobloco / Chassi — Deformação plástica e flambagem de longarinas e caixas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Inspeção visual e dimensional de alinhamento" },
+      { campo: "Verificação de Intervenções Anteriores — Soldas clandestinas, cortes ou emendas pré-existentes", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Identificação de reparos anômalos anteriores ao sinistro" },
+      { campo: "Desvio do Alinhamento Tridimensional em relação às cotas do fabricante", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "Desvio diagonal e cota longitudinal de entre-eixos" },
+      { campo: "Alinhamento de Vãos de Carroceria — Portas, tampas, capô e colunas", tipoResposta: "C_NC_NA", criterioReferencia: "Fechamento suave e folgas perimetrais uniformes" },
+      { campo: "Dispositivos de Retenção Passiva — Airbags deflagrados e cintos pré-tensionados acionados", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Módulos de segurança acionados na dinâmica" },
+      { campo: "Valor de Referência de Mercado do Veículo Sinistrado (Tabela FIPE)", tipoResposta: "VALOR", unidade: "R$", criterioReferencia: "Valor venal médio de mercado na data do sinistro" },
+      { campo: "Orçamento Global Estimado para Reparação Integral (Peças Originais + Mão de Obra)", tipoResposta: "VALOR", unidade: "R$", criterioReferencia: "Orçamentação técnica analítica de recuperação" },
+      { campo: "Relação Percentual entre Custo de Reparação e Valor de Mercado (FIPE)", tipoResposta: "VALOR", unidade: "%", criterioReferencia: "Critério de Perda Total econômica (geralmente > 75%)" },
+      { campo: "Classificação Econômica e Técnica do Sinistro", tipoResposta: "SELECAO", opcoes: ["Dano Parcial Recuperável", "Perda Total Econômica (> 75% FIPE)", "Irrecuperável / Perda Total Estrutural"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Parecer pericial conclusivo de liquidação de sinistro" }
     ],
     atualizadoEm: new Date().toISOString()
   }
@@ -2580,6 +2593,274 @@ export async function sincronizarFirestoreGeradoresAcessibilidadeRuido(): Promis
     };
   } catch (error: any) {
     console.error('Erro ao sincronizar tipos de geradores e acessibilidade/ruído com Firestore:', error);
+    return {
+      sucesso: false,
+      totalAtualizados: gravados,
+      mensagem: `Erro na gravação Firestore: ${error?.message || String(error)}`
+    };
+  }
+}
+
+/**
+ * =====================================================================
+ * CATEGORIA 5: Climatização, Qualidade do Ar e Manutenção Predial/Industrial
+ * Tipos de Laudo no Firestore (Coleções / Documentos)
+ * =====================================================================
+ */
+export const TIPOS_CLIMATIZACAO_FIRESTORE: Record<string, DocumentoTipoLaudoFirestore> = {
+  // 1. Laudo e Plano de PMOC (Lei 13.589/2018)
+  'laudo-e-plano-de-pmoc-lei-13589-2018': {
+    id: 'laudo-e-plano-de-pmoc-lei-13589-2018',
+    codigo: 'PMOC-LEI',
+    nome: 'Laudo e Plano de PMOC (Lei 13.589/2018)',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Lei Federal 13.589/2018, Portaria MS nº 3.523/1998, RE 09/2003 ANVISA, ABNT NBR 16401',
+    textoBaseApresentacao: 'Plano de Manutenção, Operação e Controle (PMOC) e respectivo Laudo Técnico com ART para sistemas de climatização com capacidade térmica superior a 60.000 BTU/h (5 TR).',
+    apresentacaoPadrao: 'Plano de Manutenção, Operação e Controle (PMOC) e respectivo Laudo Técnico com ART para sistemas de climatização com capacidade térmica superior a 60.000 BTU/h (5 TR).',
+    metodologiaPadrao: 'Inventário térmico dos aparelhos (Split, VRF, Chiller, Fancoil), definição do cronograma de rotinas de higienização de filtros, bandejas e verificação de renovação de ar externo.',
+    secoesEspecificas: [
+      'Identificação do Edifício e Dados Cadastrais do Empreendimento Climatizado',
+      'Inventário de Equipamentos de Climatização e Capacidade Térmica Acumulada',
+      'Inspeção Sanitária e Física de Evaporadores, Fancoils e Filtros de Ar',
+      'Avaliação da Tomada de Ar Externo e Taxa de Renovação Forçada (NBR 16401-3)',
+      'Avaliação de Unidades Condensadoras e Linhas Frigorígenas',
+      'Cronograma Físico de Rotinas Periódicas de Manutenção Preventiva (Mensal, Trimestral, Semestral)',
+      'Responsabilidade Técnica e Conclusão Sanitária'
+    ],
+    checklistInicial: [
+      { campo: "Área útil climatizada total e tipo de atividade do edifício", tipoResposta: "VALOR", unidade: "m²", criterioReferencia: "Lei 13.589/2018 Art. 1º" },
+      { campo: "Capacidade térmica instalada acumulada do sistema", tipoResposta: "VALOR", unidade: "BTU/h ou TR", criterioReferencia: "Obrigatoriedade de PMOC se > 60.000 BTU/h (5 TR)" },
+      { campo: "Tipologia dos sistemas condicionadores de ar instalados", tipoResposta: "SELECAO", opcoes: ["Expansão Direta - Split / Cassete", "Sistema VRF / VRV", "Expansão Indireta - Chillers / Fancoils", "Roof-top / Centrais"], criterioReferencia: "Inventário técnico do sistema de climatização" },
+      { campo: "Anotação de Responsabilidade Técnica (ART) do Engenheiro Mecânico registrada no CREA", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Resolução CONFEA nº 218/1973 e Lei 13.589/2018" },
+      { campo: "Plano de Manutenção, Operação e Controle (PMOC) disponível in loco para fiscalização sanitária", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Portaria MS nº 3.523/1998 Art. 6º" },
+      { campo: "Higienização mecânica e química das serpentinas e aletas dos evaporadores (sem biofilme)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Portaria MS 3.523/1998 e RE 09/2003 ANVISA" },
+      { campo: "Filtros de Ar — Limpeza, integridade e classe de filtragem adequada (G4 / M5)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16401-3 (Troca/lavagem periódica)" },
+      { campo: "Bandejas de condensado — Ausência de água estagnada, limo, lodo e corrosão", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Prevenção microbiológica e Legionella" },
+      { campo: "Rede de Drenagem — Caimento correto, desobstrução e ausência de vazamentos/refluxo", tipoResposta: "C_NC_NA", criterioReferencia: "Dreno contínuo com sifão nas descargas" },
+      { campo: "Turbinas, rotores e ventiladores dos evaporadores limpos e balanceados", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Operação silenciosa e sem acúmulo de fuligem" },
+      { campo: "Tomada de Ar Externo (TAE) para renovação forçada de ar instalada e operante", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Obrigatória pela Lei 13.589/2018 e Portaria MS 3.523" },
+      { campo: "Filtros da Tomada de Renovação de Ar limpos e íntegros", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Filtragem mínima classe G4 na captação" },
+      { campo: "Vazão de Renovação de Ar Externo conforme taxa mínima da ABNT NBR 16401-3", tipoResposta: "VALOR", unidade: "m³/h/pessoa", criterioReferencia: "Mínimo 27 m³/h/pessoa (ou 7,5 l/s/pessoa) conforme ocupação" },
+      { campo: "Afastamento da captação de ar externo em relação a fontes poluentes (chaminés, lixeiras)", tipoResposta: "C_NC_NA", criterioReferencia: "Distância regulamentar conforme NBR 16401" },
+      { campo: "Serpentinas condensadoras limpas e desobstruídas para troca térmica eficiente", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Rendimento térmico e consumo energético" },
+      { campo: "Isolamento térmico das linhas frigorígenas (ausência de condensação ou ressecamento)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Tubos de cobre isolados com elastomérico íntegro" },
+      { campo: "Pressões operacionais de sucção e descarga / Superaquecimento e sub-resfriamento", tipoResposta: "VALOR", unidade: "psig", criterioReferencia: "Parâmetros dentro das faixas do refrigerante utilizado" },
+      { campo: "Ausência de vazamentos de fluido frigorígeno halogenado (teste de estanqueidade)", tipoResposta: "C_NC_NA", criterioReferencia: "Protocolo de Montreal e normas ambientais" },
+      { campo: "Fixação das condensadoras, coxins antivibratórios e ausência de ruído anormal", tipoResposta: "C_NC_NA", criterioReferencia: "Suportação resistente e amortecimento de vibração" },
+      { campo: "Registro sistemático das rotinas periódicas de manutenção no cronograma do PMOC", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Fichas de execução com data e assinatura técnica" },
+      { campo: "Produtos químicos sanitizantes utilizados devidamente registrados e homologados na ANVISA", tipoResposta: "C_NC_NA", criterioReferencia: "Biodegradáveis com registro sanitário para HVAC" }
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 2. Laudo de Inspeção Técnico-Sanitária e Qualidade do Ar
+  'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar': {
+    id: 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+    codigo: 'PMOC-AR',
+    nome: 'Laudo de Inspeção Técnico-Sanitária e Qualidade do Ar',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Resolução ANVISA RE nº 09/2003, ABNT NBR 16401',
+    textoBaseApresentacao: 'Avaliação dos parâmetros físicos, químicos e biológicos do ar climatizado em ambientes de uso público e coletivo.',
+    apresentacaoPadrao: 'Avaliação dos parâmetros físicos, químicos e biológicos do ar climatizado em ambientes de uso público e coletivo.',
+    metodologiaPadrao: 'Aferição de temperatura de bulbo seco, umidade relativa, velocidade do ar, concentração de dióxido de carbono (CO₂) e coleta microbiológica por laboratório credenciado.',
+    secoesEspecificas: [
+      'Identificação dos Ambientes Amostrados e Pontos de Coleta',
+      'Aferição dos Parâmetros Físicos de Conforto Térmico (Temperatura, Umidade e Velocidade do Ar)',
+      'Concentração de Dióxido de Carbono (CO₂) e Taxa de Renovação de Ar',
+      'Concentração de Monóxido de Carbono (CO) e Particulado Inalável em Suspensão',
+      'Ensaio Microbiológico — Relação I/E de Fungos e Espécies Patogênicas',
+      'Parecer Técnico-Sanitário e Certificado de Conformidade da Qualidade do Ar'
+    ],
+    checklistInicial: [
+      { campo: "Temperatura operativa do ar em recintos climatizados (faixa recomendada)", tipoResposta: "VALOR", unidade: "°C", criterioReferencia: "RE 09/2003 ANVISA (23°C a 26°C no verão / 20°C a 22°C no inverno)" },
+      { campo: "Umidade relativa do ar (UR%) em recintos fechados", tipoResposta: "VALOR", unidade: "%", criterioReferencia: "RE 09/2003 ANVISA (40% a 65% UR)" },
+      { campo: "Velocidade do ar na zona de permanência humana (limite máximo de conforto)", tipoResposta: "VALOR", unidade: "m/s", criterioReferencia: "RE 09/2003 ANVISA (≤ 0,25 m/s)" },
+      { campo: "Concentração de Dióxido de Carbono (CO₂) em recintos ocupados", tipoResposta: "VALOR", unidade: "ppm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "RE 09/2003 ANVISA (máximo recomendável 1.000 ppm)" },
+      { campo: "Concentração de Monóxido de Carbono (CO) no ar interior", tipoResposta: "VALOR", unidade: "ppm", criterioReferencia: "RE 09/2003 ANVISA (máximo 9 ppm)" },
+      { campo: "Concentração de Poeira Total / Material Particulado inalável em suspensão", tipoResposta: "VALOR", unidade: "µg/m³", criterioReferencia: "RE 09/2003 ANVISA (máximo 80 µg/m³)" },
+      { campo: "Razão de Fungos no Ar Interno versus Ar Externo (relação I/E)", tipoResposta: "VALOR", unidade: "razão I/E", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "RE 09/2003 ANVISA (relação I/E ≤ 1,5)" },
+      { campo: "Ausência de fungos patogênicos e toxigênicos (Stachybotrys, Aspergillus flavus, etc.)", tipoResposta: "C_NC_NA", criterioReferencia: "Ausência comprovada em análise laboratorial" },
+      { campo: "Laudo analítico microbiológico emitido por laboratório habilitado anexado ao dossiê", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Laboratório de controle ambiental credenciado" },
+      { campo: "Ambientes climatizados em conformidade com os padrões referenciais de vigilância sanitária", tipoResposta: "C_NC_NA", criterioReferencia: "Vigilância Sanitária Municipal/Estadual" },
+      { campo: "Parecer técnico sanitário atestando salubridade das instalações de ar condicionado", tipoResposta: "C_NC_NA", criterioReferencia: "Responsabilidade técnica do laudo" }
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 3. Laudo com ART de Manutenção e Liberação
+  'laudo-com-art-de-manutencao-e-liberacao': {
+    id: 'laudo-com-art-de-manutencao-e-liberacao',
+    codigo: 'MANUT-ART',
+    nome: 'Laudo com ART de Manutenção e Liberação',
+    hrn: false,
+    temHrn: false,
+    normasRef: 'Resoluções CONFEA/CREA, ABNT NBR 5674',
+    textoBaseApresentacao: 'Emissão de Laudo de Responsabilidade Técnica de Engenharia Mecânica para acompanhamento, liberação de reformas e serviços de manutenção predial e industrial.',
+    apresentacaoPadrao: 'Emissão de Laudo de Responsabilidade Técnica de Engenharia Mecânica para acompanhamento, liberação de reformas e serviços de manutenção predial e industrial.',
+    metodologiaPadrao: 'Auditoria de procedimentos operacionais padrão (POP), verificação de ARTs de terceiros e liberação formal de equipamentos sob guarda.',
+    secoesEspecificas: [
+      'Identificação do Ativo e Descrição dos Serviços de Manutenção Executados',
+      'Anotação de Responsabilidade Técnica (ART) do Engenheiro Mecânico',
+      'Verificação de Requisitos Técnicos, POP e Qualificação da Equipe Executante',
+      'Ensaios Pós-Manutenção, Testes de Desempenho e Comissionamento',
+      'Condições Ambientais, Recolhimento de Resíduos e Descarte Ecológico',
+      'Parecer Técnico de Liberação Operacional e Termo de Entrega'
+    ],
+    checklistInicial: [
+      { campo: "Descrição minuciosa dos serviços mecânicos, prediais ou industriais executados", tipoResposta: "VALOR", criterioReferencia: "Memorial descritivo da intervenção / NBR 5674" },
+      { campo: "Localização, identificação e tag do ativo/equipamento inspecionado", tipoResposta: "VALOR", criterioReferencia: "Cadastro patrimonial ou CMMS" },
+      { campo: "Anotação de Responsabilidade Técnica (ART) de Engenharia Mecânica registrada no CREA", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Lei Federal nº 6.496/1977" },
+      { campo: "Equipe executante com qualificação técnica comprovada (certificados, NR-10, NR-12, NR-35)", tipoResposta: "C_NC_NA", criterioReferencia: "Normas Regulamentadoras MTE aplicáveis" },
+      { campo: "Procedimentos de Trabalho Seguro (APR - Análise Preliminar de Risco e PT - Permissão de Trabalho)", tipoResposta: "C_NC_NA", criterioReferencia: "Procedimento Operacional Padrão (POP) e PGR" },
+      { campo: "Utilização integral de EPIs e EPCs adequados ao serviço durante toda a intervenção", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-06 (Equipamentos de Proteção Individual)" },
+      { campo: "Testes funcionais e operacionais pós-manutenção realizados com sucesso sob carga", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Comissionamento técnico do ativo" },
+      { campo: "Testes de estanqueidade, calibração ou ensaios não destrutivos realizados (se aplicável)", tipoResposta: "C_NC_NA", criterioReferencia: "Normas de fabricação do equipamento" },
+      { campo: "Níveis de ruído, vibração mecânica e alinhamento dentro dos parâmetros aceitáveis", tipoResposta: "C_NC_NA", criterioReferencia: "ISO 10816 e NBR 10151" },
+      { campo: "Limpeza da área, recolhimento de sucatas e descarte ambientalmente adequado de óleos/peças", tipoResposta: "C_NC_NA", criterioReferencia: "Normas ambientais de destinação de resíduos" },
+      { campo: "Ativo tecnicamente apto e seguro para retorno à operação produtiva", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Parecer conclusivo do Engenheiro Mecânico" },
+      { campo: "Termo formal de entrega técnica com garantias e recomendações assinado pelas partes", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Termo de encerramento do serviço" }
+    ],
+    atualizadoEm: new Date().toISOString()
+  },
+
+  // 4. Laudo de Diagnóstico de Maturidade em Gestão de Ativos (PCM/ISO 55001)
+  'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001': {
+    id: 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001',
+    codigo: 'MANUT-PCM',
+    nome: 'Laudo de Diagnóstico de Maturidade em Gestão de Ativos (PCM/ISO 55001)',
+    hrn: false,
+    temHrn: false,
+    permitePreenchimentoIA: false,
+    normasRef: 'ABNT NBR ISO 55001, Métricas de Confiabilidade (MTBF, MTTR)',
+    textoBaseApresentacao: 'Consultoria diagnóstica de planejamento e controle de manutenção (PCM) para plantas industriais e edifícios corporativos.',
+    apresentacaoPadrao: 'Consultoria diagnóstica de planejamento e controle de manutenção (PCM) para plantas industriais e edifícios corporativos.',
+    metodologiaPadrao: 'Análise de criticidade de ativos (Matriz GUT), cálculo de indicadores de disponibilidade, backlog e custos operacionais (Opex).',
+    secoesEspecificas: [
+      'Contextualização da Planta e Estrutura Organizacional de Manutenção',
+      'Inventário Hierárquico de Ativos e Metodologia de Criticidade (GUT/RCM)',
+      'Avaliação dos Indicadores Chave de Desempenho (MTBF, MTTR, Disponibilidade, Aderência)',
+      'Diagnóstico do Planejamento, Programação e Backlog da Manutenção',
+      'Gestão de Almoxarifado Técnico, Sobressalentes Críticos e Curva ABC',
+      'Enquadramento do Nível de Maturidade Global em Gestão de Ativos (ISO 55001)',
+      'Roadmap Estratégico e Plano de Ação para Evolução do PCM'
+    ],
+    checklistInicial: [
+      { campo: "Árvore hierárquica e cadastramento de ativos no software de gestão (CMMS/ERP)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 55001 Requisito 6.2 (Cadastro de Ativos)" },
+      { campo: "Matriz de Criticidade de Ativos (Método GUT ou RCM - Confiabilidade Centrada na Manutenção)", tipoResposta: "SELECAO", opcoes: ["Inexistente", "Em Implantação", "Implantada Parcialmente", "Implantada com Revisão Sistemática"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Classificação A/B/C ou pontuação GUT" },
+      { campo: "Planos preventivos padronizados e cronogramas de lubrificação/inspeção cadastrados", tipoResposta: "C_NC_NA", criterioReferencia: "Procedimentos operacionais por família de ativo" },
+      { campo: "Tempo Médio Entre Falhas - MTBF calculado e monitorado para ativos críticos", tipoResposta: "VALOR", unidade: "horas", criterioReferencia: "Indicador de confiabilidade (NBR 5462)" },
+      { campo: "Tempo Médio Para Reparo - MTTR calculado e acompanhado", tipoResposta: "VALOR", unidade: "horas", criterioReferencia: "Indicador de manutenibilidade (NBR 5462)" },
+      { campo: "Disponibilidade operacional média apurada dos ativos produtivos críticos", tipoResposta: "VALOR", unidade: "%", criterioReferencia: "Fórmula: MTBF / (MTBF + MTTR) × 100%" },
+      { campo: "Aderência ao Cronograma de Manutenção Preventiva (meta ≥ 85%)", tipoResposta: "VALOR", unidade: "%", criterioReferencia: "Cumprimento das Ordens de Serviço Preventivas" },
+      { campo: "Backlog de Manutenção da Equipe (semanas de trabalho acumuladas)", tipoResposta: "VALOR", unidade: "semanas", criterioReferencia: "Faixa ideal: 2 a 4 semanas de carga de trabalho" },
+      { campo: "Almoxarifado técnico com controle de estoque e peças classificadas por Curva ABC", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Gestão de sobressalentes críticos" },
+      { campo: "Acuracidade de inventário físico do almoxarifado de peças de reposição", tipoResposta: "VALOR", unidade: "%", criterioReferencia: "Conformidade física vs sistema (meta ≥ 95%)" },
+      { campo: "Nível Global de Maturidade do PCM e Gestão de Ativos (ABNT NBR ISO 55001)", tipoResposta: "SELECAO", opcoes: ["Nível 1 - Reativo / Apaga-Fogo", "Nível 2 - Preventivo Básico", "Nível 3 - Preditivo / Sistemático", "Nível 4 - Confiabilidade Integrada / RCM", "Nível 5 - Excelência Operacional / ISO 55001"], criterioReferencia: "Matriz de maturidade em gestão de ativos" },
+      { campo: "Plano Estratégico com Roadmap de Evolução e Metas de Curto/Médio Prazo formalizado", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Melhoria contínua e governança de manutenção" }
+    ],
+    atualizadoEm: new Date().toISOString()
+  }
+};
+
+export const ALIASES_TIPOS_CLIMATIZACAO: Record<string, string> = {
+  // PMOC-LEI
+  'laudo-pmoc-completo': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+  'pmoc-completo': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+  'laudo-pmoc': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+  'pmoc': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+  'plano-pmoc': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+  'PMOC-LEI': 'laudo-e-plano-de-pmoc-lei-13589-2018',
+
+  // PMOC-AR
+  'laudo-qualidade-ar': 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+  'qualidade-do-ar': 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+  'qualidade-ar': 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+  'inspecao-qualidade-ar': 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+  'PMOC-AR': 'laudo-de-inspecao-tecnico-sanitaria-e-qualidade-do-ar',
+
+  // MANUT-ART
+  'laudo-art-manutencao': 'laudo-com-art-de-manutencao-e-liberacao',
+  'art-manutencao': 'laudo-com-art-de-manutencao-e-liberacao',
+  'manutencao-liberacao': 'laudo-com-art-de-manutencao-e-liberacao',
+  'art-liberacao': 'laudo-com-art-de-manutencao-e-liberacao',
+  'MANUT-ART': 'laudo-com-art-de-manutencao-e-liberacao',
+
+  // MANUT-PCM
+  'laudo-maturidade-pcm': 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001',
+  'maturidade-pcm': 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001',
+  'gestao-ativos-pcm': 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001',
+  'pcm-iso-55001': 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001',
+  'MANUT-PCM': 'laudo-de-diagnostico-de-maturidade-em-gestao-de-ativos-pcm-iso-55001'
+};
+
+/**
+ * Função de sincronização Firestore para os tipos da categoria 5:
+ * "Climatização, Qualidade do Ar e Manutenção Predial/Industrial"
+ */
+export async function sincronizarFirestoreClimatizacao(): Promise<{
+  sucesso: boolean;
+  totalAtualizados: number;
+  mensagem: string;
+}> {
+  if (!db) {
+    return {
+      sucesso: false,
+      totalAtualizados: 0,
+      mensagem: 'Instância do Firestore não disponível no momento. Os dados estão preservados no catálogo local e taxonomia.'
+    };
+  }
+
+  let gravados = 0;
+  const categoriasAlvo = [
+    'climatizacao-qualidade-do-ar-e-manutencao-predial-industrial',
+    'climatização-qualidade-do-ar-e-manutenção-predial-industrial',
+    'climatizacao-qualidade-do-ar-e-manutencao-predialindustrial',
+    'climatizacao-e-pmoc',
+    'pmoc-e-climatizacao',
+    'cat-5'
+  ];
+
+  try {
+    for (const catId of categoriasAlvo) {
+      // Documento da categoria
+      const catDocRef = doc(db, 'categoriasLaudo', catId);
+      await setDoc(catDocRef, {
+        id: catId,
+        nome: 'Climatização, Qualidade do Ar e Manutenção Predial/Industrial',
+        icone: 'Wind',
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+
+      // Documentos de cada tipo
+      for (const [tipoKey, dados] of Object.entries(TIPOS_CLIMATIZACAO_FIRESTORE)) {
+        // Grava no ID canônico por extenso
+        const tipoDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', tipoKey);
+        await setDoc(tipoDocRef, dados, { merge: true });
+        gravados++;
+
+        // Grava também nos IDs curtos / aliases
+        const aliases = Object.keys(ALIASES_TIPOS_CLIMATIZACAO).filter(k => ALIASES_TIPOS_CLIMATIZACAO[k] === tipoKey);
+        for (const shortAlias of aliases) {
+          const shortDocRef = doc(db, 'categoriasLaudo', catId, 'tipos', shortAlias);
+          await setDoc(shortDocRef, {
+            ...dados,
+            id: shortAlias,
+            aliasDe: tipoKey
+          }, { merge: true });
+          gravados++;
+        }
+      }
+    }
+
+    return {
+      sucesso: true,
+      totalAtualizados: gravados,
+      mensagem: `Sucesso: ${gravados} documentos de climatização, qualidade do ar e manutenção predial/industrial sincronizados nas coleções Firestore categoriasLaudo/climatizacao-qualidade-do-ar-e-manutencao-predial-industrial/tipos/{tipo}.`
+    };
+  } catch (error: any) {
+    console.error('Erro ao sincronizar tipos de climatização e qualidade do ar com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,

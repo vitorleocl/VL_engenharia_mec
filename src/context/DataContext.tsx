@@ -36,7 +36,8 @@ import {
   sincronizarFirestoreElevacaoIndustrial,
   sincronizarFirestoreTubulacoesProcesso,
   sincronizarFirestorePericiasAvaliacaoBens,
-  sincronizarFirestoreGeradoresAcessibilidadeRuido
+  sincronizarFirestoreGeradoresAcessibilidadeRuido,
+  sincronizarFirestoreClimatizacao
 } from '../lib/firestoreTaxonomia';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -341,6 +342,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }).catch(err => {
       console.warn('[Firestore Taxonomia Geradores e Acessibilidade/Ruído] Sincronização em segundo plano:', err);
+    });
+
+    sincronizarFirestoreClimatizacao().then(res => {
+      if (res.sucesso) {
+        console.log(`[Firestore Taxonomia Climatização e Manutenção] ${res.mensagem}`);
+      }
+    }).catch(err => {
+      console.warn('[Firestore Taxonomia Climatização e Manutenção] Sincronização em segundo plano:', err);
     });
   }, []);
 
