@@ -1658,21 +1658,24 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Verificação de Sinalização de Idade Recomendada e Normas de Uso'
             ],
             checklistInicial: [
-              'Superfície de amortecimento de impacto adequada à altura de queda livre de cada equipamento',
-              'Área de queda livre desobstruída',
-              'Ausência de pontos de aprisionamento de cabeça/pescoço (aberturas entre 89 e 230 mm)',
-              'Ausência de pontos de aprisionamento de dedos',
-              'Ausência de pontos de prendimento de roupas ou cordões',
-              'Ancoragens e fundações firmes, sem corrosão',
-              'Ausência de arestas cortantes ou pontas expostas',
-              'Ausência de ferrugem estrutural comprometedora',
-              'Correntes/cabos de balanços sem desgaste excessivo',
-              'Escorregador com ângulo e altura conformes à norma',
-              'Gangorra com sistema de amortecimento no ponto de contato',
-              'Carrossel com velocidade de rotação controlada',
-              'Zona de segurança entre equipamentos respeitada (distância mínima)',
-              'Sinalização de idade recomendada e normas de uso afixada',
-              'Identificação de fabricante/certificação do equipamento, quando aplicável'
+              { campo: "Piso Absorvedor de Impacto — Tipo de piso instalado na área de recreação", tipoResposta: "SELECAO", opcoes: ["Emborrachado moldado in loco", "Placa de borracha", "Areia", "Grama sintética/natural", "Maravalha"], criterioReferencia: "ABNT NBR 16071-3" },
+              { campo: "Medição de Espessura do Piso Emborrachado em relação à Altura Livre de Queda (HIC)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 16071-3 (Altura Crítica de Queda)" },
+              { campo: "Profundidade da Camada Solta (Areia/Cascalho) — Espessura mínima mantida", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-3 (mínimo de 200 mm a 300 mm)" },
+              { campo: "Zona de Queda e Espaço Livre — Ausência de obstáculos fixos (bancos, muretas, árvores) no raio mínimo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-3 (raio mínimo de 1,50 m ao redor do brinquedo)" },
+              { campo: "Drenagem e Conservação do Solo — Ausência de poças d'água, raízes expostas, pedras soltas ou contaminação", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 16071-3 (Condições sanitárias e de drenagem)" },
+              { campo: "Ancoragem das Sapatas no Solo — Fundações e blocos de concreto totalmente cobertos pelo piso (sem risco de tropeços)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-1 e 16071-2" },
+              { campo: "Integridade de Madeiras e Plásticos — Ausência de lascas, farpas, podridão, trincas por UV ou rachaduras estruturais", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-1 e 16071-2" },
+              { campo: "Integridade de Componentes Metálicos — Ausência de corrosão/ferrugem acentuada, pontos de solda trincados ou pontas afiadas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-1 e 16071-2" },
+              { campo: "Parafusos e Elementos de Fixação — Presença de tampas protetoras plásticas/emborrachadas (sem roscas sobrando)", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 16071-2" },
+              { campo: "Gabarito de Aprisionamento de Cabeça e Pescoço — Teste com sondas rígidas em aberturas entre 130 mm e 230 mm acima de 600 mm", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-2 (Gabaritos de cabeça e pescoço)" },
+              { campo: "Gabarito de Aprisionamento de Dedos — Verificação de orifícios e fendas abertas entre 8 mm e 25 mm", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 16071-2 (Gabarito cilíndrico de dedos)" },
+              { campo: "Aprisionamento de Roupas e Cordões (V-Gabarito) — Ausência de cantos em 'V' que possam enganchar cordões ou capuzes", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 16071-2 (Gabarito em V)" },
+              { campo: "Assentos de Balanço — Material flexível/de impacto, distância entre assentos (> 450 mm) e afastamento da estrutura", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 16071-2" },
+              { campo: "Correntes e Elos de Balanço — Abertura máxima dos elos de corrente menor que 8,6 mm", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 16071-2 (Abertura < 8,6 mm para evitar aprisionamento de dedos)" },
+              { campo: "Escorregadores — Altura da seção de saída em relação ao piso", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 16071-2 (Seção de desaceleração e saída)" },
+              { campo: "Escorregadores — Presença de barra de apoio/transição no topo e guarda-corpos laterais funcionais", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-2" },
+              { campo: "Guarda-Corpos e Corrimãos — Altura das proteções contra queda (mín. 600 mm pré-escolar / 700 mm escolar)", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 16071-2" },
+              { campo: "Placa informativa no local com faixa etária recomendada, lotação e contatos de emergência", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-7 e Legislação Municipal/Estadual" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação do Playground (localização, área total, equipamentos existentes)', ordem: 1 },
@@ -1721,16 +1724,17 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Plano de Ação Corretivo com Prazos'
             ],
             checklistInicial: [
-              'Partes lascadas/rachadas identificadas e mapeadas',
-              'Ferrugem/corrosão estrutural mapeada',
-              'Parafusos soltos ou faltantes identificados',
-              'Tampas de proteção de parafusos presentes',
-              'Folgas em articulações de balanços/gangorras medidas',
-              'Desgaste de correntes/cabos avaliado',
-              'Superfície de amortecimento com desgaste ou deslocamento verificado',
-              'Vegetação ou obstáculos próximos ao playground avaliados',
-              'Classificação de prioridade (crítica/moderada/baixa) atribuída a cada não conformidade',
-              'Plano de ação corretivo elaborado com prazos por item'
+              { campo: "Classificação de Risco e Severidade de Desgaste Mecânico Global do Playground", tipoResposta: "SELECAO", opcoes: ["Risco Baixo (Manutenção Preventiva Simples)", "Risco Moderado (Correção Programada)", "Risco Crítico / Iminente (Interdição Imediata)"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-7" },
+              { campo: "Mapeamento de Partes Lascadas, Farpas e Degradação Estrutural de Madeiras e Plásticos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-7" },
+              { campo: "Mapeamento de Ferrugem, Corrosão e Pontos de Solda Fraturados em Componentes Metálicos", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-7" },
+              { campo: "Parafusos e Fixadores Expostos, Soltos, Faltantes ou com Roscas Sobrando", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-2 e 16071-7" },
+              { campo: "Tampas Protetoras de Polietileno/Borracha Ausentes sobre Parafusos", tipoResposta: "VALOR", unidade: "unidades faltantes", criterioReferencia: "ABNT NBR 16071-2" },
+              { campo: "Folgas Excessivas em Articulações, Mancais e Rolamentos (Balanços, Gangorras e Carrosséis)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-7" },
+              { campo: "Desgaste Acentuado em Elos de Corrente, Cabos de Aço e Ganchos de Sustentação", tipoResposta: "VALOR", unidade: "% de desgaste da seção", criterioReferencia: "ABNT NBR 16071-2 e 16071-7 (Descarte se perda > 10%)" },
+              { campo: "Superfície Amortecedora de Impacto Desgastada, Compactada ou com Espessura Insuficiente", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-3" },
+              { campo: "Estabilidade de Ancoragem das Sapatas de Concreto (ausência de oscilação ou tombamento)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 16071-1" },
+              { campo: "Interdição Cautelar Parcial ou Total de Brinquedos com Risco Crítico de Acidente", tipoResposta: "SELECAO", opcoes: ["Não Aplicável (Equipamentos Seguros)", "Interdição Parcial (Equipamento Específico Isolado)", "Interdição Total do Playground"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Código de Defesa do Consumidor e NBR 16071-7" },
+              { campo: "Cronograma e Prazos do Plano de Ação Corretivo com ART de Engenharia Mecânica", tipoResposta: "VALOR", criterioReferencia: "ABNT NBR 16071-7 (Gestão da Manutenção)" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Mapeamento de Partes Lascadas e Degradação de Madeira/Plástico', ordem: 1 },
@@ -1788,20 +1792,18 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Avaliação de Contraventamentos'
             ],
             checklistInicial: [
-              'Tipologia estrutural identificada (tesoura, pórtico ou treliça)',
-              'Vão livre e área coberta conferidos',
-              'Deformações visíveis em elementos estruturais mapeadas',
-              'Indícios de flambagem em barras comprimidas verificados',
-              'Corrosão mapeada por elemento (localização e severidade)',
-              'Perda de seção por corrosão estimada',
-              'Flechas medidas em tesouras/treliças/pilares',
-              'Flechas comparadas ao limite normativo aplicável',
-              'Ligações parafusadas conferidas (torque, ausência de folga)',
-              'Ligações soldadas inspecionadas visualmente',
-              'Fixação da cobertura (telhas) verificada',
-              'Calhas e sistema de drenagem pluvial avaliados',
-              'Contraventamentos verificados quanto à integridade',
-              'Pintura anticorrosiva avaliada'
+              { campo: "Alinhamento e Prumo dos Pilares Metálicos — Verificação de desvios verticais em relação ao limite normativo", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8800 (Tolerância máx. H/500)" },
+              { campo: "Flecha Máxima sob Carga em Vigas Principais / Tesouras de Cobertura", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 8800 (Limite de serviço L/350 ou L/250)" },
+              { campo: "Estado de Conservação das Terças de Cobertura e Fechamento Lateral — Ausência de flambagem local ou torção", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 14762 / NBR 8800" },
+              { campo: "Contraventamentos Verticais e Horizontais — Presença, integridade e correta protensão dos tirantes/barras redondas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8800 (Estabilidade global da estrutura)" },
+              { campo: "Grau de Corrosão em Elementos Estruturais — Classificação segundo norma ISO 8501-1", tipoResposta: "SELECAO", opcoes: ["Grau A (Superfície intacta)", "Grau B (Início de corrosão sem pites)", "Grau C (Corrosão com formação de pites)", "Grau D (Corrosão severa com perda de espessura)"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 8501-1 / NBR 8800" },
+              { campo: "Medição de Perda de Seção por Espessura Ultrassônica em Pontos Críticos", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8800 (Descarte se perda > 10% a 15%)" },
+              { campo: "Ligações Parafusadas Estruturais — Presença de parafusos de alta resistência (ASTM A325/A490), arruelas e aperto", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8800 / AISC 360" },
+              { campo: "Ligações Soldadas de Campo — Ausência de trincas visíveis, mordeduras ou descontinuidades geométricas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1 / ABNT NBR 8800" },
+              { campo: "Bases dos Pilares e Chumbadores — Ausência de corrosão acentuada nas porcas de fixação e almofadas de graute", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8800" },
+              { campo: "Fixação e Vedação de Telhas Metálicas — Integridade dos parafusos autobrocantes, arruelas de neoprene e ausência de furos soltos", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 14513 e NBR 14514" },
+              { campo: "Calhas e Condutores Pluviais — Capacidade de vazão, desobstrução e ausência de pontos de estagnação de água", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 10844" },
+              { campo: "Sobrecarga Excessiva não Prevista em Projeto — Ausência de linhas de utilidades pesadas ou placas solares suspensas sem cálculo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 6120 e NBR 8800" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação da Estrutura (tipologia: tesoura, pórtico ou treliça; vão livre; área coberta)', ordem: 1 },
@@ -1848,15 +1850,16 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Parecer sobre Adequação ou Necessidade de Reforço Estrutural'
             ],
             checklistInicial: [
-              'Estrutura do piso/mezanino identificada (tipo, vigas, pilares)',
-              'Capacidade de projeto original levantada, quando existente',
-              'Carga atual/pretendida comparada à capacidade calculada',
-              'Sobrecarga de utilização verificada conforme ABNT NBR 6120',
-              'Avaliação de tráfego de empilhadeiras (carga dinâmica e concentrada) realizada',
-              'Deformações ou fissuras na estrutura do piso/mezanino verificadas',
-              'Guarda-corpo do mezanino conferido (altura, resistência)',
-              'Sinalização de carga máxima admissível afixada',
-              'Parecer sobre adequação ou necessidade de reforço estrutural emitido'
+              { campo: "Tipo e Dimensões dos Perfis Estruturais (Vigas Principais, Secundárias e Pilares)", tipoResposta: "SELECAO", opcoes: ["Perfis I/W laminados de abas paralelas", "Perfis soldados eletrossoldados (VS/CVS)", "Perfis U/C formados a frio", "Tubos estruturais circulares/retangulares"], criterioReferencia: "ABNT NBR 8800" },
+              { campo: "Espaçamento Entre Vigas Secundárias (Vão Livre de Apoio do Piso)", tipoResposta: "VALOR", unidade: "m", criterioReferencia: "Projeto executivo / NBR 8800" },
+              { campo: "Tipo de Piso / Painel de Fechamento Instalado", tipoResposta: "SELECAO", opcoes: ["Steel Deck com laje de concreto armado", "Painel Wall / Chapa cimentícia", "Piso metálico antiderrapante (chapa xadrez)", "Grade de piso eletrofundida metálica"], criterioReferencia: "NBR 8800 / NBR 14762" },
+              { campo: "Carga Acidental de Utilização Homologada em Cálculo (Sobrecarga Distribuída Admissível)", tipoResposta: "VALOR", unidade: "kgf/m²", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 6120 (Sobrecargas mínimas para edificações)" },
+              { campo: "Carga Concentrada Pontual Máxima Homologada para Equipamentos/Paletes", tipoResposta: "VALOR", unidade: "kgf", criterioReferencia: "ABNT NBR 6120" },
+              { campo: "Tráfego de Transpaleteiras e Empilhadeiras Elétricas — Condição de Homologação", tipoResposta: "SELECAO", opcoes: ["Proibido Tráfego com Equipamento Móvel", "Autorizado apenas Transpaleteiras Manuais (até 1.500 kg)", "Homologado para Empilhadeira Elétrica Patolada"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NBR 6120 e NBR 8800" },
+              { campo: "Medição de Flecha sob Carga Estática no Vão Central Crítico", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 8800 (Flecha máx. L/350)" },
+              { campo: "Guarda-Corpos e Rodapés Periféricos do Mezanino — Altura mínima de 1,20 m, travessão intermediário e rodapé rígido de 200 mm", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12 (Anexo III) e ABNT NBR 14718" },
+              { campo: "Escada de Acesso ao Mezanino — Degraus antiderrapantes, corrimãos contínuos bilaterais e inclinação regulamentar", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e NBR 9077" },
+              { campo: "Sinalização Física e Indelével de Carga Máxima Admissível Fixada nas Entradas e Acessos do Mezanino", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e ABNT NBR 8800" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação da Estrutura do Piso/Mezanino (tipo de laje/piso, vigas, pilares)', ordem: 1 },
@@ -1902,18 +1905,15 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Classificação de Aceitação/Rejeição por Junta Conforme Critério Normativo (AWS D1.1 ou equivalente)'
             ],
             checklistInicial: [
-              'Juntas soldadas identificadas e numeradas',
-              'Inspeção visual realizada em todas as juntas listadas',
-              'Porosidade superficial verificada',
-              'Mordedura (undercut) verificada',
-              'Respingos de solda verificados',
-              'Trincas superficiais verificadas',
-              'Dimensão da perna de solda (perna do filete) medida',
-              'Comprimento do cordão conferido',
-              'Reforço da solda de topo verificado',
-              'Sobreposição/desalinhamento de chapas verificado',
-              'Critério de aceitação/rejeição aplicado por junta',
-              'Registro fotográfico por junta inspecionada'
+              { campo: "Gabarito de Filete — Medição da Perna de Solda (z) e Garganta Efetiva", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1 / EPS do Projeto" },
+              { campo: "Reforço Excessivo do Cordão de Solda de Topo — Altura do reforço além do limite permitido", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "AWS D1.1 (máx. 3,0 mm)" },
+              { campo: "Mordedura de Raiz ou Face (Undercut) — Profundidade máxima de mordedura medida com cálibre", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1 (Descarte se profundidade > 1,0 mm)" },
+              { campo: "Presença de Porosidades Superficiais Isoladas ou Agrupadas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1 (Tabela de descontinuidade visual)" },
+              { campo: "Ausência Absoluta de Trincas Superficiais (Longitudinais, Transversais ou de Cratera)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1 / ASME IX (Critério de rejeição imediata)" },
+              { campo: "Falta de Fusão e Falta de Penetração Aparente na Raiz da Solda", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "AWS D1.1" },
+              { campo: "Desalinhamento High-Low entre Bordas das Chapas ou Tubos Soldados", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ASME B31.3 / AWS D1.1" },
+              { campo: "Respingos de Solda e Abertura de Arco Fora da Junta — Limpeza e integridade do metal de base", tipoResposta: "C_NC_NA", criterioReferencia: "AWS D1.1 (Prevenção de pontos concentradores de tensão)" },
+              { campo: "Qualificação dos Soldadores e Procedimentos de Soldagem (EPS / RQPS) Homologados", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME IX / AWS D1.1" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação das Juntas Soldadas Inspecionadas (localização, tipo de junta)', ordem: 1 },
@@ -1955,16 +1955,14 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Parecer de Aprovação/Reprovação Conforme Critério de Aceitação Aplicável'
             ],
             checklistInicial: [
-              'Método de ensaio definido por junta/ponto (LP/PM/US/RX)',
-              'Superfície preparada conforme exigência do método',
-              'Ensaio executado conforme procedimento aplicável',
-              'Resultados registrados por junta/ponto',
-              'Descontinuidades classificadas (tipo, dimensão, localização)',
-              'Critério de aceitação aplicado, com norma de referência informada',
-              'Certificado de qualificação do inspetor (nível 1/2, conforme SNQC/ABENDI) anexado',
-              'Equipamento de ensaio calibrado e com certificado válido',
-              'Parecer de aprovação/reprovação emitido por junta/ponto',
-              'Registro fotográfico/radiográfico anexado'
+              { campo: "Método de Ensaio Não Destrutivo Aplicado", tipoResposta: "SELECAO", opcoes: ["Líquido Penetrante Visível (LP Colorido)", "Líquido Penetrante Fluorescente", "Partícula Magnética Via Seca/Úmida (Yoke)", "Ultrassom Convencional Pulso-Eco", "Ultrassom Phased Array (PAUT)", "Radiografia Industrial (Gamagrafia/Raio-X)"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR ISO 9712 e ASME Seção V" },
+              { campo: "Tempo de Penetração e Temperatura de Superfície na Aplicação de LP", tipoResposta: "VALOR", unidade: "minutos / °C", criterioReferencia: "ABNT NBR NM 334 / ASME V Artigo 6" },
+              { campo: "Intensidade de Iluminação no Campo de Ensaio (Iluminância mínima de 1.000 lux para ensaio visual/luz branca ou < 20 lux em câmara escura para UV)", tipoResposta: "VALOR", unidade: "lux", criterioReferencia: "ABNT NBR ISO 3059 / ASME V" },
+              { campo: "Detecção de Indicações Lineares Relevantes (Trincas, Dobras, Falta de Fusão)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME VIII Div. 1 Apêndice 8 / AWS D1.1" },
+              { campo: "Detecção de Indicações Arredondadas (Poros, Inclusões de Escória) — Dimensão do maior defeito", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ASME VIII Div. 1 (Limite admissível conforme espessura da junta)" },
+              { campo: "Aparelho de Ultrassom / Yoke / Acessórios com Certificado de Calibração Válido", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Rastreabilidade RBC / Inmetro" },
+              { campo: "Qualificação do Inspetor de Ensaios Não Destrutivos (Nível 2 SNQC / ABENDI)", tipoResposta: "VALOR", criterioReferencia: "ABNT NBR ISO 9712 / SNQC-END" },
+              { campo: "Parecer Técnico Final de Aprovação ou Reprovação da Junta Conforme Norma Regulamentadora", tipoResposta: "SELECAO", opcoes: ["Aprovado sem Restrições", "Aprovado sob Condição de Monitoramento", "Reprovado — Exige Goivagem e Nova Soldagem"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Critério de aceitação de projeto" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Definição do Método de Ensaio Aplicado por Junta/Ponto (LP, PM, US, RX)', ordem: 1 },
@@ -2021,23 +2019,22 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Verificação da Estrutura da Ponte/Pórtico (viga principal e carrinho)'
             ],
             checklistInicial: [
-              'Capacidade nominal identificada na placa do equipamento',
-              'Vão da ponte/pórtico conferido',
-              'Trilhos de rolamento avaliados quanto a desgaste e alinhamento',
-              'Rodas do carrinho/ponte avaliadas',
-              'Barramento elétrico isolado e sem danos aparentes',
-              'Coletores de energia avaliados',
-              'Cabo de aço/corrente da talha sem desgaste ou corrosão',
-              'Freio de elevação testado',
-              'Freio de translação testado',
-              'Redutor sem vazamento de óleo ou ruído anormal',
-              'Fins de curso (superior, inferior, lateral) testados',
-              'Limitador de carga testado',
-              'Botão de emergência testado',
-              'Controle pendente (botoeira) sem danos',
-              'Estrutura da viga principal sem deformação ou trinca',
-              'Estrutura do carrinho sem deformação',
-              'Sinalização de capacidade nominal afixada na ponte/pórtico'
+              { campo: "Trilhos de Rolamento e Vigas de Sustentação — Desgaste do boleto do trilho, alinhamento, nivelamento e ausência de trincas nas soldas de emenda", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8400 / NBR 16147" },
+              { campo: "Batentes de Fim de Curso Mecânicos — Presença e integridade dos amortecedores (borracha ou hidráulicos) nas extremidades do caminho de rolamento", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e ABNT NBR 8400" },
+              { campo: "Viga Principal e Cabeceiras — Integridade estrutural, ausência de deformações plásticas permanentes, corrosão e aperto dos parafusos estruturais", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8400" },
+              { campo: "Desgaste de Rodas de Translação — Medição do desgaste do friso e da banda de rodagem das rodas da ponte e do trole", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ABNT NBR 8400 (Desgaste máximo do friso e diâmetro)" },
+              { campo: "Freio do Mecanismo de Elevação — Eficiência de frenagem sob carga nominal, desgaste das pastilhas/lonas e ausência de vazamento de óleo no atuador", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 8400 / NR-11" },
+              { campo: "Freio de Translação (Ponte e Trole) — Suavidade de frenagem, sem travamento brusco das rodas ou escorregamento excessivo", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 8400" },
+              { campo: "Guia de Cabo de Aço da Talha — Integridade da guia móvel de assentamento do cabo nas ranhuras do tambor", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 8400" },
+              { campo: "Cabo de Aço de Içamento — Contagem de arames rompidos por passo, redução do diâmetro nominal, corrosão ou nós/deformações (gaiola de passarinho)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 4309 / ABNT NBR 16147" },
+              { campo: "Medição do Diâmetro Efetivo do Cabo de Aço", tipoResposta: "VALOR", unidade: "mm", criterioReferencia: "ISO 4309 (Descarte se redução > 7% a 10% do nominal)" },
+              { campo: "Gancho de Carga e Trava de Segurança — Presença e ação de mola da trava, ausência de trincas na raiz da rosca e rotação livre em 360°", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "DIN 15401 / ABNT NBR 8400" },
+              { campo: "Abertura da Garganta do Gancho — Variação em relação à medida original 'y'", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "DIN 15401 (Descarte se abertura exceder 10% da original)" },
+              { campo: "Chave Fim de Curso Superior de Elevação — Teste de desarme mecânico/elétrico antes do moitão atingir o tambor", tipoResposta: "C_NC_NA", criterioReferencia: "NR-12 e ABNT NBR 8400 (Dispositivo de corte de segurança)" },
+              { campo: "Limitador de Carga Eletromecânico/Eletrônico — Ajustado para cortar a elevação quando a carga exceder a capacidade nominal", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e ABNT NBR 8400 (Corte em 100% a 110% da capacidade nominal)" },
+              { campo: "Botoeira Pendente / Controle Remoto — Identificação clara das funções, cabo de alívio de tração de aço intacto e botão de emergência tipo cogumelo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-12" },
+              { campo: "Sinalização Sonora e Visual (Giroflex / Sirene) — Ativação automática e sincronizada com o movimento de translação da ponte", tipoResposta: "C_NC_NA", criterioReferencia: "NR-11 e NR-12" },
+              { campo: "Sinalização de Capacidade Máxima de Carga — Pintura visível a partir do piso operacional em ambos os lados da viga principal", tipoResposta: "VALOR", unidade: "t", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 (Capacidade em toneladas em destaque legível)" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação do Equipamento (capacidade nominal, vão, fabricante, TAG)', ordem: 1 },
@@ -2086,15 +2083,12 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Recomendação de Periodicidade de Reinspeção'
             ],
             checklistInicial: [
-              'Histórico de operação levantado (horas, ciclos), quando disponível',
-              'Classe de utilização (U0–U9, conforme ISO 4301) definida',
-              'Estado de carga (Q1–Q4) definido',
-              'Grupo de classificação (FEM) calculado a partir de utilização x estado de carga',
-              'SWP calculado a partir do grupo de classificação',
-              'Vida útil já consumida comparada ao SWP total',
-              'Vida útil remanescente estimada',
-              'Recomendação de periodicidade de reinspeção definida',
-              'Componentes críticos para fadiga identificados (gancho, tambor, estrutura)'
+              { campo: "Horas Efetivas de Operação Acumuladas no Horímetro / Registrador de Carga", tipoResposta: "VALOR", unidade: "horas", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 12482 / FEM 9.755" },
+              { campo: "Espectro de Carga Médio de Utilização do Equipamento (Km)", tipoResposta: "SELECAO", opcoes: ["Leve (L1: Km = 0,53 - Raramente atinge carga máxima)", "Médio (L2: Km = 0,67 - Frequente carga média, ocasional nominal)", "Pesado (L3: Km = 0,85 - Frequentemente em carga nominal)", "Muito Pesado (L4: Km = 1,00 - Constantemente em carga nominal)"], criterioReferencia: "ISO 4301 / FEM 1.001" },
+              { campo: "Classe de Funcionamento do Mecanismo de Elevação Conforme Placa de Identificação", tipoResposta: "SELECAO", opcoes: ["FEM 1Bm / ISO M3 (400 h)", "FEM 1Am / ISO M4 (800 h)", "FEM 2m / ISO M5 (1.600 h)", "FEM 3m / ISO M6 (3.200 h)", "FEM 4m / ISO M7 (6.300 h)"], criterioReferencia: "FEM 9.755 / ISO 12482" },
+              { campo: "Percentual do Período de Trabalho Seguro Consumido (SWP %)", tipoResposta: "VALOR", unidade: "%", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 12482 (Se consumo atingir 100%, revisão geral obrigatória)" },
+              { campo: "Estimativa Teórica da Vida Útil Remanescente sob o Regime Atual", tipoResposta: "VALOR", unidade: "anos / meses", criterioReferencia: "Modelagem analítica ISO 12482" },
+              { campo: "Inspeção Especial de Desmontagem Geral (Overhaul) Exigida ou Programada", tipoResposta: "SELECAO", opcoes: ["Não Necessária (SWP < 80%)", "Programar Revisão Preventiva (80% ≤ SWP < 100%)", "Parada Imediata para Overhaul Obrigatório (SWP ≥ 100%)"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ISO 12482 Artigo 6" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Levantamento do Histórico de Ciclos de Operação (horas, ciclos)', ordem: 1 },
@@ -2140,20 +2134,12 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Verificação do Poço (fundo de poço, para-choques, iluminação)'
             ],
             checklistInicial: [
-              'Capacidade nominal identificada',
-              'Percurso e número de paradas conferidos',
-              'Cabos de tração sem fios rompidos ou corrosão',
-              'Limitador de velocidade testado',
-              'Freio de emergência (pára-quedas) testado',
-              'Portas de pavimento com intertravamento funcional',
-              'Porta de cabina com intertravamento funcional',
-              'Casa de máquinas com acesso seguro e iluminação adequada',
-              'Quadro de comando identificado, sem exposição de partes energizadas',
-              'Ventilação da casa de máquinas avaliada',
-              'Fundo de poço limpo e com para-choques íntegros',
-              'Iluminação do poço funcional',
-              'Sinalização de capacidade máxima afixada na cabina',
-              'Dispositivo de alarme/comunicação de emergência testado'
+              { campo: "Torre / Caixa de Corrida e Poço — Guias verticais sem deformações, fixações rígidas e poço limpo e isento de infiltrações de água ou óleo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 14712" },
+              { campo: "Intertravamento Elétrico e Mecânico das Portas de Pavimento — Impossibilidade de movimentação do elevador com portas abertas e bloqueio de abertura sem presença de cabina", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 14712 / NR-12" },
+              { campo: "Freio de Segurança Instantâneo / Progressivo (Pára-quedas) — Teste funcional das cunhas de travamento nas guias em caso de sobrevelocidade ou quebra de cabo", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 14712" },
+              { campo: "Sinalização de Capacidade Máxima e Proibição Expressa de Transporte de Pessoas", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "NR-11 e ABNT NBR 14712 (Placa indelével em todos os pavimentos)" },
+              { campo: "Cabos de Tração e Limitador de Velocidade — Diâmetro uniforme, ausência de arames partidos agrupados e lubrificação", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR 14712 e ISO 4309" },
+              { campo: "Chaves Limite de Fim de Curso Superior e Inferior — Corte de força automático antes de atingir os para-choques", tipoResposta: "C_NC_NA", criterioReferencia: "ABNT NBR 14712" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação do Equipamento (capacidade, percurso, paradas)', ordem: 1 },
@@ -2198,16 +2184,12 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               'Marcação e Identificação Permanente da Capacidade'
             ],
             checklistInicial: [
-              'Dispositivo identificado (tipo, dimensões, material)',
-              'Memória de cálculo apresentada (dimensionamento e fator de segurança)',
-              'Fator de segurança conforme norma aplicável (NBR 8400 ou equivalente)',
-              'Teste de carga realizado (percentual da capacidade nominal)',
-              'Ausência de deformação permanente após o teste',
-              'Solda inspecionada visualmente (fissuras, porosidade)',
-              'Fixação/parafusos conferidos com torque adequado',
-              'Marcação de capacidade nominal gravada de forma permanente na peça',
-              'Data de fabricação/teste registrada',
-              'Certificado do teste de carga anexado'
+              { campo: "Identificação e Rastreabilidade — Placa de identificação com capacidade nominal (WLL/CMT), peso próprio (tara), fabricante, número de série e TAG", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME B30.20 e ABNT NBR 8400" },
+              { campo: "Inspeção Dimensional de Furos de Olhais e Pinos — Medição de ovalização de furos de olhais e desgaste em pontos de contato de manilhas", tipoResposta: "VALOR", unidade: "mm", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME B30.20 (Descarte se desgaste ou ovalização > 5% a 10%)" },
+              { campo: "Ensaios Não Destrutivos (LP / PM) nas Soldas dos Olhais de Carga — Ausência de trincas de fadiga na zona termicamente afetada (ZTA)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ABNT NBR NM 334 / ASME B30.20" },
+              { campo: "Memória de Cálculo e Verificação de Fator de Segurança Estrutural (Fator de segurança mínimo de 3:1 a 5:1)", tipoResposta: "VALOR", unidade: "FS", criterioReferencia: "ASME B30.20 / NBR 8400" },
+              { campo: "Teste de Carga Estático / Dinâmico Realizado — Aplicação de sobrecarga de ensaio (125% a 150% da WLL) com célula de carga calibrada", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME B30.20 e ABNT NBR 8400" },
+              { campo: "Ausência de Deformações Permanentes Residuais após o Teste de Sobrecarga", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "ASME B30.20" }
             ],
             secoesPadrao: [
               { id: 'sec-1', titulo: '1. Identificação do Dispositivo (tipo, dimensões, capacidade nominal)', ordem: 1 },
