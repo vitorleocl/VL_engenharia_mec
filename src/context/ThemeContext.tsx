@@ -72,3 +72,5 @@ export const useAdminTheme = (): ThemeContextType => {
   }
   return context;
 };
+
+export const useTheme = useAdminTheme;

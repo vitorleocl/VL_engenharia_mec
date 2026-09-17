@@ -404,12 +404,62 @@ export interface Laudo {
   atualizadoEm: string;
 }
 
-export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplicavel';
+export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'nao_evidenciado' | 'medicao';
+
+export type ChecklistCriticidade = 'critica' | 'alta' | 'media' | 'baixa' | 'observacao';
+
+export type ChecklistTipoEvidencia = 
+  | 'inspecao_visual' 
+  | 'medicao' 
+  | 'teste_funcional' 
+  | 'ensaio' 
+  | 'documento' 
+  | 'fotografia' 
+  | 'video' 
+  | 'entrevista' 
+  | 'historico_manutencao';
+
+export interface ChecklistMedicaoDetalhada {
+  valorEncontrado?: string | number;
+  unidade?: string;
+  valorMinimo?: number;
+  valorMaximo?: number;
+  tolerancia?: string;
+  instrumentoUtilizado?: string;
+  instrumentoNumSerie?: string;
+  certificadoCalibracao?: string;
+  dataCalibracao?: string;
+}
+
+export interface ChecklistNaoConformidadeDetalhada {
+  descricao?: string;
+  evidencia?: string;
+  riscoAssociado?: string;
+  recomendacao?: string;
+  prazoRecomendado?: string;
+  referenciaNormativa?: string;
+  criticidade?: ChecklistCriticidade;
+  impeditivo?: boolean;
+}
+
+export interface ChecklistFotoVinculada {
+  id: string;
+  url: string;
+  numeroFoto?: number;
+  dataHora?: string;
+  local?: string;
+  descricao?: string;
+  coordenada?: string;
+  vinculoNaoConformidade?: boolean;
+}
 
 export interface ChecklistCampoItem {
   id: string;
+  codigoItem?: string;
   descricao: string;
   campo?: string;
+  grupoInspecao?: string;
+  criterioInspecao?: string;
   status: ChecklistCampoItemStatus;
   observacao?: string;
   fotoUrl?: string;
@@ -418,9 +468,36 @@ export interface ChecklistCampoItem {
   unidade?: string;
   opcoes?: string[];
   criterioReferencia?: string;
+  referenciaNormativa?: string;
   obrigatorioFoto?: boolean;
   exigeFotoSeNaoConforme?: boolean;
   valorResposta?: string;
+  // Campos detalhados do Prompt Mestre
+  criticidade?: ChecklistCriticidade;
+  tipoEvidencia?: ChecklistTipoEvidencia;
+  medicao?: ChecklistMedicaoDetalhada;
+  naoConformidade?: ChecklistNaoConformidadeDetalhada;
+  fotosVinculadas?: ChecklistFotoVinculada[];
+}
+
+export interface ChecklistConclusaoAutomatica {
+  totalAvaliados: number;
+  totalConforme: number;
+  totalNaoConforme: number;
+  totalNaoAplicavel: number;
+  totalNaoEvidenciado: number;
+  totalMedicoes: number;
+  totalCriticas: number;
+  totalAltas: number;
+  totalMedias: number;
+  totalBaixas: number;
+  totalObservacoes: number;
+  percentualConformidade: number;
+  temItemImpeditivo: boolean;
+  itensImpeditivos: string[];
+  necessidadeReinspecao: boolean;
+  parecerSeguranca: 'Liberado' | 'Liberado com Restrições' | 'Interdição / Bloqueio Imediato';
+  recomendacoesGerais?: string[];
 }
 
 export interface ChecklistCampo {
@@ -432,8 +509,10 @@ export interface ChecklistCampo {
   ativoId: string;
   ativoIdentificacao?: string;
   categoriaLaudo: string;
+  subcategoriaLaudo?: string;
   tipoLaudoId: string;
   tipoLaudoNome?: string;
+  tipoAtivo?: string;
   itens: ChecklistCampoItem[];
   itensExtras: ChecklistCampoItem[];
   rubricaUrl?: string;
@@ -448,6 +527,7 @@ export interface ChecklistCampo {
     precisao?: number;
     enderecoAproximado?: string;
   } | null;
+  conclusaoAutomatica?: ChecklistConclusaoAutomatica;
   pdfUrl?: string;
   disponibilizadoParaCliente: boolean;
   status: 'rascunho' | 'finalizado';
@@ -465,6 +545,149 @@ export interface ModuloLaudoCatalogo {
   botao: string;
   escopo: string;
   iconName: string;
+}
+
+// -------------------------------------------------------------
+// BANCO MESTRE DE CHECKLISTS TÉCNICOS DE ENGENHARIA MECÂNICA
+// -------------------------------------------------------------
+
+export type ResultadoInspecaoMestre = 
+  | 'CONFORME' 
+  | 'NAO_CONFORME' 
+  | 'NA' 
+  | 'NAO_EVIDENCIADO' 
+  | 'MEDICAO';
+
+export type CriticidadeInspecao = 
+  | 'Critica' 
+  | 'Alta' 
+  | 'Media' 
+  | 'Baixa' 
+  | 'Observacao';
+
+export type TipoEvidenciaMestre = 
+  | 'Inspeção visual' 
+  | 'Medição' 
+  | 'Teste funcional' 
+  | 'Ensaio' 
+  | 'Documento' 
+  | 'Fotografia' 
+  | 'Vídeo' 
+  | 'Entrevista' 
+  | 'Histórico de manutenção';
+
+export interface ReferenciaNormativaMestre {
+  norma: string;
+  edicaoAno?: string;
+  itemRequisito?: string;
+  observacaoTecnica?: string;
+}
+
+export interface CampoMedicaoMestre {
+  valorEncontrado?: number | string;
+  unidade?: string;
+  valorMinimo?: number | string;
+  valorMaximo?: number | string;
+  tolerancia?: string;
+  instrumentoUtilizado?: string;
+  numeroSerieInstrumento?: string;
+  certificadoCalibracao?: string;
+  dataCalibracao?: string;
+}
+
+export interface RegistroFotograficoMestre {
+  id: string;
+  numeroFoto: number;
+  dataHora: string;
+  local?: string;
+  itemRelacionadoCodigo?: string;
+  descricao: string;
+  coordenada?: string;
+  fotoUrl: string;
+  vinculadaNC: boolean;
+}
+
+export interface DetalhesNaoConformidadeMestre {
+  descricaoNC: string;
+  evidencia: TipoEvidenciaMestre | string;
+  fotografiaUrl?: string;
+  fotografiaNome?: string;
+  criticidade: CriticidadeInspecao;
+  riscoAssociado: string;
+  recomendacao: string;
+  prazoRecomendado: string;
+  referenciaNormativa: ReferenciaNormativaMestre;
+  bloqueioImediato?: boolean;
+}
+
+export interface ItemInspecaoMestre {
+  codigo: string; // Ex: INC-01-001, NR12-01-003, TER-01-005
+  descricao: string;
+  criterioInspecao: string;
+  grupoInspecao?: string;
+  tipoAtivo?: string;
+  resultado: ResultadoInspecaoMestre;
+  campoMedicao?: CampoMedicaoMestre;
+  observacao?: string;
+  fotos?: RegistroFotograficoMestre[];
+  evidenciaDocumental?: TipoEvidenciaMestre;
+  criticidadePadrao?: CriticidadeInspecao;
+  recomendacaoPadrao?: string;
+  referenciaNormativa: ReferenciaNormativaMestre;
+  statusInspecao?: 'Pendente' | 'Inspecionado' | 'Impedido';
+  detalhesNC?: DetalhesNaoConformidadeMestre;
+}
+
+export interface TipoLaudoMestreDef {
+  id: string;
+  codigo: string;
+  nome: string;
+  normasRef: string;
+  tiposAtivos?: string[];
+  gruposInspecao?: string[];
+  itens: ItemInspecaoMestre[];
+}
+
+export interface SubcategoriaMestreDef {
+  id: string;
+  codigo: string; // Ex: 1.1, 1.2, 2.1, 3.1
+  nome: string;
+  tiposAtivos?: string[];
+  tiposLaudo: TipoLaudoMestreDef[];
+}
+
+export interface CategoriaMestreDef {
+  numero: number;
+  id: string;
+  nome: string;
+  icone: string;
+  descricao?: string;
+  subcategorias: SubcategoriaMestreDef[];
+}
+
+export interface ConclusaoAutomaticaChecklist {
+  totalItensAvaliados: number;
+  totalConforme: number;
+  totalNaoConforme: number;
+  totalNA: number;
+  totalNaoEvidenciado: number;
+  totalMedicoes: number;
+  ncCriticas: number;
+  ncAltas: number;
+  ncMedias: number;
+  ncBaixas: number;
+  ncObservacoes: number;
+  percentualConformidade: number; // % (base: Conformes / (Conformes + NCs))
+  itensImpeditivos: {
+    codigo: string;
+    descricao: string;
+    risco: string;
+    recomendacao: string;
+  }[];
+  recomendacoesConsolidadas: string[];
+  necessidadeReinspecao: boolean;
+  parecerSeguranca: 'LIBERADO' | 'LIBERADO_COM_RESTRICOES' | 'INTERDICAO_IMEDIATA';
+  justificativaRegraSeguranca: string;
 }
 
 // Aliases for component convenience

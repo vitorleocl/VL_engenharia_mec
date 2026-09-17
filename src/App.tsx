@@ -25,6 +25,7 @@ import { AgendaView } from './components/admin/AgendaView';
 import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { ChecklistCampoView } from './components/admin/ChecklistCampoView';
+import { BancoChecklistsView } from './components/admin/BancoChecklistsView';
 import { GestaoView } from './components/admin/GestaoView';
 
 function FloatingContactHelper() {
@@ -162,6 +163,14 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <ChecklistCampoView />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/banco-checklists"
+                element={
+                  <AdminLayout>
+                    <BancoChecklistsView />
                   </AdminLayout>
                 }
               />
