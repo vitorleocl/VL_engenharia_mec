@@ -5,22 +5,14 @@ import {
   Users, 
   Cpu, 
   FileSpreadsheet, 
-  Calendar, 
   Sparkles, 
   CheckCircle2, 
-  Clock, 
-  AlertTriangle, 
   ArrowRight, 
   Plus, 
-  Phone,
-  Mail,
-  ShieldCheck,
-  Flame,
-  ExternalLink
+  ShieldCheck
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { MODULOS_LAUDO_CATALOGO } from '../../data/initialData';
 
 export const DashboardView: React.FC = () => {
   const { 
@@ -28,11 +20,7 @@ export const DashboardView: React.FC = () => {
     clientes, 
     ativos, 
     orcamentos, 
-    agenda, 
-    contatos, 
-    usoIA, 
-    marcarContatoRespondido,
-    adicionarOrcamento 
+    usoIA
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -43,7 +31,6 @@ export const DashboardView: React.FC = () => {
   const laudosEmAndamento = laudos.filter(l => l.status === 'em_andamento' || l.status === 'rascunho').length;
   const laudosFinalizados = laudos.filter(l => l.status === 'finalizado').length;
   const orcamentosAbertos = orcamentos.filter(o => o.status === 'enviado' || o.status === 'rascunho').length;
-  const vistoriasProximas = agenda.filter(a => a.status === 'agendada');
   const percIA = Math.round((usoIA.totalChamadas / usoIA.limiteMensal) * 100);
 
   return (
@@ -149,199 +136,86 @@ export const DashboardView: React.FC = () => {
 
       </div>
 
-      {/* Grid: Recent Laudos & Upcoming Inspections */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left: Recent Reports Table */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-extrabold text-[#0B1E3D]">
-                Laudos Técnicos Recentes
-              </h3>
-              <p className="text-xs text-slate-500">
-                Acompanhamento de relatórios em campo e ARTs vinculadas
-              </p>
-            </div>
-            <Link
-              to="/admin/laudos"
-              className="text-xs font-bold text-[#1565D8] hover:text-[#0b4fb8] flex items-center gap-1"
-            >
-              <span>Ver todos ({laudos.length})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+      {/* Recent Reports Table */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="text-base font-extrabold text-[#0B1E3D]">
+              Laudos Técnicos Recentes
+            </h3>
+            <p className="text-xs text-slate-500">
+              Acompanhamento de relatórios em campo e ARTs vinculadas
+            </p>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
-                <tr>
-                  <th className="py-2.5 px-3">Número / Tipo</th>
-                  <th className="py-2.5 px-3">Cliente</th>
-                  <th className="py-2.5 px-3">Data</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Risco HRN</th>
-                  <th className="py-2.5 px-3 text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {laudos.slice(0, 5).map((laudo) => (
-                  <tr key={laudo.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-3">
-                      <span className="font-bold font-mono text-[#0B1E3D] block">
-                        {laudo.numero}
-                      </span>
-                      <span className="text-slate-500 text-[11px]">
-                        {laudo.tipo}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-700 font-medium">
-                      {laudo.clienteNome}
-                    </td>
-                    <td className="py-3 px-3 text-slate-500">
-                      {laudo.dataInspecao}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                        laudo.status === 'finalizado'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {laudo.status === 'finalizado' ? 'Finalizado (ART)' : 'Rascunho / Campo'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3">
-                      {laudo.hrnCalculoGeral ? (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${laudo.hrnCalculoGeral.cor}`}>
-                          {laudo.hrnCalculoGeral.nivel} ({laudo.hrnCalculoGeral.score})
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
-                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-[#1565D8] hover:text-white text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
-                      >
-                        Abrir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Link
+            to="/admin/laudos"
+            className="text-xs font-bold text-[#1565D8] hover:text-[#0b4fb8] flex items-center gap-1"
+          >
+            <span>Ver todos ({laudos.length})</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Right: Upcoming Inspection Visits */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-sm font-extrabold text-[#0B1E3D] flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#1565D8]" />
-                <span>Próximas Vistorias</span>
-              </h3>
-              <Link to="/admin/agenda" className="text-xs text-[#1565D8] font-bold">
-                Agenda
-              </Link>
-            </div>
-
-            {vistoriasProximas.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                Nenhuma vistoria agendada para os próximos dias.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {vistoriasProximas.map((v) => (
-                  <div
-                    key={v.id}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-[#0B1E3D]">{v.clienteNome}</span>
-                      <span className="text-[10px] font-mono text-blue-600 font-bold">
-                        {v.dataHora.replace('T', ' ')}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+              <tr>
+                <th className="py-2.5 px-3">Número / Tipo</th>
+                <th className="py-2.5 px-3">Cliente</th>
+                <th className="py-2.5 px-3">Data</th>
+                <th className="py-2.5 px-3">Status</th>
+                <th className="py-2.5 px-3">Risco HRN</th>
+                <th className="py-2.5 px-3 text-right">Ação</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {laudos.slice(0, 5).map((laudo) => (
+                <tr key={laudo.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-3">
+                    <span className="font-bold font-mono text-[#0B1E3D] block">
+                      {laudo.numero}
+                    </span>
+                    <span className="text-slate-500 text-[11px]">
+                      {laudo.tipo}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-slate-700 font-medium">
+                    {laudo.clienteNome}
+                  </td>
+                  <td className="py-3 px-3 text-slate-500">
+                    {laudo.dataInspecao}
+                  </td>
+                  <td className="py-3 px-3">
+                    <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                      laudo.status === 'finalizado'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {laudo.status === 'finalizado' ? 'Finalizado (ART)' : 'Rascunho / Campo'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3">
+                    {laudo.hrnCalculoGeral ? (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${laudo.hrnCalculoGeral.cor}`}>
+                        {laudo.hrnCalculoGeral.nivel} ({laudo.hrnCalculoGeral.score})
                       </span>
-                    </div>
-                    <p className="text-xs text-slate-600">
-                      Ativo: <strong className="text-slate-800">{v.ativoIdentificacao || 'A definir'}</strong>
-                    </p>
-                    {v.observacoes && (
-                      <p className="text-[11px] text-slate-500 italic">
-                        "{v.observacoes}"
-                      </p>
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">—</span>
                     )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Contact Leads from Website */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-sm font-extrabold text-[#0B1E3D] flex items-center gap-2">
-                <Mail className="w-4 h-4 text-indigo-600" />
-                <span>Contatos do Site ({contatos.length})</span>
-              </h3>
-            </div>
-
-            {contatos.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                Nenhuma mensagem recebida recentemente pelo site.
-              </p>
-            ) : (
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {contatos.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`p-3 rounded-xl border text-xs space-y-1.5 transition-all ${
-                      c.respondido 
-                        ? 'bg-slate-50/50 border-slate-200 opacity-60' 
-                        : 'bg-blue-50/50 border-blue-200 shadow-xs'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">{c.nome}</span>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(c.criadoEm).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                    <p className="text-slate-600 font-semibold text-[11px]">
-                      Interesse: <span className="text-[#1565D8]">{c.servicoInteresse}</span>
-                    </p>
-                    <p className="text-slate-700 text-[11px] leading-snug line-clamp-2">
-                      "{c.mensagem}"
-                    </p>
-                    <div className="pt-2 flex items-center justify-between border-t border-slate-200/60">
-                      <a
-                        href={`https://wa.me/55${c.telefone.replace(/\D/g, '')}?text=Ol%C3%A1%20${encodeURIComponent(c.nome)}%2C%20aqui%20%C3%A9%20o%20Eng.%20Vitor%20da%20VL%20Engenharia%20a%20respeito%20da%20sua%20solicita%C3%A7%C3%A3o%20de%20or%C3%A7amento.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1"
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span>Chamar no WhatsApp</span>
-                      </a>
-                      {!c.respondido && (
-                        <button
-                          onClick={() => marcarContatoRespondido(c.id)}
-                          className="text-[10px] text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
-                        >
-                          Marcar respondido
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <button
+                      onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-[#1565D8] hover:text-white text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
+                    >
+                      Abrir
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
       </div>
 
     </div>
