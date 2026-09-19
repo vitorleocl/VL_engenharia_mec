@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   FileText, 
   ClipboardCheck,
-  Layers,
   Users, 
   Cpu, 
   FileSpreadsheet, 
@@ -70,13 +69,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: ClipboardCheck,
       visible: true,
       badge: 'In Loco',
-    },
-    {
-      label: 'Banco de Checklists',
-      path: '/admin/banco-checklists',
-      icon: Layers,
-      visible: true,
-      badge: '12 Cats',
     },
     {
       label: 'Clientes',

@@ -210,18 +210,33 @@ export interface EvidenciaFoto {
   autorUid?: string;
 }
 
-export type TipoRespostaChecklist = 'C_NC_NA' | 'VALOR' | 'SELECAO' | 'FOTO';
+export type TipoRespostaChecklist = 
+  | 'conformidade' 
+  | 'medida' 
+  | 'informacao' 
+  | 'sim_nao' 
+  | 'multipla_escolha' 
+  | 'data'
+  | 'C_NC_NA' 
+  | 'VALOR' 
+  | 'SELECAO' 
+  | 'FOTO';
 
 export interface TipoLaudoItemChecklist {
   id: string;
   descricao: string;
   campo?: string;
-  status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente';
-  observacao?: string;
-  fotoUrl?: string;
   tipoResposta?: TipoRespostaChecklist;
   unidade?: string;
   opcoes?: string[];
+  valorMinimo?: number;
+  valorMaximo?: number;
+  fotoObrigatoria?: boolean;
+  valor?: string | number | null;
+  status: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'pendente';
+  observacao?: string;
+  fotoUrl?: string;
+  fotosUrls?: string[];
   criterioReferencia?: string;
   obrigatorioFoto?: boolean;
   exigeFotoSeNaoConforme?: boolean;
@@ -243,11 +258,17 @@ export interface SecaoEspecificaDef {
 }
 
 export interface ItemChecklistDef {
+  id?: string;
   campo?: string;
   item?: string;
+  descricao?: string;
   tipoResposta?: TipoRespostaChecklist;
   unidade?: string;
   opcoes?: string[];
+  valorMinimo?: number;
+  valorMaximo?: number;
+  fotoObrigatoria?: boolean;
+  valor?: string | number | null;
   criterioReferencia?: string;
   obrigatorioFoto?: boolean;
   exigeFotoSeNaoConforme?: boolean;
@@ -457,16 +478,22 @@ export interface ChecklistCampoItem {
   id: string;
   codigoItem?: string;
   descricao: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;            // apenas para tipo 'medida' (ex.: 'mm', 'bar', 'dB(A)', 'HRN', 'h', 'm/s²')
+  opcoes?: string[];           // apenas para tipo 'multipla_escolha'
+  valorMinimo?: number;        // apenas para 'medida' — dispara alerta visual se fora da faixa
+  valorMaximo?: number;
+  fotoObrigatoria?: boolean;   // se true, bloqueia salvamento do item sem foto anexada
+  valor?: string | number | null; // resposta preenchida (status, número, texto, opção ou data)
+  observacao?: string;
+  fotosUrls?: string[];
+  // Campos de compatibilidade e legado
   campo?: string;
   grupoInspecao?: string;
   criterioInspecao?: string;
   status: ChecklistCampoItemStatus;
-  observacao?: string;
   fotoUrl?: string;
   fotoNome?: string;
-  tipoResposta?: TipoRespostaChecklist;
-  unidade?: string;
-  opcoes?: string[];
   criterioReferencia?: string;
   referenciaNormativa?: string;
   obrigatorioFoto?: boolean;
@@ -478,6 +505,28 @@ export interface ChecklistCampoItem {
   medicao?: ChecklistMedicaoDetalhada;
   naoConformidade?: ChecklistNaoConformidadeDetalhada;
   fotosVinculadas?: ChecklistFotoVinculada[];
+}
+
+export interface PerigoApreciacaoRiscoNR12 {
+  id: string;
+  pontoOperacao: string; // Zona/ponto de operação (informacao)
+  faseVida: string; // Operação Normal / Setup / Limpeza / Manutenção / Falha Previsível (multipla_escolha)
+  tipoPerigo: string; // Mecânico-Esmagamento, Corte, Perfuração, etc. (multipla_escolha)
+  lo: number; // Probabilidade de Ocorrência (1-15)
+  fe: number; // Frequência de Exposição (1-5)
+  dph: number; // Grau de Dano Possível (1-15)
+  np: number; // Número de Pessoas Expostas (1-8)
+  hrn: number; // HRN Calculado (LO × FE × DPH × NP)
+  classificacaoRisco: 'Trivial' | 'Tolerável' | 'Moderado' | 'Substancial' | 'Intolerável' | string;
+  medidaExistente: string; // Medida de controle existente (informacao)
+  nivelControleRecomendado: 'Eliminação' | 'Substituição' | 'Controle de Engenharia' | 'Controle Administrativo' | 'EPI' | string;
+  medidaRecomendadaDetalhada: string; // Medida de controle recomendada (detalhamento) (informacao)
+  hrnResidual?: number; // HRN residual após medida proposta (medida)
+  prazoImplementacao?: string; // Prazo de implementação (data)
+  responsavelImplementacao?: string; // Responsável pela implementação (informacao)
+  fotoUrl?: string; // Foto do ponto de perigo (fotoObrigatoria: true)
+  fotosUrls?: string[];
+  observacao?: string;
 }
 
 export interface ChecklistConclusaoAutomatica {
@@ -515,6 +564,7 @@ export interface ChecklistCampo {
   tipoAtivo?: string;
   itens: ChecklistCampoItem[];
   itensExtras: ChecklistCampoItem[];
+  perigosApreciacaoRisco?: PerigoApreciacaoRiscoNR12[];
   rubricaUrl?: string;
   rubricaTimestamp?: string;
   responsavelUid: string;
