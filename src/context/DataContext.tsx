@@ -93,6 +93,8 @@ interface DataContextType {
   removerTemplate: (id: string) => void;
 
   // Usuários Actions
+  atualizarUsuario: (uid: string, dados: Partial<Usuario>) => void;
+  removerUsuario: (uid: string) => void;
   atualizarPapelUsuario: (uid: string, novoRole: Usuario['role'], clienteId?: string) => void;
   adicionarUsuarioConvidado: (usuario: Omit<Usuario, 'uid' | 'criadoEm'>) => void;
 
@@ -854,6 +856,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Usuários
+  const atualizarUsuario = (uid: string, dados: Partial<Usuario>) => {
+    setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, ...dados } : u));
+    registrarLog('usuarios', uid, 'editar', `Dados do usuário atualizados: ${dados.nome || dados.email || uid}`);
+  };
+
+  const removerUsuario = (uid: string) => {
+    const alvo = usuarios.find(u => u.uid === uid);
+    setUsuarios(prev => prev.filter(u => u.uid !== uid));
+    registrarLog('usuarios', uid, 'excluir', `Usuário excluído do sistema: ${alvo?.nome || alvo?.email || uid}`);
+  };
+
   const atualizarPapelUsuario = (uid: string, novoRole: Usuario['role'], clienteId?: string) => {
     setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, role: novoRole, clienteId: clienteId || u.clienteId } : u));
     registrarLog('usuarios', uid, 'editar', `Permissão alterada para papel: ${novoRole}`);
@@ -1040,6 +1053,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removerLaudo,
         salvarTemplate,
         removerTemplate,
+        atualizarUsuario,
+        removerUsuario,
         atualizarPapelUsuario,
         adicionarUsuarioConvidado,
         enviarContatoPublico,

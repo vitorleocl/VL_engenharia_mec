@@ -7,6 +7,8 @@ export interface Usuario {
   role: UserRole;
   clienteId?: string;
   cargo?: string;
+  crea?: string;
+  ativo?: boolean;
   criadoEm: string;
 }
 

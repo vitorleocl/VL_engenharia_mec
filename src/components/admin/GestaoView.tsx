@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   ShieldAlert, 
   Users, 
@@ -12,17 +13,46 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   UserCheck,
-  FileDown
+  FileDown,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+  Shield,
+  Briefcase,
+  UserX,
+  Mail
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { UsuarioPerfil } from '../../types';
+import { Usuario } from '../../types';
 
 export const GestaoView: React.FC = () => {
-  const { auditLogs, usoIA, atualizarLimiteIA, clientes, ativos, laudos, orcamentos } = useData();
+  const { 
+    auditLogs, 
+    usoIA, 
+    atualizarLimiteIA, 
+    clientes, 
+    ativos, 
+    laudos, 
+    orcamentos,
+    usuarios,
+    atualizarUsuario,
+    removerUsuario,
+    adicionarUsuarioConvidado
+  } = useData();
   const { currentUser } = useAuth();
+  const location = useLocation();
 
   const [activeSubTab, setActiveSubTab] = useState<'usuarios' | 'auditoria' | 'ia' | 'empresa' | 'backup'>('usuarios');
+
+  useEffect(() => {
+    if (location.pathname.includes('/usuarios')) {
+      setActiveSubTab('usuarios');
+    } else if (location.pathname.includes('/auditoria')) {
+      setActiveSubTab('auditoria');
+    }
+  }, [location.pathname]);
 
   // IA limits state
   const [limiteMensal, setLimiteMensal] = useState(usoIA.limiteMensal);
@@ -33,63 +63,128 @@ export const GestaoView: React.FC = () => {
   const [responsavelNome, setResponsavelNome] = useState('Vitor Leonardo');
   const [artPadraoPrefixo, setArtPadraoPrefixo] = useState('PE2026-');
 
-  // Mock users list
-  const [usuarios, setUsuarios] = useState<UsuarioPerfil[]>([
-    {
-      uid: 'master-vitor',
-      email: 'vitorleonardocl@gmail.com',
-      nome: 'Vitor Leonardo',
-      role: 'master',
-      ativo: true,
-      crea: '1822299490',
-      criadoEm: '2025-01-01',
-    },
-    {
-      uid: 'colab-1',
-      email: 'engenharia.vistoria@vl.com.br',
-      nome: 'Inspetor Técnico de Campo',
-      role: 'colaborador',
-      ativo: true,
-      criadoEm: '2025-02-10',
-    },
-    {
-      uid: 'cliente-1',
-      email: 'contato@suape-eng.com.br',
-      nome: 'Gestor Suape (Portal Cliente)',
-      role: 'cliente',
-      ativo: true,
-      clienteIdVinculado: 'cli-suape-1',
-      criadoEm: '2025-03-01',
-    }
-  ]);
-
+  // Form states for new user
   const [novoEmail, setNovoEmail] = useState('');
   const [novoNome, setNovoNome] = useState('');
+  const [novoCargo, setNovoCargo] = useState('');
+  const [novoCrea, setNovoCrea] = useState('');
   const [novoRole, setNovoRole] = useState<'master' | 'colaborador' | 'cliente'>('colaborador');
+  const [novoClienteId, setNovoClienteId] = useState('');
+
+  // Edit User Modal state
+  const [usuarioParaEditar, setUsuarioParaEditar] = useState<Usuario | null>(null);
+  const [editNome, setEditNome] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editCargo, setEditCargo] = useState('');
+  const [editCrea, setEditCrea] = useState('');
+  const [editRole, setEditRole] = useState<'master' | 'colaborador' | 'cliente'>('colaborador');
+  const [editClienteId, setEditClienteId] = useState('');
+  const [editAtivo, setEditAtivo] = useState(true);
+
+  // Delete User Confirmation state
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<Usuario | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+
+  const showFeedback = (tipo: 'sucesso' | 'erro', texto: string) => {
+    setFeedbackMsg({ tipo, texto });
+    setTimeout(() => setFeedbackMsg(null), 4500);
+  };
 
   const handleSalvarLimiteIA = () => {
     atualizarLimiteIA(Number(limiteMensal));
-    alert('Limite mensal de chamadas IA atualizado com sucesso!');
+    showFeedback('sucesso', 'Limite mensal de chamadas IA atualizado com sucesso!');
   };
 
   const handleAdicionarUsuario = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!novoEmail.trim() || !novoNome.trim()) return;
+    if (!novoEmail.trim() || !novoNome.trim()) {
+      showFeedback('erro', 'Nome completo e e-mail são obrigatórios.');
+      return;
+    }
 
-    setUsuarios(prev => [
-      ...prev,
-      {
-        uid: `usr-${Date.now()}`,
-        email: novoEmail.trim(),
-        nome: novoNome.trim(),
-        role: novoRole,
-        ativo: true,
-        criadoEm: new Date().toISOString().slice(0, 10),
-      }
-    ]);
+    const emailJaExiste = usuarios.some(u => u.email.toLowerCase() === novoEmail.trim().toLowerCase());
+    if (emailJaExiste) {
+      showFeedback('erro', `Já existe um usuário cadastrado com o e-mail: ${novoEmail.trim()}`);
+      return;
+    }
+
+    adicionarUsuarioConvidado({
+      nome: novoNome.trim(),
+      email: novoEmail.trim().toLowerCase(),
+      role: novoRole,
+      cargo: novoCargo.trim() || undefined,
+      crea: novoCrea.trim() || undefined,
+      clienteId: novoRole === 'cliente' ? novoClienteId || undefined : undefined,
+      ativo: true
+    });
+
     setNovoEmail('');
     setNovoNome('');
-    alert('Usuário convidado com sucesso!');
+    setNovoCargo('');
+    setNovoCrea('');
+    setNovoClienteId('');
+    setNovoRole('colaborador');
+    showFeedback('sucesso', `Usuário ${novoNome.trim()} cadastrado e autorizado com sucesso!`);
+  };
+
+  const handleAbrirEdicao = (u: Usuario) => {
+    setUsuarioParaEditar(u);
+    setEditNome(u.nome || '');
+    setEditEmail(u.email || '');
+    setEditCargo(u.cargo || '');
+    setEditCrea(u.crea || '');
+    setEditRole(u.role || 'colaborador');
+    setEditClienteId(u.clienteId || '');
+    setEditAtivo(u.ativo !== false);
+  };
+
+  const handleSalvarEdicao = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioParaEditar) return;
+    if (!editNome.trim() || !editEmail.trim()) {
+      showFeedback('erro', 'Nome e e-mail são campos obrigatórios.');
+      return;
+    }
+
+    // Não permitir alterar o papel do usuário logado se for o último master
+    if (usuarioParaEditar.uid === 'master-vitor' && editRole !== 'master') {
+      showFeedback('erro', 'A conta principal Master não pode ter seu nível de privilégio rebaixado.');
+      return;
+    }
+
+    atualizarUsuario(usuarioParaEditar.uid, {
+      nome: editNome.trim(),
+      email: editEmail.trim().toLowerCase(),
+      role: editRole,
+      cargo: editCargo.trim() || undefined,
+      crea: editCrea.trim() || undefined,
+      clienteId: editRole === 'cliente' ? (editClienteId || undefined) : undefined,
+      ativo: editAtivo,
+    });
+
+    setUsuarioParaEditar(null);
+    showFeedback('sucesso', `Dados de ${editNome.trim()} atualizados com sucesso!`);
+  };
+
+  const handleConfirmarExclusao = () => {
+    if (!usuarioParaExcluir) return;
+
+    if (usuarioParaExcluir.uid === 'master-vitor' || usuarioParaExcluir.email.toLowerCase() === 'vitorleonardocl@gmail.com') {
+      showFeedback('erro', 'A conta Master principal não pode ser excluída do sistema.');
+      setUsuarioParaExcluir(null);
+      return;
+    }
+
+    if (usuarioParaExcluir.uid === currentUser?.uid) {
+      showFeedback('erro', 'Você não pode excluir sua própria conta enquanto estiver conectado.');
+      setUsuarioParaExcluir(null);
+      return;
+    }
+
+    const nome = usuarioParaExcluir.nome || usuarioParaExcluir.email;
+    removerUsuario(usuarioParaExcluir.uid);
+    setUsuarioParaExcluir(null);
+    showFeedback('sucesso', `Usuário "${nome}" foi excluído com sucesso.`);
   };
 
   // JSON Export Backup
@@ -102,6 +197,7 @@ export const GestaoView: React.FC = () => {
       ativos,
       laudos,
       orcamentos,
+      usuarios,
       auditLogs,
     };
 
@@ -160,111 +256,274 @@ export const GestaoView: React.FC = () => {
         })}
       </div>
 
+      {/* Toast Feedback */}
+      {feedbackMsg && (
+        <div
+          className={`p-4 rounded-xl text-xs font-bold border flex items-center justify-between shadow-md transition-all ${
+            feedbackMsg.tipo === 'sucesso'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : 'bg-red-50 text-red-900 border-red-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedbackMsg.tipo === 'sucesso' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{feedbackMsg.texto}</span>
+          </div>
+          <button
+            onClick={() => setFeedbackMsg(null)}
+            className="p-1 hover:bg-black/5 rounded cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* SUB-TAB 1: USUÁRIOS E PERMISSÕES */}
       {activeSubTab === 'usuarios' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-base font-extrabold text-[#0B1E3D]">
-              Adicionar Novo Usuário ao Sistema
-            </h3>
+            <div>
+              <h3 className="text-base font-extrabold text-[#0B1E3D] flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#1565D8]" />
+                <span>Cadastrar Novo Usuário</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Convide engenheiros, inspetores técnicos de campo ou clientes para acesso com credenciais personalizadas.
+              </p>
+            </div>
 
-            <form onSubmit={handleAdicionarUsuario} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <form onSubmit={handleAdicionarUsuario} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nome Completo</label>
+                <label className="block font-bold text-slate-700 mb-1">Nome Completo *</label>
                 <input
                   type="text"
                   required
                   value={novoNome}
                   onChange={(e) => setNovoNome(e.target.value)}
-                  placeholder="Eng. Fulano de Tal"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
+                  placeholder="Ex: Eng. Leonardo Albuquerque"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">E-mail Profissional</label>
+                <label className="block font-bold text-slate-700 mb-1">E-mail de Acesso *</label>
                 <input
                   type="email"
                   required
                   value={novoEmail}
                   onChange={(e) => setNovoEmail(e.target.value)}
                   placeholder="usuario@empresa.com"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nível de Permissão (Role)</label>
+                <label className="block font-bold text-slate-700 mb-1">Nível de Permissão (Role) *</label>
                 <select
                   value={novoRole}
                   onChange={(e) => setNovoRole(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
                 >
-                  <option value="colaborador">Colaborador (Vistorias e Laudos)</option>
-                  <option value="cliente">Cliente (Somente Leitura dos seus laudos)</option>
-                  <option value="master">Master (Acesso Completo)</option>
+                  <option value="colaborador">Colaborador Técnico (Vistorias, Laudos e Checklists)</option>
+                  <option value="cliente">Cliente (Somente Leitura dos seus laudos e ARTs)</option>
+                  <option value="master">Master (Acesso Completo e Governança)</option>
                 </select>
               </div>
 
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Convidar</span>
-                </button>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Cargo ou Especialidade</label>
+                <input
+                  type="text"
+                  value={novoCargo}
+                  onChange={(e) => setNovoCargo(e.target.value)}
+                  placeholder="Ex: Inspetor Mecânico / Perito"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                />
               </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Registro CREA (se aplicável)</label>
+                <input
+                  type="text"
+                  value={novoCrea}
+                  onChange={(e) => setNovoCrea(e.target.value)}
+                  placeholder="Ex: 1822299490 / CREA-PE"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                />
+              </div>
+
+              {novoRole === 'cliente' ? (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Cliente Vinculado</label>
+                  <select
+                    value={novoClienteId}
+                    onChange={(e) => setNovoClienteId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                  >
+                    <option value="">-- Selecione a Empresa do Cliente --</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.razaoSocial} {c.nomeFantasia ? `(${c.nomeFantasia})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Cadastrar Usuário</span>
+                  </button>
+                </div>
+              )}
+
+              {novoRole === 'cliente' && (
+                <div className="sm:col-span-2 lg:col-span-3 flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Cadastrar Usuário</span>
+                  </button>
+                </div>
+              )}
             </form>
           </div>
 
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-base font-extrabold text-[#0B1E3D]">
-              Usuários Registrados ({usuarios.length})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-[#0B1E3D]">
+                  Usuários Ativos e Autorizados ({usuarios.length})
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Gerencie permissões de acesso, altere papéis ou remova colaboradores que não fazem mais parte da equipe.
+                </p>
+              </div>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 font-semibold">
                   <tr>
-                    <th className="py-2.5 px-3">Nome / Usuário</th>
+                    <th className="py-2.5 px-3">Profissional / Usuário</th>
                     <th className="py-2.5 px-3">E-mail</th>
                     <th className="py-2.5 px-3">Papel (Role)</th>
+                    <th className="py-2.5 px-3">Vínculo / Cargo</th>
                     <th className="py-2.5 px-3">Status</th>
                     <th className="py-2.5 px-3">Criado em</th>
+                    <th className="py-2.5 px-3 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {usuarios.map((u) => (
-                    <tr key={u.uid} className="hover:bg-slate-50/80">
-                      <td className="py-3 px-3 font-bold text-[#0B1E3D]">
-                        {u.nome} {u.crea && <span className="text-[10px] text-slate-400">({u.crea})</span>}
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
-                        {u.email}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          u.role === 'master'
-                            ? 'bg-purple-100 text-purple-800'
-                            : u.role === 'colaborador'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Ativo</span>
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
-                        {u.criadoEm}
-                      </td>
-                    </tr>
-                  ))}
+                  {usuarios.map((u) => {
+                    const isMasterPrincipal = u.uid === 'master-vitor' || u.email.toLowerCase() === 'vitorleonardocl@gmail.com';
+                    const isCurrentUser = u.uid === currentUser?.uid;
+                    const clienteVinculadoObj = u.clienteId ? clientes.find(c => c.id === u.clienteId) : null;
+                    const ativo = u.ativo !== false;
+
+                    return (
+                      <tr key={u.uid} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-[#0B1E3D] flex items-center gap-1.5">
+                            {isMasterPrincipal && <Shield className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
+                            <span>{u.nome}</span>
+                          </div>
+                          {u.crea && (
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              CREA: {u.crea}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
+                          {u.email}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            u.role === 'master'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : u.role === 'colaborador'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600">
+                          {u.cargo && <div className="font-semibold">{u.cargo}</div>}
+                          {clienteVinculadoObj && (
+                            <div className="text-[11px] text-[#1565D8] font-medium">
+                              Empresa: {clienteVinculadoObj.nomeFantasia || clienteVinculadoObj.razaoSocial}
+                            </div>
+                          )}
+                          {!u.cargo && !clienteVinculadoObj && (
+                            <span className="text-slate-400 italic">--</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          {ativo ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[11px]">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Ativo</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-slate-400 font-bold text-[11px]">
+                              <UserX className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Inativo</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
+                          {u.criadoEm ? (u.criadoEm.length > 10 ? u.criadoEm.slice(0, 10) : u.criadoEm) : '--'}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Botão Editar */}
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirEdicao(u)}
+                              className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-[#1565D8] hover:bg-blue-50 text-slate-700 hover:text-[#1565D8] text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                              title="Editar usuário"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Editar</span>
+                            </button>
+
+                            {/* Botão Excluir */}
+                            {isMasterPrincipal || isCurrentUser ? (
+                              <button
+                                type="button"
+                                disabled
+                                className="px-2.5 py-1.5 rounded-lg border border-slate-100 bg-slate-50 text-slate-300 text-xs font-medium flex items-center gap-1 cursor-not-allowed"
+                                title={isMasterPrincipal ? "Conta Master principal protegida" : "Sua própria conta não pode ser excluída"}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Protegido</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setUsuarioParaExcluir(u)}
+                                className="px-2.5 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                                title="Excluir usuário"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Excluir</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -515,6 +774,199 @@ export const GestaoView: React.FC = () => {
               <FileDown className="w-4 h-4" />
               <span>Exportar Dados em JSON</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR USUÁRIO */}
+      {usuarioParaEditar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-[#1565D8] flex items-center justify-center">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0B1E3D]">
+                    Editar Usuário do Sistema
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    ID: {usuarioParaEditar.uid}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUsuarioParaEditar(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicao} className="p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">Nome Completo *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">E-mail de Acesso *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-mono focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Nível de Permissão (Role)</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as any)}
+                    disabled={usuarioParaEditar.uid === 'master-vitor'}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8] disabled:bg-slate-100 disabled:text-slate-500"
+                  >
+                    <option value="colaborador">Colaborador Técnico</option>
+                    <option value="cliente">Cliente (Somente Leitura)</option>
+                    <option value="master">Master (Total)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Status da Conta</label>
+                  <select
+                    value={editAtivo ? 'ativo' : 'inativo'}
+                    onChange={(e) => setEditAtivo(e.target.value === 'ativo')}
+                    disabled={usuarioParaEditar.uid === 'master-vitor'}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8] disabled:bg-slate-100 disabled:text-slate-500"
+                  >
+                    <option value="ativo">Ativo (Acesso Liberado)</option>
+                    <option value="inativo">Inativo (Bloqueado)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Cargo ou Especialidade</label>
+                  <input
+                    type="text"
+                    value={editCargo}
+                    onChange={(e) => setEditCargo(e.target.value)}
+                    placeholder="Ex: Engenheiro de Vistoria"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Registro CREA</label>
+                  <input
+                    type="text"
+                    value={editCrea}
+                    onChange={(e) => setEditCrea(e.target.value)}
+                    placeholder="Ex: 1822299490"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                  />
+                </div>
+
+                {editRole === 'cliente' && (
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">Empresa Cliente Vinculada</label>
+                    <select
+                      value={editClienteId}
+                      onChange={(e) => setEditClienteId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-[#1565D8]"
+                    >
+                      <option value="">-- Selecione a Empresa do Cliente --</option>
+                      {clientes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.razaoSocial} {c.nomeFantasia ? `(${c.nomeFantasia})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUsuarioParaEditar(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Alterações</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRMAR EXCLUSÃO DE USUÁRIO */}
+      {usuarioParaExcluir && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-red-200 shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-red-100 flex items-center justify-between bg-red-50/70">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold text-red-950">
+                  Confirmar Exclusão de Usuário
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUsuarioParaExcluir(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3 text-xs">
+              <p className="text-slate-700 leading-relaxed">
+                Você tem certeza que deseja excluir o usuário <strong className="text-slate-900">{usuarioParaExcluir.nome}</strong> (<span className="font-mono text-slate-600">{usuarioParaExcluir.email}</span>)?
+              </p>
+
+              <div className="p-3 bg-red-50/70 border border-red-100 rounded-xl text-red-900 text-[11px] leading-relaxed">
+                <strong>Atenção:</strong> Esta ação revogará imediatamente as credenciais de autenticação deste usuário, impedindo o login no painel e nos módulos técnicos.
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUsuarioParaExcluir(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmarExclusao}
+                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Sim, Excluir Usuário</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
