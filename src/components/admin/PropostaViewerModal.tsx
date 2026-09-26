@@ -165,22 +165,84 @@ function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
     {
       numero: 6,
       titulo: "RESUMO DE NOSSOS SERVIÇOS DE ENGENHARIA",
-      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
-          <strong class="text-[#0B1E3D] block">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
-          <p class="text-slate-600 text-[11px]">Apreciação de risco, inventário e laudos de adequação mecânica.</p>
+      subtitulo: "CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS",
+      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px] font-mono">12</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
+              <span class="text-[9px] text-blue-600 font-bold uppercase tracking-wider">Apreciação de Risco & Laudo</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Apreciação de riscos (HRN/SIL), inventário técnico, laudos periciais de conformidade mecânica de prensas, tornos, esteiras e células robotizadas.
+          </p>
         </div>
-        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
-          <strong class="text-[#0B1E3D] block">NR-11 • MOVIMENTAÇÃO DE CARGAS</strong>
-          <p class="text-slate-600 text-[11px]">Guindastes, pontes rolantes, empilhadeiras e ensaios de tração.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-amber-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px] font-mono">11</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-11 • CARGAS E ELEVAÇÃO</strong>
+              <span class="text-[9px] text-amber-700 font-bold uppercase tracking-wider">Movimentação & Ensaios</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Inspeção e laudos de pontes rolantes, guindastes, empilhadeiras, pórticos, ensaios não destrutivos (END) e testes de tração em cabos e olhais.
+          </p>
         </div>
-        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
-          <strong class="text-[#0B1E3D] block">NR-13 • CALDEIRAS E VASOS DE PRESSÃO</strong>
-          <p class="text-slate-600 text-[11px]">Teste hidrostático, medição de espessura por ultrassom e prontuários.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-indigo-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[11px] font-mono">13</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-13 • VASOS & CALDEIRAS</strong>
+              <span class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Pressão & Prontuários</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Inspeção de compressores e vasos sob pressão, teste hidrostático, medição de espessura por ultrassom, calibração de PSV e reconstituição de prontuário.
+          </p>
         </div>
-        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
-          <strong class="text-[#0B1E3D] block">PMOC • CLIMATIZAÇÃO</strong>
-          <p class="text-slate-600 text-[11px]">Plano de Manutenção Operação e Controle conforme Lei 13.589/2018.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-emerald-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px] font-mono">AC</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PMOC • CLIMATIZAÇÃO</strong>
+              <span class="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">Lei 13.589/2018 & ANVISA</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Plano de Manutenção Operação e Controle para qualidade do ar interior, eficiência energética e total conformidade com a vigilância sanitária.
+          </p>
+        </div>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-rose-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-[11px] font-mono">PJ</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PERÍCIAS & ASSISTÊNCIA TÉCNICA</strong>
+              <span class="text-[9px] text-rose-700 font-bold uppercase tracking-wider">Engenharia Diagnóstica Legal</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Investigação de falhas mecânicas, vistorias cautelares de vizinhança industrial, elaboração de quesitos e laudos periciais para demandas judiciais.
+          </p>
+        </div>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-purple-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[11px] font-mono">PR</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PROJETOS & ADEQUAÇÕES</strong>
+              <span class="text-[9px] text-purple-700 font-bold uppercase tracking-wider">Memorial & Cálculo Mecânico</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Projetos mecânicos de dispositivos de segurança, enclausuramentos acústicos, linhas de vida, estruturas metálicas e esteiras industriais com ART.
+          </p>
         </div>
       </div>`
     },
@@ -245,9 +307,10 @@ function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
           <span class="text-[11px] text-slate-500">Incluso responsabilidade técnica, honorários e taxa de registro da ART</span>
         </div>
         <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-1.5">
+          <p><strong>Prazo de Execução:</strong> ${prazo}</p>
           <p><strong>Condições de Pagamento:</strong> ${condicoes}</p>
           <p><strong>Validade da Proposta:</strong> ${validade} dias a contar da data de emissão.</p>
-          <p><strong>Dados Bancários:</strong> Chave PIX CNPJ: 45.123.890/0001-23 (VL Engenharia Mecânica Ltda)</p>
+          <p><strong>Dados para Faturamento / PIX:</strong> Chave E-mail: vlengenhariamec@gmail.com (VL Engenharia Mecânica)</p>
         </div>
       </div>`
     },
@@ -306,21 +369,46 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
+  const secoesOcultasCount = useMemo(() => {
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      return orcamento.secoes.filter(s => s.ocultarNoPdf || orcamento.secoesOcultasPdf?.includes(s.id)).length;
+    }
+    return 0;
+  }, [orcamento]);
+
   // Compute pages: prioritize editable secoes, then paginasProposta, or generate standard 13 pages
   const paginas: PropostaPagina[] = useMemo(() => {
     let originais: PropostaPagina[] | null = null;
 
     if (orcamento.secoes && orcamento.secoes.length > 0) {
-      originais = orcamento.secoes.map(s => ({
-        numero: s.numero,
+      const secoesVisiveis = orcamento.secoes.filter(
+        s => !s.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(s.id)
+      );
+      const secoesParaExibir = secoesVisiveis.length > 0 ? secoesVisiveis : [orcamento.secoes[0]];
+      originais = secoesParaExibir.map((s, idx) => ({
+        numero: idx + 1,
         titulo: s.titulo,
         subtitulo: s.subtitulo,
         conteudoHtml: s.conteudoHtml,
       }));
     } else if (orcamento.paginasProposta && orcamento.paginasProposta.length > 0) {
-      originais = orcamento.paginasProposta;
+      const paginasVisiveis = orcamento.paginasProposta.filter(
+        p => !p.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(`secao-${p.numero}`)
+      );
+      const paginasParaExibir = paginasVisiveis.length > 0 ? paginasVisiveis : [orcamento.paginasProposta[0]];
+      originais = paginasParaExibir.map((p, idx) => ({
+        ...p,
+        numero: idx + 1,
+      }));
     } else if (orcamento.paginas && orcamento.paginas.length > 0) {
-      originais = orcamento.paginas;
+      const paginasVisiveis = orcamento.paginas.filter(
+        p => !p.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(`secao-${p.numero}`)
+      );
+      const paginasParaExibir = paginasVisiveis.length > 0 ? paginasVisiveis : [orcamento.paginas[0]];
+      originais = paginasParaExibir.map((p, idx) => ({
+        ...p,
+        numero: idx + 1,
+      }));
     }
 
     const listaBase = originais || gerarPaginasPadrao(orcamento);
@@ -448,8 +536,13 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   Proposta Oficial • {orcamento.codigoProposta || orcamento.id}
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
-                  {totalPaginas} Páginas Oficiais
+                  {totalPaginas} {totalPaginas === 1 ? 'Página no PDF' : 'Páginas no PDF'}
                 </span>
+                {secoesOcultasCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {secoesOcultasCount} seção(ões) oculta(s)
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400">
                 {orcamento.clienteNome} • {orcamento.servico}
@@ -659,7 +752,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
                 {/* Official Page Footer */}
                 <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                  <span>VL Engenharia Mecânica • CNPJ: 45.123.890/0001-23 • CREA-PE 182229949-0</span>
+                  <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: vlengenhariamec@gmail.com</span>
                   <span>Recife - PE • (81) 98444-2592</span>
                 </footer>
               </div>
@@ -711,7 +804,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </div>
 
                   <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                    <span>VL Engenharia Mecânica • CNPJ: 45.123.890/0001-23 • CREA-PE 182229949-0</span>
+                    <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: vlengenhariamec@gmail.com</span>
                     <span>Recife - PE • (81) 98444-2592</span>
                   </footer>
                 </div>
@@ -774,7 +867,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               </div>
 
               <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                <span>VL Engenharia Mecânica • CNPJ: 45.123.890/0001-23 • CREA-PE 182229949-0</span>
+                <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: vlengenhariamec@gmail.com</span>
                 <span>Recife - PE • (81) 98444-2592</span>
               </footer>
             </div>

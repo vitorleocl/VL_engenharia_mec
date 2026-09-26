@@ -112,7 +112,7 @@ html.dark .printable-document .bg-slate-100 {
 
 html.dark .printable-document .text-slate-900,
 html.dark .printable-document .text-slate-800,
-html.dark .printable-document .text-[#0B1E3D] {
+html.dark .printable-document [class*="text-[#0B1E3D]"] {
   color: #0b1e3d !important;
 }
 

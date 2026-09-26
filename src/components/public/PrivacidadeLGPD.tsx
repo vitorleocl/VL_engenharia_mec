@@ -99,7 +99,7 @@ export const PrivacidadeLGPD: React.FC = () => {
                 Para exercer seus direitos ou esclarecer dúvidas sobre esta Política, contate diretamente o Responsável Técnico:
               </p>
               <p className="text-sm font-bold text-[#1565D8] mt-1">
-                vitorleonardocl@gmail.com
+                vlengenhariamec@gmail.com
               </p>
             </div>
           </section>

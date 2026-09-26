@@ -10,6 +10,7 @@ import {
   Upload, 
   Trash2, 
   Eye, 
+  EyeOff,
   Printer, 
   Download, 
   History, 
@@ -325,6 +326,47 @@ export const OrcamentoEditorView: React.FC = () => {
     }
   };
 
+  // Toggle visibility of a section in the exported PDF
+  const handleToggleOcultarNoPdf = (secaoId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (!orcamentoState?.secoes) return;
+
+    const secaoAlvo = orcamentoState.secoes.find(s => s.id === secaoId);
+    const novoOcultar = !secaoAlvo?.ocultarNoPdf;
+
+    const novasSecoes = orcamentoState.secoes.map(s => {
+      if (s.id === secaoId) {
+        return { ...s, ocultarNoPdf: novoOcultar };
+      }
+      return s;
+    });
+
+    const secoesOcultas = novasSecoes.filter(s => s.ocultarNoPdf).map(s => s.id);
+
+    const novoOrcamento: Orcamento = {
+      ...orcamentoState,
+      secoes: novasSecoes,
+      secoesOcultasPdf: secoesOcultas,
+    };
+
+    setOrcamentoState(novoOrcamento);
+    agendarAutoSave(novoOrcamento, `Seção "${secaoAlvo?.titulo}" ${novoOcultar ? 'oculta no PDF' : 'incluída no PDF'}`);
+  };
+
+  // Computed section visibility metrics
+  const { totalSecoes, secoesVisiveisCount, secoesOcultasCount } = useMemo(() => {
+    const total = orcamentoState?.secoes?.length || 13;
+    const ocultas = orcamentoState?.secoes?.filter(s => s.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(s.id)).length || 0;
+    return {
+      totalSecoes: total,
+      secoesVisiveisCount: Math.max(1, total - ocultas),
+      secoesOcultasCount: ocultas,
+    };
+  }, [orcamentoState]);
+
   if (!orcamentoState) {
     return (
       <div className="p-8 text-center space-y-4 max-w-md mx-auto">
@@ -456,7 +498,7 @@ export const OrcamentoEditorView: React.FC = () => {
             className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Eye className="w-4 h-4 text-[#D4AF37]" />
-            <span>Exportar / Imprimir PDF</span>
+            <span>Exportar / Imprimir PDF ({secoesVisiveisCount} págs)</span>
           </button>
 
         </div>
@@ -471,7 +513,9 @@ export const OrcamentoEditorView: React.FC = () => {
             <strong>Edição de Instância Isolada:</strong> As alterações feitas nesta tela aplicam-se exclusivamente a este orçamento. O modelo padrão da VL Engenharia e as credenciais fixas permanecem preservados para novos orçamentos.
           </p>
         </div>
-        <span className="hidden lg:inline text-[11px] font-mono text-blue-700">13 Páginas Individuais</span>
+        <span className="hidden lg:inline text-[11px] font-mono text-blue-700">
+          {secoesVisiveisCount} de {totalSecoes} páginas ativas no PDF
+        </span>
       </div>
 
       {/* Main Workspace: Left Sidebar (13 Sections) + Right Editor Canvas */}
@@ -483,41 +527,57 @@ export const OrcamentoEditorView: React.FC = () => {
             <div>
               <h3 className="font-extrabold text-sm text-[#0B1E3D] flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-[#1565D8]" />
-                <span>Seções da Proposta (13 Págs)</span>
+                <span>Seções da Proposta</span>
               </h3>
-              <p className="text-[11px] text-slate-500">Selecione para editar o texto e tabelas</p>
+              <p className="text-[11px] text-slate-500">
+                {secoesVisiveisCount} no PDF {secoesOcultasCount > 0 && <span className="text-amber-600 font-bold">• {secoesOcultasCount} oculta{secoesOcultasCount > 1 ? 's' : ''}</span>}
+              </p>
             </div>
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-              {orcamentoState.secoes?.length || 13} seções
+              {totalSecoes} seções
             </span>
           </div>
 
           {/* Sections List */}
-          <div className="space-y-1 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
             {orcamentoState.secoes?.map((secao) => {
               const isActive = secao.id === secaoAtivaId;
               const hasCover = secao.id === 'capa' && Boolean(orcamentoState.imagemCapaUrl);
+              const isOculta = Boolean(secao.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secao.id));
 
               return (
-                <button
+                <div
                   key={secao.id}
                   onClick={() => setSecaoAtivaId(secao.id)}
                   className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-start justify-between gap-2 cursor-pointer ${
                     isActive
-                      ? 'bg-blue-50/80 border-[#1565D8] shadow-xs'
+                      ? isOculta
+                        ? 'bg-amber-50/70 border-amber-400 shadow-xs ring-1 ring-amber-400/50'
+                        : 'bg-blue-50/80 border-[#1565D8] shadow-xs'
+                      : isOculta
+                      ? 'bg-slate-50/60 hover:bg-amber-50/40 border-dashed border-amber-300/80 text-slate-600'
                       : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-700'
                   }`}
                 >
-                  <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <span className={`w-6 h-6 rounded-lg font-mono text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5 ${
-                      isActive ? 'bg-[#1565D8] text-white' : 'bg-slate-100 text-slate-600'
+                      isActive 
+                        ? isOculta ? 'bg-amber-600 text-white' : 'bg-[#1565D8] text-white' 
+                        : isOculta ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
                     }`}>
                       {secao.numero}
                     </span>
-                    <div className="min-w-0">
-                      <p className={`text-xs font-bold truncate ${isActive ? 'text-[#0B1E3D]' : 'text-slate-800'}`}>
-                        {secao.titulo}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className={`text-xs font-bold truncate ${isActive ? 'text-[#0B1E3D]' : 'text-slate-800'}`}>
+                          {secao.titulo}
+                        </p>
+                        {isOculta && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            Oculta no PDF
+                          </span>
+                        )}
+                      </div>
                       {secao.subtitulo && (
                         <p className="text-[10px] text-slate-400 truncate mt-0.5">
                           {secao.subtitulo}
@@ -526,14 +586,33 @@ export const OrcamentoEditorView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Badges / indicators */}
-                  <div className="shrink-0 flex items-center gap-1 mt-1">
+                  {/* Actions & PDF Toggle */}
+                  <div className="shrink-0 flex items-center gap-1 mt-0.5">
                     {hasCover && (
                       <span className="w-2 h-2 rounded-full bg-emerald-500" title="Foto de capa anexada" />
                     )}
+
+                    {/* Quick Visibility Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleOcultarNoPdf(secao.id, e)}
+                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                        isOculta
+                          ? 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-800'
+                          : 'bg-slate-100/80 hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-800'
+                      }`}
+                      title={isOculta ? 'Seção oculta do PDF. Clique para incluir.' : 'Seção incluída no PDF. Clique para ocultar.'}
+                    >
+                      {isOculta ? (
+                        <EyeOff className="w-3.5 h-3.5 text-amber-700" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      )}
+                    </button>
+
                     <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-[#1565D8]' : 'text-slate-300'}`} />
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -585,8 +664,36 @@ export const OrcamentoEditorView: React.FC = () => {
               </div>
 
               {/* Action buttons for active section */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 
+                {/* PDF Visibility Toggle Button */}
+                <button
+                  type="button"
+                  onClick={(e) => secaoAtiva && handleToggleOcultarNoPdf(secaoAtiva.id, e)}
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    secaoAtiva?.ocultarNoPdf
+                      ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800'
+                      : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800'
+                  }`}
+                  title={
+                    secaoAtiva?.ocultarNoPdf
+                      ? 'Esta seção está oculta no PDF. Clique para exibi-la no documento gerado.'
+                      : 'Esta seção está visível no PDF. Clique para ocultá-la do documento gerado.'
+                  }
+                >
+                  {secaoAtiva?.ocultarNoPdf ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Oculta no PDF</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Incluída no PDF</span>
+                    </>
+                  )}
+                </button>
+
                 {/* Reset to template */}
                 <button
                   onClick={handleRestaurarSecaoPadrao}
@@ -609,6 +716,30 @@ export const OrcamentoEditorView: React.FC = () => {
 
               </div>
             </div>
+
+            {/* Warning banner when active section is hidden from PDF */}
+            {secaoAtiva?.ocultarNoPdf && (
+              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-amber-200 text-amber-800 shrink-0 mt-0.5 sm:mt-0">
+                    <EyeOff className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="block text-amber-950 font-extrabold text-xs">Esta seção não será impressa nem gerada no PDF</strong>
+                    <p className="text-[11px] text-amber-800 mt-0.5">
+                      Você pode editá-la livremente. Na exportação em PDF, ela será excluída e as demais páginas serão renumeradas automaticamente.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleToggleOcultarNoPdf(secaoAtiva.id, e)}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-2xs transition-colors self-start sm:self-auto"
+                >
+                  Reativar no PDF
+                </button>
+              </div>
+            )}
 
             {/* SPECIAL CASE: Page 1 (Capa com Imagem de Capa do Orçamento) */}
             {secaoAtiva?.id === 'capa' && (

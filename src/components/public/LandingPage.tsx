@@ -866,10 +866,10 @@ export const LandingPage: React.FC = () => {
                       E-mail Profissional
                     </span>
                     <p className="text-base font-bold text-[#0B1E3D] mt-0.5 break-all">
-                      vitorleonardocl@gmail.com
+                      vlengenhariamec@gmail.com
                     </p>
                     <a
-                      href="mailto:vitorleonardocl@gmail.com"
+                      href="mailto:vlengenhariamec@gmail.com"
                       className="inline-flex items-center gap-1 text-xs font-bold text-[#1565D8] hover:underline mt-1"
                     >
                       <span>Enviar mensagem de e-mail</span>

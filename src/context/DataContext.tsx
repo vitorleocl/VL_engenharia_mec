@@ -174,7 +174,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return cat;
     });
   });
-  const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => loadStorage('vl_logs', [
+  const defaultLogs: LogAuditoria[] = [
     {
       id: 'log-01',
       colecaoAfetada: 'laudos',
@@ -182,11 +182,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       acao: 'finalizar',
       usuarioUid: 'master-vitor',
       usuarioNome: 'Eng. Vitor Leonardo',
-      usuarioEmail: 'vitorleonardocl@gmail.com',
+      usuarioEmail: 'vlengenhariamec@gmail.com',
       timestamp: '2026-02-20T18:00:00Z',
       detalhes: 'Laudo LAR-2026-003 concluído e ART PE2026-0104882 vinculada.'
     }
-  ]));
+  ];
+  const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => {
+    const loaded: LogAuditoria[] = loadStorage('vl_logs', defaultLogs);
+    return loaded.map((l) => l.usuarioEmail === 'vitorleonardocl@gmail.com' ? { ...l, usuarioEmail: 'vlengenhariamec@gmail.com' } : l);
+  });
   const [contatos, setContatos] = useState<ContatoFormulario[]>(() => loadStorage('vl_contatos', [
     {
       id: 'cnt-01',
@@ -199,11 +203,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       respondido: false,
     }
   ]));
-  const [usuarios, setUsuarios] = useState<Usuario[]>(() => loadStorage('vl_usuarios', [
+  const defaultUsuarios: Usuario[] = [
     {
       uid: 'master-vitor',
       nome: 'Eng. Vitor Leonardo',
-      email: 'vitorleonardocl@gmail.com',
+      email: 'vlengenhariamec@gmail.com',
       role: 'master',
       cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
       criadoEm: '2025-01-01T00:00:00Z',
@@ -225,7 +229,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cargo: 'Gerente de Manutenção',
       criadoEm: '2026-01-15T11:00:00Z',
     }
-  ]));
+  ];
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
+    const loaded: Usuario[] = loadStorage('vl_usuarios', defaultUsuarios);
+    return loaded.map((u) => u.email === 'vitorleonardocl@gmail.com' ? { ...u, email: 'vlengenhariamec@gmail.com' } : u);
+  });
 
   const [usoIA, setUsoIA] = useState<UsoIAMetricas>(() => {
     const defaultData: UsoIAMetricas = {

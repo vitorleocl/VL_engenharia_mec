@@ -94,14 +94,14 @@ export const LoginView: React.FC = () => {
           {/* Quick profile switchers for full demonstration */}
           <div className="space-y-2">
             <button
-              onClick={() => loginDemo('master', 'vitorleonardocl@gmail.com', 'Eng. Vitor Leonardo')}
+              onClick={() => loginDemo('master', 'vlengenhariamec@gmail.com', 'Eng. Vitor Leonardo')}
               className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-blue-900/40 hover:bg-blue-900/60 border border-blue-700 text-blue-200 text-xs font-bold transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-2 text-left">
                 <Shield className="w-4 h-4 text-blue-400" />
                 <div>
                   <span className="block text-white">Eng. Vitor Leonardo (Master)</span>
-                  <span className="text-[10px] text-blue-300">vitorleonardocl@gmail.com • Acesso Total</span>
+                  <span className="text-[10px] text-blue-300">vlengenhariamec@gmail.com • Acesso Total</span>
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">

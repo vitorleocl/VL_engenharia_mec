@@ -69,10 +69,10 @@ export const Footer: React.FC = () => {
                 <div>
                   <span className="block text-xs text-slate-500">E-mail Profissional</span>
                   <a
-                    href="mailto:vitorleonardocl@gmail.com"
+                    href="mailto:vlengenhariamec@gmail.com"
                     className="text-white hover:text-blue-300 transition-colors"
                   >
-                    vitorleonardocl@gmail.com
+                    vlengenhariamec@gmail.com
                   </a>
                 </div>
               </li>

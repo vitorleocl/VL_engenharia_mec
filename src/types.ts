@@ -74,6 +74,7 @@ export interface PropostaPagina {
   titulo: string;
   subtitulo?: string;
   conteudoHtml: string;
+  ocultarNoPdf?: boolean;
 }
 
 export interface OrcamentoSecao {
@@ -82,6 +83,7 @@ export interface OrcamentoSecao {
   titulo: string;
   subtitulo?: string;
   conteudoHtml: string;
+  ocultarNoPdf?: boolean;
 }
 
 export interface OrcamentoHistorico {
@@ -127,6 +129,7 @@ export interface Orcamento {
   imagemCapaUrl?: string;
   imagemCapaLegenda?: string;
   secoes?: OrcamentoSecao[];
+  secoesOcultasPdf?: string[];
   historico?: OrcamentoHistorico[];
   paginas?: PropostaPagina[];
   paginasProposta?: PropostaPagina[];

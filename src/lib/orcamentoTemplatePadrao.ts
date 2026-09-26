@@ -189,22 +189,83 @@ export function gerarSecoesPadraoOrcamento(
       numero: 6,
       titulo: 'Resumo de Nossos Serviços de Engenharia',
       subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
-      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <strong class="text-[#0B1E3D] block text-sm mb-1">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
-          <p class="text-slate-600 text-[11px]">Apreciação de risco, inventário e laudos de adequação mecânica de prensas, tornos, esteiras e células robotizadas.</p>
+      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px] font-mono">12</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
+              <span class="text-[9px] text-blue-600 font-bold uppercase tracking-wider">Apreciação de Risco & Laudo</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Apreciação de riscos (HRN/SIL), inventário técnico, laudos periciais de conformidade mecânica de prensas, tornos, esteiras e células robotizadas.
+          </p>
         </div>
-        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <strong class="text-[#0B1E3D] block text-sm mb-1">NR-11 • MOVIMENTAÇÃO DE CARGAS</strong>
-          <p class="text-slate-600 text-[11px]">Guindastes, pontes rolantes, empilhadeiras, pórticos e ensaios de tração em olhais e cabos de aço.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-amber-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px] font-mono">11</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-11 • CARGAS E ELEVAÇÃO</strong>
+              <span class="text-[9px] text-amber-700 font-bold uppercase tracking-wider">Movimentação & Ensaios</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Inspeção e laudos de pontes rolantes, guindastes, empilhadeiras, pórticos, ensaios não destrutivos (END) e testes de tração em cabos e olhais.
+          </p>
         </div>
-        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <strong class="text-[#0B1E3D] block text-sm mb-1">NR-13 • CALDEIRAS E VASOS DE PRESSÃO</strong>
-          <p class="text-slate-600 text-[11px]">Teste hidrostático, medição de espessura por ultrassom, reconstituição de prontuário e calibração de PSV.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-indigo-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[11px] font-mono">13</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">NR-13 • VASOS & CALDEIRAS</strong>
+              <span class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Pressão & Prontuários</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Inspeção de compressores e vasos sob pressão, teste hidrostático, medição de espessura por ultrassom, calibração de PSV e reconstituição de prontuário.
+          </p>
         </div>
-        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <strong class="text-[#0B1E3D] block text-sm mb-1">PMOC • CLIMATIZAÇÃO</strong>
-          <p class="text-slate-600 text-[11px]">Plano de Manutenção Operação e Controle conforme Lei Federal 13.589/2018 para qualidade do ar e eficiência energética.</p>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-emerald-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px] font-mono">AC</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PMOC • CLIMATIZAÇÃO</strong>
+              <span class="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">Lei 13.589/2018 & ANVISA</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Plano de Manutenção Operação e Controle para qualidade do ar interior, eficiência energética e total conformidade com a vigilância sanitária.
+          </p>
+        </div>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-rose-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-[11px] font-mono">PJ</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PERÍCIAS & ASSISTÊNCIA TÉCNICA</strong>
+              <span class="text-[9px] text-rose-700 font-bold uppercase tracking-wider">Engenharia Diagnóstica Legal</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Investigação de falhas mecânicas, vistorias cautelares de vizinhança industrial, elaboração de quesitos e laudos periciais para demandas judiciais.
+          </p>
+        </div>
+
+        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-purple-200/80 shadow-2xs relative">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[11px] font-mono">PR</span>
+            <div>
+              <strong class="text-[#0B1E3D] block text-xs font-black">PROJETOS & ADEQUAÇÕES</strong>
+              <span class="text-[9px] text-purple-700 font-bold uppercase tracking-wider">Memorial & Cálculo Mecânico</span>
+            </div>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            Projetos mecânicos de dispositivos de segurança, enclausuramentos acústicos, linhas de vida, estruturas metálicas e esteiras industriais com ART.
+          </p>
         </div>
       </div>`
     },
@@ -224,11 +285,11 @@ export function gerarSecoesPadraoOrcamento(
           <tbody>
             <tr>
               <td class="p-2.5 border border-slate-300 align-top space-y-1">
-                <p><strong>Razão Social:</strong> VL ENGENHARIA MECÂNICA LTDA</p>
+                <p><strong>Razão Social:</strong> VL ENGENHARIA MECÂNICA</p>
                 <p><strong>Responsável Técnico:</strong> Eng. Vitor Leonardo C. Linhares</p>
                 <p><strong>CREA-PE:</strong> 182229949-0</p>
                 <p><strong>Sede Operacional:</strong> Recife / Paulista - PE</p>
-                <p><strong>E-mail:</strong> vitorleonardocl@gmail.com</p>
+                <p><strong>E-mail:</strong> vlengenhariamec@gmail.com</p>
                 <p><strong>Telefone / WhatsApp:</strong> (81) 98444-2592</p>
               </td>
               <td class="p-2.5 border border-slate-300 align-top space-y-1">
@@ -370,7 +431,7 @@ export function gerarSecoesPadraoOrcamento(
           <p><strong>Prazo de Execução e Emissão Final:</strong> ${prazo}</p>
           <p><strong>Formas e Condições de Pagamento:</strong> ${condicoes}</p>
           <p><strong>Validade da Proposta:</strong> ${validade} dias a contar da data de emissão.</p>
-          <p><strong>Dados para Faturamento / PIX:</strong> Chave CNPJ: 45.123.890/0001-23 (VL Engenharia Mecânica Ltda)</p>
+          <p><strong>Dados para Faturamento / PIX:</strong> Chave E-mail: vlengenhariamec@gmail.com (VL Engenharia Mecânica)</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200 text-center">
           <div class="p-3 border rounded-lg bg-white">
@@ -399,7 +460,7 @@ export function gerarSecoesPadraoOrcamento(
           <p class="font-black text-[#0B1E3D] text-sm">VL Engenharia Mecânica & Consultoria Pericial</p>
           <p>Recife / Região Metropolitana - Pernambuco, Brasil</p>
           <p><strong>Telefone / WhatsApp:</strong> (81) 98444-2592</p>
-          <p><strong>E-mail Direto:</strong> vitorleonardocl@gmail.com</p>
+          <p><strong>E-mail Direto:</strong> vlengenhariamec@gmail.com</p>
           <p><strong>Instagram Oficial:</strong> @vlengenharia</p>
         </div>
       </div>`
@@ -410,7 +471,7 @@ export function gerarSecoesPadraoOrcamento(
 /**
  * Converte paginasProposta para o formato de seções ricas caso ainda não existam.
  */
-export function converterPaginasParaSecoes(paginas: { numero: number; titulo: string; subtitulo?: string; conteudoHtml: string }[]): OrcamentoSecao[] {
+export function converterPaginasParaSecoes(paginas: { numero: number; titulo: string; subtitulo?: string; conteudoHtml: string; ocultarNoPdf?: boolean }[]): OrcamentoSecao[] {
   return paginas.map((pag, idx) => {
     const def = SECOES_PROPOSTA_DEFINICAO.find(d => d.numero === pag.numero) || SECOES_PROPOSTA_DEFINICAO[idx];
     return {
@@ -419,6 +480,7 @@ export function converterPaginasParaSecoes(paginas: { numero: number; titulo: st
       titulo: pag.titulo || def?.titulo || `Seção ${pag.numero}`,
       subtitulo: pag.subtitulo || def?.subtitulo,
       conteudoHtml: pag.conteudoHtml || '<p></p>',
+      ocultarNoPdf: pag.ocultarNoPdf ?? false,
     };
   });
 }

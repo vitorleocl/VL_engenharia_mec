@@ -20,7 +20,7 @@ interface AuthContextType {
   clearUnauthorized: () => void;
 }
 
-const MASTER_EMAIL = import.meta.env.VITE_MASTER_EMAIL || 'vitorleonardocl@gmail.com';
+const MASTER_EMAIL = import.meta.env.VITE_MASTER_EMAIL || 'vlengenhariamec@gmail.com';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -28,7 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
     const saved = localStorage.getItem('vl_current_user');
     if (saved) {
-      try { return JSON.parse(saved); } catch { return null; }
+      try { 
+        const parsed = JSON.parse(saved);
+        if (parsed?.email === 'vitorleonardocl@gmail.com') {
+          parsed.email = 'vlengenhariamec@gmail.com';
+        }
+        return parsed;
+      } catch { return null; }
     }
     // Default preloaded master session for seamless dev experience
     return {

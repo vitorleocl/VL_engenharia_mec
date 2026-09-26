@@ -118,7 +118,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   Consultoria Técnica, Perícias & Segurança Operacional
                 </p>
                 <p className="text-[10px] text-slate-600 font-mono mt-0.5">
-                  Registro Profissional: <strong>CREA-PE 182229949-0</strong> • CNPJ: 45.123.890/0001-23
+                  Registro Profissional: <strong>CREA-PE 182229949-0</strong> • E-mail: vlengenhariamec@gmail.com
                 </p>
               </div>
             </div>
@@ -131,7 +131,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               </p>
               <p className="flex items-center justify-end gap-1">
                 <Mail className="w-2.5 h-2.5 text-[#1565D8]" />
-                <span>contato@vlengenharia.com.br</span>
+                <span>vlengenhariamec@gmail.com</span>
               </p>
             </div>
           </div>
