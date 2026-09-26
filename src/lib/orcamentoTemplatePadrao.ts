@@ -7,6 +7,86 @@ export interface SecaoDefinicao {
   subtitulo?: string;
 }
 
+export const HTML_CARDS_CATALOGO_SERVICOS = `<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #dbeafe; color: #1d4ed8; font-weight: 800; font-size: 11px; font-family: monospace;">12</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
+        <span style="color: #2563eb; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Apreciação de Risco & Laudo</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Apreciação de riscos (HRN/SIL), inventário técnico, laudos periciais de conformidade mecânica de prensas, tornos, esteiras e células robotizadas.
+    </p>
+  </div>
+
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #fde68a; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-amber-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #fef3c7; color: #92400e; font-weight: 800; font-size: 11px; font-family: monospace;">11</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">NR-11 • CARGAS E ELEVAÇÃO</strong>
+        <span style="color: #b45309; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Movimentação & Ensaios</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Inspeção e laudos de pontes rolantes, guindastes, empilhadeiras, pórticos, ensaios não destrutivos (END) e testes de tração em cabos e olhais.
+    </p>
+  </div>
+
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #c7d2fe; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-indigo-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #e0e7ff; color: #4338ca; font-weight: 800; font-size: 11px; font-family: monospace;">13</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">NR-13 • VASOS & CALDEIRAS</strong>
+        <span style="color: #4f46e5; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Pressão & Prontuários</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Inspeção de compressores e vasos sob pressão, teste hidrostático, medição de espessura por ultrassom, calibração de PSV e reconstituição de prontuário.
+    </p>
+  </div>
+
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-emerald-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #d1fae5; color: #065f46; font-weight: 800; font-size: 11px; font-family: monospace;">AC</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">PMOC • CLIMATIZAÇÃO</strong>
+        <span style="color: #047857; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lei 13.589/2018 & ANVISA</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Plano de Manutenção Operação e Controle para qualidade do ar interior, eficiência energética e total conformidade com a vigilância sanitária.
+    </p>
+  </div>
+
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #fecdd3; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-rose-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #ffe4e6; color: #be123c; font-weight: 800; font-size: 11px; font-family: monospace;">PJ</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">PERÍCIAS & ASSISTÊNCIA TÉCNICA</strong>
+        <span style="color: #e11d48; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Engenharia Diagnóstica Legal</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Investigação pericial de acidentes mecânicos, vistorias cautelares de vizinhança industrial, elaboração de quesitos e laudos judiciais conclusivos.
+    </p>
+  </div>
+
+  <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #e9d5ff; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-purple-200 shadow-xs relative">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background-color: #f3e8ff; color: #6b21a8; font-weight: 800; font-size: 11px; font-family: monospace;">ART</span>
+      <div>
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 900; display: block;">PROJETOS & ADEQUAÇÕES</strong>
+        <span style="color: #7e22ce; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Soluções Mecânicas Integradas</span>
+      </div>
+    </div>
+    <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0;">
+      Dimensionamento de proteções físicas, cálculo de estruturas metálicas, dispositivos mecânicos de segurança, linhas de vida e esteiras industriais com ART.
+    </p>
+  </div>
+</div>`;
+
 export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
   { id: 'capa', numero: 1, titulo: 'Capa e Identificação do Cliente', subtitulo: 'LAUDOS, VISTORIAS & RESPONSABILIDADE TÉCNICA' },
   { id: 'missao', numero: 2, titulo: 'Nossa Missão, Propósito & Credenciais Técnicas', subtitulo: 'DIREÇÃO TÉCNICA & HABILITAÇÃO CREA-PE' },
@@ -189,85 +269,7 @@ export function gerarSecoesPadraoOrcamento(
       numero: 6,
       titulo: 'Resumo de Nossos Serviços de Engenharia',
       subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
-      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px] font-mono">12</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
-              <span class="text-[9px] text-blue-600 font-bold uppercase tracking-wider">Apreciação de Risco & Laudo</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Apreciação de riscos (HRN/SIL), inventário técnico, laudos periciais de conformidade mecânica de prensas, tornos, esteiras e células robotizadas.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-amber-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px] font-mono">11</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-11 • CARGAS E ELEVAÇÃO</strong>
-              <span class="text-[9px] text-amber-700 font-bold uppercase tracking-wider">Movimentação & Ensaios</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Inspeção e laudos de pontes rolantes, guindastes, empilhadeiras, pórticos, ensaios não destrutivos (END) e testes de tração em cabos e olhais.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-indigo-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[11px] font-mono">13</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-13 • VASOS & CALDEIRAS</strong>
-              <span class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Pressão & Prontuários</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Inspeção de compressores e vasos sob pressão, teste hidrostático, medição de espessura por ultrassom, calibração de PSV e reconstituição de prontuário.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-emerald-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px] font-mono">AC</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PMOC • CLIMATIZAÇÃO</strong>
-              <span class="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">Lei 13.589/2018 & ANVISA</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Plano de Manutenção Operação e Controle para qualidade do ar interior, eficiência energética e total conformidade com a vigilância sanitária.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-rose-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-[11px] font-mono">PJ</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PERÍCIAS & ASSISTÊNCIA TÉCNICA</strong>
-              <span class="text-[9px] text-rose-700 font-bold uppercase tracking-wider">Engenharia Diagnóstica Legal</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Investigação de falhas mecânicas, vistorias cautelares de vizinhança industrial, elaboração de quesitos e laudos periciais para demandas judiciais.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-purple-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[11px] font-mono">PR</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PROJETOS & ADEQUAÇÕES</strong>
-              <span class="text-[9px] text-purple-700 font-bold uppercase tracking-wider">Memorial & Cálculo Mecânico</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Projetos mecânicos de dispositivos de segurança, enclausuramentos acústicos, linhas de vida, estruturas metálicas e esteiras industriais com ART.
-          </p>
-        </div>
-      </div>`
+      conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS
     },
     {
       id: 'identificacao',
@@ -474,12 +476,20 @@ export function gerarSecoesPadraoOrcamento(
 export function converterPaginasParaSecoes(paginas: { numero: number; titulo: string; subtitulo?: string; conteudoHtml: string; ocultarNoPdf?: boolean }[]): OrcamentoSecao[] {
   return paginas.map((pag, idx) => {
     const def = SECOES_PROPOSTA_DEFINICAO.find(d => d.numero === pag.numero) || SECOES_PROPOSTA_DEFINICAO[idx];
+    const isCatalogo = (def && def.id === 'catalogo') || pag.numero === 6 ||
+      (pag.titulo && pag.titulo.toLowerCase().includes('resumo de nossos serviços'));
+
+    let conteudo = pag.conteudoHtml || '<p></p>';
+    if (isCatalogo && (conteudo.includes('PLAYGROUNDS:') || !conteudo.includes('NR-12 • MÁQUINAS INDUSTRIAIS') || !conteudo.includes('grid-template-columns'))) {
+      conteudo = HTML_CARDS_CATALOGO_SERVICOS;
+    }
+
     return {
       id: def ? def.id : `secao-${pag.numero}`,
       numero: pag.numero,
       titulo: pag.titulo || def?.titulo || `Seção ${pag.numero}`,
       subtitulo: pag.subtitulo || def?.subtitulo,
-      conteudoHtml: pag.conteudoHtml || '<p></p>',
+      conteudoHtml: conteudo,
       ocultarNoPdf: pag.ocultarNoPdf ?? false,
     };
   });

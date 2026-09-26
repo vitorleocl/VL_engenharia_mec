@@ -39,7 +39,8 @@ import { redimensionarImagemArquivo } from '../../lib/imageUtils';
 import { 
   SECOES_PROPOSTA_DEFINICAO, 
   gerarSecoesPadraoOrcamento, 
-  converterPaginasParaSecoes 
+  converterPaginasParaSecoes,
+  HTML_CARDS_CATALOGO_SERVICOS 
 } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentoEditorView: React.FC = () => {
@@ -81,8 +82,45 @@ export const OrcamentoEditorView: React.FC = () => {
   useEffect(() => {
     if (!orcamentoOriginal) return;
 
-    // If orcamento already has rich secoes, use them
+    // If orcamento already has rich secoes, use them, ensuring section 6 is upgraded with the 6 cards
     if (orcamentoOriginal.secoes && orcamentoOriginal.secoes.length > 0) {
+      let alterou = false;
+      const secoesAtualizadas = orcamentoOriginal.secoes.map((s) => {
+        const isCatalogo = s.id === 'catalogo' || s.numero === 6 ||
+          (s.titulo && s.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
+          (s.subtitulo && s.subtitulo.toLowerCase().includes('catálogo de laudos'));
+
+        if (isCatalogo) {
+          const precisaAtualizar = orcamentoOriginal.id === 'orc-1790444416499' ||
+            !s.conteudoHtml ||
+            s.conteudoHtml.includes('PLAYGROUNDS:') ||
+            s.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
+            !s.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS') ||
+            !s.conteudoHtml.includes('grid-template-columns');
+
+          if (precisaAtualizar) {
+            alterou = true;
+            return {
+              ...s,
+              titulo: 'Resumo de Nossos Serviços de Engenharia',
+              subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
+              conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS,
+            };
+          }
+        }
+        return s;
+      });
+
+      if (alterou) {
+        const inicializado: Orcamento = {
+          ...orcamentoOriginal,
+          secoes: secoesAtualizadas,
+        };
+        setOrcamentoState(inicializado);
+        atualizarOrcamento(orcamentoOriginal.id, { secoes: secoesAtualizadas });
+        return;
+      }
+
       setOrcamentoState(orcamentoOriginal);
       return;
     }

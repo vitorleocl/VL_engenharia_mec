@@ -22,6 +22,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import { Orcamento, PropostaPagina } from '../../types';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
+import { HTML_CARDS_CATALOGO_SERVICOS } from '../../lib/orcamentoTemplatePadrao';
 
 interface PropostaViewerModalProps {
   orcamento: Orcamento;
@@ -166,85 +167,7 @@ function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
       numero: 6,
       titulo: "RESUMO DE NOSSOS SERVIÇOS DE ENGENHARIA",
       subtitulo: "CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS",
-      conteudoHtml: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px] font-mono">12</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-12 • MÁQUINAS INDUSTRIAIS</strong>
-              <span class="text-[9px] text-blue-600 font-bold uppercase tracking-wider">Apreciação de Risco & Laudo</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Apreciação de riscos (HRN/SIL), inventário técnico, laudos periciais de conformidade mecânica de prensas, tornos, esteiras e células robotizadas.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-amber-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[11px] font-mono">11</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-11 • CARGAS E ELEVAÇÃO</strong>
-              <span class="text-[9px] text-amber-700 font-bold uppercase tracking-wider">Movimentação & Ensaios</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Inspeção e laudos de pontes rolantes, guindastes, empilhadeiras, pórticos, ensaios não destrutivos (END) e testes de tração em cabos e olhais.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-indigo-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[11px] font-mono">13</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">NR-13 • VASOS & CALDEIRAS</strong>
-              <span class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Pressão & Prontuários</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Inspeção de compressores e vasos sob pressão, teste hidrostático, medição de espessura por ultrassom, calibração de PSV e reconstituição de prontuário.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-emerald-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[11px] font-mono">AC</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PMOC • CLIMATIZAÇÃO</strong>
-              <span class="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">Lei 13.589/2018 & ANVISA</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Plano de Manutenção Operação e Controle para qualidade do ar interior, eficiência energética e total conformidade com a vigilância sanitária.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-rose-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-[11px] font-mono">PJ</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PERÍCIAS & ASSISTÊNCIA TÉCNICA</strong>
-              <span class="text-[9px] text-rose-700 font-bold uppercase tracking-wider">Engenharia Diagnóstica Legal</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Investigação de falhas mecânicas, vistorias cautelares de vizinhança industrial, elaboração de quesitos e laudos periciais para demandas judiciais.
-          </p>
-        </div>
-
-        <div class="p-3.5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-purple-200/80 shadow-2xs relative">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[11px] font-mono">PR</span>
-            <div>
-              <strong class="text-[#0B1E3D] block text-xs font-black">PROJETOS & ADEQUAÇÕES</strong>
-              <span class="text-[9px] text-purple-700 font-bold uppercase tracking-wider">Memorial & Cálculo Mecânico</span>
-            </div>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            Projetos mecânicos de dispositivos de segurança, enclausuramentos acústicos, linhas de vida, estruturas metálicas e esteiras industriais com ART.
-          </p>
-        </div>
-      </div>`
+      conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS
     },
     {
       numero: 7,
@@ -457,6 +380,31 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           </div>`
         };
       }
+
+      // Ensure Page 6 / Catálogo has the 6 stylized engineering cards
+      const isCatalogoPage = 
+        p.numero === 6 ||
+        (p.titulo && (p.titulo.toUpperCase().includes('RESUMO DE NOSSOS SERVIÇOS') || p.titulo.toUpperCase().includes('CATÁLOGO GERAL'))) ||
+        (p.subtitulo && (p.subtitulo.toUpperCase().includes('CATÁLOGO') || p.subtitulo.toUpperCase().includes('ADEQUAÇÕES INDUSTRIAIS'))) ||
+        (orcamento.id === 'orc-1790444416499' && (p.numero === 6 || (p.titulo && p.titulo.toUpperCase().includes('SERVIÇOS'))));
+
+      if (isCatalogoPage) {
+        const needsUpgrade = !p.conteudoHtml ||
+          p.conteudoHtml.includes('PLAYGROUNDS:') ||
+          p.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
+          !p.conteudoHtml.includes('grid-template-columns') ||
+          !p.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS');
+
+        if (needsUpgrade) {
+          return {
+            ...p,
+            titulo: 'RESUMO DE NOSSOS SERVIÇOS DE ENGENHARIA',
+            subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
+            conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS,
+          };
+        }
+      }
+
       return p;
     });
   }, [orcamento]);

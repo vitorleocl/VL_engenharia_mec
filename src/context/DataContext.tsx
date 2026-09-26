@@ -42,6 +42,7 @@ import {
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
+import { HTML_CARDS_CATALOGO_SERVICOS } from '../lib/orcamentoTemplatePadrao';
 
 interface DataContextType {
   clientes: Cliente[];
@@ -139,7 +140,91 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [clientes, setClientes] = useState<Cliente[]>(() => loadStorage('vl_clientes', CLIENTES_INICIAIS));
   const [ativos, setAtivos] = useState<Ativo[]>(() => loadStorage('vl_ativos', ATIVOS_INICIAIS));
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS));
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => {
+    const loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
+    let alterouStorage = false;
+
+    const migrados = loaded.map((orc: Orcamento) => {
+      let orcAtualizado = { ...orc };
+      let modificouOrc = false;
+
+      // 1. Upgrade secoes if present
+      if (orcAtualizado.secoes && orcAtualizado.secoes.length > 0) {
+        const novasSecoes = orcAtualizado.secoes.map((s) => {
+          const isCatalogo = s.id === 'catalogo' || s.numero === 6 ||
+            (s.titulo && s.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
+            (s.subtitulo && s.subtitulo.toLowerCase().includes('catálogo de laudos'));
+
+          if (isCatalogo) {
+            const precisaAtualizar = orc.id === 'orc-1790444416499' ||
+              !s.conteudoHtml ||
+              s.conteudoHtml.includes('PLAYGROUNDS:') ||
+              s.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
+              !s.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS') ||
+              !s.conteudoHtml.includes('grid-template-columns');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...s,
+                titulo: 'Resumo de Nossos Serviços de Engenharia',
+                subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
+                conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS,
+              };
+            }
+          }
+          return s;
+        });
+
+        if (modificouOrc) {
+          orcAtualizado.secoes = novasSecoes;
+        }
+      }
+
+      // 2. Upgrade paginasProposta if present
+      if (orcAtualizado.paginasProposta && orcAtualizado.paginasProposta.length > 0) {
+        const novasPaginas = orcAtualizado.paginasProposta.map((p) => {
+          const isCatalogo = p.numero === 6 ||
+            (p.titulo && p.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
+            (p.subtitulo && p.subtitulo.toLowerCase().includes('catálogo de laudos'));
+
+          if (isCatalogo) {
+            const precisaAtualizar = orc.id === 'orc-1790444416499' ||
+              !p.conteudoHtml ||
+              p.conteudoHtml.includes('PLAYGROUNDS:') ||
+              p.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
+              !p.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS') ||
+              !p.conteudoHtml.includes('grid-template-columns');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...p,
+                titulo: 'RESUMO DE NOSSOS SERVIÇOS DE ENGENHARIA',
+                subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
+                conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS,
+              };
+            }
+          }
+          return p;
+        });
+
+        if (modificouOrc) {
+          orcAtualizado.paginasProposta = novasPaginas;
+        }
+      }
+
+      if (modificouOrc) {
+        alterouStorage = true;
+      }
+      return orcAtualizado;
+    });
+
+    if (alterouStorage) {
+      saveStorage('vl_orcamentos', migrados);
+    }
+    return migrados;
+  });
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
   const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
