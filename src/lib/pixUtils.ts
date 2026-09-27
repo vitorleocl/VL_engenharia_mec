@@ -72,11 +72,9 @@ export function gerarPayloadPix({
 }
 
 /**
- * QR Code Base64 PNG pré-calculado para a chave CPF 10287093409 (Vitor Leonardo C Linhares, Recife)
- * Garante renderização instantânea e síncrona sem atrasos de rede ou renderização em PDF
+ * Caminho padrão para o arquivo da imagem do QR Code do PIX oficial
  */
-export const QR_CODE_PIX_PADRAO_BASE64 = 
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALMAAACzCAYAAAC3/90AAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAD20lEQVR4nO3c0W3rMBAEUc5qUkvqSS2pJxV0V+DBB75A9vPzTjN38PFFcQo/e/78+fPjU12vX88e4P/wB7+fP/j9/MHv5w9+v/nBz/8Cvx38wZ77wQf/n3zwd/IHu+AP9twPPvj/5IO/kz/YBX+w537wwf8nH/yd/MEu+IM994MP/j/54O/kD3bBH+y5H3zw/8kHfyd/sAv+YM/94IP/Tz74O/mDXfAHe+4HH/x/8sHfyR/sgj/Ycz/44P+TD/5O/mAX/MGe+8EH/5988HfyB7vgD/bcDz74/+SDv5M/2AV/sOd+8MH/Jx/8nfzBLviDPfeDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vD/y/f39+zB/p+/+0d//eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7DnfvDB/ycffPDXwQe74I/gD/46+GAX/BH8wV8HH+yCP4I/+Ovg7/X+8fsTfPD/yQd/J3+w6/9P/h/8wV8HH+yCP4I/+Ovg//EP/p38AfwBf/D7+YP7+fPnz69nd/878Affjx/8fv7g9/MHv58/+P3mD/4Ff/D7+QP+A9yQe6tqIe9gAAAAAElFTkSuQmCC';
+export const QR_CODE_PIX_PADRAO_BASE64 = '/qrcode-pix.png';
 
 /**
  * Gera DataURL do QRCode para qualquer chave/payload PIX informado
@@ -84,7 +82,7 @@ export const QR_CODE_PIX_PADRAO_BASE64 =
 export async function gerarQrCodePixDataUrl(payload: string): Promise<string> {
   try {
     return await QRCode.toDataURL(payload, {
-      width: 200,
+      width: 280,
       margin: 1,
       errorCorrectionLevel: 'M',
       color: {

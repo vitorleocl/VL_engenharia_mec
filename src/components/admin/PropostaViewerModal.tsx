@@ -232,7 +232,22 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       }
 
       // FOR ALL OTHER SECTIONS: PRESERVE EXACT CONTENT!
-      // This ensures user edits are never replaced with prefixed templates!
+      // Clean obsolete digital signature badges if present in Etapa 3
+      const isEtapa3 = s.id === 'etapa3' || s.numero === 12 || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
+      if (isEtapa3 && conteudo) {
+        conteudo = conteudo
+          .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
+          .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
+          .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
+          .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+      }
+
+      // Upgrade Agradecimento & Contato if still using old format
+      const isContato = s.id === 'contato' || s.numero === 13 || (s.titulo && s.titulo.toLowerCase().includes('contato'));
+      if (isContato && (!conteudo || conteudo.includes('🤝') || !conteudo.includes('HEADER HERO EXECUTIVO'))) {
+        conteudo = gerarHtmlContatoAgradecimento();
+      }
+
       return {
         id: s.id,
         numero: idx + 1,

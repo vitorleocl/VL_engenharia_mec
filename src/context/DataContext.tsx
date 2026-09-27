@@ -246,8 +246,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa3) {
-            // Only update if completely empty
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+            let htmlEtapa3 = s.conteudoHtml;
+            if (!htmlEtapa3 || htmlEtapa3.trim() === '') {
               modificouOrc = true;
               return {
                 ...s,
@@ -264,11 +264,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   chavePix: orcAtualizado.chavePix,
                 }),
               };
+            } else if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico')) {
+              modificouOrc = true;
+              htmlEtapa3 = htmlEtapa3
+                .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
+                .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
+                .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
+                .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+              return { ...s, conteudoHtml: htmlEtapa3 };
             }
           }
 
           if (isContato) {
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO')) {
               modificouOrc = true;
               return {
                 ...s,
@@ -689,14 +697,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Clientes
   const adicionarCliente = (dados: Omit<Cliente, 'id' | 'criadoEm'>): string => {
     const id = `cli-${Date.now()}`;
-    const novo: Cliente = { ...dados, id, criadoEm: new Date().toISOString() };
-    setClientes(prev => [novo, ...prev]);
+    const cnpjUniforme = dados.cpfCnpj || dados.cnpj || '';
+    const novo: Cliente = {
+      ...dados,
+      id,
+      cpfCnpj: cnpjUniforme,
+      cnpj: cnpjUniforme,
+      criadoEm: new Date().toISOString()
+    };
+    setClientes(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_clientes', lista);
+      return lista;
+    });
     registrarLog('clientes', id, 'criar', `Cliente criado: ${novo.razaoSocial}`);
     return id;
   };
 
   const atualizarCliente = (id: string, dados: Partial<Cliente>) => {
-    setClientes(prev => prev.map(c => c.id === id ? { ...c, ...dados } : c));
+    const cnpjUniforme = dados.cpfCnpj || dados.cnpj;
+    const dadosTratados: Partial<Cliente> = {
+      ...dados,
+      ...(cnpjUniforme ? { cpfCnpj: cnpjUniforme, cnpj: cnpjUniforme } : {})
+    };
+
+    setClientes(prev => {
+      const atualizados = prev.map(c => {
+        if (c.id !== id) return c;
+        const cnpjFinal = dadosTratados.cpfCnpj || c.cpfCnpj || c.cnpj || '';
+        return {
+          ...c,
+          ...dadosTratados,
+          cpfCnpj: cnpjFinal,
+          cnpj: cnpjFinal,
+        };
+      });
+      saveStorage('vl_clientes', atualizados);
+      return atualizados;
+    });
+
+    // Cascata imediata para Ativos, Orçamentos e Laudos
+    if (dados.razaoSocial || cnpjUniforme) {
+      setAtivos(prev => {
+        const atualizados = prev.map(a => a.clienteId === id ? {
+          ...a,
+          clienteNome: dados.razaoSocial || a.clienteNome,
+        } : a);
+        saveStorage('vl_ativos', atualizados);
+        return atualizados;
+      });
+
+      setOrcamentos(prev => {
+        const atualizados = prev.map(o => {
+          if (o.clienteId !== id) return o;
+          return {
+            ...o,
+            clienteNome: dados.razaoSocial || o.clienteNome,
+            cnpjCliente: cnpjUniforme || o.cnpjCliente,
+          };
+        });
+        saveStorage('vl_orcamentos', atualizados);
+        return atualizados;
+      });
+
+      setLaudos(prev => {
+        const atualizados = prev.map(l => {
+          if (l.clienteId !== id) return l;
+          return {
+            ...l,
+            clienteNome: dados.razaoSocial || l.clienteNome,
+          };
+        });
+        saveStorage('vl_laudos', atualizados);
+        return atualizados;
+      });
+    }
+
     registrarLog('clientes', id, 'editar', `Cliente atualizado: ${dados.razaoSocial || id}`);
   };
 

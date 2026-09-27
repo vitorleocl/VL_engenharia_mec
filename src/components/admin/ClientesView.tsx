@@ -26,6 +26,7 @@ export const ClientesView: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
+  const [alertaSucesso, setAlertaSucesso] = useState('');
 
   // Form states
   const [razaoSocial, setRazaoSocial] = useState('');
@@ -66,7 +67,7 @@ export const ClientesView: React.FC = () => {
     setClienteEditando(c);
     setRazaoSocial(c.razaoSocial);
     setNomeFantasia(c.nomeFantasia || '');
-    setCpfCnpj(c.cpfCnpj);
+    setCpfCnpj(c.cpfCnpj || c.cnpj || '');
     const primContato = c.contatos?.[0];
     setContatoNome(primContato?.nome || '');
     setContatoCargo(primContato?.cargo || '');
@@ -85,40 +86,46 @@ export const ClientesView: React.FC = () => {
     e.preventDefault();
     if (!razaoSocial.trim() || !cpfCnpj.trim()) return;
 
-    const contatos = contatoNome ? [{
-      nome: contatoNome,
-      cargo: contatoCargo,
-      telefone: contatoTelefone,
-      email: contatoEmail,
-    }] : [];
+    const temContatoPreenchido = contatoNome.trim() || contatoTelefone.trim() || contatoEmail.trim() || contatoCargo.trim();
+    const contatos = temContatoPreenchido ? [{
+      nome: contatoNome.trim() || (clienteEditando?.contatos?.[0]?.nome || 'Responsável'),
+      cargo: contatoCargo.trim() || clienteEditando?.contatos?.[0]?.cargo || 'Contato Principal',
+      telefone: contatoTelefone.trim() || clienteEditando?.contatos?.[0]?.telefone || '',
+      email: contatoEmail.trim() || clienteEditando?.contatos?.[0]?.email || '',
+    }] : (clienteEditando?.contatos || []);
 
     const endereco = {
-      logradouro,
-      numero,
-      bairro,
-      cidade,
-      estado,
-      cep,
+      logradouro: logradouro.trim(),
+      numero: numero.trim(),
+      bairro: bairro.trim(),
+      cidade: cidade.trim(),
+      estado: estado.trim(),
+      cep: cep.trim(),
     };
 
     if (clienteEditando) {
       atualizarCliente(clienteEditando.id, {
-        razaoSocial,
-        nomeFantasia,
-        cpfCnpj,
+        razaoSocial: razaoSocial.trim(),
+        nomeFantasia: nomeFantasia.trim(),
+        cpfCnpj: cpfCnpj.trim(),
+        cnpj: cpfCnpj.trim(),
         contatos,
         endereco,
       });
+      setAlertaSucesso(`Dados do cliente "${razaoSocial}" atualizados e salvos com sucesso!`);
     } else {
       adicionarCliente({
-        razaoSocial,
-        nomeFantasia,
-        cpfCnpj,
+        razaoSocial: razaoSocial.trim(),
+        nomeFantasia: nomeFantasia.trim(),
+        cpfCnpj: cpfCnpj.trim(),
+        cnpj: cpfCnpj.trim(),
         contatos,
         endereco,
       });
+      setAlertaSucesso(`Cliente "${razaoSocial}" cadastrado com sucesso!`);
     }
 
+    setTimeout(() => setAlertaSucesso(''), 5000);
     setModalAberto(false);
   };
 
@@ -131,6 +138,22 @@ export const ClientesView: React.FC = () => {
   return (
     <div className="space-y-6">
       
+      {/* Success Alert */}
+      {alertaSucesso && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{alertaSucesso}</span>
+          </div>
+          <button
+            onClick={() => setAlertaSucesso('')}
+            className="text-emerald-600 hover:text-emerald-900 p-1 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Header and Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -410,6 +433,16 @@ export const ClientesView: React.FC = () => {
                       value={estado}
                       onChange={(e) => setEstado(e.target.value)}
                       placeholder="PE"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-600 mb-1">CEP</label>
+                    <input
+                      type="text"
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      placeholder="50000-000"
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
                     />
                   </div>

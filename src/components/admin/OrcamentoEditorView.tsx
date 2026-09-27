@@ -86,6 +86,7 @@ export const OrcamentoEditorView: React.FC = () => {
   // File Inputs
   const capaFileInputRef = useRef<HTMLInputElement>(null);
   const secaoFotoInputRef = useRef<HTMLInputElement>(null);
+  const pixQrCodeInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimerRef = useRef<any>(null);
 
   // Initialize orcamentoState with editable 13 sections
@@ -571,6 +572,38 @@ export const OrcamentoEditorView: React.FC = () => {
     agendarAutoSave(atualizado, 'Etapa 3 sincronizada com QR Code PIX CPF e condições financeiras');
   };
 
+  // Upload custom QR code image for PIX
+  const handleUploadPixQrCode = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !orcamentoState) return;
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const result = uploadEvent.target?.result as string;
+      if (!result) return;
+
+      const novasSecoes = (orcamentoState.secoes || []).map(s => {
+        const isEtapa3 = s.id === 'etapa3' || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
+        if (isEtapa3 && s.conteudoHtml) {
+          const novoHtml = s.conteudoHtml.replace(
+            /<img[^>]*alt="QR Code PIX[^>]*>/gi,
+            `<img src="${result}" alt="QR Code PIX CPF" style="width: 76px; height: 76px; display: block; border-radius: 6px; object-fit: contain;" />`
+          );
+          return { ...s, conteudoHtml: novoHtml };
+        }
+        return s;
+      });
+
+      const atualizado: Orcamento = {
+        ...orcamentoState,
+        secoes: novasSecoes,
+        qrCodePixUrl: result,
+      };
+      setOrcamentoState(atualizado);
+      agendarAutoSave(atualizado, 'Imagem do QR Code do PIX atualizada com sucesso');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Computed section visibility metrics
   const { totalSecoes, secoesVisiveisCount, secoesOcultasCount } = useMemo(() => {
     const total = orcamentoState?.secoes?.length || 13;
@@ -616,6 +649,13 @@ export const OrcamentoEditorView: React.FC = () => {
         type="file" 
         ref={secaoFotoInputRef} 
         onChange={handleSecaoFotoUpload} 
+        accept="image/*" 
+        className="hidden" 
+      />
+      <input 
+        type="file" 
+        ref={pixQrCodeInputRef} 
+        onChange={handleUploadPixQrCode} 
         accept="image/*" 
         className="hidden" 
       />
@@ -1070,10 +1110,16 @@ export const OrcamentoEditorView: React.FC = () => {
               <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {/* QR Code thumbnail */}
-                    <div className="bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-center">
-                      <img src={QR_CODE_PIX_PADRAO_BASE64} alt="QR Code PIX CPF" className="w-12 h-12 block" />
-                      <span className="text-[7.5px] font-bold text-emerald-800 font-mono">PIX CPF</span>
+                    {/* QR Code thumbnail com preview e botão de troca */}
+                    <div className="relative group bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-center">
+                      <img 
+                        src={orcamentoState.qrCodePixUrl || QR_CODE_PIX_PADRAO_BASE64} 
+                        alt="QR Code PIX CPF" 
+                        className="w-14 h-14 block object-contain mx-auto" 
+                      />
+                      <span className="text-[7.5px] font-bold text-emerald-800 font-mono block mt-0.5">
+                        {orcamentoState.qrCodePixUrl ? 'QR CUSTOM' : 'QR OFICIAL'}
+                      </span>
                     </div>
 
                     <div>
@@ -1091,6 +1137,17 @@ export const OrcamentoEditorView: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Botão para carregar/trocar imagem do QR Code do PIX */}
+                    <button
+                      type="button"
+                      onClick={() => pixQrCodeInputRef.current?.click()}
+                      className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                      title="Clique para selecionar a imagem do seu QR Code PIX (PNG/JPG)"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{orcamentoState.qrCodePixUrl ? 'Substituir Imagem QR' : 'Inserir Imagem do QR Code'}</span>
+                    </button>
+
                     {/* Nota Fiscal Selectable Toggle */}
                     <button
                       type="button"
