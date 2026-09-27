@@ -833,22 +833,83 @@ export function gerarSecoesPadraoOrcamento(
 /**
  * Converte paginasProposta para o formato de seções ricas caso ainda não existam.
  */
-export function converterPaginasParaSecoes(paginas: { numero: number; titulo: string; subtitulo?: string; conteudoHtml: string; ocultarNoPdf?: boolean }[]): OrcamentoSecao[] {
+export function converterPaginasParaSecoes(
+  paginas: { numero: number; titulo: string; subtitulo?: string; conteudoHtml: string; ocultarNoPdf?: boolean }[],
+  orcamento?: Orcamento
+): OrcamentoSecao[] {
+  const clienteNome = orcamento?.clienteNome || 'Cliente Contratante';
+  const cnpj = orcamento?.cnpjCliente || 'Consulte o contrato';
+  const representante = orcamento?.representanteNome || 'Diretoria / Coordenação Técnica';
+  const localidade = orcamento?.localidadeServico || 'Recife e Região Metropolitana - PE';
+  const codigo = orcamento?.codigoProposta || orcamento?.id || 'PROP-VL';
+  const validade = orcamento?.validadeDias || 15;
+  const prazo = orcamento?.prazoEntrega || `${orcamento?.prazoDias || 7} dias úteis`;
+  const valor = orcamento?.valorFormatado || (orcamento?.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
+  const condicoes = orcamento?.condicoesPagamento || '50% de entrada na aprovação e 50% após emissão do laudo final e ART.';
+  const normas = orcamento?.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
+  const tituloLaudoDinamico = orcamento ? obterTituloLaudoProposta(orcamento) : 'LAUDO TÉCNICO DE ENGENHARIA';
+
   return paginas.map((pag, idx) => {
     const def = SECOES_PROPOSTA_DEFINICAO.find(d => d.numero === pag.numero) || SECOES_PROPOSTA_DEFINICAO[idx];
+    const isCapa = (def && def.id === 'capa') || pag.numero === 1 ||
+      (pag.titulo && pag.titulo.toLowerCase().includes('capa'));
     const isCatalogo = (def && def.id === 'catalogo') || pag.numero === 6 ||
       (pag.titulo && pag.titulo.toLowerCase().includes('resumo de nossos serviços'));
+    const isEtapa2 = (def && def.id === 'etapa2') || pag.numero === 10 ||
+      (pag.titulo && (pag.titulo.toLowerCase().includes('etapa 2') || pag.titulo.toLowerCase().includes('metodologia')));
+    const isEtapa3 = (def && def.id === 'etapa3') || pag.numero === 12 ||
+      (pag.titulo && (pag.titulo.toLowerCase().includes('etapa 3') || pag.titulo.toLowerCase().includes('investimento')));
+    const isContato = (def && def.id === 'contato') || pag.numero === 13 ||
+      (pag.titulo && (pag.titulo.toLowerCase().includes('contato') || pag.titulo.toLowerCase().includes('agradecimento')));
 
+    let titulo = pag.titulo || def?.titulo || `Seção ${pag.numero}`;
+    let subtitulo = pag.subtitulo || def?.subtitulo;
     let conteudo = pag.conteudoHtml || '<p></p>';
-    if (isCatalogo && (conteudo.includes('PLAYGROUNDS:') || !conteudo.includes('NR-12 • MÁQUINAS INDUSTRIAIS') || !conteudo.includes('grid-template-columns'))) {
+
+    if (isCapa) {
+      titulo = 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA';
+      subtitulo = tituloLaudoDinamico;
+      if (!conteudo || !conteudo.includes('DADOS DO CLIENTE CONTRATANTE') || conteudo.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA')) {
+        conteudo = gerarCardClienteHtml({
+          clienteNome,
+          cnpj,
+          representante,
+          localidade,
+          codigo,
+          validade,
+          prazo
+        });
+      }
+    } else if (isCatalogo && (conteudo.includes('PLAYGROUNDS:') || !conteudo.includes('NR-12 • MÁQUINAS INDUSTRIAIS') || !conteudo.includes('grid-template-columns'))) {
       conteudo = HTML_CARDS_CATALOGO_SERVICOS;
+      titulo = 'Resumo de Nossos Serviços de Engenharia';
+      subtitulo = 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS';
+    } else if (isEtapa2 && (!conteudo.includes('FASE 01') || !conteudo.includes('Metodologia de Engenharia em 5 Fases'))) {
+      conteudo = gerarHtmlEtapa2Metodologia(normas);
+      titulo = 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)';
+      subtitulo = 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS';
+    } else if (isEtapa3 && !conteudo.includes('INVESTIMENTO COMERCIAL LÍQUIDO')) {
+      conteudo = gerarHtmlEtapa3Investimento({
+        valor,
+        prazo,
+        condicoes,
+        validade,
+        clienteNome,
+        representante,
+      });
+      titulo = 'Etapa 3 - Prazo, Pagamento & Investimento';
+      subtitulo = 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS';
+    } else if (isContato && (!conteudo.includes('Agradecimento & Parceria') || conteudo.includes('vitorleonardocl@gmail.com'))) {
+      conteudo = gerarHtmlContatoAgradecimento();
+      titulo = 'Agradecimento & Contato';
+      subtitulo = 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO';
     }
 
     return {
       id: def ? def.id : `secao-${pag.numero}`,
       numero: pag.numero,
-      titulo: pag.titulo || def?.titulo || `Seção ${pag.numero}`,
-      subtitulo: pag.subtitulo || def?.subtitulo,
+      titulo,
+      subtitulo,
       conteudoHtml: conteudo,
       ocultarNoPdf: pag.ocultarNoPdf ?? false,
     };

@@ -40,7 +40,12 @@ import {
   SECOES_PROPOSTA_DEFINICAO, 
   gerarSecoesPadraoOrcamento, 
   converterPaginasParaSecoes,
-  HTML_CARDS_CATALOGO_SERVICOS 
+  HTML_CARDS_CATALOGO_SERVICOS,
+  obterTituloLaudoProposta,
+  gerarCardClienteHtml,
+  gerarHtmlEtapa2Metodologia,
+  gerarHtmlEtapa3Investimento,
+  gerarHtmlContatoAgradecimento
 } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentoEditorView: React.FC = () => {
@@ -82,13 +87,59 @@ export const OrcamentoEditorView: React.FC = () => {
   useEffect(() => {
     if (!orcamentoOriginal) return;
 
-    // If orcamento already has rich secoes, use them, ensuring section 6 is upgraded with the 6 cards
+    // If orcamento already has rich secoes, use them, ensuring Capa, Catalogo, Etapa 2, Etapa 3 and Contato are upgraded
     if (orcamentoOriginal.secoes && orcamentoOriginal.secoes.length > 0) {
       let alterou = false;
+      const clienteNome = orcamentoOriginal.clienteNome || cliente?.razaoSocial || 'Cliente Corporativo';
+      const cnpj = orcamentoOriginal.cnpjCliente || cliente?.cpfCnpj || 'Consulte o contrato';
+      const primeiroContato = cliente?.contatos?.[0];
+      const representante = orcamentoOriginal.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica';
+      const localidade = orcamentoOriginal.localidadeServico || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado}` : 'Recife e Região Metropolitana - PE');
+      const valor = orcamentoOriginal.valorFormatado || (orcamentoOriginal.valor ? orcamentoOriginal.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
+      const validade = orcamentoOriginal.validadeDias || 15;
+      const prazo = orcamentoOriginal.prazoEntrega || `${orcamentoOriginal.prazoDias || 7} dias úteis`;
+      const condicoes = orcamentoOriginal.condicoesPagamento || '50% de entrada na aprovação e 50% após emissão do laudo final e ART.';
+      const normas = orcamentoOriginal.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
+      const codigo = orcamentoOriginal.codigoProposta || orcamentoOriginal.id;
+      const tituloLaudoDinamico = obterTituloLaudoProposta(orcamentoOriginal);
+
       const secoesAtualizadas = orcamentoOriginal.secoes.map((s) => {
+        const isCapa = s.id === 'capa' || s.numero === 1 || (s.titulo && s.titulo.toLowerCase().includes('capa'));
         const isCatalogo = s.id === 'catalogo' || s.numero === 6 ||
           (s.titulo && s.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
           (s.subtitulo && s.subtitulo.toLowerCase().includes('catálogo de laudos'));
+        const isEtapa2 = s.id === 'etapa2' || s.numero === 10 ||
+          (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')));
+        const isEtapa3 = s.id === 'etapa3' || s.numero === 12 ||
+          (s.titulo && (s.titulo.toLowerCase().includes('etapa 3') || s.titulo.toLowerCase().includes('investimento')));
+        const isContato = s.id === 'contato' || s.numero === 13 ||
+          (s.titulo && (s.titulo.toLowerCase().includes('contato') || s.titulo.toLowerCase().includes('agradecimento')));
+
+        if (isCapa) {
+          const precisaAtualizar = !s.conteudoHtml ||
+            !s.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE') ||
+            s.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') ||
+            s.titulo.toLowerCase().includes('capa') ||
+            s.subtitulo?.includes('RESPONSABILIDADE TÉCNICA');
+
+          if (precisaAtualizar) {
+            alterou = true;
+            return {
+              ...s,
+              titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA',
+              subtitulo: tituloLaudoDinamico,
+              conteudoHtml: gerarCardClienteHtml({
+                clienteNome,
+                cnpj,
+                representante,
+                localidade,
+                codigo,
+                validade,
+                prazo
+              }),
+            };
+          }
+        }
 
         if (isCatalogo) {
           const precisaAtualizar = orcamentoOriginal.id === 'orc-1790444416499' ||
@@ -108,6 +159,61 @@ export const OrcamentoEditorView: React.FC = () => {
             };
           }
         }
+
+        if (isEtapa2) {
+          const precisaAtualizar = !s.conteudoHtml ||
+            !s.conteudoHtml.includes('FASE 01') ||
+            !s.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
+
+          if (precisaAtualizar) {
+            alterou = true;
+            return {
+              ...s,
+              titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+              subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS',
+              conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
+            };
+          }
+        }
+
+        if (isEtapa3) {
+          const precisaAtualizar = !s.conteudoHtml ||
+            !s.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
+
+          if (precisaAtualizar) {
+            alterou = true;
+            return {
+              ...s,
+              titulo: 'Etapa 3 - Prazo, Pagamento & Investimento',
+              subtitulo: 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS',
+              conteudoHtml: gerarHtmlEtapa3Investimento({
+                valor,
+                prazo,
+                condicoes,
+                validade,
+                clienteNome,
+                representante,
+              }),
+            };
+          }
+        }
+
+        if (isContato) {
+          const precisaAtualizar = !s.conteudoHtml ||
+            !s.conteudoHtml.includes('Agradecimento & Parceria') ||
+            s.conteudoHtml.includes('vitorleonardocl@gmail.com');
+
+          if (precisaAtualizar) {
+            alterou = true;
+            return {
+              ...s,
+              titulo: 'Agradecimento & Contato',
+              subtitulo: 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO',
+              conteudoHtml: gerarHtmlContatoAgradecimento(),
+            };
+          }
+        }
+
         return s;
       });
 
@@ -127,7 +233,7 @@ export const OrcamentoEditorView: React.FC = () => {
 
     // If it has paginasProposta, convert them to editable secoes
     if (orcamentoOriginal.paginasProposta && orcamentoOriginal.paginasProposta.length > 0) {
-      const secoesConvertidas = converterPaginasParaSecoes(orcamentoOriginal.paginasProposta);
+      const secoesConvertidas = converterPaginasParaSecoes(orcamentoOriginal.paginasProposta, orcamentoOriginal);
       const inicializado: Orcamento = {
         ...orcamentoOriginal,
         secoes: secoesConvertidas,

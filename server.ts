@@ -319,6 +319,26 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
 
+    const servicoUpper = String(DESCRICAO_DEMANDA || '').toUpperCase();
+    let TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE CONFORMIDADE MECÂNICA';
+    if (servicoUpper.includes('PMOC') || servicoUpper.includes('CLIMATIZAÇÃO') || servicoUpper.includes('AR-CONDICIONADO')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE PMOC • PLANO DE MANUTENÇÃO, OPERAÇÃO E CONTROLE';
+    } else if (servicoUpper.includes('NR-12') || servicoUpper.includes('NR12') || servicoUpper.includes('MÁQUINA') || servicoUpper.includes('PRENSA')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE INSPEÇÃO NR-12 • SEGURANÇA EM MÁQUINAS INDUSTRIAIS';
+    } else if (servicoUpper.includes('NR-13') || servicoUpper.includes('NR13') || servicoUpper.includes('CALDEIRA') || servicoUpper.includes('COMPRESSOR') || servicoUpper.includes('VASO')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE INSPEÇÃO NR-13 • VASOS SOB PRESSÃO & CALDEIRAS';
+    } else if (servicoUpper.includes('NR-11') || servicoUpper.includes('NR11') || servicoUpper.includes('PONTE ROLANTE') || servicoUpper.includes('EMPILHADEIRA') || servicoUpper.includes('IÇAMENTO')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE INSPEÇÃO NR-11 • TRANSPORTE & MOVIMENTAÇÃO DE CARGA';
+    } else if (servicoUpper.includes('PLAYGROUND') || servicoUpper.includes('PARQUE') || servicoUpper.includes('BRINQUEDO')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO DE SEGURANÇA DE PLAYGROUND • ABNT NBR 16071';
+    } else if (servicoUpper.includes('PERÍCIA') || servicoUpper.includes('PERICIA') || servicoUpper.includes('ASSISTÊNCIA')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO PERICIAL DE ENGENHARIA MECÂNICA DIAGNÓSTICA';
+    } else if (servicoUpper.includes('ESTRUTURAL') || servicoUpper.includes('METÁLIC')) {
+      TITULO_LAUDO_PROPOSTA = 'LAUDO TÉCNICO ESTRUTURAL E MEMORIAL DE CÁLCULO';
+    } else if (servicoUpper.startsWith('LAUDO')) {
+      TITULO_LAUDO_PROPOSTA = servicoUpper;
+    }
+
     const fallbackProposal = {
       codigoProposta: PROP_CODIGO,
       dataEmissao: DATA_EMISSAO,
@@ -340,19 +360,62 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
       paginas: [
         {
           numero: 1,
-          titulo: "CAPA E IDENTIFICAÇÃO DO CLIENTE",
-          subtitulo: "LAUDOS, VISTORIAS & RESPONSABILIDADE TÉCNICA",
-          conteudoHtml: `<div class="space-y-4">
-            <h2 class="text-2xl font-black text-[#0B1E3D]">PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA</h2>
-            <p class="text-sm font-semibold text-[#D4AF37]">LAUDOS, VISTORIAS & RESPONSABILIDADE TÉCNICA</p>
-            <p class="text-slate-700 text-sm leading-relaxed">Prestação de serviços de Engenharia Mecânica de conformidade, mapeamento de risco técnico e emissão de ART oficial para regularização jurídica e operacional.</p>
-            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-4 text-sm space-y-1">
-              <p><strong>Razão Social:</strong> ${NOME_CLIENTE_RAZAO_SOCIAL}</p>
-              <p><strong>CNPJ:</strong> ${CNPJ_CLIENTE}</p>
-              <p><strong>Representante / Contato:</strong> ${REPRESENTANTE_NOME}</p>
-              <p><strong>Proposta nº:</strong> ${PROP_CODIGO} | <strong>Data:</strong> ${DATA_EMISSAO} | <strong>Validade:</strong> ${VALIDADE_DIAS} dias</p>
-              <p><strong>Localidade:</strong> ${LOCALIDADE_SERVICO}</p>
-              <p><strong>Responsável Técnico:</strong> Eng. Mecânico Vitor Leonardo Cordeiro Linhares (CREA-PE: 182229949-0)</p>
+          titulo: "PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA",
+          subtitulo: TITULO_LAUDO_PROPOSTA,
+          conteudoHtml: `<div class="space-y-4 text-xs">
+            <p class="text-slate-700 text-xs sm:text-sm leading-relaxed">
+              Prestação de serviços especializados em Engenharia Mecânica, diagnóstico de integridade estrutural, verificação de conformidade com as Normas Regulamentadoras federais (ABNT / Ministério do Trabalho) e emissão de Anotação de Responsabilidade Técnica (ART) oficial junto ao CREA-PE.
+            </p>
+
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #cbd5e1; border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden;" class="rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+              <div style="background: #0B1E3D; color: #ffffff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #D4AF37;"></span>
+                  <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
+                    DADOS DO CLIENTE CONTRATANTE & REFERÊNCIA
+                  </strong>
+                </div>
+                <span style="font-size: 10px; font-family: monospace; color: #93c5fd; font-weight: 700;">
+                  ${PROP_CODIGO}
+                </span>
+              </div>
+
+              <div style="padding: 14px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;" class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;">
+                  <span style="color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Razão Social / Cliente:</span>
+                  <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800; display: block; word-break: break-word;">${NOME_CLIENTE_RAZAO_SOCIAL}</strong>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;">
+                  <span style="color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">CNPJ / CPF:</span>
+                  <strong style="color: #0f172a; font-size: 12px; font-family: monospace; display: block;">${CNPJ_CLIENTE}</strong>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;">
+                  <span style="color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Representante / Contato:</span>
+                  <strong style="color: #0f172a; font-size: 12px; display: block;">${REPRESENTANTE_NOME}</strong>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;">
+                  <span style="color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Localidade / Unidade:</span>
+                  <strong style="color: #0f172a; font-size: 12px; display: block;">${LOCALIDADE_SERVICO}</strong>
+                </div>
+              </div>
+
+              <div style="background: #f1f5f9; border-top: 1px solid #e2e8f0; padding: 10px 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 11px;">
+                <div>
+                  <span style="color: #64748b; font-size: 10px; display: block;">Código da Proposta</span>
+                  <strong style="color: #0b1e3d; font-family: monospace;">${PROP_CODIGO}</strong>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 10px; display: block;">Validade da Proposta</span>
+                  <strong style="color: #1e3a8a;">${VALIDADE_DIAS} dias corridos</strong>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 10px; display: block;">Prazo de Conclusão</span>
+                  <strong style="color: #047857;">${PRAZO_ENTREGA}</strong>
+                </div>
+              </div>
             </div>
           </div>`
         },
@@ -616,43 +679,102 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
         {
           numero: 10,
           titulo: "ETAPA 2 - ESCOPO TÉCNICO DAS ATIVIDADES (METODOLOGIA)",
-          conteudoHtml: `<div class="overflow-x-auto">
-            <table class="w-full text-xs text-left border-collapse border border-slate-300">
-              <thead>
-                <tr class="bg-[#0B1E3D] text-white">
-                  <th class="p-2 border border-slate-300 w-16">ITEM</th>
-                  <th class="p-2 border border-slate-300 w-44">FASE / ATIVIDADE</th>
-                  <th class="p-2 border border-slate-300">DESCRIÇÃO TÉCNICA OPERACIONAL</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200">
-                <tr>
-                  <td class="p-2 font-bold text-center border border-slate-300">Item 01</td>
-                  <td class="p-2 font-semibold border border-slate-300">Inspeção In Loco</td>
-                  <td class="p-2 border border-slate-300">Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança e coleta de dados físicos.</td>
-                </tr>
-                <tr class="bg-slate-50">
-                  <td class="p-2 font-bold text-center border border-slate-300">Item 02</td>
-                  <td class="p-2 font-semibold border border-slate-300">Checklists Normativos</td>
-                  <td class="p-2 border border-slate-300">Aplicação de checklists técnicos customizados baseados nas resoluções ABNT, NRs ou diretrizes federais de referência (${NORMAS_TECNICAS}).</td>
-                </tr>
-                <tr>
-                  <td class="p-2 font-bold text-center border border-slate-300">Item 03</td>
-                  <td class="p-2 font-semibold border border-slate-300">Testes Operacionais</td>
-                  <td class="p-2 border border-slate-300">Verificação das condições estruturais físicas da categoria do equipamento, incluindo ensaios estáticos/dinâmicos cabíveis.</td>
-                </tr>
-                <tr class="bg-slate-50">
-                  <td class="p-2 font-bold text-center border border-slate-300">Item 04</td>
-                  <td class="p-2 font-semibold border border-slate-300">Emissão de Relatório</td>
-                  <td class="p-2 border border-slate-300">Elaboração de laudo fotográfico conclusivo apontando falhas e plano de ação corretivo detalhado para readequação física.</td>
-                </tr>
-                <tr>
-                  <td class="p-2 font-bold text-center border border-slate-300">Item 05</td>
-                  <td class="p-2 font-semibold border border-slate-300">ART CREA-PE</td>
-                  <td class="p-2 border border-slate-300">Anotação de Responsabilidade Técnica emitida eletronicamente junto ao conselho regional de engenharia, conferindo plena validade legal.</td>
-                </tr>
-              </tbody>
-            </table>
+          subtitulo: "FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS",
+          conteudoHtml: `<div class="space-y-3.5 text-xs">
+            <div style="background: #0B1E3D; color: #ffffff; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #1565D8; font-weight: 900; font-size: 11px;">M</span>
+                <div>
+                  <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Metodologia de Engenharia em 5 Fases Sequenciais</strong>
+                  <span style="font-size: 9px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo e homologação legal CREA-PE</span>
+                </div>
+              </div>
+              <span style="background: rgba(212, 175, 55, 0.2); border: 1px solid #D4AF37; color: #fde047; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">
+                CREA-PE HABILITADO
+              </span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 9px;">
+              <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-left: 5px solid #1d4ed8; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #dbeafe; color: #1e40af; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 01</span>
+                    <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Inspeção Visual In Loco & Diagnóstico Preliminar</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #1d4ed8; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">Vistoria de Campo</span>
+                </div>
+                <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+                  Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente fabril/operacional.
+                </p>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #0284c7; font-weight: 600;">
+                  <span>✓ Entregável:</span> <span style="color: #334155;">Levantamento fotográfico em alta resolução e registro de evidências fáticas.</span>
+                </div>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #fde68a; border-left: 5px solid #d97706; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #fef3c7; color: #92400e; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 02</span>
+                    <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Aplicação de Checklists Normativos Técnicos</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #b45309; font-weight: 700; background: #fffbeb; padding: 2px 6px; border-radius: 4px;">Conformidade Legal</span>
+                </div>
+                <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+                  Auditoria item por item das exigências regulamentadoras vigentes (${NORMAS_TECNICAS}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos elétricos.
+                </p>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #b45309; font-weight: 600;">
+                  <span>✓ Entregável:</span> <span style="color: #334155;">Relatório de conformidade item a item conforme normas ABNT e NRs federais.</span>
+                </div>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #c7d2fe; border-left: 5px solid #4f46e5; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #e0e7ff; color: #4338ca; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 03</span>
+                    <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Ensaios Físicos, Medições e Testes Funcionais</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #4f46e5; font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px;">Instrumentado</span>
+                </div>
+                <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+                  Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e calibração de salvaguardas.
+                </p>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #4f46e5; font-weight: 600;">
+                  <span>✓ Entregável:</span> <span style="color: #334155;">Planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.</span>
+                </div>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #a7f3d0; border-left: 5px solid #059669; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #d1fae5; color: #065f46; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 04</span>
+                    <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Dossiê Técnico, Matriz de Risco & Parecer Conclusivo</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #059669; font-weight: 700; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">Engenharia Diagnóstica</span>
+                </div>
+                <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+                  Elaboração de laudo pericial detalhado contendo análise de risco quantitativa (HRN/SIL), memorial técnico descritivo, plano de ação corretivo claro e cronograma prioritário de adequações físicas.
+                </p>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #059669; font-weight: 600;">
+                  <span>✓ Entregável:</span> <span style="color: #334155;">Laudo Pericial Conclusivo digital em PDF com assinatura eletrônica e certificado digital.</span>
+                </div>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #e9d5ff; border-left: 5px solid #7c3aed; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #f3e8ff; color: #6b21a8; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 05</span>
+                    <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Emissão e Registro Oficial da ART CREA-PE</strong>
+                  </div>
+                  <span style="font-size: 10px; color: #7c3aed; font-weight: 700; background: #faf5ff; padding: 2px 6px; border-radius: 4px;">Homologação Legal</span>
+                </div>
+                <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+                  Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.
+                </p>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #7c3aed; font-weight: 600;">
+                  <span>✓ Entregável:</span> <span style="color: #334155;">Certidão oficial de ART quitada com chave de autenticidade e QR code do CREA-PE.</span>
+                </div>
+              </div>
+            </div>
           </div>`
         },
         {
@@ -678,31 +800,102 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
         {
           numero: 12,
           titulo: "ETAPA 3 - PRAZO, PAGAMENTO & INVESTIMENTO",
+          subtitulo: "INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS",
           conteudoHtml: `<div class="space-y-4 text-xs">
-            <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-              <p><strong>Prazo para Entrega dos Laudos:</strong> ${PRAZO_ENTREGA}</p>
-              <p><strong>Formas e Termos de Pagamento:</strong> ${CONDICOES_PAGAMENTO}</p>
-              <div class="p-3 bg-white border border-[#D4AF37] rounded-md mt-2 flex items-center justify-between">
-                <span class="font-bold text-sm text-[#0B1E3D]">INVESTIMENTO COMERCIAL LÍQUIDO:</span>
-                <span class="font-black text-xl text-[#0B1E3D]">${VALOR_INVESTIMENTO}</span>
+            <div style="background: linear-gradient(135deg, #0B1E3D 0%, #1565D8 100%); color: #ffffff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15); position: relative; overflow: hidden;" class="text-white">
+              <div style="position: absolute; right: -20px; bottom: -20px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255, 255, 255, 0.05); pointer-events: none;"></div>
+              <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                <span style="background: rgba(212, 175, 55, 0.25); border: 1.5px solid #D4AF37; color: #fef08a; padding: 3px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;">
+                  INVESTIMENTO COMERCIAL LÍQUIDO
+                </span>
+                <div style="font-size: 32px; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 6px 0;">
+                  ${VALOR_INVESTIMENTO}
+                </div>
+                <p style="color: #e2e8f0; font-size: 11px; max-width: 480px; margin: 0; line-height: 1.4;">
+                  Valor líquido para prestação de serviços com emissão e taxa da Anotação de Responsabilidade Técnica (ART) inclusa.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px;">
+                  <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+                    ✓ Taxa ART CREA-PE Inclusa
+                  </span>
+                  <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+                    ✓ Nota Fiscal de Serviços (NFS-e)
+                  </span>
+                  <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+                    ✓ Deslocamento e Relatório Colorido
+                  </span>
+                </div>
               </div>
-              <p class="text-[11px] text-emerald-800 font-medium">
-                ✓ Inclusos Emissão de Nota Fiscal de Serviços (NFS-e), taxas de CREA-PE (ART) e deslocamentos operacionais. A.R.T. Inclusa | CREA-PE Ativo.
-              </p>
             </div>
-            <p class="text-[11px] text-slate-500 italic">
-              Cláusula de Validade: Proposta válida por ${VALIDADE_DIAS} dias a contar da data de emissão. Este orçamento de engenharia não constitui vínculo financeiro definitivo sem aceite digital formal.
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
-              <div class="p-3 border rounded text-center bg-white">
-                <p class="font-bold text-slate-800">Eng. Vitor Leonardo C. Linhares</p>
-                <p class="text-slate-500 text-[10px]">Responsável Técnico CREA-PE 182229949-0</p>
-                <div class="mt-2 text-[10px] text-emerald-600 font-semibold">Assinado Digitalmente pelo Emissor</div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+              <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #1565D8; border-radius: 10px; padding: 10px 12px; text-align: center;">
+                <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+                  ⏱️ PRAZO DE EXECUÇÃO
+                </span>
+                <strong style="color: #0b1e3d; font-size: 13px; font-weight: 800; display: block; margin-bottom: 2px;">
+                  ${PRAZO_ENTREGA}
+                </strong>
+                <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+                  Contados a partir da vistoria in loco.
+                </span>
               </div>
-              <div class="p-3 border rounded text-center bg-white border-dashed">
-                <p class="font-bold text-slate-800">${REPRESENTANTE_NOME}</p>
-                <p class="text-slate-500 text-[10px]">${NOME_CLIENTE_RAZAO_SOCIAL}</p>
-                <div class="mt-2 text-[10px] text-amber-600 font-semibold">[Aguardando Assinatura Eletrônica / Aceite Digital]</div>
+
+              <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #059669; border-radius: 10px; padding: 10px 12px; text-align: center;">
+                <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+                  💳 CONDIÇÕES DE PAGAMENTO
+                </span>
+                <strong style="color: #065f46; font-size: 12px; font-weight: 800; display: block; margin-bottom: 2px;">
+                  ${CONDICOES_PAGAMENTO}
+                </strong>
+                <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+                  Boleto bancário, transferência ou PIX.
+                </span>
+              </div>
+
+              <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #d97706; border-radius: 10px; padding: 10px 12px; text-align: center;">
+                <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+                  📅 VALIDADE DA PROPOSTA
+                </span>
+                <strong style="color: #92400e; font-size: 13px; font-weight: 800; display: block; margin-bottom: 2px;">
+                  ${VALIDADE_DIAS} dias corridos
+                </strong>
+                <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+                  Garantia de valores e disponibilidade.
+                </span>
+              </div>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #22c55e; color: #ffffff; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
+                <div>
+                  <strong style="color: #14532d; font-size: 11px; display: block;">DADOS PARA FATURAMENTO & CHAVE PIX</strong>
+                  <span style="color: #166534; font-size: 10px;">Chave PIX E-mail: <strong>vlengenhariamec@gmail.com</strong> (VL Engenharia Mecânica)</span>
+                </div>
+              </div>
+              <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800;">
+                PIX IMEDIATO
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+              <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 12px; text-align: center;">
+                <p style="color: #0b1e3d; font-weight: 800; font-size: 11px; margin: 0 0 2px 0;">VL ENGENHARIA MECÂNICA</p>
+                <p style="color: #1565d8; font-weight: 700; font-size: 10px; margin: 0 0 2px 0;">Eng. Vitor Leonardo Cordeiro Linhares</p>
+                <p style="color: #64748b; font-size: 9px; font-family: monospace; margin: 0 0 8px 0;">CREA-PE: 182229949-0 • Responsável Técnico</p>
+                <span style="display: inline-block; background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;">
+                  ✓ Assinado Digitalmente pelo Emissor
+                </span>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 12px; text-align: center;">
+                <p style="color: #0b1e3d; font-weight: 800; font-size: 11px; margin: 0 0 2px 0;">${NOME_CLIENTE_RAZAO_SOCIAL}</p>
+                <p style="color: #475569; font-weight: 600; font-size: 10px; margin: 0 0 2px 0;">${REPRESENTANTE_NOME}</p>
+                <p style="color: #64748b; font-size: 9px; margin: 0 0 8px 0;">De Acordo / Representante Autorizado do Contratante</p>
+                <span style="display: inline-block; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;">
+                  [Aceite Eletrônico / Assinatura Digital]
+                </span>
               </div>
             </div>
           </div>`
@@ -710,16 +903,84 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
         {
           numero: 13,
           titulo: "AGRADECIMENTO & CONTATO",
-          conteudoHtml: `<div class="space-y-4 text-xs text-center py-4">
-            <p class="text-slate-700 text-sm max-w-lg mx-auto leading-relaxed">
-              A <strong>VL Engenharia Mecânica</strong> agradece pela oportunidade de apresentar esta Proposta Técnico-Comercial. Ficamos à total disposição para sanar quaisquer dúvidas técnicas ou comerciais e iniciar os trabalhos com excelência.
-            </p>
-            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 inline-block text-left max-w-md w-full space-y-1.5 text-xs text-slate-700">
-              <p class="font-bold text-[#0B1E3D] text-sm">VL Engenharia Mecânica & Consultoria Pericial</p>
-              <p>Recife / Paulista - Pernambuco, Brasil</p>
-              <p><strong>Telefone / WhatsApp:</strong> (81) 98444-2592</p>
-              <p><strong>E-mail:</strong> vitorleonardocl@gmail.com</p>
-              <p><strong>Instagram:</strong> @vlengenharia</p>
+          subtitulo: "INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO",
+          conteudoHtml: `<div class="space-y-4 text-xs">
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <div style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: #0B1E3D; color: #ffffff; margin-bottom: 8px;">
+                <span style="font-size: 16px;">🤝</span>
+              </div>
+              <h3 style="color: #0B1E3D; font-size: 14px; font-weight: 900; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                Agradecimento & Parceria Técnica de Confiança
+              </h3>
+              <p style="color: #475569; font-size: 11px; line-height: 1.55; max-width: 520px; margin: 0 auto;">
+                A <strong>VL Engenharia Mecânica</strong> agradece a oportunidade de apresentar esta Proposta Técnico-Comercial. Colocamo-nos à inteira disposição para qualquer alinhamento técnico, esclarecimento de dúvidas e pronto início das atividades operacionais.
+              </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+              <div style="background: #ffffff; border: 1.5px solid #86efac; border-left: 4px solid #16a34a; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="background: #dcfce7; color: #15803d; font-size: 13px; width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;">📞</span>
+                  <div>
+                    <strong style="color: #0b1e3d; font-size: 11px; display: block;">Telefone & WhatsApp Direto</strong>
+                    <span style="color: #15803d; font-size: 9px; font-weight: 700; text-transform: uppercase;">Atendimento Rápido</span>
+                  </div>
+                </div>
+                <p style="color: #15803d; font-size: 12px; font-weight: 800; font-family: monospace; margin: 4px 0 2px 0;">
+                  (81) 98444-2592
+                </p>
+                <span style="color: #64748b; font-size: 10px;">Segunda a Sexta, das 08h às 18h. Plantão pericial.</span>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #93c5fd; border-left: 4px solid #1565d8; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="background: #dbeafe; color: #1e40af; font-size: 13px; width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;">✉️</span>
+                  <div>
+                    <strong style="color: #0b1e3d; font-size: 11px; display: block;">E-mail Comercial Oficial</strong>
+                    <span style="color: #1565d8; font-size: 9px; font-weight: 700; text-transform: uppercase;">Envio de Documentos</span>
+                  </div>
+                </div>
+                <p style="color: #1565d8; font-size: 11px; font-weight: 800; font-family: monospace; margin: 4px 0 2px 0; word-break: break-all;">
+                  vlengenhariamec@gmail.com
+                </p>
+                <span style="color: #64748b; font-size: 10px;">Canal direto com o Engenheiro Mecânico Responsável.</span>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-left: 4px solid #0B1E3D; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="background: #e2e8f0; color: #0b1e3d; font-size: 13px; width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;">🏢</span>
+                  <div>
+                    <strong style="color: #0b1e3d; font-size: 11px; display: block;">Sede Operacional & Atendimento</strong>
+                    <span style="color: #64748b; font-size: 9px; font-weight: 700; text-transform: uppercase;">Pernambuco / Nordeste</span>
+                  </div>
+                </div>
+                <p style="color: #0B1E3D; font-size: 11px; font-weight: 700; margin: 4px 0 2px 0;">
+                  Recife / Região Metropolitana - PE
+                </p>
+                <span style="color: #64748b; font-size: 10px;">Atendimento in loco em indústrias, polos e condomínios.</span>
+              </div>
+
+              <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-left: 4px solid #0B1E3D; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="background: #e2e8f0; color: #0b1e3d; font-size: 13px; width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;">🛡️</span>
+                  <div>
+                    <strong style="color: #0b1e3d; font-size: 11px; display: block;">Responsabilidade Técnica CREA-PE</strong>
+                    <span style="color: #0b1e3d; font-size: 9px; font-weight: 700; text-transform: uppercase;">Registro Ativo Regular</span>
+                  </div>
+                </div>
+                <p style="color: #0B1E3D; font-size: 12px; font-weight: 800; font-family: monospace; margin: 4px 0 2px 0;">
+                  CREA-PE: 182229949-0
+                </p>
+                <span style="color: #64748b; font-size: 10px;">Eng. Mecânico Vitor Leonardo Cordeiro Linhares.</span>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-around; text-align: center; font-size: 10px; color: #475569;">
+              <div><strong>🔒 Sigilo e Confidencialidade</strong> (LGPD)</div>
+              <div>•</div>
+              <div><strong>⚖️ Emissão de ART Oficial</strong> (CREA-PE)</div>
+              <div>•</div>
+              <div><strong>📐 Conformidade ABNT / NRs</strong></div>
             </div>
           </div>`
         }

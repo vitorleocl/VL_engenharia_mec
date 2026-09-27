@@ -42,7 +42,14 @@ import {
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
-import { HTML_CARDS_CATALOGO_SERVICOS } from '../lib/orcamentoTemplatePadrao';
+import { 
+  HTML_CARDS_CATALOGO_SERVICOS,
+  obterTituloLaudoProposta,
+  gerarCardClienteHtml,
+  gerarHtmlEtapa2Metodologia,
+  gerarHtmlEtapa3Investimento,
+  gerarHtmlContatoAgradecimento
+} from '../lib/orcamentoTemplatePadrao';
 
 interface DataContextType {
   clientes: Cliente[];
@@ -150,10 +157,54 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 1. Upgrade secoes if present
       if (orcAtualizado.secoes && orcAtualizado.secoes.length > 0) {
+        const clienteNome = orcAtualizado.clienteNome || 'Cliente Contratante';
+        const cnpj = orcAtualizado.cnpjCliente || 'Consulte o contrato';
+        const representante = orcAtualizado.representanteNome || 'Diretoria / Coordenação Técnica';
+        const localidade = orcAtualizado.localidadeServico || 'Recife e Região Metropolitana - PE';
+        const codigo = orcAtualizado.codigoProposta || orcAtualizado.id;
+        const validade = orcAtualizado.validadeDias || 15;
+        const prazo = orcAtualizado.prazoEntrega || `${orcAtualizado.prazoDias || 7} dias úteis`;
+        const valor = orcAtualizado.valorFormatado || (orcAtualizado.valor ? orcAtualizado.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
+        const condicoes = orcAtualizado.condicoesPagamento || '50% de entrada na aprovação e 50% após emissão do laudo final e ART.';
+        const normas = orcAtualizado.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
+        const tituloLaudoDinamico = obterTituloLaudoProposta(orcAtualizado);
+
         const novasSecoes = orcAtualizado.secoes.map((s) => {
+          const isCapa = s.id === 'capa' || s.numero === 1 || (s.titulo && s.titulo.toLowerCase().includes('capa'));
           const isCatalogo = s.id === 'catalogo' || s.numero === 6 ||
             (s.titulo && s.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
             (s.subtitulo && s.subtitulo.toLowerCase().includes('catálogo de laudos'));
+          const isEtapa2 = s.id === 'etapa2' || s.numero === 10 ||
+            (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')));
+          const isEtapa3 = s.id === 'etapa3' || s.numero === 12 ||
+            (s.titulo && (s.titulo.toLowerCase().includes('etapa 3') || s.titulo.toLowerCase().includes('investimento')));
+          const isContato = s.id === 'contato' || s.numero === 13 ||
+            (s.titulo && (s.titulo.toLowerCase().includes('contato') || s.titulo.toLowerCase().includes('agradecimento')));
+
+          if (isCapa) {
+            const precisaAtualizar = !s.conteudoHtml ||
+              !s.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE') ||
+              s.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') ||
+              s.titulo.toLowerCase().includes('capa');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...s,
+                titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA',
+                subtitulo: tituloLaudoDinamico,
+                conteudoHtml: gerarCardClienteHtml({
+                  clienteNome,
+                  cnpj,
+                  representante,
+                  localidade,
+                  codigo,
+                  validade,
+                  prazo
+                }),
+              };
+            }
+          }
 
           if (isCatalogo) {
             const precisaAtualizar = orc.id === 'orc-1790444416499' ||
@@ -173,6 +224,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
             }
           }
+
+          if (isEtapa2) {
+            const precisaAtualizar = !s.conteudoHtml ||
+              !s.conteudoHtml.includes('FASE 01') ||
+              !s.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...s,
+                titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+                subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS',
+                conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
+              };
+            }
+          }
+
+          if (isEtapa3) {
+            const precisaAtualizar = !s.conteudoHtml ||
+              !s.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...s,
+                titulo: 'Etapa 3 - Prazo, Pagamento & Investimento',
+                subtitulo: 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS',
+                conteudoHtml: gerarHtmlEtapa3Investimento({
+                  valor,
+                  prazo,
+                  condicoes,
+                  validade,
+                  clienteNome,
+                  representante,
+                }),
+              };
+            }
+          }
+
+          if (isContato) {
+            const precisaAtualizar = !s.conteudoHtml ||
+              !s.conteudoHtml.includes('Agradecimento & Parceria') ||
+              s.conteudoHtml.includes('vitorleonardocl@gmail.com');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...s,
+                titulo: 'Agradecimento & Contato',
+                subtitulo: 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO',
+                conteudoHtml: gerarHtmlContatoAgradecimento(),
+              };
+            }
+          }
+
           return s;
         });
 
@@ -183,10 +289,54 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 2. Upgrade paginasProposta if present
       if (orcAtualizado.paginasProposta && orcAtualizado.paginasProposta.length > 0) {
+        const clienteNome = orcAtualizado.clienteNome || 'Cliente Contratante';
+        const cnpj = orcAtualizado.cnpjCliente || 'Consulte o contrato';
+        const representante = orcAtualizado.representanteNome || 'Diretoria / Coordenação Técnica';
+        const localidade = orcAtualizado.localidadeServico || 'Recife e Região Metropolitana - PE';
+        const codigo = orcAtualizado.codigoProposta || orcAtualizado.id;
+        const validade = orcAtualizado.validadeDias || 15;
+        const prazo = orcAtualizado.prazoEntrega || `${orcAtualizado.prazoDias || 7} dias úteis`;
+        const valor = orcAtualizado.valorFormatado || (orcAtualizado.valor ? orcAtualizado.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
+        const condicoes = orcAtualizado.condicoesPagamento || '50% de entrada na aprovação e 50% após emissão do laudo final e ART.';
+        const normas = orcAtualizado.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
+        const tituloLaudoDinamico = obterTituloLaudoProposta(orcAtualizado);
+
         const novasPaginas = orcAtualizado.paginasProposta.map((p) => {
+          const isCapa = p.numero === 1 || (p.titulo && p.titulo.toLowerCase().includes('capa'));
           const isCatalogo = p.numero === 6 ||
             (p.titulo && p.titulo.toLowerCase().includes('resumo de nossos serviços')) ||
             (p.subtitulo && p.subtitulo.toLowerCase().includes('catálogo de laudos'));
+          const isEtapa2 = p.numero === 10 ||
+            (p.titulo && (p.titulo.toLowerCase().includes('etapa 2') || p.titulo.toLowerCase().includes('metodologia')));
+          const isEtapa3 = p.numero === 12 ||
+            (p.titulo && (p.titulo.toLowerCase().includes('etapa 3') || p.titulo.toLowerCase().includes('investimento')));
+          const isContato = p.numero === 13 ||
+            (p.titulo && (p.titulo.toLowerCase().includes('contato') || p.titulo.toLowerCase().includes('agradecimento')));
+
+          if (isCapa) {
+            const precisaAtualizar = !p.conteudoHtml ||
+              !p.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE') ||
+              p.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') ||
+              p.titulo.toLowerCase().includes('capa');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...p,
+                titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA',
+                subtitulo: tituloLaudoDinamico,
+                conteudoHtml: gerarCardClienteHtml({
+                  clienteNome,
+                  cnpj,
+                  representante,
+                  localidade,
+                  codigo,
+                  validade,
+                  prazo
+                }),
+              };
+            }
+          }
 
           if (isCatalogo) {
             const precisaAtualizar = orc.id === 'orc-1790444416499' ||
@@ -206,6 +356,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
             }
           }
+
+          if (isEtapa2) {
+            const precisaAtualizar = !p.conteudoHtml ||
+              !p.conteudoHtml.includes('FASE 01') ||
+              !p.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...p,
+                titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+                subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS',
+                conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
+              };
+            }
+          }
+
+          if (isEtapa3) {
+            const precisaAtualizar = !p.conteudoHtml ||
+              !p.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...p,
+                titulo: 'Etapa 3 - Prazo, Pagamento & Investimento',
+                subtitulo: 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS',
+                conteudoHtml: gerarHtmlEtapa3Investimento({
+                  valor,
+                  prazo,
+                  condicoes,
+                  validade,
+                  clienteNome,
+                  representante,
+                }),
+              };
+            }
+          }
+
+          if (isContato) {
+            const precisaAtualizar = !p.conteudoHtml ||
+              !p.conteudoHtml.includes('Agradecimento & Parceria') ||
+              p.conteudoHtml.includes('vitorleonardocl@gmail.com');
+
+            if (precisaAtualizar) {
+              modificouOrc = true;
+              return {
+                ...p,
+                titulo: 'Agradecimento & Contato',
+                subtitulo: 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO',
+                conteudoHtml: gerarHtmlContatoAgradecimento(),
+              };
+            }
+          }
+
           return p;
         });
 
