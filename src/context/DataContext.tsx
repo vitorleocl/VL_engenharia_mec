@@ -169,6 +169,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const normas = orcAtualizado.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
         const tituloLaudoDinamico = obterTituloLaudoProposta(orcAtualizado);
 
+        if (orcAtualizado.incluiNotaFiscal === undefined) {
+          orcAtualizado.incluiNotaFiscal = true;
+          modificouOrc = true;
+        }
+        if (!orcAtualizado.chavePix) {
+          orcAtualizado.chavePix = '10287093409';
+          orcAtualizado.chavePixTipo = 'cpf';
+          modificouOrc = true;
+        }
+
         const novasSecoes = orcAtualizado.secoes.map((s) => {
           const isCapa = s.id === 'capa' || s.numero === 1 || (s.titulo && s.titulo.toLowerCase().includes('capa'));
           const isCatalogo = s.id === 'catalogo' || s.numero === 6 ||
@@ -183,9 +193,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (isCapa) {
             const precisaAtualizar = !s.conteudoHtml ||
-              !s.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE') ||
-              s.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') ||
-              s.titulo.toLowerCase().includes('capa');
+              s.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') && !s.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE');
 
             if (precisaAtualizar) {
               modificouOrc = true;
@@ -207,12 +215,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isCatalogo) {
-            const precisaAtualizar = orc.id === 'orc-1790444416499' ||
-              !s.conteudoHtml ||
+            const precisaAtualizar = orc.id === 'orc-1790444416499' && (
               s.conteudoHtml.includes('PLAYGROUNDS:') ||
               s.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
-              !s.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS') ||
-              !s.conteudoHtml.includes('grid-template-columns');
+              !s.conteudoHtml.includes('grid-template-columns')
+            );
 
             if (precisaAtualizar) {
               modificouOrc = true;
@@ -226,11 +233,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa2) {
-            const precisaAtualizar = !s.conteudoHtml ||
-              !s.conteudoHtml.includes('FASE 01') ||
-              !s.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
-
-            if (precisaAtualizar) {
+            // Only update if completely empty
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...s,
@@ -242,10 +246,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa3) {
-            const precisaAtualizar = !s.conteudoHtml ||
-              !s.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
-
-            if (precisaAtualizar) {
+            // Only update if completely empty
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...s,
@@ -258,17 +260,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   validade,
                   clienteNome,
                   representante,
+                  incluiNotaFiscal: orcAtualizado.incluiNotaFiscal,
+                  chavePix: orcAtualizado.chavePix,
                 }),
               };
             }
           }
 
           if (isContato) {
-            const precisaAtualizar = !s.conteudoHtml ||
-              !s.conteudoHtml.includes('Agradecimento & Parceria') ||
-              s.conteudoHtml.includes('vitorleonardocl@gmail.com');
-
-            if (precisaAtualizar) {
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...s,
@@ -358,11 +358,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa2) {
-            const precisaAtualizar = !p.conteudoHtml ||
-              !p.conteudoHtml.includes('FASE 01') ||
-              !p.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
-
-            if (precisaAtualizar) {
+            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...p,
@@ -374,10 +370,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa3) {
-            const precisaAtualizar = !p.conteudoHtml ||
-              !p.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
-
-            if (precisaAtualizar) {
+            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...p,
@@ -390,17 +383,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   validade,
                   clienteNome,
                   representante,
+                  incluiNotaFiscal: orcAtualizado.incluiNotaFiscal,
+                  chavePix: orcAtualizado.chavePix,
                 }),
               };
             }
           }
 
           if (isContato) {
-            const precisaAtualizar = !p.conteudoHtml ||
-              !p.conteudoHtml.includes('Agradecimento & Parceria') ||
-              p.conteudoHtml.includes('vitorleonardocl@gmail.com');
-
-            if (precisaAtualizar) {
+            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
               modificouOrc = true;
               return {
                 ...p,

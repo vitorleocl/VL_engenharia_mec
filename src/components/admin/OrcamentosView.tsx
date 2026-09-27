@@ -59,6 +59,7 @@ export const OrcamentosView: React.FC = () => {
   const [prazoDias, setPrazoDias] = useState(7);
   const [validadeDias, setValidadeDias] = useState(15);
   const [condicoesPagamento, setCondicoesPagamento] = useState('50% na aprovação e 50% após emissão da ART CREA-PE.');
+  const [incluiNotaFiscal, setIncluiNotaFiscal] = useState(true);
 
   const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
 
@@ -71,6 +72,7 @@ export const OrcamentosView: React.FC = () => {
     setPrazoDias(7);
     setValidadeDias(15);
     setCondicoesPagamento('50% na aprovação e 50% após emissão da ART CREA-PE.');
+    setIncluiNotaFiscal(true);
     setGerarIAAoCriar(true);
     setModalNovoAberto(true);
   };
@@ -148,6 +150,9 @@ export const OrcamentosView: React.FC = () => {
       prazoDias: Number(prazoDias),
       validadeDias: Number(validadeDias),
       condicoesPagamento,
+      incluiNotaFiscal,
+      chavePix: '10287093409',
+      chavePixTipo: 'cpf',
       status: 'rascunho',
     });
 
@@ -164,6 +169,9 @@ export const OrcamentosView: React.FC = () => {
         prazoDias: Number(prazoDias),
         validadeDias: Number(validadeDias),
         condicoesPagamento,
+        incluiNotaFiscal,
+        chavePix: '10287093409',
+        chavePixTipo: 'cpf',
         status: 'rascunho',
         criadoEm: new Date().toISOString(),
       };
@@ -553,6 +561,33 @@ export const OrcamentosView: React.FC = () => {
                   placeholder="Ex: 50% entrada e 50% na emissão da ART CREA-PE"
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
                 />
+              </div>
+
+              {/* Nota Fiscal Toggle (Selecionável) */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-[#0B1E3D] block text-xs">Emissão de Nota Fiscal (NFS-e)</span>
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${incluiNotaFiscal ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-700'}`}>
+                      {incluiNotaFiscal ? 'Com NFS-e' : 'Sem NFS-e (Recibo)'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                    {incluiNotaFiscal 
+                      ? 'Inclusa emissão oficial de NFS-e discriminada na proposta.' 
+                      : 'Faturamento via Recibo de Prestação de Serviços Técnicos de Engenharia.'
+                    }
+                  </span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={incluiNotaFiscal}
+                    onChange={(e) => setIncluiNotaFiscal(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1565D8]"></div>
+                </label>
               </div>
 
               {/* AI Generation Toggle */}

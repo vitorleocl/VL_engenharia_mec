@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   Download, 
@@ -16,11 +16,18 @@ import {
   Layers,
   ArrowRight,
   Loader2,
-  Edit3
+  Edit3,
+  SlidersHorizontal,
+  CheckSquare,
+  Square,
+  Eye,
+  EyeOff,
+  Check
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import { Orcamento, PropostaPagina } from '../../types';
+import { useData } from '../../context/DataContext';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
 import { 
   HTML_CARDS_CATALOGO_SERVICOS,
@@ -44,6 +51,7 @@ interface PropostaViewerModalProps {
 function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
   const secoes = gerarSecoesPadraoOrcamento(orcamento);
   return secoes.map(s => ({
+    id: s.id,
     numero: s.numero,
     titulo: s.titulo,
     subtitulo: s.subtitulo,
@@ -60,55 +68,122 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onGerarLaudo,
   onEditarProposta,
 }) => {
+  const { atualizarOrcamento } = useData();
   const documentRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [painelSelecaoAberto, setPainelSelecaoAberto] = useState(false);
 
-  const secoesOcultasCount = useMemo(() => {
-    if (orcamento.secoes && orcamento.secoes.length > 0) {
-      return orcamento.secoes.filter(s => s.ocultarNoPdf || orcamento.secoesOcultasPdf?.includes(s.id)).length;
+  // Initialize hidden sections from orcamento
+  const [secoesOcultasIds, setSecoesOcultasIds] = useState<string[]>(() => {
+    if (orcamento.secoesOcultasPdf && Array.isArray(orcamento.secoesOcultasPdf)) {
+      return orcamento.secoesOcultasPdf;
     }
-    return 0;
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      return orcamento.secoes.filter(s => s.ocultarNoPdf).map(s => s.id);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (orcamento.secoesOcultasPdf && Array.isArray(orcamento.secoesOcultasPdf)) {
+      setSecoesOcultasIds(orcamento.secoesOcultasPdf);
+    } else if (orcamento.secoes) {
+      setSecoesOcultasIds(orcamento.secoes.filter(s => s.ocultarNoPdf).map(s => s.id));
+    }
+  }, [orcamento.id, orcamento.secoesOcultasPdf]);
+
+  // All available candidate sections
+  const todasSecoes = useMemo(() => {
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      return orcamento.secoes;
+    }
+    return gerarSecoesPadraoOrcamento(orcamento);
   }, [orcamento]);
 
-  // Compute pages: prioritize editable secoes, then paginasProposta, or generate standard 13 pages
-  const paginas: PropostaPagina[] = useMemo(() => {
-    let originais: PropostaPagina[] | null = null;
+  const secoesOcultasCount = secoesOcultasIds.length;
 
+  // Toggle visibility of a specific section in PDF and preview
+  const handleToggleSecao = (secaoId: string) => {
+    const estaOculta = secoesOcultasIds.includes(secaoId);
+    const novaLista = estaOculta
+      ? secoesOcultasIds.filter(id => id !== secaoId)
+      : [...secoesOcultasIds, secaoId];
+
+    setSecoesOcultasIds(novaLista);
+
+    // Save to orcamento so it stays permanent
     if (orcamento.secoes && orcamento.secoes.length > 0) {
-      const secoesVisiveis = orcamento.secoes.filter(
-        s => !s.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(s.id)
-      );
-      const secoesParaExibir = secoesVisiveis.length > 0 ? secoesVisiveis : [orcamento.secoes[0]];
-      originais = secoesParaExibir.map((s, idx) => ({
-        numero: idx + 1,
-        titulo: s.titulo,
-        subtitulo: s.subtitulo,
-        conteudoHtml: s.conteudoHtml,
+      const novasSecoes = orcamento.secoes.map(s => ({
+        ...s,
+        ocultarNoPdf: novaLista.includes(s.id),
       }));
-    } else if (orcamento.paginasProposta && orcamento.paginasProposta.length > 0) {
-      const paginasVisiveis = orcamento.paginasProposta.filter(
-        p => !p.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(`secao-${p.numero}`)
-      );
-      const paginasParaExibir = paginasVisiveis.length > 0 ? paginasVisiveis : [orcamento.paginasProposta[0]];
-      originais = paginasParaExibir.map((p, idx) => ({
-        ...p,
-        numero: idx + 1,
-      }));
-    } else if (orcamento.paginas && orcamento.paginas.length > 0) {
-      const paginasVisiveis = orcamento.paginas.filter(
-        p => !p.ocultarNoPdf && !orcamento.secoesOcultasPdf?.includes(`secao-${p.numero}`)
-      );
-      const paginasParaExibir = paginasVisiveis.length > 0 ? paginasVisiveis : [orcamento.paginas[0]];
-      originais = paginasParaExibir.map((p, idx) => ({
-        ...p,
-        numero: idx + 1,
-      }));
+      atualizarOrcamento(orcamento.id, {
+        secoes: novasSecoes,
+        secoesOcultasPdf: novaLista,
+      });
+    } else {
+      atualizarOrcamento(orcamento.id, {
+        secoesOcultasPdf: novaLista,
+      });
     }
+  };
 
-    const listaBase = originais || gerarPaginasPadrao(orcamento);
+  const handleSelecionarTodas = () => {
+    setSecoesOcultasIds([]);
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      const novasSecoes = orcamento.secoes.map(s => ({ ...s, ocultarNoPdf: false }));
+      atualizarOrcamento(orcamento.id, { secoes: novasSecoes, secoesOcultasPdf: [] });
+    } else {
+      atualizarOrcamento(orcamento.id, { secoesOcultasPdf: [] });
+    }
+  };
+
+  const handleDesmarcarTodas = () => {
+    // Hide everything except capa
+    const listaOcultar = todasSecoes.filter(s => s.id !== 'capa' && s.numero !== 1).map(s => s.id);
+    setSecoesOcultasIds(listaOcultar);
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      const novasSecoes = orcamento.secoes.map(s => ({
+        ...s,
+        ocultarNoPdf: listaOcultar.includes(s.id),
+      }));
+      atualizarOrcamento(orcamento.id, { secoes: novasSecoes, secoesOcultasPdf: listaOcultar });
+    } else {
+      atualizarOrcamento(orcamento.id, { secoesOcultasPdf: listaOcultar });
+    }
+    setPaginaAtual(1);
+  };
+
+  const handleModoEssencial = () => {
+    // Essential Proposal: Capa, Escopo Técnico (Etapa 1), Metodologia (Etapa 2), Investimento (Etapa 3 com PIX) e Contato
+    // Hides prefixed institutional pages that client does not need in a concise proposal
+    const idsEssenciais = ['capa', 'etapa1', 'etapa2', 'etapa3', 'contato'];
+    const ocultar = todasSecoes
+      .filter(s => !idsEssenciais.includes(s.id) && !s.titulo?.toLowerCase().includes('etapa') && !s.titulo?.toLowerCase().includes('capa') && !s.titulo?.toLowerCase().includes('contato'))
+      .map(s => s.id);
+
+    setSecoesOcultasIds(ocultar);
+    if (orcamento.secoes && orcamento.secoes.length > 0) {
+      const novasSecoes = orcamento.secoes.map(s => ({
+        ...s,
+        ocultarNoPdf: ocultar.includes(s.id),
+      }));
+      atualizarOrcamento(orcamento.id, { secoes: novasSecoes, secoesOcultasPdf: ocultar });
+    } else {
+      atualizarOrcamento(orcamento.id, { secoesOcultasPdf: ocultar });
+    }
+    setPaginaAtual(1);
+  };
+
+  // Compute pages strictly respecting user edits and excluded pages
+  const paginas: PropostaPagina[] = useMemo(() => {
+    const secoesVisiveis = todasSecoes.filter(
+      s => !secoesOcultasIds.includes(s.id) && !s.ocultarNoPdf
+    );
+    const secoesParaExibir = secoesVisiveis.length > 0 ? secoesVisiveis : [todasSecoes[0]];
 
     const clienteNome = orcamento.clienteNome || 'Cliente Contratante';
     const cnpj = orcamento.cnpjCliente || 'Consulte o contrato';
@@ -117,17 +192,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     const codigo = orcamento.codigoProposta || orcamento.id;
     const validade = orcamento.validadeDias || 15;
     const prazo = orcamento.prazoEntrega || `${orcamento.prazoDias || 7} dias úteis`;
-    const valor = orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
-    const condicoes = orcamento.condicoesPagamento || '50% de entrada na aprovação e 50% após emissão do laudo final e ART.';
-    const normas = orcamento.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável';
     const tituloLaudoDinamico = obterTituloLaudoProposta(orcamento);
 
-    return listaBase.map(p => {
+    return secoesParaExibir.map((s, idx) => {
+      let conteudo = s.conteudoHtml || '';
+
       // PAGE 1: Capa e Identificação do Cliente
-      if (p.numero === 1 || p.titulo?.toUpperCase().includes('CAPA')) {
-        let conteudo = p.conteudoHtml;
-        // If content still uses legacy table/un-carded structure, upgrade to executive client card
-        if (!conteudo || !conteudo.includes('DADOS DO CLIENTE CONTRATANTE') || conteudo.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA')) {
+      const isCapa = s.id === 'capa' || s.numero === 1 || (s.titulo && s.titulo.toUpperCase().includes('CAPA'));
+      if (isCapa) {
+        if (!conteudo || (!conteudo.includes('DADOS DO CLIENTE CONTRATANTE') && !conteudo.includes('PROPOSTA TÉCNICA COMERCIAL'))) {
           conteudo = gerarCardClienteHtml({
             clienteNome,
             cnpj,
@@ -139,7 +212,6 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           });
         }
 
-        // Render cover photo if provided and not already included
         if (orcamento.imagemCapaUrl && !conteudo.includes(orcamento.imagemCapaUrl)) {
           const fotoHtml = `
             <div class="mb-4 rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-60 bg-slate-50 text-center flex flex-col items-center justify-center">
@@ -151,127 +223,36 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
         }
 
         return {
-          ...p,
-          numero: 1,
+          id: s.id,
+          numero: idx + 1,
           titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA',
           subtitulo: tituloLaudoDinamico,
           conteudoHtml: conteudo,
         };
       }
 
-      // Ensure Page 2 has the photo and credentials if it was missing
-      if (p.numero === 2 && !p.conteudoHtml.includes('vitor-leonardo.png')) {
-        return {
-          ...p,
-          titulo: "APRESENTAÇÃO INSTITUCIONAL E CREDENCIAIS TÉCNICAS",
-          conteudoHtml: `<div class="space-y-4">
-            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-xl border border-slate-200 bg-slate-50/80">
-              <div class="shrink-0 text-center">
-                <img src="/vitor-leonardo.png" alt="Eng. Vitor Leonardo Cordeiro Linhares" class="w-32 h-38 object-cover rounded-lg shadow-sm border-2 border-[#1565D8] mx-auto bg-slate-200" />
-                <span class="inline-block mt-2 px-2.5 py-0.5 rounded bg-[#0B1E3D] text-white text-[10px] font-bold tracking-wider uppercase font-mono">CREA-PE 182229949-0</span>
-              </div>
-              <div class="space-y-2 text-left">
-                <h3 class="text-base font-black text-[#0B1E3D]">Eng. Vitor Leonardo Cordeiro Linhares</h3>
-                <p class="text-xs font-bold text-[#1565D8] tracking-wide uppercase">Engenheiro Mecânico Responsável Técnico & Perito Especialista</p>
-                <p class="text-slate-700 text-xs leading-relaxed">
-                  Graduado em Engenharia Mecânica com registro ativo no Conselho Regional de Engenharia e Agronomia de Pernambuco (CREA-PE). Especialista em engenharia diagnóstica, laudos periciais mecânicos, adequação a Normas Regulamentadoras (NR-11, NR-12, NR-13), projetos de climatização (PMOC), prevenção contra incêndio e ensaios não destrutivos.
-                </p>
-                <div class="grid grid-cols-2 gap-2 pt-1 text-[11px] text-slate-600 font-medium">
-                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Emissão Oficial de ART</div>
-                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Engenharia Diagnóstica</div>
-                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Conformidade ABNT / NRs</div>
-                  <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Respaldo Jurídico-Pericial</div>
-                </div>
-              </div>
-            </div>
-            ${p.conteudoHtml}
-          </div>`
-        };
-      }
-
-      // Ensure Page 6 / Catálogo has the 6 stylized engineering cards
-      const isCatalogoPage = 
-        p.numero === 6 ||
-        (p.titulo && (p.titulo.toUpperCase().includes('RESUMO DE NOSSOS SERVIÇOS') || p.titulo.toUpperCase().includes('CATÁLOGO GERAL'))) ||
-        (p.subtitulo && (p.subtitulo.toUpperCase().includes('CATÁLOGO') || p.subtitulo.toUpperCase().includes('ADEQUAÇÕES INDUSTRIAIS'))) ||
-        (orcamento.id === 'orc-1790444416499' && (p.numero === 6 || (p.titulo && p.titulo.toUpperCase().includes('SERVIÇOS'))));
-
-      if (isCatalogoPage) {
-        const needsUpgrade = !p.conteudoHtml ||
-          p.conteudoHtml.includes('PLAYGROUNDS:') ||
-          p.conteudoHtml.includes('ADEQUAÇÃO NR-12:') ||
-          !p.conteudoHtml.includes('grid-template-columns') ||
-          !p.conteudoHtml.includes('NR-12 • MÁQUINAS INDUSTRIAIS');
-
-        if (needsUpgrade) {
-          return {
-            ...p,
-            titulo: 'RESUMO DE NOSSOS SERVIÇOS DE ENGENHARIA',
-            subtitulo: 'CATÁLOGO DE LAUDOS E ADEQUAÇÕES INDUSTRIAIS',
-            conteudoHtml: HTML_CARDS_CATALOGO_SERVICOS,
-          };
-        }
-      }
-
-      // Ensure Etapa 2 (Metodologia) has the 5-fase stylized cards
-      const isEtapa2Page = p.numero === 10 || 
-        (p.titulo && (p.titulo.toUpperCase().includes('ETAPA 2') || p.titulo.toUpperCase().includes('METODOLOGIA')));
-      if (isEtapa2Page) {
-        const needsUpgrade = !p.conteudoHtml || !p.conteudoHtml.includes('FASE 01') || !p.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases');
-        if (needsUpgrade) {
-          return {
-            ...p,
-            titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-            subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS',
-            conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
-          };
-        }
-      }
-
-      // Ensure Etapa 3 (Investimento) has the modern cards
-      const isEtapa3Page = p.numero === 12 || 
-        (p.titulo && (p.titulo.toUpperCase().includes('ETAPA 3') || p.titulo.toUpperCase().includes('INVESTIMENTO') || p.titulo.toUpperCase().includes('PAGAMENTO')));
-      if (isEtapa3Page) {
-        const needsUpgrade = !p.conteudoHtml || !p.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO');
-        if (needsUpgrade) {
-          return {
-            ...p,
-            titulo: 'Etapa 3 - Prazo, Pagamento & Investimento',
-            subtitulo: 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS',
-            conteudoHtml: gerarHtmlEtapa3Investimento({
-              valor,
-              prazo,
-              condicoes,
-              validade,
-              clienteNome,
-              representante,
-            }),
-          };
-        }
-      }
-
-      // Ensure Agradecimento & Contato has the 4 official contact cards
-      const isContatoPage = p.numero === 13 || 
-        (p.titulo && (p.titulo.toUpperCase().includes('AGRADECIMENTO') || p.titulo.toUpperCase().includes('CONTATO')));
-      if (isContatoPage) {
-        const needsUpgrade = !p.conteudoHtml || !p.conteudoHtml.includes('Agradecimento & Parceria') || p.conteudoHtml.includes('vitorleonardocl@gmail.com');
-        if (needsUpgrade) {
-          return {
-            ...p,
-            titulo: 'Agradecimento & Contato',
-            subtitulo: 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO',
-            conteudoHtml: gerarHtmlContatoAgradecimento(),
-          };
-        }
-      }
-
-      return p;
+      // FOR ALL OTHER SECTIONS: PRESERVE EXACT CONTENT!
+      // This ensures user edits are never replaced with prefixed templates!
+      return {
+        id: s.id,
+        numero: idx + 1,
+        titulo: s.titulo,
+        subtitulo: s.subtitulo,
+        conteudoHtml: conteudo,
+      };
     });
-  }, [orcamento]);
+  }, [todasSecoes, secoesOcultasIds, orcamento]);
+
+  const totalPaginas = paginas.length;
+
+  useEffect(() => {
+    if (paginaAtual > totalPaginas && totalPaginas > 0) {
+      setPaginaAtual(totalPaginas);
+    }
+  }, [totalPaginas, paginaAtual]);
 
   if (!isOpen) return null;
 
-  const totalPaginas = paginas.length;
   const paginaRenderizar = paginas.find(p => p.numero === paginaAtual) || paginas[0];
 
   const handlePrintNative = () => {
@@ -359,6 +340,27 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Page Selection Button for PDF */}
+            <button
+              onClick={() => setPainelSelecaoAberto(prev => !prev)}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                painelSelecaoAberto 
+                  ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-sm'
+                  : secoesOcultasCount > 0
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                  : 'bg-slate-800 text-slate-200 border-slate-700 hover:text-white hover:bg-slate-700'
+              }`}
+              title="Selecionar quais páginas incluir ou ocultar da versão do PDF final"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+              <span>Páginas no PDF ({totalPaginas}/{todasSecoes.length})</span>
+              {secoesOcultasCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-400 text-slate-900">
+                  {secoesOcultasCount} oculta(s)
+                </span>
+              )}
+            </button>
+
             {/* View Mode Toggle */}
             <div className="hidden sm:flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
               <button
@@ -468,10 +470,30 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => setPainelSelecaoAberto(true)}
+                className="ml-3 px-2 py-0.5 rounded text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-900/30 hover:bg-amber-200 border border-amber-300 dark:border-amber-700/50 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Configurar quais páginas entram no PDF"
+              >
+                <SlidersHorizontal className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                <span>Ocultar/Exibir Páginas</span>
+              </button>
             </div>
           ) : (
-            <div className="text-xs text-slate-500 font-semibold">
-              Exibindo todas as {totalPaginas} páginas sequenciais no padrão de engenharia mecânica.
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-semibold">
+                Exibindo todas as {totalPaginas} páginas sequenciais no padrão de engenharia mecânica.
+              </span>
+              <button
+                type="button"
+                onClick={() => setPainelSelecaoAberto(true)}
+                className="px-2 py-0.5 rounded text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-900/30 hover:bg-amber-200 border border-amber-300 dark:border-amber-700/50 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Configurar quais páginas entram no PDF"
+              >
+                <SlidersHorizontal className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                <span>Gerenciar Páginas</span>
+              </button>
             </div>
           )}
 
@@ -728,6 +750,148 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             Fechar
           </button>
         </div>
+
+        {/* Slide-Over Drawer for Page Selection */}
+        {painelSelecaoAberto && (
+          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-150">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
+              
+              {/* Drawer Header */}
+              <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm leading-tight text-white">
+                      Selecionar Páginas do PDF
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Escolha quais seções incluir ou ocultar da versão final.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPainelSelecaoAberto(false)}
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Preset Action Buttons */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-xs shrink-0">
+                <button
+                  type="button"
+                  onClick={handleModoEssencial}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                  title="Mantém apenas Capa, Metodologia, Investimento e Contato (oculta páginas prefixadas)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Proposta Essencial</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSelecionarTodas}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Todas as 13 Páginas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDesmarcarTodas}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Apenas Capa</span>
+                </button>
+              </div>
+
+              {/* Summary Indicator */}
+              <div className="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-xs text-blue-900 dark:text-blue-300 shrink-0">
+                <span>Páginas ativas no PDF final:</span>
+                <strong className="font-mono font-black text-sm text-[#1565D8] dark:text-blue-400">
+                  {totalPaginas} de {todasSecoes.length} páginas
+                </strong>
+              </div>
+
+              {/* Section Checkbox List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {todasSecoes.map((secao) => {
+                  const isOculta = secoesOcultasIds.includes(secao.id) || Boolean(secao.ocultarNoPdf);
+                  const isAtiva = !isOculta;
+
+                  return (
+                    <div
+                      key={secao.id}
+                      onClick={() => handleToggleSecao(secao.id)}
+                      className={`p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                        isAtiva
+                          ? 'bg-white dark:bg-slate-800 border-[#1565D8]/50 shadow-xs hover:border-[#1565D8]'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-90'
+                      }`}
+                    >
+                      <div className="pt-0.5 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={isAtiva}
+                          onChange={() => handleToggleSecao(secao.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-[#1565D8] rounded border-slate-300 focus:ring-[#1565D8] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-1.5 py-0.5 rounded font-mono text-[10px] font-black ${
+                            isAtiva ? 'bg-[#0B1E3D] text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {secao.numero}
+                          </span>
+                          <p className={`text-xs font-bold leading-snug truncate ${isAtiva ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+                            {secao.titulo}
+                          </p>
+                        </div>
+                        {secao.subtitulo && (
+                          <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                            {secao.subtitulo}
+                          </p>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                            isAtiva 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}>
+                            {isAtiva ? '✓ No PDF' : '✕ Oculta'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                <span className="text-[11px] text-slate-500">
+                  Alterações salvas na proposta.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPainelSelecaoAberto(false)}
+                  className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-xs shadow-sm cursor-pointer transition-colors"
+                >
+                  Concluir Seleção
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

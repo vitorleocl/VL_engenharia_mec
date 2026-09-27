@@ -70,6 +70,7 @@ export interface Ativo {
 export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado';
 
 export interface PropostaPagina {
+  id?: string;
   numero: number;
   titulo: string;
   subtitulo?: string;
@@ -121,6 +122,9 @@ export interface Orcamento {
   prazoEntrega?: string;
   validadeDias?: number;
   condicoesPagamento?: string;
+  incluiNotaFiscal?: boolean;
+  chavePixTipo?: 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria';
+  chavePix?: string;
   status: OrcamentoStatus;
   laudoGeradoId?: string;
   tipoLaudoVinculadoId?: string;

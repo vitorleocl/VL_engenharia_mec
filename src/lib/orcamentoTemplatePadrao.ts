@@ -1,4 +1,5 @@
 import { Orcamento, OrcamentoSecao, Cliente, Ativo } from '../types';
+import { QR_CODE_PIX_PADRAO_BASE64, CHAVE_PIX_FORMATADA_PADRAO, TITULAR_PIX_PADRAO } from './pixUtils';
 
 export interface SecaoDefinicao {
   id: string;
@@ -317,7 +318,12 @@ export function gerarHtmlEtapa3Investimento(params: {
   validade: number | string;
   clienteNome: string;
   representante: string;
+  incluiNotaFiscal?: boolean;
+  chavePix?: string;
 }): string {
+  const comNotaFiscal = params.incluiNotaFiscal !== false;
+  const chavePixDisplay = params.chavePix || CHAVE_PIX_FORMATADA_PADRAO;
+
   return `<div class="space-y-4 text-xs">
     
     <!-- HERO CARD DO INVESTIMENTO COMERCIAL -->
@@ -333,16 +339,19 @@ export function gerarHtmlEtapa3Investimento(params: {
           ${params.valor}
         </div>
 
-        <p style="color: #e2e8f0; font-size: 11px; max-width: 480px; margin: 0; line-height: 1.4;">
-          Valor líquido para prestação de serviços com emissão e taxa da Anotação de Responsabilidade Técnica (ART) inclusa.
+        <p style="color: #e2e8f0; font-size: 11px; max-width: 500px; margin: 0; line-height: 1.4;">
+          ${comNotaFiscal 
+            ? 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.'
+            : 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.'
+          }
         </p>
 
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px;">
           <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
             ✓ Taxa ART CREA-PE Inclusa
           </span>
-          <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
-            ✓ Nota Fiscal de Serviços (NFS-e)
+          <span style="background: ${comNotaFiscal ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.15)'}; border: 1px solid ${comNotaFiscal ? '#86efac' : 'rgba(255,255,255,0.2)'}; padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; color: ${comNotaFiscal ? '#f0fdf4' : '#ffffff'};">
+            ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
           </span>
           <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
             ✓ Deslocamento e Relatório Colorido
@@ -374,7 +383,7 @@ export function gerarHtmlEtapa3Investimento(params: {
           ${params.condicoes}
         </strong>
         <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
-          Boleto bancário, transferência ou PIX.
+          PIX, transferência ou boleto bancário.
         </span>
       </div>
 
@@ -392,18 +401,37 @@ export function gerarHtmlEtapa3Investimento(params: {
 
     </div>
 
-    <!-- CAIXINHA DE FATURAMENTO & PIX -->
-    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="background: #22c55e; color: #ffffff; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
-        <div>
-          <strong style="color: #14532d; font-size: 11px; display: block;">DADOS PARA FATURAMENTO & CHAVE PIX</strong>
-          <span style="color: #166534; font-size: 10px;">Chave PIX E-mail: <strong>vlengenhariamec@gmail.com</strong> (VL Engenharia Mecânica)</span>
+    <!-- CAIXINHA DE FATURAMENTO & PIX COM QR CODE EMBEDDED -->
+    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
+        <!-- QR CODE PIX -->
+        <div style="background: #ffffff; padding: 4px; border: 1.5px solid #86efac; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); text-align: center; flex-shrink: 0;">
+          <img src="${QR_CODE_PIX_PADRAO_BASE64}" alt="QR Code PIX CPF" style="width: 76px; height: 76px; display: block;" />
+          <span style="font-size: 8px; color: #166534; font-weight: 800; display: block; margin-top: 2px; font-family: monospace;">QR CODE PIX</span>
+        </div>
+
+        <div style="font-size: 11px; line-height: 1.45;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="background: #22c55e; color: #ffffff; width: 20px; height: 20px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
+            <strong style="color: #14532d; font-size: 11px; text-transform: uppercase;">DADOS PARA PAGAMENTO VIA PIX (QR CODE & CHAVE)</strong>
+          </div>
+          <p style="margin: 2px 0; color: #166534;">
+            Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 12px; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">${chavePixDisplay}</strong>
+          </p>
+          <p style="margin: 2px 0; color: #334155; font-size: 10px;">
+            Titular: <strong>${TITULAR_PIX_PADRAO}</strong> • CREA-PE 182229949-0
+          </p>
+          <p style="margin: 2px 0; color: #64748b; font-size: 9.5px;">
+            Aponte a câmera do aplicativo do seu banco para o QR Code acima para efetuar o pagamento.
+          </p>
         </div>
       </div>
-      <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800;">
-        PIX IMEDIATO
-      </span>
+
+      <div style="text-align: right; flex-shrink: 0;">
+        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; display: inline-block;">
+          PIX IMEDIATO
+        </span>
+      </div>
     </div>
 
     <!-- BLOCO DE HOMOLOGAÇÃO & ASSINATURAS -->
@@ -818,6 +846,8 @@ export function gerarSecoesPadraoOrcamento(
         validade,
         clienteNome,
         representante,
+        incluiNotaFiscal: orcamento.incluiNotaFiscal,
+        chavePix: orcamento.chavePix,
       })
     },
     {
@@ -896,6 +926,8 @@ export function converterPaginasParaSecoes(
         validade,
         clienteNome,
         representante,
+        incluiNotaFiscal: orcamento?.incluiNotaFiscal,
+        chavePix: orcamento?.chavePix,
       });
       titulo = 'Etapa 3 - Prazo, Pagamento & Investimento';
       subtitulo = 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS';

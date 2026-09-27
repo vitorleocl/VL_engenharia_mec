@@ -314,8 +314,13 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
       PRAZO_ENTREGA = "3 Dias Úteis após vistoria presencial",
       CONDICOES_PAGAMENTO = "50% no aceite eletrônico e 50% após emissão da ART e Laudo",
       VALOR_INVESTIMENTO = "R$ 2.450,00",
-      FOTOS_DESCRICAO_OU_PATHS = "Levantamento fotográfico preliminar do parque fabril"
+      FOTOS_DESCRICAO_OU_PATHS = "Levantamento fotográfico preliminar do parque fabril",
+      INCLUI_NOTA_FISCAL = true,
+      CHAVE_PIX = "10287093409"
     } = req.body;
+
+    const comNotaFiscal = INCLUI_NOTA_FISCAL !== false;
+    const QR_CODE_PIX_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALMAAACzCAYAAAC3/90AAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAD20lEQVR4nO3c0W3rMBAEUc5qUkvqSS2pJxV0V+DBB75A9vPzTjN38PFFcQo/e/78+fPjU12vX88e4P/wB7+fP/j9/MHv5w9+v/nBz/8Cvx38wZ77wQf/n3zwd/IHu+AP9twPPvj/5IO/kz/YBX+w537wwf8nH/yd/MEu+IM994MP/j/54O/kD3bBH+y5H3zw/8kHfyd/sAv+YM/94IP/Tz74O/mDXfAHe+4HH/x/8sHfyR/sgj/Ycz/44P+TD/5O/mAX/MGe+8EH/5988HfyB7vgD/bcDz74/+SDv5M/2AV/sOd+8MH/Jx/8nfzBLviDPfeDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vD/y/f39+zB/p+/+0d//eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7Dn/vDBv/yDD/4/+eDv5A92wR/suR988P/JB38nf7AL/mDP/eCD/08++Dv5g13wB3vuBx/8f/LB38kf7II/2HM/+OD/kw/+Tv5gF/zBnvvBB/+ffPB38ge74A/23A8++P/kg7+TP9gFf7DnfvDB/ycffPDXwQe74I/gD/46+GAX/BH8wV8HH+yCP4I/+Ovg7/X+8fsTfPD/yQd/J3+w6/9P/h/8wV8HH+yCP4I/+Ovg//EP/p38AfwBf/D7+YP7+fPnz69nd/878Affjx/8fv7g9/MHv58/+P3mD/4Ff/D7+QP+A9yQe6tqIe9gAAAAAElFTkSuQmCC';
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -811,15 +816,18 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                 <div style="font-size: 32px; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 6px 0;">
                   ${VALOR_INVESTIMENTO}
                 </div>
-                <p style="color: #e2e8f0; font-size: 11px; max-width: 480px; margin: 0; line-height: 1.4;">
-                  Valor líquido para prestação de serviços com emissão e taxa da Anotação de Responsabilidade Técnica (ART) inclusa.
+                <p style="color: #e2e8f0; font-size: 11px; max-width: 500px; margin: 0; line-height: 1.4;">
+                  ${comNotaFiscal
+                    ? 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.'
+                    : 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.'
+                  }
                 </p>
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px;">
                   <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
                     ✓ Taxa ART CREA-PE Inclusa
                   </span>
-                  <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
-                    ✓ Nota Fiscal de Serviços (NFS-e)
+                  <span style="background: ${comNotaFiscal ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.15)'}; border: 1px solid ${comNotaFiscal ? '#86efac' : 'rgba(255,255,255,0.2)'}; padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; color: ${comNotaFiscal ? '#f0fdf4' : '#ffffff'};">
+                    ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
                   </span>
                   <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
                     ✓ Deslocamento e Relatório Colorido
@@ -849,7 +857,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                   ${CONDICOES_PAGAMENTO}
                 </strong>
                 <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
-                  Boleto bancário, transferência ou PIX.
+                  PIX, transferência ou boleto bancário.
                 </span>
               </div>
 
@@ -866,17 +874,33 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
               </div>
             </div>
 
-            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #22c55e; color: #ffffff; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
-                <div>
-                  <strong style="color: #14532d; font-size: 11px; display: block;">DADOS PARA FATURAMENTO & CHAVE PIX</strong>
-                  <span style="color: #166534; font-size: 10px;">Chave PIX E-mail: <strong>vlengenhariamec@gmail.com</strong> (VL Engenharia Mecânica)</span>
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
+                <div style="background: #ffffff; padding: 4px; border: 1.5px solid #86efac; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); text-align: center; flex-shrink: 0;">
+                  <img src="${QR_CODE_PIX_BASE64}" alt="QR Code PIX CPF" style="width: 76px; height: 76px; display: block;" />
+                  <span style="font-size: 8px; color: #166534; font-weight: 800; display: block; margin-top: 2px; font-family: monospace;">QR CODE PIX</span>
+                </div>
+                <div style="font-size: 11px; line-height: 1.45;">
+                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                    <span style="background: #22c55e; color: #ffffff; width: 20px; height: 20px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
+                    <strong style="color: #14532d; font-size: 11px; text-transform: uppercase;">DADOS PARA PAGAMENTO VIA PIX (QR CODE & CHAVE)</strong>
+                  </div>
+                  <p style="margin: 2px 0; color: #166534;">
+                    Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 12px; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">102.870.934-09</strong>
+                  </p>
+                  <p style="margin: 2px 0; color: #334155; font-size: 10px;">
+                    Titular: <strong>Vitor Leonardo Cordeiro Linhares</strong> • CREA-PE 182229949-0
+                  </p>
+                  <p style="margin: 2px 0; color: #64748b; font-size: 9.5px;">
+                    Aponte a câmera do aplicativo do seu banco para o QR Code acima para efetuar o pagamento imediato.
+                  </p>
                 </div>
               </div>
-              <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800;">
-                PIX IMEDIATO
-              </span>
+              <div style="text-align: right; flex-shrink: 0;">
+                <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; display: inline-block;">
+                  PIX IMEDIATO
+                </span>
+              </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
