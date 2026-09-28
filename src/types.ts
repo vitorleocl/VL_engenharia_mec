@@ -125,6 +125,7 @@ export interface Orcamento {
   incluiNotaFiscal?: boolean;
   chavePixTipo?: 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria';
   chavePix?: string;
+  qrCodePixUrl?: string;
   status: OrcamentoStatus;
   laudoGeradoId?: string;
   tipoLaudoVinculadoId?: string;

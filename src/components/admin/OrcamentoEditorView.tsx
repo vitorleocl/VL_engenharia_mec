@@ -196,11 +196,19 @@ export const OrcamentoEditorView: React.FC = () => {
                 chavePix: orcamentoOriginal.chavePix,
               }),
             };
+          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico')) {
+            alterou = true;
+            const limpo = s.conteudoHtml
+              .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
+              .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
+              .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
+              .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+            return { ...s, conteudoHtml: limpo };
           }
         }
 
         if (isContato) {
-          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO')) {
             alterou = true;
             return {
               ...s,

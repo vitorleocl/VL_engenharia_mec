@@ -27,6 +27,7 @@ export const ClientesView: React.FC = () => {
   const [modalAberto, setModalAberto] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [alertaSucesso, setAlertaSucesso] = useState('');
+  const [erroFormulario, setErroFormulario] = useState('');
 
   // Form states
   const [razaoSocial, setRazaoSocial] = useState('');
@@ -47,6 +48,7 @@ export const ClientesView: React.FC = () => {
 
   const abrirNovo = () => {
     setClienteEditando(null);
+    setErroFormulario('');
     setRazaoSocial('');
     setNomeFantasia('');
     setCpfCnpj('');
@@ -65,7 +67,8 @@ export const ClientesView: React.FC = () => {
 
   const abrirEditar = (c: Cliente) => {
     setClienteEditando(c);
-    setRazaoSocial(c.razaoSocial);
+    setErroFormulario('');
+    setRazaoSocial(c.razaoSocial || '');
     setNomeFantasia(c.nomeFantasia || '');
     setCpfCnpj(c.cpfCnpj || c.cnpj || '');
     const primContato = c.contatos?.[0];
@@ -84,22 +87,34 @@ export const ClientesView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!razaoSocial.trim() || !cpfCnpj.trim()) return;
+    setErroFormulario('');
 
-    const temContatoPreenchido = contatoNome.trim() || contatoTelefone.trim() || contatoEmail.trim() || contatoCargo.trim();
+    if (!razaoSocial.trim()) {
+      setErroFormulario('Por favor, informe a Razão Social.');
+      return;
+    }
+    if (!cpfCnpj.trim()) {
+      setErroFormulario('Por favor, informe o CNPJ ou CPF.');
+      return;
+    }
+
+    const temContatoPreenchido = Boolean(
+      contatoNome.trim() || contatoTelefone.trim() || contatoEmail.trim() || contatoCargo.trim()
+    );
+    const outrosContatos = (clienteEditando?.contatos || []).slice(1);
     const contatos = temContatoPreenchido ? [{
       nome: contatoNome.trim() || (clienteEditando?.contatos?.[0]?.nome || 'Responsável'),
-      cargo: contatoCargo.trim() || clienteEditando?.contatos?.[0]?.cargo || 'Contato Principal',
-      telefone: contatoTelefone.trim() || clienteEditando?.contatos?.[0]?.telefone || '',
-      email: contatoEmail.trim() || clienteEditando?.contatos?.[0]?.email || '',
-    }] : (clienteEditando?.contatos || []);
+      cargo: contatoCargo.trim() || (clienteEditando?.contatos?.[0]?.cargo || 'Contato Principal'),
+      telefone: contatoTelefone.trim(),
+      email: contatoEmail.trim(),
+    }, ...outrosContatos] : (clienteEditando?.contatos && clienteEditando.contatos.length > 0 ? clienteEditando.contatos : []);
 
     const endereco = {
       logradouro: logradouro.trim(),
       numero: numero.trim(),
       bairro: bairro.trim(),
-      cidade: cidade.trim(),
-      estado: estado.trim(),
+      cidade: cidade.trim() || 'Recife',
+      estado: estado.trim() || 'PE',
       cep: cep.trim(),
     };
 
@@ -112,7 +127,7 @@ export const ClientesView: React.FC = () => {
         contatos,
         endereco,
       });
-      setAlertaSucesso(`Dados do cliente "${razaoSocial}" atualizados e salvos com sucesso!`);
+      setAlertaSucesso(`Dados do cliente "${razaoSocial.trim()}" atualizados e salvos com sucesso!`);
     } else {
       adicionarCliente({
         razaoSocial: razaoSocial.trim(),
@@ -122,7 +137,7 @@ export const ClientesView: React.FC = () => {
         contatos,
         endereco,
       });
-      setAlertaSucesso(`Cliente "${razaoSocial}" cadastrado com sucesso!`);
+      setAlertaSucesso(`Cliente "${razaoSocial.trim()}" cadastrado com sucesso!`);
     }
 
     setTimeout(() => setAlertaSucesso(''), 5000);
@@ -130,8 +145,8 @@ export const ClientesView: React.FC = () => {
   };
 
   const filtrados = clientes.filter(c => 
-    c.razaoSocial.toLowerCase().includes(busca.toLowerCase()) ||
-    c.cpfCnpj.includes(busca) ||
+    (c.razaoSocial || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (c.cpfCnpj || c.cnpj || '').includes(busca) ||
     (c.nomeFantasia && c.nomeFantasia.toLowerCase().includes(busca.toLowerCase()))
   );
 
@@ -240,11 +255,14 @@ export const ClientesView: React.FC = () => {
                 </div>
 
                 {/* Address */}
-                {cliente.endereco && (
+                {cliente.endereco && (cliente.endereco.logradouro || cliente.endereco.cidade) && (
                   <div className="flex items-start gap-1.5 text-xs text-slate-500">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                     <span>
-                      {cliente.endereco.logradouro}, {cliente.endereco.numero} - {cliente.endereco.bairro}, {cliente.endereco.cidade}/{cliente.endereco.estado}
+                      {cliente.endereco.logradouro
+                        ? `${cliente.endereco.logradouro}${cliente.endereco.numero ? `, ${cliente.endereco.numero}` : ''}${cliente.endereco.bairro ? ` - ${cliente.endereco.bairro}` : ''}, ${cliente.endereco.cidade || 'Recife'}/${cliente.endereco.estado || 'PE'}`
+                        : `${cliente.endereco.cidade || 'Recife'}/${cliente.endereco.estado || 'PE'}`}
+                      {cliente.endereco.cep ? ` • CEP: ${cliente.endereco.cep}` : ''}
                     </span>
                   </div>
                 )}
@@ -294,6 +312,13 @@ export const ClientesView: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {erroFormulario && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <span>{erroFormulario}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
