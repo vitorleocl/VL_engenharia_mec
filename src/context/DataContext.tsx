@@ -145,11 +145,59 @@ function saveStorage<T>(key: string, data: T) {
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
 
-  const [clientes, setClientes] = useState<Cliente[]>(() => loadStorage('vl_clientes', CLIENTES_INICIAIS));
-  const [ativos, setAtivos] = useState<Ativo[]>(() => loadStorage('vl_ativos', ATIVOS_INICIAIS));
+  const [clientes, setClientes] = useState<Cliente[]>(() => {
+    const loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
+    const temAdf = loaded.some((c: Cliente) => 
+      c.id === 'cli-adf' || 
+      (c.razaoSocial && c.razaoSocial.toUpperCase().includes('ADF')) || 
+      (c.nomeFantasia && c.nomeFantasia.toUpperCase().includes('ADF'))
+    );
+    if (!temAdf) {
+      const cliAdf = CLIENTES_INICIAIS.find(c => c.id === 'cli-adf');
+      if (cliAdf) {
+        const atualizados = [cliAdf, ...loaded];
+        saveStorage('vl_clientes', atualizados);
+        return atualizados;
+      }
+    }
+    return loaded;
+  });
+
+  const [ativos, setAtivos] = useState<Ativo[]>(() => {
+    const loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
+    const temPgx = loaded.some((a: Ativo) => 
+      a.id === 'atv-pgx7098' || 
+      (a.identificacao && a.identificacao.toUpperCase().includes('PGX'))
+    );
+    if (!temPgx) {
+      const atvPgx = ATIVOS_INICIAIS.find(a => a.id === 'atv-pgx7098');
+      if (atvPgx) {
+        const atualizados = [atvPgx, ...loaded];
+        saveStorage('vl_ativos', atualizados);
+        return atualizados;
+      }
+    }
+    return loaded;
+  });
+
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => {
     const loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
     let alterouStorage = false;
+
+    // Garantir que a proposta de ADF com PGX-7098 esteja presente
+    const temOrcAdf = loaded.some((o: Orcamento) => 
+      o.id === 'orc-adf-pgx7098' || 
+      o.clienteId === 'cli-adf' || 
+      o.ativoId === 'atv-pgx7098' ||
+      (o.clienteNome && o.clienteNome.toUpperCase().includes('ADF'))
+    );
+    if (!temOrcAdf) {
+      const orcAdf = ORCAMENTOS_INICIAIS.find(o => o.id === 'orc-adf-pgx7098');
+      if (orcAdf) {
+        loaded.unshift(orcAdf);
+        alterouStorage = true;
+      }
+    }
 
     const migrados = loaded.map((orc: Orcamento) => {
       let orcAtualizado = { ...orc };
@@ -560,6 +608,68 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
+
+  // Sincronização com persistência do servidor para evitar perda de dados entre URLs (ais-dev e ais-pre)
+  useEffect(() => {
+    fetch('/api/app-data')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        if (Array.isArray(data.clientes) && data.clientes.length > 0) {
+          setClientes(prev => {
+            const ids = new Set(prev.map(c => c.id));
+            const novos = data.clientes.filter((c: Cliente) => !ids.has(c.id));
+            if (novos.length > 0) {
+              const unidos = [...novos, ...prev];
+              saveStorage('vl_clientes', unidos);
+              return unidos;
+            }
+            return prev;
+          });
+        }
+        if (Array.isArray(data.ativos) && data.ativos.length > 0) {
+          setAtivos(prev => {
+            const ids = new Set(prev.map(a => a.id));
+            const novos = data.ativos.filter((a: Ativo) => !ids.has(a.id));
+            if (novos.length > 0) {
+              const unidos = [...novos, ...prev];
+              saveStorage('vl_ativos', unidos);
+              return unidos;
+            }
+            return prev;
+          });
+        }
+        if (Array.isArray(data.orcamentos) && data.orcamentos.length > 0) {
+          setOrcamentos(prev => {
+            const ids = new Set(prev.map(o => o.id));
+            const novos = data.orcamentos.filter((o: Orcamento) => !ids.has(o.id));
+            if (novos.length > 0) {
+              const unidos = [...novos, ...prev];
+              saveStorage('vl_orcamentos', unidos);
+              return unidos;
+            }
+            return prev;
+          });
+        }
+      })
+      .catch(err => {
+        console.warn('[Sync Servidor] Carregamento em segundo plano:', err);
+      });
+  }, []);
+
+  // Salvamento contínuo em segundo plano no servidor (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetch('/api/app-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientes, ativos, orcamentos })
+      }).catch(e => {
+        console.warn('[Sync Servidor] Aviso ao persistir dados:', e);
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [clientes, ativos, orcamentos]);
 
   // Sincronização de documentos Firestore das categorias de laudo (NR-12/NR-13, Veicular, Incêndio)
   useEffect(() => {

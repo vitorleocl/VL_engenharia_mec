@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
@@ -10,6 +11,37 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "25mb" }));
+
+const DATA_FILE = path.join(process.cwd(), "data", "app_storage.json");
+
+// Persistent App Data endpoints (guarantees data persistence across sessions, origins and browser reloads)
+app.get("/api/app-data", (req, res) => {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const content = fs.readFileSync(DATA_FILE, "utf-8");
+      return res.json(JSON.parse(content));
+    }
+  } catch (err) {
+    console.warn("Aviso ao ler app_storage.json:", err);
+  }
+  return res.json({});
+});
+
+app.post("/api/app-data", (req, res) => {
+  try {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const currentData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")) : {};
+    const merged = { ...currentData, ...req.body, updatedAt: new Date().toISOString() };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    return res.json({ success: true, savedAt: merged.updatedAt });
+  } catch (err: any) {
+    console.error("Erro ao salvar app_storage.json:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // In-memory / server state fallback for AI usage
 let monthlyAICalls = 0;

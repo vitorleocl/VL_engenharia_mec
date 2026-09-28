@@ -1,0 +1,71 @@
+{
+  "clientes": [
+    {
+      "id": "cli-adf",
+      "razaoSocial": "ADF Comércio e Serviços de Locação Ltda.",
+      "nomeFantasia": "ADF",
+      "cpfCnpj": "08.723.114/0001-52",
+      "cnpj": "08.723.114/0001-52",
+      "contatos": [
+        {
+          "nome": "Carlos / Coordenação de Operações",
+          "cargo": "Gerente Operacional",
+          "telefone": "(81) 98877-2233",
+          "email": "operacoes@adf.com.br"
+        }
+      ],
+      "endereco": {
+        "logradouro": "Av. Engenheiro Domingos Ferreira",
+        "numero": "2000",
+        "bairro": "Boa Viagem",
+        "cidade": "Recife",
+        "estado": "PE",
+        "cep": "51111-020"
+      },
+      "criadoEm": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "ativos": [
+    {
+      "id": "atv-pgx7098",
+      "clienteId": "cli-adf",
+      "clienteNome": "ADF Comércio e Serviços de Locação Ltda.",
+      "tipo": "Caminhão Munck",
+      "identificacao": "PGX-7098 (Caminhão Munck)",
+      "fabricante": "Volkswagen / Palfinger",
+      "modelo": "Constellation 24.280 / Guindaste Articulado",
+      "ano": 2022,
+      "numeroSerie": "PGX7098-MUNCK-BR",
+      "capacidade": "23.000 kgm / 8 toneladas",
+      "localizacao": "Pátio Central / Recife-PE",
+      "historico": [],
+      "criadoEm": "2026-03-20T10:30:00Z"
+    }
+  ],
+  "orcamentos": [
+    {
+      "id": "orc-adf-pgx7098",
+      "codigoProposta": "PROP-2026-ADF01",
+      "clienteId": "cli-adf",
+      "clienteNome": "ADF Comércio e Serviços de Locação Ltda.",
+      "cnpjCliente": "08.723.114/0001-52",
+      "representanteNome": "Carlos / Coordenação de Operações",
+      "localidadeServico": "Recife e Região Metropolitana - PE",
+      "servico": "Inspeções em Caminhões Munck e Guindastes",
+      "descricaoEscopo": "Inspeção semestral de conformidade mecânica e operacional do caminhão munck placa PGX-7098, verificação de cilindros hidráulicos, sapatas estabilizadoras, mangueiras, ensaio não destrutivo com líquido penetrante nos olhais e ganchos, teste de carga estático e dinâmico, e emissão de Laudo Técnico Pericial com recolhimento de ART CREA-PE.",
+      "ativoId": "atv-pgx7098",
+      "ativoIdentificacao": "PGX-7098 (Caminhão Munck)",
+      "valor": 4500,
+      "valorFormatado": "R$ 4.500,00",
+      "prazoDias": 5,
+      "prazoEntrega": "5 dias úteis",
+      "validadeDias": 15,
+      "condicoesPagamento": "50% de entrada na aprovação e 50% após emissão do laudo final e ART.",
+      "incluiNotaFiscal": true,
+      "chavePix": "10287093409",
+      "chavePixTipo": "cpf",
+      "status": "rascunho",
+      "criadoEm": "2026-03-20T11:00:00Z"
+    }
+  ]
+}
