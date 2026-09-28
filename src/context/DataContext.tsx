@@ -146,11 +146,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { currentUser } = useAuth();
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
-    const loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
+    let loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
+    loaded = loaded.map(c => {
+      if (c.id === 'cli-adf' || c.razaoSocial.includes('ADF Comércio e Serviços')) {
+        return {
+          ...c,
+          id: 'cli-adf',
+          razaoSocial: 'ADF',
+          nomeFantasia: 'ADF',
+          cpfCnpj: c.cpfCnpj === '08.723.114/0001-52' ? '' : (c.cpfCnpj || ''),
+          cnpj: c.cnpj === '08.723.114/0001-52' ? '' : (c.cnpj || ''),
+        };
+      }
+      return c;
+    });
     const temAdf = loaded.some((c: Cliente) => 
       c.id === 'cli-adf' || 
-      (c.razaoSocial && c.razaoSocial.toUpperCase().includes('ADF')) || 
-      (c.nomeFantasia && c.nomeFantasia.toUpperCase().includes('ADF'))
+      c.razaoSocial === 'ADF' || 
+      (c.nomeFantasia && c.nomeFantasia === 'ADF')
     );
     if (!temAdf) {
       const cliAdf = CLIENTES_INICIAIS.find(c => c.id === 'cli-adf');
@@ -164,10 +177,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [ativos, setAtivos] = useState<Ativo[]>(() => {
-    const loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
+    let loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
+    loaded = loaded.map(a => {
+      if (a.id === 'atv-pgx7098' || a.identificacao.includes('PGX-7098') || a.clienteNome?.includes('ADF Comércio')) {
+        return {
+          ...a,
+          id: 'atv-pgx7098',
+          clienteId: 'cli-adf',
+          clienteNome: 'ADF',
+          identificacao: 'PGX7098',
+          tipo: 'Caminhão Munck',
+          fabricante: a.fabricante === 'Volkswagen / Palfinger' ? '' : (a.fabricante || ''),
+          modelo: a.modelo?.includes('Constellation') ? '' : (a.modelo || ''),
+        };
+      }
+      return a;
+    });
     const temPgx = loaded.some((a: Ativo) => 
       a.id === 'atv-pgx7098' || 
-      (a.identificacao && a.identificacao.toUpperCase().includes('PGX'))
+      a.identificacao === 'PGX7098'
     );
     if (!temPgx) {
       const atvPgx = ATIVOS_INICIAIS.find(a => a.id === 'atv-pgx7098');
@@ -181,18 +209,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => {
-    const loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
+    let loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
     let alterouStorage = false;
 
-    // Garantir que a proposta de ADF com PGX-7098 esteja presente
-    const temOrcAdf = loaded.some((o: Orcamento) => 
-      o.id === 'orc-adf-pgx7098' || 
-      o.clienteId === 'cli-adf' || 
-      o.ativoId === 'atv-pgx7098' ||
-      (o.clienteNome && o.clienteNome.toUpperCase().includes('ADF'))
-    );
+    // Remover qualquer orc-adf-pgx7098 e garantir o orc-1790444416499 real
+    if (loaded.some(o => o.id === 'orc-adf-pgx7098')) {
+      loaded = loaded.filter(o => o.id !== 'orc-adf-pgx7098');
+      alterouStorage = true;
+    }
+
+    const temOrcAdf = loaded.some((o: Orcamento) => o.id === 'orc-1790444416499');
     if (!temOrcAdf) {
-      const orcAdf = ORCAMENTOS_INICIAIS.find(o => o.id === 'orc-adf-pgx7098');
+      const orcAdf = ORCAMENTOS_INICIAIS.find(o => o.id === 'orc-1790444416499');
       if (orcAdf) {
         loaded.unshift(orcAdf);
         alterouStorage = true;
@@ -641,10 +669,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (Array.isArray(data.orcamentos) && data.orcamentos.length > 0) {
           setOrcamentos(prev => {
-            const ids = new Set(prev.map(o => o.id));
-            const novos = data.orcamentos.filter((o: Orcamento) => !ids.has(o.id));
-            if (novos.length > 0) {
-              const unidos = [...novos, ...prev];
+            const limpos = prev.filter(o => o.id !== 'orc-adf-pgx7098');
+            const ids = new Set(limpos.map(o => o.id));
+            const novos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !ids.has(o.id));
+            if (novos.length > 0 || limpos.length !== prev.length) {
+              const unidos = [...novos, ...limpos];
               saveStorage('vl_orcamentos', unidos);
               return unidos;
             }

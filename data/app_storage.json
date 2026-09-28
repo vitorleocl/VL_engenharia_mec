@@ -2,25 +2,18 @@
   "clientes": [
     {
       "id": "cli-adf",
-      "razaoSocial": "ADF Comércio e Serviços de Locação Ltda.",
+      "razaoSocial": "ADF",
       "nomeFantasia": "ADF",
-      "cpfCnpj": "08.723.114/0001-52",
-      "cnpj": "08.723.114/0001-52",
-      "contatos": [
-        {
-          "nome": "Carlos / Coordenação de Operações",
-          "cargo": "Gerente Operacional",
-          "telefone": "(81) 98877-2233",
-          "email": "operacoes@adf.com.br"
-        }
-      ],
+      "cpfCnpj": "",
+      "cnpj": "",
+      "contatos": [],
       "endereco": {
-        "logradouro": "Av. Engenheiro Domingos Ferreira",
-        "numero": "2000",
-        "bairro": "Boa Viagem",
+        "logradouro": "",
+        "numero": "",
+        "bairro": "",
         "cidade": "Recife",
         "estado": "PE",
-        "cep": "51111-020"
+        "cep": ""
       },
       "criadoEm": "2026-03-20T10:00:00Z"
     }
@@ -29,32 +22,32 @@
     {
       "id": "atv-pgx7098",
       "clienteId": "cli-adf",
-      "clienteNome": "ADF Comércio e Serviços de Locação Ltda.",
+      "clienteNome": "ADF",
       "tipo": "Caminhão Munck",
-      "identificacao": "PGX-7098 (Caminhão Munck)",
-      "fabricante": "Volkswagen / Palfinger",
-      "modelo": "Constellation 24.280 / Guindaste Articulado",
+      "identificacao": "PGX7098",
+      "fabricante": "",
+      "modelo": "",
       "ano": 2022,
-      "numeroSerie": "PGX7098-MUNCK-BR",
-      "capacidade": "23.000 kgm / 8 toneladas",
-      "localizacao": "Pátio Central / Recife-PE",
+      "numeroSerie": "",
+      "capacidade": "",
+      "localizacao": "Recife - PE",
       "historico": [],
       "criadoEm": "2026-03-20T10:30:00Z"
     }
   ],
   "orcamentos": [
     {
-      "id": "orc-adf-pgx7098",
-      "codigoProposta": "PROP-2026-ADF01",
+      "id": "orc-1790444416499",
+      "codigoProposta": "PROP-1790444416499",
       "clienteId": "cli-adf",
-      "clienteNome": "ADF Comércio e Serviços de Locação Ltda.",
-      "cnpjCliente": "08.723.114/0001-52",
-      "representanteNome": "Carlos / Coordenação de Operações",
+      "clienteNome": "ADF",
+      "cnpjCliente": "",
+      "representanteNome": "Diretoria / Coordenação Técnica",
       "localidadeServico": "Recife e Região Metropolitana - PE",
       "servico": "Inspeções em Caminhões Munck e Guindastes",
-      "descricaoEscopo": "Inspeção semestral de conformidade mecânica e operacional do caminhão munck placa PGX-7098, verificação de cilindros hidráulicos, sapatas estabilizadoras, mangueiras, ensaio não destrutivo com líquido penetrante nos olhais e ganchos, teste de carga estático e dinâmico, e emissão de Laudo Técnico Pericial com recolhimento de ART CREA-PE.",
+      "descricaoEscopo": "Inspeção semestral de conformidade mecânica e operacional do caminhão munck placa PGX7098, verificação de cilindros hidráulicos, sapatas estabilizadoras, mangueiras, ensaio não destrutivo com líquido penetrante nos olhais e ganchos, teste de carga estático e dinâmico, e emissão de Laudo Técnico Pericial com recolhimento de ART CREA-PE.",
       "ativoId": "atv-pgx7098",
-      "ativoIdentificacao": "PGX-7098 (Caminhão Munck)",
+      "ativoIdentificacao": "PGX7098",
       "valor": 4500,
       "valorFormatado": "R$ 4.500,00",
       "prazoDias": 5,
