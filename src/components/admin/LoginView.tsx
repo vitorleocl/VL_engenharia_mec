@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Lock, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Shield, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 
 export const LoginView: React.FC = () => {
   const { 
@@ -9,9 +9,23 @@ export const LoginView: React.FC = () => {
     loading, 
     unauthorizedAttempt, 
     loginWithGoogle, 
-    loginDemo, 
     clearUnauthorized 
   } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to admin panel if already logged in
+  if (currentUser) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  const handleLoginGoogle = async () => {
+    try {
+      await loginWithGoogle();
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      console.error('Erro ao autenticar com Google:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -29,7 +43,7 @@ export const LoginView: React.FC = () => {
             Área Técnica e Administrativa
           </h2>
           <p className="mt-1 text-xs text-slate-400">
-            Acesso restrito para engenheiros, inspetores técnicos e clientes autorizados.
+            Acesso restrito com Conta Google autorizada.
           </p>
         </div>
 
@@ -43,7 +57,7 @@ export const LoginView: React.FC = () => {
                 <span>Acesso não autorizado</span>
               </div>
               <p>
-                A conta <strong>{unauthorizedAttempt}</strong> não possui permissão de acesso ao painel da VL Engenharia. Solicite liberação ao Responsável Técnico Vitor Leonardo.
+                A conta <strong>{unauthorizedAttempt}</strong> não possui permissão de acesso ao painel da VL Engenharia. Solicite liberação ao administrador Vitor Leonardo (vitorleonardocl@gmail.com).
               </p>
               <button
                 onClick={clearUnauthorized}
@@ -57,9 +71,9 @@ export const LoginView: React.FC = () => {
           {/* Real Google Sign-in */}
           <div>
             <button
-              onClick={loginWithGoogle}
+              onClick={handleLoginGoogle}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-600 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-md transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border border-slate-600 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-md transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -80,65 +94,6 @@ export const LoginView: React.FC = () => {
                 />
               </svg>
               <span>{loading ? 'Autenticando...' : 'Entrar com Conta Google'}</span>
-            </button>
-          </div>
-
-          <div className="relative flex py-1 items-center">
-            <div className="grow border-t border-slate-700"></div>
-            <span className="shrink mx-3 text-slate-500 text-xs font-semibold uppercase">
-              Ambiente de Demonstração / Teste de Perfis
-            </span>
-            <div className="grow border-t border-slate-700"></div>
-          </div>
-
-          {/* Quick profile switchers for full demonstration */}
-          <div className="space-y-2">
-            <button
-              onClick={() => loginDemo('master', 'vlengenhariamec@gmail.com', 'Eng. Vitor Leonardo')}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-blue-900/40 hover:bg-blue-900/60 border border-blue-700 text-blue-200 text-xs font-bold transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2 text-left">
-                <Shield className="w-4 h-4 text-blue-400" />
-                <div>
-                  <span className="block text-white">Eng. Vitor Leonardo (Master)</span>
-                  <span className="text-[10px] text-blue-300">vlengenhariamec@gmail.com • Acesso Total</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">
-                CREA-PE
-              </span>
-            </button>
-
-            <button
-              onClick={() => loginDemo('colaborador', 'lucas.inspetor@vlengenharia.com', 'Lucas Silveira')}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2 text-left">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <div>
-                  <span className="block text-white">Lucas Silveira (Colaborador)</span>
-                  <span className="text-[10px] text-slate-400">Técnico de Campo • Edita Laudos</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-slate-600 text-slate-300 text-[10px]">
-                Campo
-              </span>
-            </button>
-
-            <button
-              onClick={() => loginDemo('cliente', 'carlos@suapeeng.com.br', 'Carlos Eduardo (Suape Eng.)')}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2 text-left">
-                <Lock className="w-4 h-4 text-amber-400" />
-                <div>
-                  <span className="block text-white">Carlos Eduardo (Cliente)</span>
-                  <span className="text-[10px] text-slate-400">Construtora Suape • Visualização Restrita</span>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-slate-600 text-slate-300 text-[10px]">
-                Cliente
-              </span>
             </button>
           </div>
 

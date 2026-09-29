@@ -48,7 +48,8 @@ import {
   gerarCardClienteHtml,
   gerarHtmlEtapa2Metodologia,
   gerarHtmlEtapa3Investimento,
-  gerarHtmlContatoAgradecimento
+  gerarHtmlContatoAgradecimento,
+  gerarSecoesPadraoOrcamento
 } from '../lib/orcamentoTemplatePadrao';
 
 interface DataContextType {
@@ -369,6 +370,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (modificouOrc) {
           orcAtualizado.secoes = novasSecoes;
         }
+      } else {
+        // Inicializa as 13 seções caso o orçamento ainda não as possua
+        orcAtualizado.secoes = gerarSecoesPadraoOrcamento(orcAtualizado);
+        modificouOrc = true;
       }
 
       // 2. Upgrade paginasProposta if present

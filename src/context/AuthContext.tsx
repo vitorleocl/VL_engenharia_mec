@@ -20,7 +20,7 @@ interface AuthContextType {
   clearUnauthorized: () => void;
 }
 
-const MASTER_EMAIL = import.meta.env.VITE_MASTER_EMAIL || 'vlengenhariamec@gmail.com';
+const MASTER_EMAIL = import.meta.env.VITE_MASTER_EMAIL || 'vitorleonardocl@gmail.com';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -29,18 +29,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('vl_current_user');
     if (saved) {
       try { 
-        const parsed = JSON.parse(saved);
-        if (parsed?.email === 'vitorleonardocl@gmail.com') {
-          parsed.email = 'vlengenhariamec@gmail.com';
-        }
-        return parsed;
+        return JSON.parse(saved);
       } catch { return null; }
     }
-    // Default preloaded master session for seamless dev experience
+    // Default master session for Vitor Leonardo
     return {
       uid: 'master-vitor',
       nome: 'Eng. Vitor Leonardo',
-      email: MASTER_EMAIL,
+      email: 'vitorleonardocl@gmail.com',
       role: 'master',
       cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
       criadoEm: '2025-01-01T00:00:00Z',
@@ -82,13 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFirebaseUser(user);
       if (user && user.email) {
         // Check authorization
-        if (user.email.toLowerCase() === MASTER_EMAIL.toLowerCase()) {
+        const isMaster = user.email.toLowerCase() === MASTER_EMAIL.toLowerCase() || 
+          user.email.toLowerCase() === 'vitorleonardocl@gmail.com' || 
+          user.email.toLowerCase() === 'vlengenhariamec@gmail.com';
+
+        if (isMaster) {
           const masterUser: Usuario = {
             uid: user.uid,
-            nome: user.displayName || 'Vitor Leonardo',
+            nome: user.displayName || 'Eng. Vitor Leonardo',
             email: user.email,
             role: 'master',
-            cargo: 'Engenheiro Mecânico (CREA-PE 1822299490)',
+            cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
             criadoEm: new Date().toISOString(),
           };
           setCurrentUser(masterUser);

@@ -598,13 +598,15 @@ export function gerarSecoesPadraoOrcamento(
   orcamento: Orcamento,
   dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
 ): OrcamentoSecao[] {
-  const clienteNome = orcamento.clienteNome || dadosExtras?.cliente?.razaoSocial || 'Cliente Corporativo';
-  const cnpj = orcamento.cnpjCliente || dadosExtras?.cliente?.cpfCnpj || 'Consulte o contrato';
+  const clienteNome = dadosExtras?.cliente?.razaoSocial || orcamento.clienteNome || 'Cliente Corporativo';
+  const cnpj = dadosExtras?.cliente?.cpfCnpj || dadosExtras?.cliente?.cnpj || orcamento.cnpjCliente || 'Consulte o contrato';
   const primeiroContato = dadosExtras?.cliente?.contatos?.[0];
-  const representante = orcamento.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica';
-  const email = orcamento.emailCliente || primeiroContato?.email || 'contato@cliente.com.br';
-  const telefone = orcamento.telefoneCliente || primeiroContato?.telefone || '(81) 98444-2592';
-  const localidade = orcamento.localidadeServico || (dadosExtras?.cliente?.endereco?.cidade ? `${dadosExtras.cliente.endereco.cidade}/${dadosExtras.cliente.endereco.estado}` : 'Recife e Região Metropolitana - PE');
+  const representante = (primeiroContato?.nome && primeiroContato.nome.trim()) || (orcamento.representanteNome && orcamento.representanteNome.trim()) || 'Responsável Autorizado';
+  const email = primeiroContato?.email || orcamento.emailCliente || 'contato@cliente.com.br';
+  const telefone = primeiroContato?.telefone || orcamento.telefoneCliente || '(81) 98444-2592';
+  const localidade = (dadosExtras?.cliente?.endereco?.cidade && dadosExtras.cliente.endereco.cidade.trim()) 
+    ? `${dadosExtras.cliente.endereco.cidade}${dadosExtras.cliente.endereco.estado ? ` - ${dadosExtras.cliente.endereco.estado}` : ''}` 
+    : (orcamento.localidadeServico || 'Recife - PE');
   const servico = orcamento.servico || 'Laudo Técnico Pericial de Engenharia Mecânica';
   const valor = orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
   const validade = orcamento.validadeDias || 15;

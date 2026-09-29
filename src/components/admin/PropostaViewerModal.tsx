@@ -68,7 +68,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onGerarLaudo,
   onEditarProposta,
 }) => {
-  const { atualizarOrcamento } = useData();
+  const { atualizarOrcamento, clientes } = useData();
   const documentRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
@@ -185,10 +185,16 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     );
     const secoesParaExibir = secoesVisiveis.length > 0 ? secoesVisiveis : [todasSecoes[0]];
 
-    const clienteNome = orcamento.clienteNome || 'Cliente Contratante';
-    const cnpj = orcamento.cnpjCliente || 'Consulte o contrato';
-    const representante = orcamento.representanteNome || 'Diretoria / Coordenação Técnica';
-    const localidade = orcamento.localidadeServico || 'Recife e Região Metropolitana - PE';
+    const cliente = clientes.find(c => c.id === orcamento.clienteId);
+    const primeiroContato = cliente?.contatos?.[0];
+    const clienteNome = cliente?.razaoSocial || orcamento.clienteNome || 'Cliente Contratante';
+    const cnpj = cliente?.cpfCnpj || cliente?.cnpj || orcamento.cnpjCliente || 'Consulte o contrato';
+    const representante = (primeiroContato?.nome && primeiroContato.nome.trim()) || 
+      (orcamento.representanteNome && orcamento.representanteNome.trim()) || 
+      'Responsável Autorizado';
+    const localidade = (cliente?.endereco?.cidade && cliente.endereco.cidade.trim()) 
+      ? `${cliente.endereco.cidade}${cliente.endereco.estado ? ` - ${cliente.endereco.estado}` : ''}` 
+      : (orcamento.localidadeServico || 'Recife - PE');
     const codigo = orcamento.codigoProposta || orcamento.id;
     const validade = orcamento.validadeDias || 15;
     const prazo = orcamento.prazoEntrega || `${orcamento.prazoDias || 7} dias úteis`;
@@ -200,17 +206,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       // PAGE 1: Capa e Identificação do Cliente
       const isCapa = s.id === 'capa' || s.numero === 1 || (s.titulo && s.titulo.toUpperCase().includes('CAPA'));
       if (isCapa) {
-        if (!conteudo || (!conteudo.includes('DADOS DO CLIENTE CONTRATANTE') && !conteudo.includes('PROPOSTA TÉCNICA COMERCIAL'))) {
-          conteudo = gerarCardClienteHtml({
-            clienteNome,
-            cnpj,
-            representante,
-            localidade,
-            codigo,
-            validade,
-            prazo
-          });
-        }
+        conteudo = gerarCardClienteHtml({
+          clienteNome,
+          cnpj,
+          representante,
+          localidade,
+          codigo,
+          validade,
+          prazo
+        });
 
         if (orcamento.imagemCapaUrl && !conteudo.includes(orcamento.imagemCapaUrl)) {
           const fotoHtml = `
@@ -232,7 +236,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       }
 
       // FOR ALL OTHER SECTIONS: PRESERVE EXACT CONTENT!
-      // Clean obsolete digital signature badges if present in Etapa 3
+      // Clean obsolete digital signature badges if present in Etapa 3 and ensure client representative name is present
       const isEtapa3 = s.id === 'etapa3' || s.numero === 12 || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
       if (isEtapa3 && conteudo) {
         conteudo = conteudo
@@ -240,6 +244,13 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
           .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
           .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+
+        if (representante) {
+          const regexRepres = /(<div style="background:\s*#ffffff;\s*border:\s*1\.5px dashed[^>]*>[\s\S]*?<div style="border-bottom:\s*1\.5px dashed[^>]*><\/div>\s*<p[^>]*>[\s\S]*?<\/p>\s*)<p[^>]*>[\s\S]*?<\/p>(\s*<p[^>]*>De Acordo[^<]*<\/p>)/gi;
+          if (regexRepres.test(conteudo)) {
+            conteudo = conteudo.replace(regexRepres, `$1<p style="color: #475569; font-weight: 600; font-size: 10.5px; margin: 0 0 2px 0;">${representante}</p>$2`);
+          }
+        }
       }
 
       // Upgrade Agradecimento & Contato if still using old format
@@ -256,7 +267,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
         conteudoHtml: conteudo,
       };
     });
-  }, [todasSecoes, secoesOcultasIds, orcamento]);
+  }, [todasSecoes, secoesOcultasIds, orcamento, clientes]);
 
   const totalPaginas = paginas.length;
 
