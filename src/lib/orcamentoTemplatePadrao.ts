@@ -542,7 +542,7 @@ export function gerarHtmlContatoAgradecimento(): string {
           <span style="background: #fffbeb; color: #b45309; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #fde68a;">NORDESTE</span>
         </div>
         <p style="color: #0f172a; font-size: 12.5px; font-weight: 900; margin: 0 0 2px 0;">
-          Recife & Polo Industrial de Suape - PE
+          Região Metropolitana & Estado - PE
         </p>
         <p style="color: #475569; font-size: 10.5px; font-weight: 600; margin: 0 0 6px 0;">
           Atendimento In Loco em Indústrias, Obras e Frotas
@@ -598,15 +598,13 @@ export function gerarSecoesPadraoOrcamento(
   orcamento: Orcamento,
   dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
 ): OrcamentoSecao[] {
-  const clienteNome = dadosExtras?.cliente?.razaoSocial || orcamento.clienteNome || 'Cliente Corporativo';
-  const cnpj = dadosExtras?.cliente?.cpfCnpj || dadosExtras?.cliente?.cnpj || orcamento.cnpjCliente || 'Consulte o contrato';
+  const clienteNome = orcamento.clienteNome || dadosExtras?.cliente?.razaoSocial || 'Cliente Corporativo';
+  const cnpj = orcamento.cnpjCliente || dadosExtras?.cliente?.cpfCnpj || 'Consulte o contrato';
   const primeiroContato = dadosExtras?.cliente?.contatos?.[0];
-  const representante = (primeiroContato?.nome && primeiroContato.nome.trim()) || (orcamento.representanteNome && orcamento.representanteNome.trim()) || 'Responsável Autorizado';
-  const email = primeiroContato?.email || orcamento.emailCliente || 'contato@cliente.com.br';
-  const telefone = primeiroContato?.telefone || orcamento.telefoneCliente || '(81) 98444-2592';
-  const localidade = (dadosExtras?.cliente?.endereco?.cidade && dadosExtras.cliente.endereco.cidade.trim()) 
-    ? `${dadosExtras.cliente.endereco.cidade}${dadosExtras.cliente.endereco.estado ? ` - ${dadosExtras.cliente.endereco.estado}` : ''}` 
-    : (orcamento.localidadeServico || 'Recife - PE');
+  const representante = orcamento.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica';
+  const email = orcamento.emailCliente || primeiroContato?.email || 'contato@cliente.com.br';
+  const telefone = orcamento.telefoneCliente || primeiroContato?.telefone || '(81) 98444-2592';
+  const localidade = orcamento.localidadeServico || (dadosExtras?.cliente?.endereco?.cidade ? `${dadosExtras.cliente.endereco.cidade}/${dadosExtras.cliente.endereco.estado}` : 'Recife e Região Metropolitana - PE');
   const servico = orcamento.servico || 'Laudo Técnico Pericial de Engenharia Mecânica';
   const valor = orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
   const validade = orcamento.validadeDias || 15;

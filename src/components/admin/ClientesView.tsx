@@ -219,7 +219,7 @@ export const ClientesView: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="text-[10px] font-mono text-slate-400 block uppercase">
-                      CNPJ: {cliente.cpfCnpj}
+                      CNPJ: {cliente.cpfCnpj || cliente.cnpj || 'Não informado'}
                     </span>
                     <h3 className="text-base font-bold text-[#0B1E3D] leading-snug">
                       {cliente.razaoSocial}

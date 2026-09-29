@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Cliente, 
   Ativo, 
@@ -148,24 +148,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
     let loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
+    // Remove resquício de teste artificial apenas se presente
     loaded = loaded.map(c => {
-      if (c.id === 'cli-adf' || c.razaoSocial.includes('ADF Comércio e Serviços')) {
+      if (c.razaoSocial.includes('ADF Comércio e Serviços')) {
         return {
           ...c,
           id: 'cli-adf',
           razaoSocial: 'ADF',
           nomeFantasia: 'ADF',
-          cpfCnpj: c.cpfCnpj === '08.723.114/0001-52' ? '' : (c.cpfCnpj || ''),
-          cnpj: c.cnpj === '08.723.114/0001-52' ? '' : (c.cnpj || ''),
         };
       }
       return c;
     });
-    const temAdf = loaded.some((c: Cliente) => 
-      c.id === 'cli-adf' || 
-      c.razaoSocial === 'ADF' || 
-      (c.nomeFantasia && c.nomeFantasia === 'ADF')
-    );
+    const temAdf = loaded.some((c: Cliente) => c.id === 'cli-adf');
     if (!temAdf) {
       const cliAdf = CLIENTES_INICIAIS.find(c => c.id === 'cli-adf');
       if (cliAdf) {
@@ -180,24 +175,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [ativos, setAtivos] = useState<Ativo[]>(() => {
     let loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
     loaded = loaded.map(a => {
-      if (a.id === 'atv-pgx7098' || a.identificacao.includes('PGX-7098') || a.clienteNome?.includes('ADF Comércio')) {
+      if (a.clienteNome?.includes('ADF Comércio')) {
         return {
           ...a,
-          id: 'atv-pgx7098',
-          clienteId: 'cli-adf',
           clienteNome: 'ADF',
-          identificacao: 'PGX7098',
-          tipo: 'Caminhão Munck',
-          fabricante: a.fabricante === 'Volkswagen / Palfinger' ? '' : (a.fabricante || ''),
-          modelo: a.modelo?.includes('Constellation') ? '' : (a.modelo || ''),
         };
       }
       return a;
     });
-    const temPgx = loaded.some((a: Ativo) => 
-      a.id === 'atv-pgx7098' || 
-      a.identificacao === 'PGX7098'
-    );
+    const temPgx = loaded.some((a: Ativo) => a.id === 'atv-pgx7098');
     if (!temPgx) {
       const atvPgx = ATIVOS_INICIAIS.find(a => a.id === 'atv-pgx7098');
       if (atvPgx) {
@@ -353,7 +339,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isContato) {
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO')) {
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO') || s.conteudoHtml.includes('Recife & Polo Industrial de Suape')) {
               modificouOrc = true;
               return {
                 ...s,
@@ -480,7 +466,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isContato) {
-            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
+            if (!p.conteudoHtml || p.conteudoHtml.trim() === '' || p.conteudoHtml.includes('Recife & Polo Industrial de Suape')) {
               modificouOrc = true;
               return {
                 ...p,
@@ -642,57 +628,95 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
 
+  const isHydratedRef = useRef(false);
+
+  const salvarServidorDireto = useCallback((parcial: { clientes?: Cliente[]; ativos?: Ativo[]; orcamentos?: Orcamento[] }) => {
+    fetch('/api/app-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parcial)
+    }).catch(e => {
+      console.warn('[Sync Servidor Imediato] Falha ao persistir:', e);
+    });
+  }, []);
+
   // Sincronização com persistência do servidor para evitar perda de dados entre URLs (ais-dev e ais-pre)
   useEffect(() => {
     fetch('/api/app-data')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (!data) return;
+        if (!data) {
+          isHydratedRef.current = true;
+          return;
+        }
+
         if (Array.isArray(data.clientes) && data.clientes.length > 0) {
           setClientes(prev => {
-            const ids = new Set(prev.map(c => c.id));
-            const novos = data.clientes.filter((c: Cliente) => !ids.has(c.id));
-            if (novos.length > 0) {
-              const unidos = [...novos, ...prev];
-              saveStorage('vl_clientes', unidos);
-              return unidos;
-            }
-            return prev;
+            const serverMap = new Map<string, Cliente>(data.clientes.map((c: Cliente) => [c.id, c]));
+            const atualizados = prev.map(c => {
+              const fromServer = serverMap.get(c.id);
+              if (fromServer) {
+                return { ...c, ...fromServer };
+              }
+              return c;
+            });
+            const prevIds = new Set(prev.map(c => c.id));
+            const novos = data.clientes.filter((c: Cliente) => !prevIds.has(c.id));
+            const merged = [...novos, ...atualizados];
+            saveStorage('vl_clientes', merged);
+            return merged;
           });
         }
+
         if (Array.isArray(data.ativos) && data.ativos.length > 0) {
           setAtivos(prev => {
-            const ids = new Set(prev.map(a => a.id));
-            const novos = data.ativos.filter((a: Ativo) => !ids.has(a.id));
-            if (novos.length > 0) {
-              const unidos = [...novos, ...prev];
-              saveStorage('vl_ativos', unidos);
-              return unidos;
-            }
-            return prev;
+            const serverMap = new Map<string, Ativo>(data.ativos.map((a: Ativo) => [a.id, a]));
+            const atualizados = prev.map(a => {
+              const fromServer = serverMap.get(a.id);
+              if (fromServer) {
+                return { ...a, ...fromServer };
+              }
+              return a;
+            });
+            const prevIds = new Set(prev.map(a => a.id));
+            const novos = data.ativos.filter((a: Ativo) => !prevIds.has(a.id));
+            const merged = [...novos, ...atualizados];
+            saveStorage('vl_ativos', merged);
+            return merged;
           });
         }
+
         if (Array.isArray(data.orcamentos) && data.orcamentos.length > 0) {
           setOrcamentos(prev => {
+            const serverMap = new Map<string, Orcamento>(data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098').map((o: Orcamento) => [o.id, o]));
             const limpos = prev.filter(o => o.id !== 'orc-adf-pgx7098');
-            const ids = new Set(limpos.map(o => o.id));
-            const novos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !ids.has(o.id));
-            if (novos.length > 0 || limpos.length !== prev.length) {
-              const unidos = [...novos, ...limpos];
-              saveStorage('vl_orcamentos', unidos);
-              return unidos;
-            }
-            return prev;
+            const atualizados = limpos.map(o => {
+              const fromServer = serverMap.get(o.id);
+              if (fromServer) {
+                return { ...o, ...fromServer };
+              }
+              return o;
+            });
+            const prevIds = new Set(limpos.map(o => o.id));
+            const novos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !prevIds.has(o.id));
+            const merged = [...novos, ...atualizados];
+            saveStorage('vl_orcamentos', merged);
+            return merged;
           });
         }
+
+        isHydratedRef.current = true;
       })
       .catch(err => {
         console.warn('[Sync Servidor] Carregamento em segundo plano:', err);
+        isHydratedRef.current = true;
       });
   }, []);
 
   // Salvamento contínuo em segundo plano no servidor (debounced)
   useEffect(() => {
+    if (!isHydratedRef.current) return;
+
     const timer = setTimeout(() => {
       fetch('/api/app-data', {
         method: 'POST',
@@ -852,6 +876,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setClientes(prev => {
       const lista = [novo, ...prev];
       saveStorage('vl_clientes', lista);
+      salvarServidorDireto({ clientes: lista });
       return lista;
     });
     registrarLog('clientes', id, 'criar', `Cliente criado: ${novo.razaoSocial}`);
@@ -877,6 +902,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       });
       saveStorage('vl_clientes', atualizados);
+      salvarServidorDireto({ clientes: atualizados });
       return atualizados;
     });
 
@@ -888,6 +914,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clienteNome: dados.razaoSocial || a.clienteNome,
         } : a);
         saveStorage('vl_ativos', atualizados);
+        salvarServidorDireto({ ativos: atualizados });
         return atualizados;
       });
 
@@ -901,6 +928,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
         saveStorage('vl_orcamentos', atualizados);
+        salvarServidorDireto({ orcamentos: atualizados });
         return atualizados;
       });
 
@@ -921,7 +949,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerCliente = (id: string) => {
-    setClientes(prev => prev.filter(c => c.id !== id));
+    setClientes(prev => {
+      const filtrados = prev.filter(c => c.id !== id);
+      saveStorage('vl_clientes', filtrados);
+      salvarServidorDireto({ clientes: filtrados });
+      return filtrados;
+    });
     registrarLog('clientes', id, 'excluir', `Cliente removido: ${id}`);
   };
 
@@ -936,18 +969,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       historico: [],
       criadoEm: new Date().toISOString(),
     };
-    setAtivos(prev => [novo, ...prev]);
+    setAtivos(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_ativos', lista);
+      salvarServidorDireto({ ativos: lista });
+      return lista;
+    });
     registrarLog('ativos', id, 'criar', `Ativo criado: ${novo.identificacao} (${novo.tipo})`);
     return id;
   };
 
   const atualizarAtivo = (id: string, dados: Partial<Ativo>) => {
-    setAtivos(prev => prev.map(a => a.id === id ? { ...a, ...dados } : a));
+    setAtivos(prev => {
+      const atualizados = prev.map(a => a.id === id ? { ...a, ...dados } : a);
+      saveStorage('vl_ativos', atualizados);
+      salvarServidorDireto({ ativos: atualizados });
+      return atualizados;
+    });
     registrarLog('ativos', id, 'editar', `Ativo atualizado: ${dados.identificacao || id}`);
   };
 
   const removerAtivo = (id: string) => {
-    setAtivos(prev => prev.filter(a => a.id !== id));
+    setAtivos(prev => {
+      const filtrados = prev.filter(a => a.id !== id);
+      saveStorage('vl_ativos', filtrados);
+      salvarServidorDireto({ ativos: filtrados });
+      return filtrados;
+    });
     registrarLog('ativos', id, 'excluir', `Ativo removido: ${id}`);
   };
 
@@ -961,13 +1009,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clienteNome: cliente?.razaoSocial || dados.clienteNome,
       criadoEm: new Date().toISOString(),
     };
-    setOrcamentos(prev => [novo, ...prev]);
+    setOrcamentos(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_orcamentos', lista);
+      salvarServidorDireto({ orcamentos: lista });
+      return lista;
+    });
     registrarLog('orcamentos', id, 'criar', `Orçamento criado: R$ ${novo.valor} (${novo.servico})`);
     return id;
   };
 
   const atualizarOrcamento = (id: string, dados: Partial<Orcamento>) => {
-    setOrcamentos(prev => prev.map(o => o.id === id ? { ...o, ...dados } : o));
+    setOrcamentos(prev => {
+      const atualizados = prev.map(o => o.id === id ? { ...o, ...dados } : o);
+      saveStorage('vl_orcamentos', atualizados);
+      salvarServidorDireto({ orcamentos: atualizados });
+      return atualizados;
+    });
     registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
     if (db) {
       try {
@@ -981,12 +1039,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarStatusOrcamento = (id: string, status: Orcamento['status']) => {
-    setOrcamentos(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    setOrcamentos(prev => {
+      const atualizados = prev.map(o => o.id === id ? { ...o, status } : o);
+      saveStorage('vl_orcamentos', atualizados);
+      salvarServidorDireto({ orcamentos: atualizados });
+      return atualizados;
+    });
     registrarLog('orcamentos', id, 'editar', `Status do orçamento alterado para: ${status}`);
   };
 
   const removerOrcamento = (id: string) => {
-    setOrcamentos(prev => prev.filter(o => o.id !== id));
+    setOrcamentos(prev => {
+      const filtrados = prev.filter(o => o.id !== id);
+      saveStorage('vl_orcamentos', filtrados);
+      salvarServidorDireto({ orcamentos: filtrados });
+      return filtrados;
+    });
     registrarLog('orcamentos', id, 'excluir', `Orçamento removido: ${id}`);
   };
 

@@ -96,15 +96,11 @@ export const OrcamentoEditorView: React.FC = () => {
     // If orcamento already has rich secoes, use them, ensuring Capa, Catalogo, Etapa 2, Etapa 3 and Contato are upgraded
     if (orcamentoOriginal.secoes && orcamentoOriginal.secoes.length > 0) {
       let alterou = false;
-      const clienteNome = cliente?.razaoSocial || orcamentoOriginal.clienteNome || 'Cliente Corporativo';
-      const cnpj = cliente?.cpfCnpj || cliente?.cnpj || orcamentoOriginal.cnpjCliente || 'Consulte o contrato';
+      const clienteNome = orcamentoOriginal.clienteNome || cliente?.razaoSocial || 'Cliente Corporativo';
+      const cnpj = orcamentoOriginal.cnpjCliente || cliente?.cpfCnpj || 'Consulte o contrato';
       const primeiroContato = cliente?.contatos?.[0];
-      const representante = (primeiroContato?.nome && primeiroContato.nome.trim()) || 
-        (orcamentoOriginal.representanteNome && orcamentoOriginal.representanteNome.trim()) || 
-        'Responsável Autorizado';
-      const localidade = (cliente?.endereco?.cidade && cliente.endereco.cidade.trim()) 
-        ? `${cliente.endereco.cidade}${cliente.endereco.estado ? ` - ${cliente.endereco.estado}` : ''}` 
-        : (orcamentoOriginal.localidadeServico || 'Recife - PE');
+      const representante = orcamentoOriginal.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica';
+      const localidade = orcamentoOriginal.localidadeServico || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado}` : 'Recife e Região Metropolitana - PE');
       const valor = orcamentoOriginal.valorFormatado || (orcamentoOriginal.valor ? orcamentoOriginal.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 3.500,00');
       const validade = orcamentoOriginal.validadeDias || 15;
       const prazo = orcamentoOriginal.prazoEntrega || `${orcamentoOriginal.prazoDias || 7} dias úteis`;
@@ -126,23 +122,27 @@ export const OrcamentoEditorView: React.FC = () => {
           (s.titulo && (s.titulo.toLowerCase().includes('contato') || s.titulo.toLowerCase().includes('agradecimento')));
 
         if (isCapa) {
-          const capaEsperada = gerarCardClienteHtml({
-            clienteNome,
-            cnpj,
-            representante,
-            localidade,
-            codigo,
-            validade,
-            prazo
-          });
+          const precisaAtualizar = !s.conteudoHtml ||
+            !s.conteudoHtml.includes('DADOS DO CLIENTE CONTRATANTE') ||
+            s.conteudoHtml.includes('PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA') ||
+            s.titulo.toLowerCase().includes('capa') ||
+            s.subtitulo?.includes('RESPONSABILIDADE TÉCNICA');
 
-          if (s.conteudoHtml !== capaEsperada) {
+          if (precisaAtualizar) {
             alterou = true;
             return {
               ...s,
               titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA',
               subtitulo: tituloLaudoDinamico,
-              conteudoHtml: capaEsperada,
+              conteudoHtml: gerarCardClienteHtml({
+                clienteNome,
+                cnpj,
+                representante,
+                localidade,
+                codigo,
+                validade,
+                prazo
+              }),
             };
           }
         }
@@ -179,8 +179,7 @@ export const OrcamentoEditorView: React.FC = () => {
         }
 
         if (isEtapa3) {
-          let htmlEtapa3 = s.conteudoHtml;
-          if (!htmlEtapa3 || htmlEtapa3.trim() === '') {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
             alterou = true;
             return {
               ...s,
@@ -197,36 +196,19 @@ export const OrcamentoEditorView: React.FC = () => {
                 chavePix: orcamentoOriginal.chavePix,
               }),
             };
-          }
-
-          if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico')) {
+          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico')) {
             alterou = true;
-            htmlEtapa3 = htmlEtapa3
+            const limpo = s.conteudoHtml
               .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
               .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
               .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
               .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
-          }
-
-          if (representante) {
-            const regexRepres = /(<div style="background:\s*#ffffff;\s*border:\s*1\.5px dashed[^>]*>[\s\S]*?<div style="border-bottom:\s*1\.5px dashed[^>]*><\/div>\s*<p[^>]*>[\s\S]*?<\/p>\s*)<p[^>]*>[\s\S]*?<\/p>(\s*<p[^>]*>De Acordo[^<]*<\/p>)/gi;
-            if (regexRepres.test(htmlEtapa3)) {
-              const novoHtml = htmlEtapa3.replace(regexRepres, `$1<p style="color: #475569; font-weight: 600; font-size: 10.5px; margin: 0 0 2px 0;">${representante}</p>$2`);
-              if (novoHtml !== htmlEtapa3) {
-                htmlEtapa3 = novoHtml;
-                alterou = true;
-              }
-            }
-          }
-
-          if (htmlEtapa3 !== s.conteudoHtml) {
-            alterou = true;
-            return { ...s, conteudoHtml: htmlEtapa3 };
+            return { ...s, conteudoHtml: limpo };
           }
         }
 
         if (isContato) {
-          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO')) {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO') || s.conteudoHtml.includes('Recife & Polo Industrial de Suape')) {
             alterou = true;
             return {
               ...s,
