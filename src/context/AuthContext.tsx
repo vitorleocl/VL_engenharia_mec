@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut as fbSignOut, 
   onAuthStateChanged,
   User as FirebaseUser 
 } from 'firebase/auth';
-import { auth, googleProvider, isFirebaseConfigured } from '../lib/firebase';
-import { Usuario, UserRole } from '../types';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db, googleProvider } from '../lib/firebase';
+import { Usuario, SolicitacaoAcesso } from '../types';
 
 interface AuthContextType {
   currentUser: Usuario | null;
@@ -14,41 +17,42 @@ interface AuthContextType {
   loading: boolean;
   isOnline: boolean;
   unauthorizedAttempt: string | null;
+  authError: string | null;
+  pendingGoogleUser: { uid: string; email: string; nome: string } | null;
   loginWithGoogle: () => Promise<void>;
-  loginDemo: (role?: UserRole, email?: string, name?: string) => void;
+  loginAsMasterDirect: () => Promise<void>;
+  solicitarAcesso: (motivo?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearUnauthorized: () => void;
+  clearAuthError: () => void;
 }
 
-const MASTER_EMAIL = import.meta.env.VITE_MASTER_EMAIL || 'vitorleonardocl@gmail.com';
+export const MASTER_EMAIL = 'vitorleonardocl@gmail.com';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<Usuario | null>(() => {
+    // Restaura a sessão apenas se o usuário tiver feito login
     const saved = localStorage.getItem('vl_current_user');
     if (saved) {
       try { 
         return JSON.parse(saved);
-      } catch { return null; }
+      } catch { 
+        return null; 
+      }
     }
-    // Default master session for Vitor Leonardo
-    return {
-      uid: 'master-vitor',
-      nome: 'Eng. Vitor Leonardo',
-      email: 'vitorleonardocl@gmail.com',
-      role: 'master',
-      cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
-      criadoEm: '2025-01-01T00:00:00Z',
-    };
+    return null;
   });
 
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [unauthorizedAttempt, setUnauthorizedAttempt] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<{ uid: string; email: string; nome: string } | null>(null);
 
-  // Online / Offline listener
+  // Monitoramento online / offline
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -61,7 +65,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Sync to local storage
+  // Processa retorno de autenticação por redirecionamento do Google (caso pop-up tenha sido bloqueado)
+  useEffect(() => {
+    if (!auth) return;
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log('[Auth] Autenticação por redirecionamento bem-sucedida:', result.user.email);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Auth] Retorno de redirect do Google:', err);
+      });
+  }, []);
+
+  // Sincronização da sessão do usuário com o localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('vl_current_user', JSON.stringify(currentUser));
@@ -70,45 +88,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser]);
 
-  // Firebase auth state change
+  // Listener de autenticação real do Firebase
   useEffect(() => {
-    if (!auth || !isFirebaseConfigured) return;
+    if (!auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
       if (user && user.email) {
-        // Check authorization
-        const isMaster = user.email.toLowerCase() === MASTER_EMAIL.toLowerCase() || 
-          user.email.toLowerCase() === 'vitorleonardocl@gmail.com' || 
-          user.email.toLowerCase() === 'vlengenhariamec@gmail.com';
+        const userEmailLower = user.email.toLowerCase().trim();
+        const isMaster = userEmailLower === MASTER_EMAIL;
 
         if (isMaster) {
+          // O e-mail master vitorleonardocl@gmail.com SEMPRE tem acesso total como Master
           const masterUser: Usuario = {
             uid: user.uid,
             nome: user.displayName || 'Eng. Vitor Leonardo',
             email: user.email,
             role: 'master',
             cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
+            crea: '1822299490',
+            ativo: true,
             criadoEm: new Date().toISOString(),
           };
+
+          try {
+            if (db) {
+              await setDoc(doc(db, 'usuarios', user.uid), masterUser, { merge: true });
+            }
+          } catch (e) {
+            console.warn('[Auth] Sincronização offline Firestore do master:', e);
+          }
+
+          setFirebaseUser(user);
           setCurrentUser(masterUser);
           setUnauthorizedAttempt(null);
+          setPendingGoogleUser(null);
+          setAuthError(null);
         } else {
-          // Check if authorized in registered users list
-          const savedUsersStr = localStorage.getItem('vl_usuarios');
-          const savedUsers: Usuario[] = savedUsersStr ? JSON.parse(savedUsersStr) : [];
-          const found = savedUsers.find(u => u.email.toLowerCase() === user.email?.toLowerCase());
+          // Para qualquer outro e-mail: BLOQUEADO A MENOS QUE PRÉ-AUTORIZADO PELO MASTER
+          let authorizedUser: Usuario | null = null;
+          try {
+            if (db) {
+              // 1. Tenta buscar pelo UID no Firestore
+              const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+              if (userDoc.exists()) {
+                const data = userDoc.data() as Usuario;
+                if (data.ativo !== false) {
+                  authorizedUser = { ...data, uid: user.uid };
+                }
+              } else {
+                // 2. Tenta buscar pelo e-mail se foi autorizado previamente pelo master
+                const usuariosRef = collection(db, 'usuarios');
+                const q = query(usuariosRef, where('email', '==', userEmailLower));
+                const querySnap = await getDocs(q);
+                if (!querySnap.empty) {
+                  const foundDoc = querySnap.docs[0];
+                  const foundData = foundDoc.data() as Usuario;
+                  if (foundData.ativo !== false) {
+                    authorizedUser = { ...foundData, uid: user.uid };
+                    await setDoc(doc(db, 'usuarios', user.uid), authorizedUser, { merge: true });
+                  }
+                }
+              }
+            }
 
-          if (found) {
-            setCurrentUser(found);
+            // Fallback para lista de usuários salvos localmente
+            if (!authorizedUser) {
+              const savedUsersStr = localStorage.getItem('vl_usuarios');
+              const localUsers: Usuario[] = savedUsersStr ? JSON.parse(savedUsersStr) : [];
+              const byEmail = localUsers.find(u => u.email.toLowerCase() === userEmailLower && u.ativo !== false);
+              if (byEmail) {
+                authorizedUser = { ...byEmail, uid: user.uid };
+                if (db) {
+                  await setDoc(doc(db, 'usuarios', user.uid), authorizedUser, { merge: true });
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('[Auth] Aviso ao verificar permissões no Firestore:', err);
+          }
+
+          if (authorizedUser) {
+            setFirebaseUser(user);
+            setCurrentUser(authorizedUser);
             setUnauthorizedAttempt(null);
+            setPendingGoogleUser(null);
+            setAuthError(null);
           } else {
-            // Unauthorized
-            await fbSignOut(auth);
+            // BLOQUEADO: Conta Google não autorizada pelo master Vitor Leonardo
+            console.warn(`[Auth] Acesso bloqueado para conta não autorizada: ${user.email}`);
+            setFirebaseUser(null);
             setCurrentUser(null);
             setUnauthorizedAttempt(user.email);
+            setPendingGoogleUser({
+              uid: user.uid,
+              email: user.email,
+              nome: user.displayName || user.email
+            });
+            await fbSignOut(auth);
           }
         }
+      } else {
+        // Se desconectou do Firebase ou não há sessão ativa, limpa a sessão
+        setFirebaseUser(null);
+        setCurrentUser(null);
       }
     });
 
@@ -118,54 +200,114 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     setLoading(true);
     setUnauthorizedAttempt(null);
+    setAuthError(null);
 
-    if (auth && isFirebaseConfigured) {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (err: any) {
-        console.error('Erro no Google Sign-In do Firebase:', err);
-        // Fallback to interactive demo login if Firebase keys are placeholder
-        loginDemo('master');
-      } finally {
-        setLoading(false);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      console.warn('[Auth] Erro no loginWithGoogle:', err?.code, err?.message);
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setAuthError('Janela de autenticação fechada antes de selecionar a conta.');
+      } else if (err.code === 'auth/popup-blocked') {
+        try {
+          console.warn('[Auth] Pop-up bloqueado. Tentando redirecionamento seguro...');
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirErr: any) {
+          setAuthError('O pop-up de login foi bloqueado pelo seu navegador. Por favor, permita pop-ups para este site ou utilize o Acesso Master Imediato.');
+        }
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setAuthError('O domínio da aplicação aguarda liberação de origens no Firebase Console. Utilize a opção de Acesso Master Imediato (vitorleonardocl@gmail.com) para entrar com todas as permissões.');
+      } else {
+        setAuthError(`Falha na autenticação do Google (${err.code || 'erro'}). ${err.message || ''}`);
       }
-    } else {
-      // Demo sign-in simulation with Vitor Leonardo Master
-      loginDemo('master');
+    } finally {
       setLoading(false);
     }
   };
 
-  const loginDemo = (role: UserRole = 'master', email = MASTER_EMAIL, name = 'Eng. Vitor Leonardo') => {
-    const user: Usuario = {
-      uid: role === 'master' ? 'master-vitor' : `user-${Date.now()}`,
-      nome: name,
-      email: email,
-      role: role,
-      cargo: role === 'master' 
-        ? 'Responsável Técnico (CREA-PE 1822299490)' 
-        : role === 'colaborador' 
-        ? 'Inspetor Técnico de Campo' 
-        : 'Cliente Corporativo',
-      criadoEm: new Date().toISOString(),
-    };
-    setCurrentUser(user);
+  // Acesso direto para o Administrador Master quando pop-ups estiverem bloqueados pelo navegador/iframe
+  const loginAsMasterDirect = async () => {
+    setLoading(true);
+    setAuthError(null);
     setUnauthorizedAttempt(null);
+
+    try {
+      const masterUser: Usuario = {
+        uid: 'master-vitor-leonardo',
+        nome: 'Eng. Vitor Leonardo',
+        email: MASTER_EMAIL,
+        role: 'master',
+        cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
+        crea: '1822299490',
+        ativo: true,
+        criadoEm: '2025-01-01T00:00:00Z',
+      };
+
+      if (db && auth?.currentUser) {
+        try {
+          await setDoc(doc(db, 'usuarios', masterUser.uid), masterUser, { merge: true });
+        } catch (e) {
+          console.warn('[Auth] Sincronização offline Firestore:', e);
+        }
+      }
+
+      setCurrentUser(masterUser);
+      localStorage.setItem('vl_current_user', JSON.stringify(masterUser));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const solicitarAcesso = async (motivo?: string): Promise<boolean> => {
+    const emailSolicitante = unauthorizedAttempt || pendingGoogleUser?.email;
+    if (!emailSolicitante) return false;
+
+    try {
+      const id = pendingGoogleUser?.uid || `solic-${Date.now()}`;
+      const solicitacao: SolicitacaoAcesso = {
+        id,
+        email: emailSolicitante,
+        nome: pendingGoogleUser?.nome || emailSolicitante,
+        dataSolicitacao: new Date().toISOString(),
+        status: 'pendente',
+        motivo: motivo || 'Acesso à Área Técnica e Administrativa'
+      };
+
+      if (db && auth?.currentUser) {
+        await setDoc(doc(db, 'solicitacoesAcesso', id), solicitacao, { merge: true });
+      }
+
+      const saved = localStorage.getItem('vl_solicitacoes_acesso');
+      const list: SolicitacaoAcesso[] = saved ? JSON.parse(saved) : [];
+      const updated = [solicitacao, ...list.filter(s => s.email !== emailSolicitante)];
+      localStorage.setItem('vl_solicitacoes_acesso', JSON.stringify(updated));
+
+      return true;
+    } catch (err) {
+      console.warn('[Auth] Aviso ao enviar solicitação de acesso:', err);
+      return false;
+    }
   };
 
   const logout = async () => {
-    if (auth && isFirebaseConfigured) {
-      try {
-        await fbSignOut(auth);
-      } catch (e) {
-        console.error(e);
-      }
+    try {
+      await fbSignOut(auth);
+    } catch (e) {
+      console.warn('[Auth] Erro ao deslogar do Firebase:', e);
     }
+    setFirebaseUser(null);
     setCurrentUser(null);
+    localStorage.removeItem('vl_current_user');
   };
 
   const clearUnauthorized = () => {
     setUnauthorizedAttempt(null);
+    setPendingGoogleUser(null);
+  };
+
+  const clearAuthError = () => {
+    setAuthError(null);
   };
 
   return (
@@ -176,10 +318,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isOnline,
         unauthorizedAttempt,
+        authError,
+        pendingGoogleUser,
         loginWithGoogle,
-        loginDemo,
+        loginAsMasterDirect,
+        solicitarAcesso,
         logout,
         clearUnauthorized,
+        clearAuthError,
       }}
     >
       {children}

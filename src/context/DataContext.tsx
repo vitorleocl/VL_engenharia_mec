@@ -12,7 +12,9 @@ import {
   UsoIAMetricas,
   CategoriaLaudoDef,
   TipoLaudoDef,
-  ChecklistCampo
+  ChecklistCampo,
+  SolicitacaoAcesso,
+  UserRole
 } from '../types';
 import { 
   CLIENTES_INICIAIS, 
@@ -39,8 +41,17 @@ import {
   sincronizarFirestoreGeradoresAcessibilidadeRuido,
   sincronizarFirestoreClimatizacao
 } from '../lib/firestoreTaxonomia';
-import { db } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  collection, 
+  getDocs, 
+  onSnapshot, 
+  getDocFromServer 
+} from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { useAuth } from './AuthContext';
 import { 
   HTML_CARDS_CATALOGO_SERVICOS,
@@ -63,6 +74,7 @@ interface DataContextType {
   auditLogs: LogAuditoria[];
   contatos: ContatoFormulario[];
   usuarios: Usuario[];
+  solicitacoesAcesso: SolicitacaoAcesso[];
   usoIA: UsoIAMetricas;
   categoriasLaudo: CategoriaLaudoDef[];
   
@@ -106,6 +118,9 @@ interface DataContextType {
   removerUsuario: (uid: string) => void;
   atualizarPapelUsuario: (uid: string, novoRole: Usuario['role'], clienteId?: string) => void;
   adicionarUsuarioConvidado: (usuario: Omit<Usuario, 'uid' | 'criadoEm'>) => void;
+  aprovarSolicitacaoAcesso: (id: string, role: UserRole, cargo?: string) => Promise<void>;
+  recusarSolicitacaoAcesso: (id: string) => Promise<void>;
+  forcarSincronizacaoNuvem: () => Promise<void>;
 
   // Contato Formulario Público
   enviarContatoPublico: (contato: Omit<ContatoFormulario, 'id' | 'criadoEm' | 'respondido'>) => Promise<void>;
@@ -144,7 +159,7 @@ function saveStorage<T>(key: string, data: T) {
 }
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, firebaseUser } = useAuth();
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
     let loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
@@ -561,11 +576,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ]));
   const defaultUsuarios: Usuario[] = [
     {
-      uid: 'master-vitor',
+      uid: 'master-vitor-leonardo',
       nome: 'Eng. Vitor Leonardo',
-      email: 'vlengenhariamec@gmail.com',
+      email: 'vitorleonardocl@gmail.com',
       role: 'master',
       cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
+      crea: '1822299490',
+      ativo: true,
       criadoEm: '2025-01-01T00:00:00Z',
     },
     {
@@ -574,6 +591,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: 'lucas.inspetor@vlengenharia.com',
       role: 'colaborador',
       cargo: 'Técnico em Mecânica / Inspetor',
+      ativo: true,
       criadoEm: '2026-01-10T10:00:00Z',
     },
     {
@@ -583,12 +601,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'cliente',
       clienteId: 'cli-01',
       cargo: 'Gerente de Manutenção',
+      ativo: true,
       criadoEm: '2026-01-15T11:00:00Z',
     }
   ];
   const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
     const loaded: Usuario[] = loadStorage('vl_usuarios', defaultUsuarios);
-    return loaded.map((u) => u.email === 'vitorleonardocl@gmail.com' ? { ...u, email: 'vlengenhariamec@gmail.com' } : u);
+    const temMaster = loaded.some(u => u.email.toLowerCase() === 'vitorleonardocl@gmail.com');
+    if (!temMaster) {
+      return [defaultUsuarios[0], ...loaded];
+    }
+    return loaded.map(u => u.email.toLowerCase() === 'vitorleonardocl@gmail.com' ? { ...u, role: 'master' as const, ativo: true } : u);
+  });
+
+  const [solicitacoesAcesso, setSolicitacoesAcesso] = useState<SolicitacaoAcesso[]>(() => {
+    return loadStorage('vl_solicitacoes_acesso', []);
   });
 
   const [usoIA, setUsoIA] = useState<UsoIAMetricas>(() => {
@@ -626,11 +653,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
+  useEffect(() => saveStorage('vl_solicitacoes_acesso', solicitacoesAcesso), [solicitacoesAcesso]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
 
   const isHydratedRef = useRef(false);
 
-  const salvarServidorDireto = useCallback((parcial: { clientes?: Cliente[]; ativos?: Ativo[]; orcamentos?: Orcamento[] }) => {
+  const salvarServidorDireto = useCallback((parcial: { 
+    clientes?: Cliente[]; 
+    ativos?: Ativo[]; 
+    orcamentos?: Orcamento[];
+    laudos?: Laudo[];
+    checklistsCampo?: ChecklistCampo[];
+    agenda?: AgendaVistoria[];
+    usuarios?: Usuario[];
+  }) => {
     fetch('/api/app-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -639,6 +675,150 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('[Sync Servidor Imediato] Falha ao persistir:', e);
     });
   }, []);
+
+  // Sincronização centralizada com o banco de dados em nuvem (Firestore)
+  useEffect(() => {
+    // SÓ conecta listeners e sincroniza com o Firestore se houver usuário real autenticado no Firebase Auth E autorizado
+    if (!firebaseUser || !auth?.currentUser || !currentUser || !db) return;
+    if (currentUser.role !== 'master' && currentUser.role !== 'colaborador') return;
+
+    let cancelado = false;
+
+    // Test connection to Firestore
+    getDocFromServer(doc(db, 'test', 'connection')).catch(error => {
+      if (error instanceof Error && error.message.includes('the client is offline')) {
+        console.warn('Firestore offline fallback:', error);
+      }
+    });
+
+    const initAndListenFirestore = async () => {
+      try {
+        // Se a nuvem estiver vazia, faz o seed inicial dos dados canônicos
+        const clientesSnap = await getDocs(collection(db, 'clientes'));
+        if (clientesSnap.empty && !cancelado) {
+          console.log('[Firestore] Inicializando coleções na nuvem com dados canônicos...');
+          for (const c of clientes) {
+            await setDoc(doc(db, 'clientes', c.id), c, { merge: true });
+          }
+          for (const a of ativos) {
+            await setDoc(doc(db, 'ativos', a.id), a, { merge: true });
+          }
+          for (const o of orcamentos) {
+            await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
+          }
+          for (const l of laudos) {
+            await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
+          }
+          for (const ck of checklistsCampo) {
+            await setDoc(doc(db, 'checklistsCampo', ck.id), ck, { merge: true });
+          }
+          for (const ag of agenda) {
+            await setDoc(doc(db, 'agendaVistorias', ag.id), ag, { merge: true });
+          }
+          for (const u of usuarios) {
+            await setDoc(doc(db, 'usuarios', u.uid), u, { merge: true });
+          }
+          console.log('[Firestore] Dados canônicos unificados na nuvem com sucesso!');
+        }
+      } catch (err) {
+        console.warn('[Firestore] Erro na verificação inicial:', err);
+      }
+
+      // Listeners em tempo real para sincronização instantânea entre múltiplos dispositivos
+      const unsubClientes = onSnapshot(collection(db, 'clientes'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as Cliente);
+          setClientes(docs);
+          saveStorage('vl_clientes', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'clientes');
+      });
+
+      const unsubAtivos = onSnapshot(collection(db, 'ativos'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as Ativo);
+          setAtivos(docs);
+          saveStorage('vl_ativos', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'ativos');
+      });
+
+      const unsubOrcamentos = onSnapshot(collection(db, 'orcamentos'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as Orcamento);
+          setOrcamentos(docs);
+          saveStorage('vl_orcamentos', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'orcamentos');
+      });
+
+      const unsubLaudos = onSnapshot(collection(db, 'laudos'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as Laudo);
+          setLaudos(docs);
+          saveStorage('vl_laudos', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'laudos');
+      });
+
+      const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as ChecklistCampo);
+          setChecklistsCampo(docs);
+          saveStorage('vl_checklists_campo', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'checklistsCampo');
+      });
+
+      const unsubAgenda = onSnapshot(collection(db, 'agendaVistorias'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as AgendaVistoria);
+          setAgenda(docs);
+          saveStorage('vl_agenda', docs);
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'agendaVistorias');
+      });
+
+      const unsubUsuarios = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map(d => d.data() as Usuario);
+          setUsuarios(docs);
+          saveStorage('vl_usuarios', docs);
+        }
+      }, (error) => {
+        console.warn('[Firestore] Erro listener usuarios:', error);
+      });
+
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios);
+
+      if (currentUser.role === 'master') {
+        const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
+          if (!snapshot.empty) {
+            const docs = snapshot.docs.map(d => d.data() as SolicitacaoAcesso);
+            setSolicitacoesAcesso(docs);
+            saveStorage('vl_solicitacoes_acesso', docs);
+          }
+        }, (error) => {
+          console.warn('[Firestore] Erro listener solicitacoesAcesso:', error);
+        });
+        unsubs.push(unsubSolicitacoes);
+      }
+    };
+
+    const unsubs: (() => void)[] = [];
+    initAndListenFirestore();
+
+    return () => {
+      cancelado = true;
+      unsubs.forEach(unsub => unsub());
+    };
+  }, [firebaseUser, currentUser?.role, currentUser?.uid]);
 
   // Sincronização com persistência do servidor para evitar perda de dados entre URLs (ais-dev e ais-pre)
   useEffect(() => {
@@ -721,16 +901,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetch('/api/app-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientes, ativos, orcamentos })
+        body: JSON.stringify({ clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios })
       }).catch(e => {
         console.warn('[Sync Servidor] Aviso ao persistir dados:', e);
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [clientes, ativos, orcamentos]);
+  }, [clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios]);
 
-  // Sincronização de documentos Firestore das categorias de laudo (NR-12/NR-13, Veicular, Incêndio)
+  // Sincronização de documentos Firestore das categorias de laudo (apenas para o master autenticado)
   useEffect(() => {
+    if (!firebaseUser || !auth?.currentUser || currentUser?.role !== 'master') return;
+
     sincronizarFirestoreNR12eNR13().then(res => {
       if (res.sucesso) {
         console.log(`[Firestore Taxonomia NR12/NR13] ${res.mensagem}`);
@@ -818,7 +1000,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).catch(err => {
       console.warn('[Firestore Taxonomia Climatização e Manutenção] Sincronização em segundo plano:', err);
     });
-  }, []);
+  }, [firebaseUser, currentUser?.role]);
 
   // Log Auditoria Helper
   const registrarLog = (colecao: string, docId: string, acao: LogAuditoria['acao'], detalhes?: string) => {
@@ -879,6 +1061,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ clientes: lista });
       return lista;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'clientes', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `clientes/${id}`);
+      });
+    }
+
     registrarLog('clientes', id, 'criar', `Cliente criado: ${novo.razaoSocial}`);
     return id;
   };
@@ -905,6 +1094,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ clientes: atualizados });
       return atualizados;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'clientes', id), dadosTratados, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `clientes/${id}`);
+      });
+    }
 
     // Cascata imediata para Ativos, Orçamentos e Laudos
     if (dados.razaoSocial || cnpjUniforme) {
@@ -941,6 +1136,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
         saveStorage('vl_laudos', atualizados);
+        salvarServidorDireto({ laudos: atualizados });
         return atualizados;
       });
     }
@@ -955,6 +1151,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ clientes: filtrados });
       return filtrados;
     });
+
+    if (db && auth?.currentUser) {
+      deleteDoc(doc(db, 'clientes', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `clientes/${id}`);
+      });
+    }
+
     registrarLog('clientes', id, 'excluir', `Cliente removido: ${id}`);
   };
 
@@ -975,6 +1178,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ ativos: lista });
       return lista;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'ativos', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `ativos/${id}`);
+      });
+    }
+
     registrarLog('ativos', id, 'criar', `Ativo criado: ${novo.identificacao} (${novo.tipo})`);
     return id;
   };
@@ -986,6 +1196,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ ativos: atualizados });
       return atualizados;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'ativos', id), dados, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `ativos/${id}`);
+      });
+    }
+
     registrarLog('ativos', id, 'editar', `Ativo atualizado: ${dados.identificacao || id}`);
   };
 
@@ -996,6 +1213,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ ativos: filtrados });
       return filtrados;
     });
+
+    if (db && auth?.currentUser) {
+      deleteDoc(doc(db, 'ativos', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `ativos/${id}`);
+      });
+    }
+
     registrarLog('ativos', id, 'excluir', `Ativo removido: ${id}`);
   };
 
@@ -1015,6 +1239,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ orcamentos: lista });
       return lista;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'orcamentos', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `orcamentos/${id}`);
+      });
+    }
+
     registrarLog('orcamentos', id, 'criar', `Orçamento criado: R$ ${novo.valor} (${novo.servico})`);
     return id;
   };
@@ -1027,14 +1258,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return atualizados;
     });
     registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
-    if (db) {
-      try {
-        setDoc(doc(db, 'orcamentos', id), dados, { merge: true }).catch(err => {
-          console.warn('Sync Firestore orcamentos (salvo localmente):', err);
-        });
-      } catch (e) {
-        console.warn('Firestore write error:', e);
-      }
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'orcamentos', id), dados, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
+      });
     }
   };
 
@@ -1045,6 +1272,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ orcamentos: atualizados });
       return atualizados;
     });
+
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'orcamentos', id), { status }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
+      });
+    }
+
     registrarLog('orcamentos', id, 'editar', `Status do orçamento alterado para: ${status}`);
   };
 
@@ -1055,6 +1289,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salvarServidorDireto({ orcamentos: filtrados });
       return filtrados;
     });
+
+    if (db && auth?.currentUser) {
+      deleteDoc(doc(db, 'orcamentos', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `orcamentos/${id}`);
+      });
+    }
+
     registrarLog('orcamentos', id, 'excluir', `Orçamento removido: ${id}`);
   };
 
@@ -1435,17 +1676,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Usuários
   const atualizarUsuario = (uid: string, dados: Partial<Usuario>) => {
     setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, ...dados } : u));
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'usuarios', uid), dados, { merge: true }).catch(err => {
+        console.warn('[Firestore] Erro ao atualizar usuário:', err);
+      });
+    }
     registrarLog('usuarios', uid, 'editar', `Dados do usuário atualizados: ${dados.nome || dados.email || uid}`);
   };
 
   const removerUsuario = (uid: string) => {
     const alvo = usuarios.find(u => u.uid === uid);
     setUsuarios(prev => prev.filter(u => u.uid !== uid));
+    if (db && auth?.currentUser) {
+      deleteDoc(doc(db, 'usuarios', uid)).catch(err => {
+        console.warn('[Firestore] Erro ao remover usuário:', err);
+      });
+    }
     registrarLog('usuarios', uid, 'excluir', `Usuário excluído do sistema: ${alvo?.nome || alvo?.email || uid}`);
   };
 
   const atualizarPapelUsuario = (uid: string, novoRole: Usuario['role'], clienteId?: string) => {
     setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, role: novoRole, clienteId: clienteId || u.clienteId } : u));
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'usuarios', uid), { role: novoRole, clienteId: clienteId || null }, { merge: true }).catch(err => {
+        console.warn('[Firestore] Erro ao atualizar papel:', err);
+      });
+    }
     registrarLog('usuarios', uid, 'editar', `Permissão alterada para papel: ${novoRole}`);
   };
 
@@ -1453,7 +1709,96 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = `usr-${Date.now()}`;
     const novo: Usuario = { ...dados, uid, criadoEm: new Date().toISOString() };
     setUsuarios(prev => [novo, ...prev]);
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'usuarios', uid), novo, { merge: true }).catch(err => {
+        console.warn('[Firestore] Erro ao gravar usuário:', err);
+      });
+    }
     registrarLog('usuarios', uid, 'criar', `Novo usuário autorizado: ${novo.email} (${novo.role})`);
+  };
+
+  const aprovarSolicitacaoAcesso = async (id: string, role: UserRole, cargo?: string) => {
+    const solicitacao = solicitacoesAcesso.find(s => s.id === id);
+    if (!solicitacao) return;
+
+    const novoUsuario: Usuario = {
+      uid: id,
+      nome: solicitacao.nome || solicitacao.email,
+      email: solicitacao.email,
+      role,
+      cargo: cargo || (role === 'colaborador' ? 'Técnico / Inspetor Autorizado' : 'Acesso Homologado'),
+      ativo: true,
+      aprovadoPor: 'vitorleonardocl@gmail.com',
+      criadoEm: new Date().toISOString()
+    };
+
+    setUsuarios(prev => [novoUsuario, ...prev.filter(u => u.uid !== id)]);
+    setSolicitacoesAcesso(prev => prev.map(s => s.id === id ? { ...s, status: 'aprovado' as const } : s));
+
+    if (db && auth?.currentUser) {
+      try {
+        await setDoc(doc(db, 'usuarios', id), novoUsuario, { merge: true });
+        await setDoc(doc(db, 'solicitacoesAcesso', id), { status: 'aprovado' }, { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Erro ao aprovar solicitação:', err);
+      }
+    }
+
+    registrarLog('usuarios', id, 'criar', `Acesso aprovado pelo Master para: ${solicitacao.email} (${role})`);
+  };
+
+  const recusarSolicitacaoAcesso = async (id: string) => {
+    const solicitacao = solicitacoesAcesso.find(s => s.id === id);
+    setSolicitacoesAcesso(prev => prev.map(s => s.id === id ? { ...s, status: 'recusado' as const } : s));
+
+    if (db && auth?.currentUser) {
+      try {
+        await setDoc(doc(db, 'solicitacoesAcesso', id), { status: 'recusado' }, { merge: true });
+      } catch (err) {
+        console.warn('[Firestore] Erro ao recusar solicitação:', err);
+      }
+    }
+
+    registrarLog('usuarios', id, 'excluir', `Solicitação de acesso recusada para: ${solicitacao?.email || id}`);
+  };
+
+  const forcarSincronizacaoNuvem = async () => {
+    if (!db || !auth?.currentUser || !firebaseUser || (currentUser?.role !== 'master' && currentUser?.role !== 'colaborador')) {
+      console.log('[Firestore] Sincronização em nuvem não permitida sem login de colaborador/master.');
+      return;
+    }
+    try {
+      console.log('[Firestore] Forçando sincronização completa dos dados da nuvem...');
+      const [snapCli, snapAtv, snapOrc, snapLau] = await Promise.all([
+        getDocs(collection(db, 'clientes')),
+        getDocs(collection(db, 'ativos')),
+        getDocs(collection(db, 'orcamentos')),
+        getDocs(collection(db, 'laudos')),
+      ]);
+
+      if (!snapCli.empty) {
+        const docs = snapCli.docs.map(d => d.data() as Cliente);
+        setClientes(docs);
+        saveStorage('vl_clientes', docs);
+      }
+      if (!snapAtv.empty) {
+        const docs = snapAtv.docs.map(d => d.data() as Ativo);
+        setAtivos(docs);
+        saveStorage('vl_ativos', docs);
+      }
+      if (!snapOrc.empty) {
+        const docs = snapOrc.docs.map(d => d.data() as Orcamento);
+        setOrcamentos(docs);
+        saveStorage('vl_orcamentos', docs);
+      }
+      if (!snapLau.empty) {
+        const docs = snapLau.docs.map(d => d.data() as Laudo);
+        setLaudos(docs);
+        saveStorage('vl_laudos', docs);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Erro na sincronização forçada:', err);
+    }
   };
 
   // Contato Público
@@ -1520,7 +1865,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChecklistsCampo(prev => [novo, ...prev]);
     registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
 
-    if (db) {
+    if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), novo).catch(err => {
           console.warn('Sync Firestore checklistCampo:', err);
@@ -1537,7 +1882,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dados, atualizadoEm: agora } : c));
     registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
 
-    if (db) {
+    if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), { ...dados, atualizadoEm: agora }, { merge: true }).catch(err => {
           console.warn('Sync Firestore checklistCampo:', err);
@@ -1568,7 +1913,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return c;
     }));
     registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado com assinatura de rubrica: ${id}`);
-    if (db) {
+    if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), {
           status: 'finalizado',
@@ -1605,6 +1950,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         auditLogs: logsAuditoria,
         contatos,
         usuarios,
+        solicitacoesAcesso,
         usoIA,
         categoriasLaudo,
         adicionarCliente,
@@ -1634,6 +1980,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removerUsuario,
         atualizarPapelUsuario,
         adicionarUsuarioConvidado,
+        aprovarSolicitacaoAcesso,
+        recusarSolicitacaoAcesso,
+        forcarSincronizacaoNuvem,
         enviarContatoPublico,
         marcarContatoRespondido,
         registrarUsoIA,

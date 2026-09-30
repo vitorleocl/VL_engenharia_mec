@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Usuario": {
+      "title": "Usuario",
+      "description": "Usuário do sistema com permissões e papéis de acesso",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["master", "colaborador", "cliente"] },
+        "cargo": { "type": "string" },
+        "autorizado": { "type": "boolean" },
+        "aprovadoPor": { "type": "string" },
+        "criadoEm": { "type": "string" }
+      },
+      "required": ["uid", "nome", "email", "role"]
+    },
+    "Cliente": {
+      "title": "Cliente",
+      "description": "Cadastro de cliente corporativo ou pessoa física",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "razaoSocial": { "type": "string" },
+        "nomeFantasia": { "type": "string" },
+        "cpfCnpj": { "type": "string" },
+        "email": { "type": "string" },
+        "telefone": { "type": "string" }
+      },
+      "required": ["id", "razaoSocial"]
+    },
+    "Ativo": {
+      "title": "Ativo",
+      "description": "Equipamento, máquina ou ativo mecânico inspecionado",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "identificacao": { "type": "string" },
+        "tipo": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "clienteNome": { "type": "string" }
+      },
+      "required": ["id", "identificacao", "clienteId"]
+    },
+    "Orcamento": {
+      "title": "Orcamento",
+      "description": "Proposta técnica comercial e orçamento de engenharia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "codigoProposta": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "clienteNome": { "type": "string" },
+        "servico": { "type": "string" },
+        "valor": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "clienteId", "servico", "valor", "status"]
+    },
+    "Laudo": {
+      "title": "Laudo",
+      "description": "Laudo técnico pericial de conformidade mecânica com ART",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "codigoLaudo": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "ativoId": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "codigoLaudo", "clienteId", "status"]
+    },
+    "SolicitacaoAcesso": {
+      "title": "SolicitacaoAcesso",
+      "description": "Solicitações de liberação de acesso de novas contas Google pendentes de aprovação pelo Master",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "nome": { "type": "string" },
+        "dataSolicitacao": { "type": "string" },
+        "status": { "type": "string", "enum": ["pendente", "aprovado", "recusado"] },
+        "motivo": { "type": "string" }
+      },
+      "required": ["id", "email", "status"]
+    }
+  },
+  "firestore": {
+    "/solicitacoesAcesso/{solicitacaoId}": {
+      "schema": "SolicitacaoAcesso",
+      "description": "Coleção de pedidos de acesso pendentes de autorização"
+    },
+    "/usuarios/{uid}": {
+      "schema": "Usuario",
+      "description": "Coleção de perfis de usuários e permissões"
+    },
+    "/clientes/{clienteId}": {
+      "schema": "Cliente",
+      "description": "Coleção de clientes cadastrados"
+    },
+    "/ativos/{ativoId}": {
+      "schema": "Ativo",
+      "description": "Coleção de máquinas e equipamentos cadastrados"
+    },
+    "/orcamentos/{orcamentoId}": {
+      "schema": "Orcamento",
+      "description": "Coleção de propostas e orçamentos comerciais"
+    },
+    "/laudos/{laudoId}": {
+      "schema": "Laudo",
+      "description": "Coleção de laudos técnicos de engenharia"
+    }
+  }
+}

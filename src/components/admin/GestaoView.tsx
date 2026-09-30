@@ -21,7 +21,10 @@ import {
   Shield,
   Briefcase,
   UserX,
-  Mail
+  Mail,
+  RefreshCw,
+  Cloud,
+  Clock
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +40,10 @@ export const GestaoView: React.FC = () => {
     laudos, 
     orcamentos,
     usuarios,
+    solicitacoesAcesso,
+    aprovarSolicitacaoAcesso,
+    recusarSolicitacaoAcesso,
+    forcarSincronizacaoNuvem,
     atualizarUsuario,
     removerUsuario,
     adicionarUsuarioConvidado
@@ -125,6 +132,30 @@ export const GestaoView: React.FC = () => {
     setNovoClienteId('');
     setNovoRole('colaborador');
     showFeedback('sucesso', `Usuário ${novoNome.trim()} cadastrado e autorizado com sucesso!`);
+  };
+
+  const [sincronizandoNuvem, setSincronizandoNuvem] = useState(false);
+
+  const handleForcarSincronizacao = async () => {
+    setSincronizandoNuvem(true);
+    try {
+      await forcarSincronizacaoNuvem();
+      showFeedback('sucesso', 'Base de dados unificada na nuvem Firestore sincronizada com sucesso!');
+    } catch {
+      showFeedback('erro', 'Falha ao sincronizar com o banco de dados na nuvem.');
+    } finally {
+      setSincronizandoNuvem(false);
+    }
+  };
+
+  const handleAprovarSolicitacao = async (id: string, role: 'colaborador' | 'cliente' | 'master') => {
+    await aprovarSolicitacaoAcesso(id, role);
+    showFeedback('sucesso', 'Solicitação de acesso aprovada com sucesso! O usuário já pode acessar.');
+  };
+
+  const handleRecusarSolicitacao = async (id: string) => {
+    await recusarSolicitacaoAcesso(id);
+    showFeedback('sucesso', 'Solicitação de acesso recusada.');
   };
 
   const handleAbrirEdicao = (u: Usuario) => {
@@ -285,14 +316,108 @@ export const GestaoView: React.FC = () => {
       {/* SUB-TAB 1: USUÁRIOS E PERMISSÕES */}
       {activeSubTab === 'usuarios' && (
         <div className="space-y-6">
+          {/* Card de Governança e Sincronização em Tempo Real (Unificação PC Empresa / PC Casa / Celular) */}
+          <div className="bg-gradient-to-r from-[#0B1E3D] to-[#1565D8] rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Nuvem Firestore Unificada
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/40 text-[10px] font-bold">
+                  Acesso Master: vitorleonardocl@gmail.com
+                </span>
+              </div>
+              <h3 className="text-base font-black">
+                Governança de Acessos & Sincronização Multi-Dispositivos
+              </h3>
+              <p className="text-xs text-blue-100 max-w-2xl leading-relaxed">
+                Apenas o e-mail master possui acesso irrestrito por padrão. Os dados de <strong>Clientes</strong>, <strong>Ativos</strong> e <strong>Propostas</strong> estão unificados na nuvem, garantindo a mesma versão exata no computador da empresa, no seu computador pessoal e no celular.
+              </p>
+            </div>
+
+            <button
+              onClick={handleForcarSincronizacao}
+              disabled={sincronizandoNuvem}
+              className="shrink-0 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${sincronizandoNuvem ? 'animate-spin' : ''}`} />
+              <span>{sincronizandoNuvem ? 'Sincronizando Nuvem...' : 'Forçar Sincronização Nuvem'}</span>
+            </button>
+          </div>
+
+          {/* Card de Solicitações de Acesso Pendentes de Aprovação */}
+          {solicitacoesAcesso && solicitacoesAcesso.filter(s => s.status === 'pendente').length > 0 && (
+            <div className="bg-amber-50 rounded-2xl p-5 border-2 border-amber-300 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-sm">
+                    {solicitacoesAcesso.filter(s => s.status === 'pendente').length}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-amber-900">
+                      Solicitações de Acesso Pendentes de Autorização
+                    </h3>
+                    <p className="text-[11px] text-amber-700">
+                      Usuários que tentaram entrar com a Conta Google e aguardam sua liberação como Master.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                {solicitacoesAcesso.filter(s => s.status === 'pendente').map((sol) => (
+                  <div key={sol.id} className="p-3.5 rounded-xl bg-white border border-amber-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-[#0B1E3D] flex items-center gap-2">
+                        <span>{sol.nome}</span>
+                        <span className="text-[10px] text-slate-400 font-mono font-normal">({sol.email})</span>
+                      </div>
+                      {sol.motivo && (
+                        <p className="text-[11px] text-slate-600 italic">
+                          " {sol.motivo} "
+                        </p>
+                      )}
+                      <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Solicitado em: {new Date(sol.dataSolicitacao).toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleAprovarSolicitacao(sol.id, 'colaborador')}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-colors cursor-pointer"
+                      >
+                        Aprovar Colaborador
+                      </button>
+                      <button
+                        onClick={() => handleAprovarSolicitacao(sol.id, 'cliente')}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors cursor-pointer"
+                      >
+                        Aprovar Cliente
+                      </button>
+                      <button
+                        onClick={() => handleRecusarSolicitacao(sol.id)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-red-100 hover:text-red-700 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
             <div>
               <h3 className="text-base font-extrabold text-[#0B1E3D] flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#1565D8]" />
-                <span>Cadastrar Novo Usuário</span>
+                <span>Cadastrar / Autorizar Novo Usuário</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Convide engenheiros, inspetores técnicos de campo ou clientes para acesso com credenciais personalizadas.
+                Autorize e-mails do Google previamente para terem acesso imediato como colaboradores ou clientes.
               </p>
             </div>
 

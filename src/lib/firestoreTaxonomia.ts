@@ -1,5 +1,9 @@
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+
+function podeEscreverFirestore(): boolean {
+  return Boolean(db && auth?.currentUser);
+}
 
 export interface SecaoEspecificaFirestore {
   titulo: string;
@@ -478,7 +482,7 @@ export async function sincronizarFirestoreVeicular(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -530,7 +534,7 @@ export async function sincronizarFirestoreVeicular(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos veiculares sincronizados nas coleções Firestore categoriasLaudo/engenharia-veicular-pericias-e-inspecoes-de-frota/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos veiculares com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos veiculares com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -549,7 +553,7 @@ export async function sincronizarFirestoreNR12eNR13(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -598,7 +602,7 @@ export async function sincronizarFirestoreNR12eNR13(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos sincronizados nas coleções Firestore categoriasLaudo/{categoria}/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -835,7 +839,7 @@ export async function sincronizarFirestoreIncendio(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -887,7 +891,7 @@ export async function sincronizarFirestoreIncendio(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de incêndio sincronizados nas coleções Firestore categoriasLaudo/seguranca-contra-incendio-e-panico/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de incêndio com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de incêndio com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -1151,7 +1155,7 @@ export async function sincronizarFirestoreMaquinasPesadas(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -1203,7 +1207,7 @@ export async function sincronizarFirestoreMaquinasPesadas(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de máquinas pesadas sincronizados nas coleções Firestore categoriasLaudo/maquinas-pesadas-equipamentos-moveis/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de máquinas pesadas com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de máquinas pesadas com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -1443,7 +1447,7 @@ export async function sincronizarFirestorePlayground(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -1492,7 +1496,7 @@ export async function sincronizarFirestorePlayground(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de playground sincronizados nas coleções Firestore categoriasLaudo/playground-e-lazer/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de playground com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de playground com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -1506,7 +1510,7 @@ export async function sincronizarFirestoreEstruturasMetalicas(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -1558,7 +1562,7 @@ export async function sincronizarFirestoreEstruturasMetalicas(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de estruturas metálicas sincronizados nas coleções Firestore categoriasLaudo/estruturas-metalicas-caldeiraria-e-soldagem/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de estruturas metálicas com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de estruturas metálicas com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -1739,7 +1743,7 @@ export async function sincronizarFirestoreElevacaoIndustrial(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -1792,7 +1796,7 @@ export async function sincronizarFirestoreElevacaoIndustrial(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de elevação industrial sincronizados nas coleções Firestore categoriasLaudo/equipamentos-de-elevacao-e-movimentacao-industrial/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de elevação industrial com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de elevação industrial com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -1977,7 +1981,7 @@ export async function sincronizarFirestoreTubulacoesProcesso(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -2030,7 +2034,7 @@ export async function sincronizarFirestoreTubulacoesProcesso(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de tubulações de processo e redes industriais sincronizados nas coleções Firestore categoriasLaudo/tubulacoes-de-processo-e-redes-industriais/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de tubulações de processo com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de tubulações de processo com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -2224,7 +2228,7 @@ export async function sincronizarFirestorePericiasAvaliacaoBens(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -2278,7 +2282,7 @@ export async function sincronizarFirestorePericiasAvaliacaoBens(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de perícias e avaliação de bens sincronizados nas coleções Firestore categoriasLaudo/pericias-judiciais-avaliacao-de-bens/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de perícias e avaliação de bens com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de perícias e avaliação de bens com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -2511,7 +2515,7 @@ export async function sincronizarFirestoreGeradoresAcessibilidadeRuido(): Promis
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -2569,7 +2573,7 @@ export async function sincronizarFirestoreGeradoresAcessibilidadeRuido(): Promis
       mensagem: `Sucesso: ${gravados} documentos de geradores, acessibilidade e ruído sincronizados nas coleções Firestore categoriasLaudo/geradores-e-acessibilidade-ruido/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de geradores e acessibilidade/ruído com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de geradores e acessibilidade/ruído com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,
@@ -2781,7 +2785,7 @@ export async function sincronizarFirestoreClimatizacao(): Promise<{
   totalAtualizados: number;
   mensagem: string;
 }> {
-  if (!db) {
+  if (!podeEscreverFirestore()) {
     return {
       sucesso: false,
       totalAtualizados: 0,
@@ -2837,7 +2841,7 @@ export async function sincronizarFirestoreClimatizacao(): Promise<{
       mensagem: `Sucesso: ${gravados} documentos de climatização, qualidade do ar e manutenção predial/industrial sincronizados nas coleções Firestore categoriasLaudo/climatizacao-qualidade-do-ar-e-manutencao-predial-industrial/tipos/{tipo}.`
     };
   } catch (error: any) {
-    console.error('Erro ao sincronizar tipos de climatização e qualidade do ar com Firestore:', error);
+    console.warn('Erro ao sincronizar tipos de climatização e qualidade do ar com Firestore:', error);
     return {
       sucesso: false,
       totalAtualizados: gravados,

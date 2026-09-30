@@ -32,7 +32,7 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { currentUser, logout, isOnline, loginDemo } = useAuth();
+  const { currentUser, logout, isOnline } = useAuth();
   const { usoIA, contatos } = useData();
   const { theme, isDark, toggleTheme, setTheme } = useAdminTheme();
   const location = useLocation();

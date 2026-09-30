@@ -7,16 +7,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function to get current user data
-    function getUserData() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
-    }
-
     // Helper function to check master role (or master email)
     function isMaster() {
       return isAuthenticated() && (
         request.auth.token.email == "vitorleonardocl@gmail.com" ||
-        getUserData().role == "master"
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == "master")
       );
     }
 
@@ -24,7 +20,9 @@ service cloud.firestore {
     function isColaborador() {
       return isAuthenticated() && (
         isMaster() ||
-        getUserData().role == "colaborador"
+        (exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == "colaborador" &&
+         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.ativo != false)
       );
     }
 
@@ -34,9 +32,20 @@ service cloud.firestore {
       allow read, update, delete: if isMaster() || isColaborador();
     }
 
+    // Solicitacoes de acesso para aprovação do master
+    match /solicitacoesAcesso/{solicitacaoId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isMaster();
+    }
+
+    // Healthcheck / connection testing
+    match /test/connection {
+      allow read: if true;
+    }
+
     // Users and roles collection
     match /usuarios/{uid} {
-      allow read: if isAuthenticated() && (request.auth.uid == uid || isMaster());
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isMaster() || isColaborador());
       allow write: if isMaster();
     }
 
@@ -60,40 +69,32 @@ service cloud.firestore {
 
     // Clients collection
     match /clientes/{clienteId} {
-      allow read: if isColaborador() || isMaster() || (
-        isAuthenticated() && getUserData().role == "cliente" && getUserData().clienteId == clienteId
-      );
-      allow write: if isColaborador() || isMaster();
+      allow read, write: if isColaborador() || isMaster();
     }
 
     // Assets / Equipments
     match /ativos/{ativoId} {
-      allow read: if isColaborador() || isMaster() || (
-        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
-      );
-      allow write: if isColaborador() || isMaster();
+      allow read, write: if isColaborador() || isMaster();
     }
 
     // Quotes / Budgets
     match /orcamentos/{orcamentoId} {
-      allow read: if isColaborador() || isMaster() || (
-        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
-      );
-      allow write: if isColaborador() || isMaster();
+      allow read, write: if isColaborador() || isMaster();
     }
 
     // Technical Reports (Laudos)
     match /laudos/{laudoId} {
-      allow read: if isColaborador() || isMaster() || (
-        isAuthenticated() && getUserData().role == "cliente" && resource.data.clienteId == getUserData().clienteId
-      );
-      allow write: if isColaborador() || isMaster();
+      allow read, write: if isColaborador() || isMaster();
+    }
+
+    // Field Checklists
+    match /checklistsCampo/{checklistId} {
+      allow read, write: if isColaborador() || isMaster();
     }
 
     // Report Templates
     match /templatesLaudo/{templateId} {
-      allow read: if isColaborador() || isMaster();
-      allow write: if isColaborador() || isMaster();
+      allow read, write: if isColaborador() || isMaster();
     }
 
     // Categorias e Tipos de Laudo (Taxonomia e Diretrizes Técnicas)

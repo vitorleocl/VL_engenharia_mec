@@ -10,6 +10,17 @@ export interface Usuario {
   crea?: string;
   ativo?: boolean;
   criadoEm: string;
+  aprovadoPor?: string;
+}
+
+export interface SolicitacaoAcesso {
+  id: string;
+  email: string;
+  nome: string;
+  fotoUrl?: string;
+  dataSolicitacao: string;
+  status: 'pendente' | 'aprovado' | 'recusado';
+  motivo?: string;
 }
 
 export interface ClienteContato {
