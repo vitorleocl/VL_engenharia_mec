@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth, MASTER_EMAIL } from '../../context/AuthContext';
-import { Shield, AlertCircle, ArrowLeft, Send, CheckCircle2, Lock, KeyRound } from 'lucide-react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, Send, CheckCircle2, Lock, Loader2 } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 
 export const LoginView: React.FC = () => {
   const { 
@@ -10,7 +10,6 @@ export const LoginView: React.FC = () => {
     unauthorizedAttempt, 
     authError,
     loginWithGoogle, 
-    loginAsMasterDirect,
     solicitarAcesso,
     clearUnauthorized,
     clearAuthError
@@ -35,12 +34,6 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  const handleLoginMaster = async () => {
-    clearAuthError();
-    clearUnauthorized();
-    await loginAsMasterDirect();
-  };
-
   const handleEnviarSolicitacao = async (e: React.FormEvent) => {
     e.preventDefault();
     setEnviandoSolicitacao(true);
@@ -52,7 +45,48 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* TELA DE CARREGAMENTO ESTÉTICA VL ENGENHARIA AO LOGAR */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md px-4 transition-all">
+          <div className="relative flex flex-col items-center max-w-sm w-full text-center">
+            {/* Efeito de halo suave */}
+            <div className="absolute -top-14 w-60 h-60 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Cartão da Logo Oficial com borda brilhante */}
+            <div className="relative mb-6">
+              <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-blue-600 via-sky-400 to-indigo-500 opacity-75 blur-md animate-pulse"></div>
+              <div className="relative bg-white p-5 rounded-2xl shadow-2xl border border-white/20">
+                <img
+                  src="/logo.png"
+                  alt="VL Engenharia"
+                  className="h-16 w-auto object-contain drop-shadow-sm"
+                />
+              </div>
+            </div>
+
+            {/* Nome da Empresa */}
+            <h3 className="text-xl font-black text-white tracking-wider uppercase mb-1">
+              VL ENGENHARIA
+            </h3>
+            <p className="text-xs font-semibold text-blue-400 tracking-wide mb-6">
+              Área Técnica e Administrativa
+            </p>
+
+            {/* Barra de Progresso e Indicador de Autenticação */}
+            <div className="w-full max-w-xs space-y-3">
+              <div className="relative w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full w-full bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-500 rounded-full animate-pulse"></div>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-300">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                <span>Autenticando sessão com o Google...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         
         <div className="text-center">
@@ -73,7 +107,7 @@ export const LoginView: React.FC = () => {
 
         <div className="mt-8 bg-slate-800 py-8 px-6 sm:px-10 rounded-2xl border border-slate-700 shadow-2xl space-y-6">
           
-          {/* Alerta de erro de autenticação (ex: pop-up bloqueado pelo navegador) */}
+          {/* Alerta de erro de autenticação */}
           {authError && (
             <div className="p-4 rounded-xl bg-amber-950/80 border border-amber-600 text-amber-200 text-xs space-y-2">
               <div className="flex items-center gap-2 font-bold text-amber-300">
@@ -87,12 +121,6 @@ export const LoginView: React.FC = () => {
                   className="text-[11px] text-amber-400 underline font-semibold cursor-pointer"
                 >
                   Fechar aviso
-                </button>
-                <button
-                  onClick={handleLoginMaster}
-                  className="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2 py-1 rounded font-bold transition-colors cursor-pointer"
-                >
-                  Entrar como Master
                 </button>
               </div>
             </div>
@@ -109,7 +137,7 @@ export const LoginView: React.FC = () => {
                 A Conta Google <strong className="text-white underline">{unauthorizedAttempt}</strong> não está na lista de usuários autorizados da VL Engenharia.
               </p>
               <p className="text-[11px] text-red-300">
-                O acesso à plataforma é restrito ao e-mail master (<strong>{MASTER_EMAIL}</strong>) e aos colaboradores ou clientes previamente homologados pelo responsável técnico.
+                O acesso à plataforma é restrito ao e-mail master (<strong>{MASTER_EMAIL}</strong>) e aos colaboradores previamente homologados pelo responsável técnico.
               </p>
 
               {!solicitacaoEnviada ? (
@@ -189,38 +217,6 @@ export const LoginView: React.FC = () => {
               </svg>
               <span>{loading ? 'Abrindo autenticação...' : 'Entrar com Conta Google'}</span>
             </button>
-
-            {/* Divisor */}
-            <div className="relative flex py-2 items-center">
-              <div className="grow border-t border-slate-700"></div>
-              <span className="shrink mx-3 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                Acesso do Engenheiro Titular
-              </span>
-              <div className="grow border-t border-slate-700"></div>
-            </div>
-
-            {/* Acesso Master Imediato para Vitor Leonardo */}
-            <button
-              onClick={handleLoginMaster}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs shadow-lg transition-all active:scale-98 cursor-pointer border border-blue-500/30"
-            >
-              <KeyRound className="w-4 h-4 text-blue-200 shrink-0" />
-              <div className="text-left">
-                <span className="block leading-tight">Acesso Master ({MASTER_EMAIL})</span>
-                <span className="block text-[10px] text-blue-200 font-normal">Entrar direto com perfil de Responsável Técnico</span>
-              </div>
-            </button>
-          </div>
-
-          <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-700/60 text-[11px] text-slate-400 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-slate-300">
-              <Shield className="w-3.5 h-3.5 text-blue-400" />
-              <span>Segurança e Governança</span>
-            </div>
-            <p>
-              Somente a conta <strong>{MASTER_EMAIL}</strong> possui permissão de administrador master. Qualquer outra conta que tentar entrar ficará retida até aprovação expressa.
-            </p>
           </div>
 
           <div className="pt-1 text-center">

@@ -512,7 +512,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return migrados;
   });
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
-  const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
+  const [laudos, setLaudos] = useState<Laudo[]>(() => {
+    const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
+    const removidosSet = new Set(removidos);
+    const loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
+    return loaded.filter(l => !removidosSet.has(l.id));
+  });
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
   const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => 
     loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS)
@@ -873,7 +878,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const atualizados = limpos.map(o => {
               const fromServer = serverMap.get(o.id);
               if (fromServer) {
-                return { ...o, ...fromServer };
+                // Preserva edições locais do usuário (como status e campos modificados recentemente)
+                return { ...fromServer, ...o };
               }
               return o;
             });
@@ -882,6 +888,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const merged = [...novos, ...atualizados];
             saveStorage('vl_orcamentos', merged);
             return merged;
+          });
+        }
+
+        const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
+        const removidosSet = new Set(laudosRemovidos);
+
+        if (Array.isArray(data.laudos) && data.laudos.length > 0) {
+          setLaudos(prev => {
+            const limpos = prev.filter(l => !removidosSet.has(l.id));
+            const serverMap = new Map<string, Laudo>(data.laudos.filter((l: Laudo) => !removidosSet.has(l.id)).map((l: Laudo) => [l.id, l]));
+            const atualizados = limpos.map(l => {
+              const fromServer = serverMap.get(l.id);
+              if (fromServer) {
+                return { ...fromServer, ...l };
+              }
+              return l;
+            });
+            const prevIds = new Set(limpos.map(l => l.id));
+            const novos = data.laudos.filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id));
+            const merged = [...novos, ...atualizados];
+            saveStorage('vl_laudos', merged);
+            return merged;
+          });
+        } else {
+          setLaudos(prev => {
+            const limpos = prev.filter(l => !removidosSet.has(l.id));
+            saveStorage('vl_laudos', limpos);
+            return limpos;
           });
         }
 
@@ -1656,7 +1690,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerLaudo = (id: string) => {
-    setLaudos(prev => prev.filter(l => l.id !== id));
+    setLaudos(prev => {
+      const filtrados = prev.filter(l => l.id !== id);
+      saveStorage('vl_laudos', filtrados);
+      salvarServidorDireto({ laudos: filtrados });
+      return filtrados;
+    });
+
+    try {
+      const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
+      if (!removidos.includes(id)) {
+        saveStorage('vl_laudos_removidos_ids', [...removidos, id]);
+      }
+    } catch (e) {
+      console.warn('Erro ao salvar ID de laudo removido:', e);
+    }
+
+    if (db && auth?.currentUser) {
+      deleteDoc(doc(db, 'laudos', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `laudos/${id}`);
+      });
+    }
+
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };
 

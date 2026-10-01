@@ -392,22 +392,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               )}
             </div>
 
-            {/* Notification on pending contact forms */}
-            {contatosNovos > 0 && isColaborador && (
-              <div 
-                onClick={() => navigate('/admin')} 
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors ${
-                  isDark
-                    ? 'bg-blue-950/70 text-blue-300 border border-blue-800 hover:bg-blue-900/60'
-                    : 'bg-blue-50 text-[#1565D8] border border-blue-200 hover:bg-blue-100'
-                }`}
-                title={`${contatosNovos} nova(s) mensagem(ns) no site`}
-              >
-                <Bell className="w-3.5 h-3.5" />
-                <span>{contatosNovos} Novo(s)</span>
-              </div>
-            )}
-
             {/* Quick user role selector for test/demo mode */}
             <div className={`text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg border ${
               isDark 
