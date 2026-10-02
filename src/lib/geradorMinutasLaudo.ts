@@ -84,13 +84,141 @@ export function gerarMinutaTecnicaSecao(
   }
 
   // 5. Risco / HRN / Apreciação / Não Conformidades
-  if (tituloNorm.includes('risco') || tituloNorm.includes('hrn') || tituloNorm.includes('aprecia') || tituloNorm.includes('conformidade')) {
+  if (tituloNorm.includes('risco') || tituloNorm.includes('hrn') || tituloNorm.includes('aprecia') || (tituloNorm.includes('conformidade') && !tituloNorm.includes('tabela'))) {
     return `<p>Foi realizada a apreciação sistemática dos perigos intrínsecos e operacionais associados ao ativo <strong>${ativo}</strong>, fundamentando-se nos métodos quantitativos e qualitativos da engenharia de segurança:</p>
 <div class="p-3 bg-amber-50/80 border-l-4 border-amber-500 rounded-r-lg my-3">
   <p><strong>Avaliação de Riscos Operacionais:</strong></p>
   <p class="text-xs text-slate-700 mt-1">Os riscos identificados concentram-se primordialmente nas fases de manutenção e intervenção técnica, exigindo aplicação rigorosa de procedimentos de bloqueio e etiquetagem (LOTO - Lockout/Tagout). Em regime normal com proteções ativas, o risco residual classifica-se como <strong>BAIXO / TOLERÁVEL</strong>.</p>
 </div>
 <p>Recomenda-se a manutenção contínua das medidas preventivas implementadas para impedir o surgimento de novos pontos de perigo desprotegidos.</p>`;
+  }
+
+  // 5.1. Falha Mecânica / Mecanismos de Fratura
+  if (tituloNorm.includes('falha mecânica') || tituloNorm.includes('falha mecanica') || tituloNorm.includes('modo de falha') || tituloNorm.includes('modos de falha')) {
+    return `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+  <h3 class="text-xs font-bold text-slate-900 uppercase">Mecanismos Físicos e Metalúrgicos da Falha — ${ativo}</h3>
+  <p class="text-xs text-slate-700 leading-relaxed">
+    O exame pericial macrográfico da superfície de fratura do componente crítico revelou com nitidez incontestável as características universais da <strong>Fratura por Fadiga Mecânica de Alto Ciclo (High-Cycle Fatigue)</strong>:
+  </p>
+  <ul class="list-disc pl-5 space-y-1 text-xs text-slate-700">
+    <li><strong>Zona de Iniciação (Origem da Trinca):</strong> Ponto focal localizado em microdescontinuidade interna de material, atuando como concentrador de tensões (stress raiser);</li>
+    <li><strong>Zona de Propagação (Marcas de Praia / Beach Marks):</strong> Região polida apresentando estrias concêntricas progressivas decorrentes dos ciclos repetidos de solicitação alternada durante o funcionamento ordinário;</li>
+    <li><strong>Zona de Ruptura Instantânea:</strong> Área de aspecto fibroso/cristalino, onde a seção remanescente não mais suportou o esforço de tração/cisalhamento nominal.</li>
+  </ul>
+</div>`;
+  }
+
+  // 5.2. Causa Raiz / RCA / Ishikawa / 5 Porquês
+  if (tituloNorm.includes('causa raiz') || tituloNorm.includes('ishikawa') || tituloNorm.includes('5 porquês') || tituloNorm.includes('5 porques')) {
+    return `<p>A apuração pericial empregou as ferramentas estruturadas de Análise de Causa Raiz (Root Cause Analysis - RCA):</p>
+<div class="my-3 space-y-3">
+  <div class="p-3 bg-slate-50 border border-slate-200 rounded text-xs">
+    <p class="font-bold text-slate-900 mb-2">1. Diagrama de Ishikawa (Espinha de Peixe — 6M):</p>
+    <div class="grid grid-cols-2 gap-2 text-slate-700">
+      <div><strong>• Máquina:</strong> Dimensionamento de projeto nominalmente correto;</div>
+      <div><strong>• Material:</strong> <span class="text-red-700 font-bold">Inclusão/defeito metalúrgico pontual (Fator Causal);</span></div>
+      <div><strong>• Mão de Obra:</strong> Condução do motorista sem vícios operacionais;</div>
+      <div><strong>• Método:</strong> Plano de manutenção preventiva cumprido à risca;</div>
+      <div><strong>• Meio Ambiente:</strong> Pista plana, sem alagamentos ou sobrecarga térmica;</div>
+      <div><strong>• Medição:</strong> Parâmetros eletrônicos regulares na central de bordo.</div>
+    </div>
+  </div>
+  <div class="p-3 bg-amber-50/70 border-l-4 border-amber-500 rounded text-xs space-y-1 text-slate-800">
+    <p class="font-bold text-amber-950">2. Árvore Lógica dos 5 Porquês (5-Whys):</p>
+    <p><strong>1º Por quê ocorreu a paralisação súbita?</strong> Porque houve rompimento e colapso físico do conjunto mecânico interno;</p>
+    <p><strong>2º Por quê o componente colapsou?</strong> Porque a haste sofreu fratura por fadiga mecânica progressiva;</p>
+    <p><strong>3º Por quê fadigou precocemente com baixa quilometragem?</strong> Porque existia um concentrador de tensões e descontinuidade interna;</p>
+    <p><strong>4º Por quê existia essa descontinuidade?</strong> <span class="font-bold text-red-800 underline">VÍCIO OCULTO DE FABRICAÇÃO / CONTROLE DE QUALIDADE NA ORIGEM.</span></p>
+  </div>
+</div>`;
+  }
+
+  // 5.3. Nexo Causal
+  if (tituloNorm.includes('nexo causal') || tituloNorm.includes('nexo de causalidade')) {
+    return `<div class="p-3 bg-emerald-50/60 border border-emerald-300 rounded-lg text-xs space-y-2 text-slate-800">
+  <p class="font-bold text-emerald-950">Demonstração do Nexo de Causalidade Direta e Necessária:</p>
+  <p class="leading-relaxed">
+    O colapso mecânico decorreu estritamente da falha do elemento primário defeituoso. A sucessão cronológica dos danos comprova que o vício de fabricação deflagrou a quebra da peça, que por sua vez provocou em efeito cascata as perfurações e avarias colaterais constatadas.
+  </p>
+  <p class="font-semibold text-slate-900">
+    Inexistiu qualquer conduta comissiva ou omissiva por parte do condutor/proprietário apta a romper o nexo causal.
+  </p>
+</div>`;
+  }
+
+  // 5.4. Tabelas de Componentes / Danos / Classificação Primários e Secundários
+  if (tituloNorm.includes('tabela de componentes') || tituloNorm.includes('componentes inspecionados')) {
+    return `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3">
+  <thead>
+    <tr>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Item</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Componente Inspecionado</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Subsistema</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Estado Físico Encontrado</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Parecer Técnico</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="border border-slate-300 p-2 text-xs">01</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Biela do Cilindro Crítico</td>
+      <td class="border border-slate-300 p-2 text-xs">Conjunto Móvel</td>
+      <td class="border border-slate-300 p-2 text-xs">Fratura transversal completa por fadiga</td>
+      <td class="border border-slate-300 p-2 text-xs"><span style="color:#DC2626;font-weight:bold;">Falha Primária</span></td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-xs">02</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Carcaça do Bloco do Motor</td>
+      <td class="border border-slate-300 p-2 text-xs">Estrutural</td>
+      <td class="border border-slate-300 p-2 text-xs">Janela perfurada por impacto interno da biela</td>
+      <td class="border border-slate-300 p-2 text-xs"><span style="color:#DC2626;font-weight:bold;">Dano Secundário Grave</span></td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-xs">03</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Eixo Virabrequim</td>
+      <td class="border border-slate-300 p-2 text-xs">Conjunto Móvel</td>
+      <td class="border border-slate-300 p-2 text-xs">Sulcos profundos e perda dimensional de têmpera</td>
+      <td class="border border-slate-300 p-2 text-xs"><span style="color:#DC2626;font-weight:bold;">Dano Secundário</span></td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-xs">04</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Conjunto de Sincronismo</td>
+      <td class="border border-slate-300 p-2 text-xs">Distribuição</td>
+      <td class="border border-slate-300 p-2 text-xs">Íntegro e sincronizado no ponto de fábrica</td>
+      <td class="border border-slate-300 p-2 text-xs"><span style="color:#16A34A;font-weight:bold;">Conforme</span></td>
+    </tr>
+  </tbody>
+</table>`;
+  }
+
+  if (tituloNorm.includes('primários e secundários') || tituloNorm.includes('primarios e secundarios') || tituloNorm.includes('classificação dos danos') || tituloNorm.includes('classificacao dos danos')) {
+    return `<div class="space-y-3 my-3 text-xs">
+  <div class="p-3 bg-red-50/80 border-l-4 border-red-600 rounded-r">
+    <p class="font-bold text-red-950 text-sm">DANO PRIMÁRIO (Gatilho Deflagrador Original):</p>
+    <p class="text-slate-800 mt-1 leading-relaxed">
+      <strong>Fratura por fadiga mecânica cíclica da haste da biela.</strong> Trata-se do evento iniciador exclusivo, originado por descontinuidade estrutural interna do material forjado, o qual gerou a ruptura física em funcionamento sob regime de carga normal.
+    </p>
+  </div>
+  <div class="p-3 bg-amber-50/80 border-l-4 border-amber-600 rounded-r">
+    <p class="font-bold text-amber-950 text-sm">DANOS SECUNDÁRIOS (Consequenciais em Efeito Cascata):</p>
+    <ul class="list-disc pl-5 mt-1 space-y-1 text-slate-800 leading-relaxed">
+      <li><strong>Perfuração do bloco do motor:</strong> Causada pelo impacto cinético da ponta da biela quebrada impulsionada pelo virabrequim;</li>
+      <li><strong>Sulcos no moente do virabrequim:</strong> Decorrentes da perda do apoio correto da bronzina;</li>
+      <li><strong>Empenamento de válvulas:</strong> Provocado pela colisão decorrente da perda de curso nominal do pistão;</li>
+      <li><strong>Contaminação por limalha metálica:</strong> Dispersão de fragmentos metálicos na linha de lubrificação.</li>
+    </ul>
+  </div>
+</div>`;
+  }
+
+  // 5.5. Mau Uso / Operação Inadequada
+  if (tituloNorm.includes('mau uso') || tituloNorm.includes('operação inadequada') || tituloNorm.includes('operacao inadequada')) {
+    return `<p>A apuração pericial averiguou pormenorizadamente a existência de qualquer indício de conduta imprópria:</p>
+<ul class="list-disc pl-5 space-y-1.5 text-xs text-slate-700">
+  <li><strong>Inexistência de Sobregiro (Over-rev):</strong> A varredura de dados da ECU atestou que a rotação máxima histórica nunca ultrapassou o limite de corte de fábrica;</li>
+  <li><strong>Inexistência de Calço Hidráulico:</strong> O filtro de ar estava seco e a haste não sofreu flambagem plástica característica de compressão incompressível;</li>
+  <li><strong>Fluidos Conformes:</strong> O lubrificante encontrava-se no nível e com especificações recomendadas no manual do fabricante.</li>
+</ul>`;
   }
 
   // 6. Recomendações / Plano de Ação / Medidas Corretivas

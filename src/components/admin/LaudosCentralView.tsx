@@ -42,12 +42,15 @@ import {
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
+import { GeradorLaudoCausaRaizModal } from './GeradorLaudoCausaRaizModal';
 import { 
   CategoriaLaudoTaxonomia, 
   SubcategoriaLaudoTaxonomia, 
   TipoLaudoTaxonomia, 
-  Laudo 
+  Laudo,
+  ModuloLaudoCatalogo 
 } from '../../types';
+import { MODULOS_LAUDO_CATALOGO } from '../../data/initialData';
 
 // Map icon strings to Lucide components
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -83,8 +86,9 @@ export const LaudosCentralView: React.FC = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // Primary Tabs: Taxonomy Catalog vs Active Reports List
-  const [abaAtiva, setAbaAtiva] = useState<'catalogo' | 'laudos'>('catalogo');
+  // Primary Tabs: Modules Table vs Taxonomy Catalog vs Active Reports List
+  const [abaAtiva, setAbaAtiva] = useState<'modulos' | 'catalogo' | 'laudos'>('modulos');
+  const [buscaModulos, setBuscaModulos] = useState('');
 
   // Search and Filters for Taxonomy Catalog
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
@@ -116,6 +120,9 @@ export const LaudosCentralView: React.FC = () => {
   // PDF Export Modal state
   const [laudoPdfExportar, setLaudoPdfExportar] = useState<Laudo | null>(null);
 
+  // Modal Causa Raiz (Categoria 4)
+  const [modalCausaRaizAberto, setModalCausaRaizAberto] = useState(false);
+
   const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
 
   // Toggle category expansion
@@ -142,6 +149,10 @@ export const LaudosCentralView: React.FC = () => {
     subcat: SubcategoriaLaudoTaxonomia, 
     tipo: TipoLaudoTaxonomia
   ) => {
+    if (tipo.id === 'laudo-pericia-causa-raiz-automotiva' || tipo.codigo === 'VEIC-CAUSA-RAIZ') {
+      setModalCausaRaizAberto(true);
+      return;
+    }
     setSelecaoTaxonomia({ categoria: cat, subcategoria: subcat, tipo });
     setClienteId(clientes[0]?.id || '');
     setAtivoId('');
@@ -231,6 +242,52 @@ export const LaudosCentralView: React.FC = () => {
     });
   }, [laudos, buscaLaudos, filtroStatus]);
 
+  // Filter modules
+  const modulosFiltrados = useMemo(() => {
+    const termo = buscaModulos.trim().toLowerCase();
+    if (!termo) return MODULOS_LAUDO_CATALOGO;
+    return MODULOS_LAUDO_CATALOGO.filter(m => 
+      m.nome.toLowerCase().includes(termo) ||
+      m.descricao.toLowerCase().includes(termo) ||
+      m.escopo.toLowerCase().includes(termo) ||
+      m.status.toLowerCase().includes(termo)
+    );
+  }, [buscaModulos]);
+
+  // Handler for starting a module from the modules table
+  const handleIniciarModulo = (moduloId: string) => {
+    if (moduloId === 'pericia-causa-raiz-falhas-mecanicas') {
+      setModalCausaRaizAberto(true);
+      return;
+    }
+
+    // Try finding in taxonomy
+    for (const cat of categoriasLaudo) {
+      for (const sub of cat.subcategorias) {
+        for (const tipo of sub.tipos) {
+          if (
+            (moduloId === 'sinistro-veicular-ia' && (tipo.id === 'laudo-sinistro-veicular' || tipo.codigo === 'VEIC-SINISTRO')) ||
+            (moduloId === 'nr-12' && (tipo.id === 'laudo-nr12-maquinas' || tipo.codigo.includes('NR12'))) ||
+            (moduloId === 'nr-13' && (tipo.id.includes('nr13') || tipo.codigo.includes('NR13'))) ||
+            (moduloId === 'incendio-ppci-avcb' && (tipo.id.includes('ppci') || tipo.codigo.includes('PPCI'))) ||
+            (moduloId === 'reclassificacao-monta' && (tipo.id.includes('monta') || tipo.codigo.includes('MONTA'))) ||
+            (moduloId === 'inspecao-veicular' && (tipo.id.includes('veicular') || tipo.codigo.includes('INSP-VEIC'))) ||
+            (moduloId === 'frota-escolar' && (tipo.id.includes('escolar') || tipo.codigo.includes('ESCOLAR'))) ||
+            (moduloId === 'playground' && tipo.id.includes('playground')) ||
+            (moduloId === 'pmoc' && tipo.id.includes('pmoc'))
+          ) {
+            abrirCriacaoTaxonomia(cat, sub, tipo);
+            return;
+          }
+        }
+      }
+    }
+
+    // Fallback: search in catalog tab
+    setBuscaCatalogo(moduloId.replace(/-/g, ' '));
+    setAbaAtiva('catalogo');
+  };
+
   // Count total report models in taxonomy
   const totalModelosTaxonomia = useMemo(() => {
     return categoriasLaudo.reduce((acc, cat) => {
@@ -256,33 +313,213 @@ export const LaudosCentralView: React.FC = () => {
           </p>
         </div>
 
-        {/* Top Tab Switcher */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+        {/* Top Actions & Tab Switcher */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setAbaAtiva('catalogo')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === 'catalogo'
-                ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
+            onClick={() => setModalCausaRaizAberto(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
+            title="Iniciar Perícia de Causa Raiz e Falhas Mecânicas (Assistida por IA)"
           >
-            <BookOpen className="w-4 h-4" />
-            <span>Catálogo Taxonômico ({categoriasLaudo.length} Cats)</span>
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <span>Iniciar Perícia (Causa Raiz IA)</span>
           </button>
 
-          <button
-            onClick={() => setAbaAtiva('laudos')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === 'laudos'
-                ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Laudos Registrados ({laudos.length})</span>
-          </button>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setAbaAtiva('modulos')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                abaAtiva === 'modulos'
+                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>Módulos ({MODULOS_LAUDO_CATALOGO.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAbaAtiva('catalogo')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                abaAtiva === 'catalogo'
+                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Catálogo ({categoriasLaudo.length} Cats)</span>
+            </button>
+
+            <button
+              onClick={() => setAbaAtiva('laudos')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                abaAtiva === 'laudos'
+                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Laudos Registrados ({laudos.length})</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* ABA 0: TABELA OFICIAL DE MÓDULOS DA CENTRAL DE LAUDOS */}
+      {/* ========================================================================= */}
+      {abaAtiva === 'modulos' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          
+          {/* Controls Bar */}
+          <div className="bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="relative flex-1 w-full max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={buscaModulos}
+                onChange={(e) => setBuscaModulos(e.target.value)}
+                placeholder="Buscar módulo por nome, escopo ou status..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
+              />
+              {buscaModulos && (
+                <button
+                  onClick={() => setBuscaModulos('')}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Exibindo <strong className="text-slate-800 dark:text-slate-200">{modulosFiltrados.length}</strong> de <strong className="text-slate-800 dark:text-slate-200">{MODULOS_LAUDO_CATALOGO.length}</strong> módulos integrados
+            </div>
+          </div>
+
+          {/* Master Modules Table */}
+          <div className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <th className="py-3.5 px-4 font-bold">Módulo</th>
+                    <th className="py-3.5 px-4 font-bold text-center w-28">Status</th>
+                    <th className="py-3.5 px-4 font-bold">Descrição</th>
+                    <th className="py-3.5 px-4 font-bold text-center w-36">Escopo</th>
+                    <th className="py-3.5 px-4 font-bold text-right w-44">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                  {modulosFiltrados.map((mod) => {
+                    const IconComp = ICON_MAP[mod.iconName || 'FileText'] || FileText;
+                    const ehCausaRaiz = mod.id === 'pericia-causa-raiz-falhas-mecanicas';
+                    const ehSinistro = mod.id === 'sinistro-veicular-ia';
+
+                    return (
+                      <tr 
+                        key={mod.id}
+                        className={`transition-colors ${
+                          ehCausaRaiz 
+                            ? 'bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 border-l-4 border-l-blue-600' 
+                            : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
+                        }`}
+                      >
+                        {/* Módulo */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                              ehCausaRaiz 
+                                ? 'bg-blue-600 text-white shadow-xs' 
+                                : ehSinistro 
+                                ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' 
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="font-extrabold text-[#0B1E3D] dark:text-white flex items-center gap-1.5">
+                                <span>{mod.nome}</span>
+                                {ehCausaRaiz && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                    Cat. 4
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400">ID: {mod.id}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3.5 px-4 text-center">
+                          {mod.status === 'NOVO IA' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs">
+                              <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                              <span>NOVO IA</span>
+                            </span>
+                          ) : mod.status === 'NOVO' ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                              NOVO
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              Ativo
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Descrição */}
+                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 leading-relaxed text-[11px] max-w-xl">
+                          {mod.descricao}
+                        </td>
+
+                        {/* Escopo */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono ${
+                            ehCausaRaiz
+                              ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}>
+                            {mod.escopo}
+                          </span>
+                        </td>
+
+                        {/* Ação / Botão */}
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => handleIniciarModulo(mod.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 ${
+                              ehCausaRaiz
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
+                                : 'bg-[#0B1E3D] hover:bg-[#1565D8] text-white'
+                            }`}
+                          >
+                            {ehCausaRaiz ? (
+                              <Wrench className="w-3.5 h-3.5 text-amber-300" />
+                            ) : (
+                              <Plus className="w-3.5 h-3.5" />
+                            )}
+                            <span>{mod.botao}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Observação técnica explicativa mandatória */}
+            <div className="p-4 bg-slate-50 dark:bg-[#070D18] border-t border-slate-200 dark:border-slate-800 flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <strong className="text-slate-900 dark:text-white">Observação Técnica de Engenharia:</strong> O módulo <strong className="text-blue-600 dark:text-blue-400">"Perícia de Causa Raiz e Falhas Mecânicas"</strong> é estritamente distinto de <strong className="text-slate-800 dark:text-slate-200">"Avaliação de Sinistro Veicular"</strong> — aquele trata de falhas mecânicas internas (quebras, panes, fadiga cíclica de componentes e dessincronismo motriz) e seu nexo causal com intervenções anteriores sob a ótica do CDC (Art. 26); este trata de colisões veiculares e danos estruturais de impacto.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* ABA 1: CATÁLOGO TAXONÔMICO (12 CATEGORIAS E TIPOS DE LAUDO) */}
@@ -826,6 +1063,14 @@ export const LaudosCentralView: React.FC = () => {
           onClose={() => setLaudoPdfExportar(null)}
         />
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL GERADOR ESPECIALIZADO DE CAUSA RAIZ (CATEGORIA 4) */}
+      {/* ========================================================================= */}
+      <GeradorLaudoCausaRaizModal
+        isOpen={modalCausaRaizAberto}
+        onClose={() => setModalCausaRaizAberto(false)}
+      />
 
     </div>
   );

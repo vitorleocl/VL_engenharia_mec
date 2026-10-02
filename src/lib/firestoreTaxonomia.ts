@@ -1,5 +1,7 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
+import { LAUDO_FALHA_MECANICA_DEF } from '../data/laudoFalhaMecanicaDef';
+import { TipoRespostaChecklist } from '../types';
 
 function podeEscreverFirestore(): boolean {
   return Boolean(db && auth?.currentUser);
@@ -10,7 +12,7 @@ export interface SecaoEspecificaFirestore {
   conteudoSugeridoIA?: string;
 }
 
-export type TipoRespostaChecklist = 'C_NC_NA' | 'VALOR' | 'SELECAO' | 'FOTO';
+export type { TipoRespostaChecklist };
 
 export interface ItemChecklistInicialFirestore {
   campo?: string;
@@ -38,7 +40,9 @@ export interface DocumentoTipoLaudoFirestore {
   metodologiaPadrao: string;
   permitePreenchimentoIA?: boolean;
   secoesEspecificas: (string | SecaoEspecificaFirestore)[];
+  secoesPadrao?: any[];
   checklistInicial: (string | ItemChecklistInicialFirestore)[];
+  checklistPadrao?: any[];
   atualizadoEm: string;
 }
 
@@ -463,6 +467,24 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       { campo: "Classificação Econômica e Técnica do Sinistro", tipoResposta: "SELECAO", opcoes: ["Dano Parcial Recuperável", "Perda Total Econômica (> 75% FIPE)", "Irrecuperável / Perda Total Estrutural"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Parecer pericial conclusivo de liquidação de sinistro" }
     ],
     atualizadoEm: new Date().toISOString()
+  },
+
+  // 5. Laudo de Perícia Técnica Veicular – Análise de Falha Mecânica e Apuração de Causa Raiz
+  'laudo-de-pericia-tecnica-veicular-analise-de-falha-mecanica-e-apuracao-de-causa-raiz': {
+    id: 'laudo-de-pericia-tecnica-veicular-analise-de-falha-mecanica-e-apuracao-de-causa-raiz',
+    codigo: LAUDO_FALHA_MECANICA_DEF.codigo,
+    nome: LAUDO_FALHA_MECANICA_DEF.nome,
+    hrn: false,
+    temHrn: false,
+    normasRef: LAUDO_FALHA_MECANICA_DEF.normasRef,
+    textoBaseApresentacao: LAUDO_FALHA_MECANICA_DEF.apresentacaoPadrao,
+    apresentacaoPadrao: LAUDO_FALHA_MECANICA_DEF.apresentacaoPadrao,
+    metodologiaPadrao: LAUDO_FALHA_MECANICA_DEF.metodologiaPadrao,
+    secoesEspecificas: LAUDO_FALHA_MECANICA_DEF.secoesEspecificas,
+    secoesPadrao: LAUDO_FALHA_MECANICA_DEF.secoesPadrao,
+    checklistInicial: LAUDO_FALHA_MECANICA_DEF.checklistInicial,
+    checklistPadrao: LAUDO_FALHA_MECANICA_DEF.checklistPadrao,
+    atualizadoEm: new Date().toISOString()
   }
 };
 
@@ -470,7 +492,8 @@ export const ALIASES_TIPOS_VEICULAR: Record<string, string> = {
   'laudo-frota-operacional': 'laudo-de-inspecao-de-frota-operacional-leves-e-utilitarios',
   'laudo-transporte-escolar': 'laudo-tecnico-para-transporte-escolar',
   'laudo-reclassificacao-monta': 'laudo-pericial-de-reclassificacao-de-monta-veicular',
-  'laudo-sinistro-veicular': 'laudo-de-avaliacao-de-sinistro-veicular-e-danos-estruturais'
+  'laudo-sinistro-veicular': 'laudo-de-avaliacao-de-sinistro-veicular-e-danos-estruturais',
+  'laudo-falha-mecanica-causa-raiz': 'laudo-de-pericia-tecnica-veicular-analise-de-falha-mecanica-e-apuracao-de-causa-raiz'
 };
 
 /**
@@ -492,8 +515,10 @@ export async function sincronizarFirestoreVeicular(): Promise<{
 
   let gravados = 0;
   const categoriasAlvo = [
+    'cat-4',
     'engenharia-veicular-pericias-e-inspecoes-de-frota',
-    'engenharia-veicular-perícias-e-inspeções-de-frota'
+    'engenharia-veicular-perícias-e-inspeções-de-frota',
+    'engenharia-veicular-pericias-veiculares-e-modificacoes-tecnologicas'
   ];
 
   try {

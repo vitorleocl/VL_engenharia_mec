@@ -63,6 +63,11 @@ export const OrcamentosView: React.FC = () => {
 
   const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
 
+  const handleAtualizarStatus = (id: string, novoStatus: Orcamento['status']) => {
+    atualizarStatusOrcamento(id, novoStatus);
+    setPropostaModalOrcamento(prev => prev && prev.id === id ? { ...prev, status: novoStatus } : prev);
+  };
+
   const abrirNovo = () => {
     setClienteId(clientes[0]?.id || '');
     setServico('Adequação à NR-12');
@@ -329,7 +334,7 @@ export const OrcamentosView: React.FC = () => {
                 {isColaborador && (
                   <select
                     value={orc.status}
-                    onChange={(e) => atualizarStatusOrcamento(orc.id, e.target.value as any)}
+                    onChange={(e) => handleAtualizarStatus(orc.id, e.target.value as any)}
                     className="px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[11px]"
                   >
                     <option value="rascunho">Rascunho</option>
@@ -430,7 +435,7 @@ export const OrcamentosView: React.FC = () => {
           orcamento={propostaModalOrcamento}
           isOpen={!!propostaModalOrcamento}
           onClose={() => setPropostaModalOrcamento(null)}
-          onStatusChange={atualizarStatusOrcamento}
+          onStatusChange={handleAtualizarStatus}
           onGerarLaudo={handleGerarLaudo}
           onEditarProposta={(orc) => {
             setPropostaModalOrcamento(null);

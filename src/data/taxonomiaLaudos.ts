@@ -1,4 +1,5 @@
 import { CategoriaLaudoDef } from '../types';
+import { LAUDO_FALHA_MECANICA_DEF } from './laudoFalhaMecanicaDef';
 
 export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
   {
@@ -1091,9 +1092,9 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
   {
     id: 'cat-4',
     numero: 4,
-    nome: 'Engenharia Veicular, Perícias e Inspeções de Frota',
+    nome: 'Engenharia Veicular, Perícias Veiculares e Modificações Tecnológicas',
     icone: 'Car',
-    descricao: 'Inspeções de frotas, laudos para transporte escolar, reclassificação de monta e perícias de sinistro automotivo.',
+    descricao: 'Inspeções de frotas, transporte escolar, reclassificação de monta, perícias de sinistro e análise de falha mecânica com causa raiz.',
     subcategorias: [
       {
         id: 'sub-4-1',
@@ -1383,7 +1384,8 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               { id: 'ck-15', descricao: 'Comparação de custo de reparo x valor de mercado do veículo realizada', status: 'conforme', observacao: 'Orçamento de recuperação estimado em 38% do valor FIPE' },
               { id: 'ck-16', descricao: 'Parecer conclusivo sobre viabilidade de reparo ou perda total emitido', status: 'conforme', observacao: 'Sinistro classificado tecnicamente como passível de recuperação (Média Monta)' }
             ]
-          }
+          },
+          LAUDO_FALHA_MECANICA_DEF
         ]
       }
     ]

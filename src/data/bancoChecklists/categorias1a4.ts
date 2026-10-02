@@ -718,6 +718,66 @@ export const CATEGORIA_4_VEICULAR: CategoriaMestreDef = {
               referenciaNormativa: { norma: 'Resolução CONTRAN 810/2020', itemRequisito: 'Anexo I - Classificação de Danos' }
             }
           ]
+        },
+        {
+          id: 'tl-4-2-falha-mecanica',
+          codigo: 'L-VEIC-FALHA-CR',
+          nome: 'Laudo de Perícia Técnica Veicular – Análise de Falha Mecânica e Apuração de Causa Raiz',
+          normasRef: 'ABNT NBR 13771, ABNT NBR 5462, CPC Art. 464/473, ASM Vol. 11',
+          gruposInspecao: ['Identificação e Odômetro', 'Conjunto Motopropulsor e Bloco', 'Mancais e Lubrificação', 'Mecanismos de Fratura e Análise de Falha', 'Diagnóstico Eletrônico e Causa Raiz'],
+          itens: [
+            {
+              codigo: 'VEI-03-001',
+              descricao: 'Conferência de Hodômetro e Comparação com Memória Eletrônica da ECU',
+              criterioInspecao: 'Verificar integridade do odômetro e cruzamento de dados com histórico de revisões.',
+              grupoInspecao: 'Identificação e Odômetro',
+              resultado: 'CONFORME',
+              evidenciaDocumental: 'Medição',
+              criticidadePadrao: 'Alta',
+              referenciaNormativa: { norma: 'CTB / Resoluções CONTRAN', itemRequisito: 'Registros Metrológicos de Bordo' }
+            },
+            {
+              codigo: 'VEI-03-002',
+              descricao: 'Inspeção do Bloco do Motor, Cárter e Integridade Estrutural das Paredes',
+              criterioInspecao: 'Inspecionar ausência de janelas, trincas ou perfurações por choque mecânico de biela.',
+              grupoInspecao: 'Conjunto Motopropulsor e Bloco',
+              resultado: 'NAO_CONFORME',
+              evidenciaDocumental: 'Inspeção visual',
+              criticidadePadrao: 'Critica',
+              recomendacaoPadrao: 'Substituição do bloco do motor/motor parcial em razão de perfuração estrutural irreversível.',
+              referenciaNormativa: { norma: 'ABNT NBR 13771', itemRequisito: 'Danos Estruturais em Conjuntos Mecânicos' }
+            },
+            {
+              codigo: 'VEI-03-003',
+              descricao: 'Exame Macroscópico da Superfície de Fratura — Investigação de Fadiga Mecânica',
+              criterioInspecao: 'Identificar zonas de nucleação, marcas de praia (beach marks) e ruptura final instantânea.',
+              grupoInspecao: 'Mecanismos de Fratura e Análise de Falha',
+              resultado: 'CONFORME',
+              evidenciaDocumental: 'Fotografia',
+              criticidadePadrao: 'Critica',
+              referenciaNormativa: { norma: 'ASM Handbook Vol. 11', itemRequisito: 'Fatigue Fractography' }
+            },
+            {
+              codigo: 'VEI-03-004',
+              descricao: 'Inspeção de Mancais, Bronzinas e Integridade do Filme Hidrodinâmico de Lubrificação',
+              criterioInspecao: 'Aferir ausência de quebra generalizada de lubrificação nos cilindros sadios.',
+              grupoInspecao: 'Mancais e Lubrificação',
+              resultado: 'CONFORME',
+              evidenciaDocumental: 'Inspeção visual',
+              criticidadePadrao: 'Critica',
+              referenciaNormativa: { norma: 'ABNT NBR 5462', itemRequisito: 'Mecanismos de Desgaste e Lubrificação' }
+            },
+            {
+              codigo: 'VEI-03-005',
+              descricao: 'Varredura Eletrônica de Diagnóstico OBD-II e Verificação de Sobregiro Histórico',
+              criterioInspecao: 'Extrair DTCs gravados e comprovar ausência de acionamento em regime de rotação excessivo (over-rev).',
+              grupoInspecao: 'Diagnóstico Eletrônico e Causa Raiz',
+              resultado: 'CONFORME',
+              evidenciaDocumental: 'Documento',
+              criticidadePadrao: 'Alta',
+              referenciaNormativa: { norma: 'SAE J1979 / ISO 15031', itemRequisito: 'OBD Diagnostic Services' }
+            }
+          ]
         }
       ]
     }

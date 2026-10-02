@@ -92,6 +92,15 @@ export const MODULOS_LAUDO_CATALOGO: ModuloLaudoCatalogo[] = [
     iconName: 'Sparkles',
   },
   {
+    id: 'falha-mecanica-causa-raiz',
+    nome: 'Falha Mecânica e Causa Raiz',
+    status: 'NOVO',
+    descricao: 'Perícia técnica veicular de falha mecânica, apuração de causa raiz (RCA / 5 Porquês / Ishikawa / FMEA), nexo causal e classificação de danos em 35 tópicos',
+    botao: 'Iniciar Perícia',
+    escopo: '35 Tópicos / RCA',
+    iconName: 'Car',
+  },
+  {
     id: 'playground',
     nome: 'Laudo de Playground',
     status: 'Ativo',
