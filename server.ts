@@ -4,12 +4,6 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-import { 
-  gerarLaudoCausaRaizOffline, 
-  construirPromptSistemaCausaRaiz, 
-  construirPromptUsuarioCausaRaiz, 
-  DadosEntradaCausaRaiz 
-} from "./src/lib/motorLaudoCausaRaiz";
 
 dotenv.config();
 
@@ -319,93 +313,6 @@ Elabore a redação pericial completa, técnica e aprofundada para esta seção.
     return res.status(500).json({
       error: "Falha na geração de redação: " + (err?.message || "Erro desconhecido")
     });
-  }
-});
-
-// Endpoint Especializado: Gerador de Laudo Técnico Pericial de Causa Raiz (Categoria 4)
-app.post("/api/ai/gerar-laudo-causa-raiz", async (req, res) => {
-  try {
-    const dados: DadosEntradaCausaRaiz = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      // Motor offline pericial robusto estruturado nas 13 seções
-      const laudoOffline = gerarLaudoCausaRaizOffline(dados);
-      return res.json({
-        ...laudoOffline,
-        mock: true,
-        source: "motor_pericial_offline"
-      });
-    }
-
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-
-    const promptSystem = construirPromptSistemaCausaRaiz();
-    const promptUser = construirPromptUsuarioCausaRaiz(dados);
-
-    const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
-    let resultadoJson: any = null;
-
-    for (const model of modelsToTry) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: [{ role: "user", parts: [{ text: promptSystem + "\n\n" + promptUser }] }],
-          config: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
-          }
-        });
-        if (response?.text) {
-          const parsed = JSON.parse(response.text.trim());
-          if (parsed.secoes && Array.isArray(parsed.secoes) && parsed.secoes.length > 0) {
-            resultadoJson = parsed;
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`Tentativa com modelo ${model} para Causa Raiz falhou:`, err?.message || err);
-      }
-    }
-
-    if (!resultadoJson) {
-      const laudoOffline = gerarLaudoCausaRaizOffline(dados);
-      return res.json({
-        ...laudoOffline,
-        mock: true,
-        source: "fallback_offline_garantido"
-      });
-    }
-
-    monthlyAICalls++;
-    return res.json({
-      ...resultadoJson,
-      mock: false,
-      source: "gemini_ai",
-      currentUsage: monthlyAICalls,
-      limit: MONTHLY_LIMIT
-    });
-  } catch (err: any) {
-    console.error("Erro no gerador pericial de causa raiz:", err);
-    try {
-      const laudoOffline = gerarLaudoCausaRaizOffline(req.body);
-      return res.json({
-        ...laudoOffline,
-        mock: true,
-        source: "fallback_error_recovery"
-      });
-    } catch {
-      return res.status(500).json({
-        error: "Falha ao gerar laudo pericial: " + (err?.message || "Erro desconhecido")
-      });
-    }
   }
 });
 

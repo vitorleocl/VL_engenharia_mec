@@ -308,7 +308,6 @@ export const OrcamentoEditorView: React.FC = () => {
       ];
 
       atualizarOrcamento(novoOrcamento.id, {
-        status: novoOrcamento.status,
         imagemCapaUrl: novoOrcamento.imagemCapaUrl,
         imagemCapaLegenda: novoOrcamento.imagemCapaLegenda,
         secoes: novoOrcamento.secoes,
@@ -685,31 +684,17 @@ export const OrcamentoEditorView: React.FC = () => {
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-[#1565D8] border border-blue-200 uppercase">
               {orcamentoState.codigoProposta || orcamentoState.id}
             </span>
-            <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">Status:</span>
-              <select
-                value={orcamentoState.status}
-                onChange={(e) => {
-                  const novoStatus = e.target.value as Orcamento['status'];
-                  setOrcamentoState(prev => prev ? { ...prev, status: novoStatus } : prev);
-                  atualizarOrcamento(orcamentoState.id, { status: novoStatus });
-                }}
-                className={`text-[11px] font-extrabold uppercase rounded px-1.5 py-0.5 border cursor-pointer ${
-                  orcamentoState.status === 'aprovado'
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : orcamentoState.status === 'enviado'
-                    ? 'bg-blue-100 text-blue-800 border-blue-300'
-                    : orcamentoState.status === 'recusado'
-                    ? 'bg-red-100 text-red-800 border-red-300'
-                    : 'bg-slate-200 text-slate-700 border-slate-300'
-                }`}
-              >
-                <option value="rascunho">Rascunho</option>
-                <option value="enviado">Enviada</option>
-                <option value="aprovado">Aprovada</option>
-                <option value="recusado">Recusada</option>
-              </select>
-            </div>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+              orcamentoState.status === 'aprovado'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                : orcamentoState.status === 'enviado'
+                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                : orcamentoState.status === 'recusado'
+                ? 'bg-red-100 text-red-800 border border-red-300'
+                : 'bg-slate-100 text-slate-700 border border-slate-300'
+            }`}>
+              {orcamentoState.status}
+            </span>
           </div>
 
           <h1 className="text-lg sm:text-xl font-extrabold text-[#0B1E3D] flex items-center gap-2">

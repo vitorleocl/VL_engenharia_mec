@@ -28,7 +28,6 @@ import {
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
-import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { 
   sincronizarFirestoreNR12eNR13, 
   sincronizarFirestoreVeicular,
@@ -513,12 +512,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return migrados;
   });
   const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
-  const [laudos, setLaudos] = useState<Laudo[]>(() => {
-    const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-    const removidosSet = new Set(removidos);
-    const loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
-    return loaded.filter(l => !removidosSet.has(l.id));
-  });
+  const [laudos, setLaudos] = useState<Laudo[]>(() => loadStorage('vl_laudos', LAUDOS_INICIAIS));
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
   const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => 
     loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS)
@@ -763,9 +757,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubLaudos = onSnapshot(collection(db, 'laudos'), (snapshot) => {
         if (!snapshot.empty) {
-          const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-          const removidosSet = new Set(laudosRemovidos);
-          const docs = snapshot.docs.map(d => d.data() as Laudo).filter(d => !removidosSet.has(d.id));
+          const docs = snapshot.docs.map(d => d.data() as Laudo);
           setLaudos(docs);
           saveStorage('vl_laudos', docs);
         }
@@ -881,8 +873,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const atualizados = limpos.map(o => {
               const fromServer = serverMap.get(o.id);
               if (fromServer) {
-                // Preserva edições locais do usuário (como status e campos modificados recentemente)
-                return { ...fromServer, ...o };
+                return { ...o, ...fromServer };
               }
               return o;
             });
@@ -891,34 +882,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const merged = [...novos, ...atualizados];
             saveStorage('vl_orcamentos', merged);
             return merged;
-          });
-        }
-
-        const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-        const removidosSet = new Set(laudosRemovidos);
-
-        if (Array.isArray(data.laudos) && data.laudos.length > 0) {
-          setLaudos(prev => {
-            const limpos = prev.filter(l => !removidosSet.has(l.id));
-            const serverMap = new Map<string, Laudo>(data.laudos.filter((l: Laudo) => !removidosSet.has(l.id)).map((l: Laudo) => [l.id, l]));
-            const atualizados = limpos.map(l => {
-              const fromServer = serverMap.get(l.id);
-              if (fromServer) {
-                return { ...fromServer, ...l };
-              }
-              return l;
-            });
-            const prevIds = new Set(limpos.map(l => l.id));
-            const novos = data.laudos.filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id));
-            const merged = [...novos, ...atualizados];
-            saveStorage('vl_laudos', merged);
-            return merged;
-          });
-        } else {
-          setLaudos(prev => {
-            const limpos = prev.filter(l => !removidosSet.has(l.id));
-            saveStorage('vl_laudos', limpos);
-            return limpos;
           });
         }
 
@@ -1551,66 +1514,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           }),
       tabelaNaoConformidades: [],
-      conclusao: (tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA
-        ? 'Avaria provocada por dessincronismo decorrente de ruptura por fadiga da correia sincronizadora. Afastada responsabilidade da oficina por decurso de prazo legal do CDC (Art. 26, II - prazo decadencial de 90 dias superado).'
-        : (ehModoIA 
-          ? 'Com base nas avaliações e ensaios técnicos preliminares realizados, sugere-se a verificação final dos pontos assinalados como pendentes antes da homologação conclusiva das operações.'
-          : ''),
-      resumoExecutivo: (tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA
-        ? `Laudo pericial de causa raiz do veículo ${ativo?.identificacao || 'periciado'}. Constatada ruptura de correia dentada por fadiga de material. Nexo causal com serviços anteriores afastado por tempo e quilometragem decorridos.`
-        : undefined,
-      secoes: ((tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA)
-        ? gerarLaudoCausaRaizOffline({
-            ativo: {
-              marca: ativo?.marca || 'Volkswagen',
-              modelo: ativo?.modelo || 'Gol 1.0 MPI Flex',
-              anoModelo: ativo?.anoFabricacao ? `${ativo.anoFabricacao}/${ativo.anoFabricacao}` : '2021/2022',
-              placa: ativo?.placa || 'PGX-7098',
-              renavam: ativo?.renavam || '01248920192',
-              chassi: ativo?.chassi || '9BWCA05U0NT001824',
-              kmAtual: ativo?.horimetroOuKm || 82450,
-              kmIntervencaoPrevia: 59800
-            },
-            contexto: {
-              dataPane: dataInspecao,
-              dataIntervencaoPrevia: '2025-11-10',
-              historicoManutencao: 'Substituição preventiva do conjunto de correias e tensores do motor em oficina mecânica terceirizada credenciada',
-              oficinaTerceirizada: 'Auto Mecânica Terceirizada Frota Ltda',
-              restricaoConfidencialidade: true,
-              kmIntervalo: 22650
-            },
-            evidencias: {
-              descricaoAvarias: 'Ruptura catastrófica da correia dentada sincronizadora com cisalhamento de dentes por fadiga de material. Empenamento severo de válvulas por interferência com pistões.',
-              componentesAvariados: [
-                'Correia Dentada de Sincronismo',
-                'Válvulas de Admissão e Escape',
-                'Cabeçote do Motor (Mancais e Sedes)',
-                'Pistões do Motor',
-                'Tensor da Correia e Rolamentos Guias',
-                'Bloco do Motor e Bielas'
-              ]
-            },
-            escopo: {
-              determinarCausaRaiz: true,
-              analisarNexoCausal: true,
-              verificarGarantiaCDC: true,
-              avaliarMauUso: true
-            },
-            clienteNome: cliente?.razaoSocial,
-            clienteCnpj: cliente?.cnpj,
-            laudoNumero: numero,
-            artNumero,
-            dataEmissao: dataInspecao
-          }).secoes.map((s, idx) => ({
-            id: `sec-${idx + 1}`,
-            titulo: s.titulo,
-            ordem: s.ordem || idx + 1,
-            tipo: idx === 0 ? 'capa' : idx === 1 ? 'apresentacao' : idx === 12 ? 'art_assinatura' : 'corpo_tecnico',
-            conteudoHtml: s.conteudoHtml,
-            itens: [],
-            fotos: []
-          }))
-        : (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
+      conclusao: ehModoIA 
+        ? 'Com base nas avaliações e ensaios técnicos preliminares realizados, sugere-se a verificação final dos pontos assinalados como pendentes antes da homologação conclusiva das operações.'
+        : '',
+      secoes: (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
         ? tipoEncontrado.secoesPadrao.map(s => ({
             id: s.id,
             titulo: s.titulo,
@@ -1749,28 +1656,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerLaudo = (id: string) => {
-    setLaudos(prev => {
-      const filtrados = prev.filter(l => l.id !== id);
-      saveStorage('vl_laudos', filtrados);
-      salvarServidorDireto({ laudos: filtrados });
-      return filtrados;
-    });
-
-    try {
-      const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-      if (!removidos.includes(id)) {
-        saveStorage('vl_laudos_removidos_ids', [...removidos, id]);
-      }
-    } catch (e) {
-      console.warn('Erro ao salvar ID de laudo removido:', e);
-    }
-
-    if (db && auth?.currentUser) {
-      deleteDoc(doc(db, 'laudos', id)).catch(err => {
-        handleFirestoreError(err, OperationType.DELETE, `laudos/${id}`);
-      });
-    }
-
+    setLaudos(prev => prev.filter(l => l.id !== id));
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };
 

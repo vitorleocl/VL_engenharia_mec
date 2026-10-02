@@ -463,49 +463,6 @@ export const TIPOS_VEICULAR_FIRESTORE: Record<string, DocumentoTipoLaudoFirestor
       { campo: "Classificação Econômica e Técnica do Sinistro", tipoResposta: "SELECAO", opcoes: ["Dano Parcial Recuperável", "Perda Total Econômica (> 75% FIPE)", "Irrecuperável / Perda Total Estrutural"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Parecer pericial conclusivo de liquidação de sinistro" }
     ],
     atualizadoEm: new Date().toISOString()
-  },
-
-  // 5. Laudo Pericial de Causa Raiz e Análise de Falhas Mecânicas Automotivas
-  'laudo-pericial-de-causa-raiz-e-analise-de-falhas-mecanicas-automotivas': {
-    id: 'laudo-pericial-de-causa-raiz-e-analise-de-falhas-mecanicas-automotivas',
-    codigo: 'VEIC-CAUSA-RAIZ',
-    nome: 'Laudo Pericial de Causa Raiz e Análise de Falhas Mecânicas Automotivas',
-    hrn: false,
-    temHrn: false,
-    normasRef: 'Código de Defesa do Consumidor (Lei 8.078/1990 - Art. 18, 20 e 26), Código de Trânsito Brasileiro (CTB), ABNT NBR 13771, ABNT NBR 5462 (Confiabilidade e Mantenabilidade), Metodologias de Investigação de Causa Raiz (Ishikawa, FMEA, Fratografia Macroscópica)',
-    textoBaseApresentacao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
-    apresentacaoPadrao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
-    metodologiaPadrao: 'Investigação pericial baseada no rigor do método científico e da engenharia forense: anamnese cronológica, auditoria de ordens de serviço anteriores, confrontação de odômetros (km na intervenção vs. km na pane), inspeção macroscópica de superfícies de fratura de componentes (correia sincronizadora, tensionadores, válvulas, pistões), verificação de conformidade com os prazos de garantia legal (Art. 26 do CDC) e aplicação de matriz de causa raiz para exclusão fundamentada de hipóteses concorrentes.',
-    secoesEspecificas: [
-      'Cabeçalho Institucional e Identificação do Laudo',
-      'Carta de Apresentação e Notificação Formal',
-      'Sumário Executivo',
-      'Destinatário e Qualificação do Responsável Técnico',
-      'Seção I - Histórico do Evento e Cronologia dos Fatos',
-      'Seção II - Objetivo do Trabalho e Escopo Pericial',
-      'Seção III - Dados do Veículo e Especificações Técnicas',
-      'Seção IV - Registros Fotográficos Principais e Análise Visual',
-      'Seção V - Legislação e Normas Técnicas Aplicáveis (CDC e CTB)',
-      'Seção VI - Constatação de Danos e Análise de Causa Raiz',
-      'Seção VII - Tabela de Constatação de Danos e Integridade Técnica',
-      'Seção VIII - Conclusão Pericial e Respostas aos Quesitos',
-      'Seção IX - Considerações Finais e Anexo da ART CREA-PE'
-    ],
-    checklistInicial: [
-      { campo: "Quilometragem no momento da quebra/pane em comparação com a última revisão registrada", tipoResposta: "VALOR", unidade: "km", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Conferência do hodômetro e ordens de serviço pretéritas" },
-      { campo: "Data do evento de falha versus data da última intervenção mecânica", tipoResposta: "VALOR", unidade: "dias/meses", criterioReferencia: "Código de Defesa do Consumidor Art. 26 (prazo legal de 90 dias)" },
-      { campo: "Sistema de Sincronismo do Motor — Estado da correia dentada/corrente (ruptura, dentes arrancados, desfiamento)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Análise macroscópica de fratura por fadiga vs contaminação por óleo/combustível" },
-      { campo: "Polias e Tensionadores — Rolamentos, pistas de rolagem, folga axial e torque de fixação", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Travamento ou desalinhamento que induza falha catastrófica" },
-      { campo: "Cabeçote e Trem de Válvulas — Deformação plástica (empenamento) de válvulas de admissão e escape por interferência", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Colisão entre pistão e válvulas decorrente de dessincronismo mecânico" },
-      { campo: "Pistões e Câmaras de Combustão — Marcas de impacto mecânico no topo dos pistões", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Inspeção endoscópica ou direta da cabeça dos êmbolos" },
-      { campo: "Comando de Válvulas e Mancais — Estado dos cames, chavetas e ausência de travamento por lubrificação", tipoResposta: "C_NC_NA", criterioReferencia: "Verificação de película de lubrificação e integridade do eixo" },
-      { campo: "Sistema de Lubrificação — Nível, viscosidade, presença de borra ou contaminação no óleo do motor", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Descarte de hipótese de falta de óleo ou sobreaquecimento primário" },
-      { campo: "Sistema de Arrefecimento — Estanqueidade, aditivação e temperatura no momento da falha", tipoResposta: "C_NC_NA", criterioReferencia: "Ausência de indícios de sobreaquecimento prévio à falha mecânica" },
-      { campo: "Indícios de Mau Uso ou Operação Inadequada — Rotação excessiva (over-rev), sobrecarga ou arrancada brusca", tipoResposta: "C_NC_NA", criterioReferencia: "Análise da memória de falhas da ECU e integridade de embreagem" },
-      { campo: "Avaliação do Nexo Causal entre a falha mecânica e o serviço executado pela oficina anterior", tipoResposta: "SELECAO", opcoes: ["Nexo Causal Ausente (Fim de Vida Útil / Desgaste Natural)", "Nexo Causal Afastado por Prazo e Quilometragem", "Nexo Causal Parcial (Condições Mistas)", "Nexo Causal Direto com Falha de Montagem"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Engenharia Diagnóstica e Jurisprudência Técnica do CDC" },
-      { campo: "Enquadramento Legal da Garantia (CDC Lei 8.078/90) — Decurso de prazo decadencial ou garantia contratual", tipoResposta: "SELECAO", opcoes: ["Fora do Prazo de Garantia Legal (> 90 dias / Km Excedida)", "Dentro do Prazo Legal de Garantia (≤ 90 dias)", "Garantia Contratual Estendida Vigente"], criterioReferencia: "Art. 26, inciso II da Lei nº 8.078/1990" }
-    ],
-    atualizadoEm: new Date().toISOString()
   }
 };
 
@@ -513,8 +470,7 @@ export const ALIASES_TIPOS_VEICULAR: Record<string, string> = {
   'laudo-frota-operacional': 'laudo-de-inspecao-de-frota-operacional-leves-e-utilitarios',
   'laudo-transporte-escolar': 'laudo-tecnico-para-transporte-escolar',
   'laudo-reclassificacao-monta': 'laudo-pericial-de-reclassificacao-de-monta-veicular',
-  'laudo-sinistro-veicular': 'laudo-de-avaliacao-de-sinistro-veicular-e-danos-estruturais',
-  'laudo-pericia-causa-raiz-automotiva': 'laudo-pericial-de-causa-raiz-e-analise-de-falhas-mecanicas-automotivas'
+  'laudo-sinistro-veicular': 'laudo-de-avaliacao-de-sinistro-veicular-e-danos-estruturais'
 };
 
 /**

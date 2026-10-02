@@ -92,15 +92,6 @@ export const MODULOS_LAUDO_CATALOGO: ModuloLaudoCatalogo[] = [
     iconName: 'Sparkles',
   },
   {
-    id: 'pericia-causa-raiz-falhas-mecanicas',
-    nome: 'Perícia de Causa Raiz e Falhas Mecânicas',
-    status: 'NOVO IA',
-    descricao: 'Investigação técnico-pericial de panes e falhas em motores e sistemas automotivos, apuração de nexo causal com manutenções anteriores, enquadramento em prazos de garantia (CDC) e descarte de hipótese de mau uso, com análise assistida por IA',
-    botao: 'Iniciar Perícia',
-    escopo: '9 Seções Periciais',
-    iconName: 'Wrench',
-  },
-  {
     id: 'playground',
     nome: 'Laudo de Playground',
     status: 'Ativo',

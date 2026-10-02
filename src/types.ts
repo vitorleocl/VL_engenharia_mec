@@ -70,13 +70,7 @@ export interface Ativo {
   identificacao: string; // Ex: Placa, Chassi, Tag, Prefixo
   fabricante: string;
   modelo?: string;
-  marca?: string;
   ano: number | string;
-  anoFabricacao?: number | string;
-  placa?: string;
-  renavam?: string;
-  chassi?: string;
-  horimetroOuKm?: number | string;
   numeroSerie?: string;
   capacidade?: string;
   localizacao?: string;
@@ -319,9 +313,6 @@ export interface TipoLaudoDef {
   textoBaseApresentacao?: string;
   permitePreenchimentoIA?: boolean;
   permitePreenchimentoPreliminar?: boolean;
-  statusTag?: string;
-  botaoTexto?: string;
-  escopoResumido?: string;
   secoesEspecificas?: (string | SecaoEspecificaDef)[];
   checklistInicial?: (string | ItemChecklistDef)[];
 }
@@ -352,18 +343,6 @@ export interface TabelaNaoConformidadeItem {
   prioridade: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
   recomendacao: string;
   prazo: string;
-}
-
-export type NexoCausalClassificacao = 'confirmado' | 'indeterminado' | 'descartado';
-
-export interface MatrizNexoCausal {
-  classificacao: NexoCausalClassificacao;
-  rotulo: string; // ex: 'Nexo Descartado', 'Nexo Confirmado', 'Nexo Indeterminado'
-  cor: string; // Tailwind classes
-  justificativa: string;
-  intervaloKm?: number | string;
-  intervaloDias?: number;
-  garantiaExpirada?: boolean;
 }
 
 export interface AssinaturaDigitalLaudo {
@@ -458,7 +437,6 @@ export interface Laudo {
   secoes: LaudoSecao[];
   anexosFotos?: EvidenciaFoto[];
   hrnCalculoGeral?: HRNResult;
-  matrizNexoCausal?: MatrizNexoCausal;
   revisoes?: LaudoRevisao[];
   usoIA: { chamadas: number };
   iniciadoComIA?: boolean;
