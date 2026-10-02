@@ -202,20 +202,20 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       ordem: 8,
       conteudoHtml: `<div class="space-y-3">
   <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS</p>
-  <p class="text-xs text-slate-500 italic">(Insira as imagens correspondentes nos campos do seu gerador e utilize as legendas abaixo)</p>
+  <p class="text-xs text-slate-500 italic">(Insira as imagens correspondentes nos campos de fotos da seção com enquadramento integral sem corte e utilize as legendas técnicas)</p>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-3 my-3">
-    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 space-y-2 text-center">
-      <div class="h-32 bg-slate-200 rounded flex items-center justify-center text-slate-400 text-xs italic">[Figura 1: Cabeçote Desmontado em Bancada]</div>
+    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 1: Cabeçote Desmontado em Bancada]</div>
       <p class="text-xs font-bold text-slate-800">Figura 1</p>
       <p class="text-xs text-slate-600 text-left">Vista superior do cabeçote do motor desmontado em bancada, evidenciando as sedes de válvulas e a câmara de combustão severamente avariadas pelo choque mecânico decorrente do dessincronismo do motor.</p>
     </div>
-    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 space-y-2 text-center">
-      <div class="h-32 bg-slate-200 rounded flex items-center justify-center text-slate-400 text-xs italic">[Figura 2: Correia Dentada Rompida]</div>
+    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 2: Correia Dentada Rompida]</div>
       <p class="text-xs font-bold text-slate-800">Figura 2</p>
       <p class="text-xs text-slate-600 text-left">Detalhe macroscópico da correia dentada de distribuição após a ruptura, exibindo o desfibramento total e a descontinuidade estrutural que provocaram a interrupção instantânea da transmissão de movimento do comando de válvulas.</p>
     </div>
-    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 space-y-2 text-center">
-      <div class="h-32 bg-slate-200 rounded flex items-center justify-center text-slate-400 text-xs italic">[Figura 3: Odômetro do Veículo]</div>
+    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 3: Odômetro do Veículo]</div>
       <p class="text-xs font-bold text-slate-800">Figura 3</p>
       <p class="text-xs text-slate-600 text-left">Registro visual do painel de instrumentos e odômetro do veículo, comprovando a quilometragem atual de 152.530 km no momento da constatação da avaria em agosto de 2026.</p>
     </div>

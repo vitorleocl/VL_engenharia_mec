@@ -77,7 +77,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     minute: '2-digit',
   });
 
-  const authHash = `VL-${laudo.numero.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now().toString(36).toUpperCase()}`;
   const secoesOrdenadas = [...(laudo.secoes || [])].sort((a, b) => a.ordem - b.ordem);
 
   // =========================================================================
@@ -211,13 +210,13 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           </div>
 
           {/* Footer Capa */}
-          <div className="border-t-2 border-[#0B1E3D] pt-3 text-[9px] text-slate-500 flex items-center justify-between">
+          <div className="mt-auto shrink-0 border-t-2 border-[#0B1E3D] pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
             <div>
               <strong className="text-slate-800">ENG. VITOR LEONARDO CORDEIRO LINHARES</strong>
               <span> • CREA-PE 182229949-0</span>
             </div>
-            <div className="font-mono text-slate-600">
-              Autenticidade: {authHash}
+            <div className="text-slate-600 font-medium">
+              ART CREA-PE: <strong className="text-slate-800 font-mono">{laudo.artNumero || 'Vinculada ao Laudo'}</strong>
             </div>
           </div>
         </div>
@@ -234,8 +233,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       titulo: 'Identificação & Sumário',
       subtitulo: 'Dados Cadastrais, Ativo e Estrutura do Laudo',
       render: () => (
-        <div className="h-full flex flex-col justify-between text-slate-900">
-          <div>
+        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+          <div className="flex-1">
             {/* Standard Header */}
             <div className="border-b-2 border-[#0B1E3D] pb-3 mb-5 flex items-start justify-between">
               <div className="flex items-center gap-2.5">
@@ -327,7 +326,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           </div>
 
           {/* Standard Footer */}
-          <div className="border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between">
+          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
             <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
             <span className="font-mono">Página 2</span>
           </div>
@@ -347,8 +346,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         titulo: secao.titulo,
         subtitulo: `Seção Técnica ${idx + 1}`,
         render: () => (
-          <div className="h-full flex flex-col justify-between text-slate-900">
-            <div>
+          <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+            <div className="flex-1">
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
@@ -391,23 +390,31 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 />
               )}
 
-              {/* Evidências Fotográficas da Seção */}
+              {/* Evidências Fotográficas da Seção - Zoom menor e enquadramento completo com object-contain */}
               {secao.fotos && secao.fotos.length > 0 && (
-                <div className="my-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-[11px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5 text-[#1565D8]" />
                     <span>Registro Fotográfico da Seção ({secao.fotos.length})</span>
                   </h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className={`grid gap-3 ${
+                    secao.fotos.length === 1 
+                      ? 'grid-cols-1 max-w-md mx-auto' 
+                      : secao.fotos.length === 2 
+                      ? 'grid-cols-2' 
+                      : 'grid-cols-2 sm:grid-cols-3'
+                  }`}>
                     {secao.fotos.map((foto) => (
-                      <div key={foto.id} className="rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs">
-                        <img 
-                          src={foto.url} 
-                          alt={foto.descricao || 'Evidência'} 
-                          className="w-full h-32 object-cover"
-                          crossOrigin="anonymous"
-                        />
-                        <p className="p-1.5 text-[10px] text-slate-600 italic leading-tight">
+                      <div key={foto.id} className="rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs flex flex-col">
+                        <div className="h-44 sm:h-48 w-full bg-slate-100 flex items-center justify-center p-1.5 overflow-hidden">
+                          <img 
+                            src={foto.url} 
+                            alt={foto.descricao || 'Evidência'} 
+                            className="max-h-full max-w-full object-contain"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                        <p className="p-1.5 text-[10px] text-slate-600 italic leading-tight border-t border-slate-100 bg-white">
                           {foto.descricao || 'Foto pericial registrada'}
                         </p>
                       </div>
@@ -469,8 +476,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               )}
             </div>
 
-            {/* Standard Footer */}
-            <div className="border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between">
+            {/* Standard Footer - Sempre fixado na parte inferior da página */}
+            <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
               <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
               <span className="font-mono">Página {pageIndex}</span>
             </div>
@@ -488,10 +495,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       numero: conclusaoPageIndex,
       tipo: 'conclusao',
       titulo: 'Conclusão Técnica & Assinatura',
-      subtitulo: 'Parecer Conclusivo & Assinatura com Fé Pública',
+      subtitulo: 'Parecer Conclusivo & Responsabilidade Técnica',
       render: () => (
-        <div className="h-full flex flex-col justify-between text-slate-900">
-          <div>
+        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+          <div className="flex-1">
             {/* Standard Header */}
             <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
               <div className="flex items-center gap-2.5">
@@ -555,20 +562,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
               )}
 
-              {/* Declaração de Fé Pública */}
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 text-[10px] text-slate-600 space-y-1">
-                <strong className="text-slate-800 block text-[11px]">Declaração de Fé Pública e Responsabilidade Técnica:</strong>
-                <p className="leading-tight">
-                  Este laudo possui fé pública técnica e foi expedido em estrita conformidade com as Leis Federais nº 5.194/66 e 6.496/77. A validade jurídica plena está vinculada à regularidade da <strong>ART CREA-PE: {laudo.artNumero || 'Pendente'}</strong>.
-                </p>
-                <p className="font-mono text-[9px] text-slate-400">
-                  Hash de Autenticidade Digital: {authHash}
-                </p>
-              </div>
-
-              {/* Bloco de Assinatura com foto do Engenheiro Vitor Leonardo */}
+              {/* Bloco Oficial de Assinatura Profissional - Espaço Reservado para Assinatura Eletrônica (GOV.BR) */}
               <div className="pt-2">
-                <div className="p-4 border-2 border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="p-4 border-2 border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1565D8] shrink-0 bg-slate-100 shadow-sm">
                       <img 
@@ -588,16 +584,24 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                       <p className="text-[10px] font-mono text-slate-600 mt-0.5">
                         Registro Profissional: <strong>CREA-PE 182229949-0</strong>
                       </p>
+                      <p className="text-[9.5px] text-slate-500 mt-0.5">
+                        ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
+                      </p>
                     </div>
                   </div>
 
-                  <div className="text-center sm:text-right border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-4">
-                    <span className="inline-block px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">
-                      ✓ Assinatura Digital Certificada
+                  {/* Espaço reservado para aposição de Assinatura Eletrônica GOV.BR */}
+                  <div className="w-full md:w-80 flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center">
+                    <div className="w-11/12 border-b-2 border-slate-400 mb-2 mt-3"></div>
+                    <span className="text-[11px] font-bold text-slate-800">
+                      VITOR LEONARDO CORDEIRO LINHARES
                     </span>
-                    <p className="text-[9px] text-slate-400 font-mono mt-1">
-                      Data/Hora: {emitidoEm}
-                    </p>
+                    <span className="text-[9.5px] font-mono text-slate-600">
+                      Engenheiro Mecânico • CREA-PE 182229949-0
+                    </span>
+                    <span className="mt-2 text-[8.5px] font-semibold text-[#1565D8] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                      Espaço reservado para Assinatura Eletrônica (Assinador GOV.BR / ICP-Brasil)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -605,8 +609,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             </div>
           </div>
 
-          {/* Standard Footer */}
-          <div className="border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between">
+          {/* Standard Footer - Sempre fixado na parte inferior da página */}
+          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
             <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
             <span className="font-mono">Página {conclusaoPageIndex}</span>
           </div>
@@ -626,8 +630,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       titulo: 'Anexo Oficial da ART CREA-PE',
       subtitulo: 'Anotação de Responsabilidade Técnica Homologada',
       render: () => (
-        <div className="h-full flex flex-col justify-between text-slate-900">
-          <div>
+        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+          <div className="flex-1">
             {/* Standard Header */}
             <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
               <div className="flex items-center gap-2.5">
@@ -656,7 +660,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </h2>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                Fé Pública Garantida
+                ART Registrada CREA-PE
               </span>
             </div>
 
@@ -718,8 +722,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     <strong className="text-slate-800">Eng. Vitor Leonardo (CREA 182229949-0)</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Hash de Validação:</span>
-                    <strong className="text-slate-600 text-[10px]">{authHash}</strong>
+                    <span className="text-slate-400">Status:</span>
+                    <strong className="text-emerald-700 text-[10px]">Registrada e Vinculada ao Laudo</strong>
                   </div>
                 </div>
 
@@ -747,8 +751,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             )}
           </div>
 
-          {/* Standard Footer */}
-          <div className="border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between">
+          {/* Standard Footer - Sempre fixado na parte inferior da página */}
+          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
             <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
             <span className="font-mono">Página {artPageIndex} (Final)</span>
           </div>
@@ -757,7 +761,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     });
 
     return list;
-  }, [laudo, cliente, ativo, dataFormatada, emitidoEm, authHash, secoesOrdenadas]);
+  }, [laudo, cliente, ativo, dataFormatada, emitidoEm, secoesOrdenadas]);
 
   const totalPaginas = paginasLaudo.length;
   const paginaRenderizar = paginasLaudo.find(p => p.numero === paginaAtual) || paginasLaudo[0];
@@ -971,7 +975,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 <EngineeringWatermark opacity="opacity-[0.045]" />
-                <div className="relative z-10 flex-1 flex flex-col justify-between">
+                <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                   {paginaRenderizar.render()}
                 </div>
               </div>
@@ -984,7 +988,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
                   <EngineeringWatermark opacity="opacity-[0.045]" />
-                  <div className="relative z-10 flex-1 flex flex-col justify-between">
+                  <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                     {pag.render()}
                   </div>
                 </div>
@@ -1006,11 +1010,11 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           {paginasLaudo.map((pag) => (
             <div 
               key={`print-laudo-${pag.id}`}
-              className="laudo-pdf-page bg-white text-slate-900 min-h-[1123px] max-h-[1123px] w-[794px] p-10 flex flex-col justify-between relative overflow-hidden"
+              className="laudo-pdf-page bg-white text-slate-900 min-h-[1123px] h-[1123px] max-h-[1123px] w-[794px] p-10 flex flex-col justify-between relative overflow-hidden"
               style={{ boxSizing: 'border-box' }}
             >
               <EngineeringWatermark opacity="opacity-[0.045]" />
-              <div className="relative z-10 flex-1 flex flex-col justify-between">
+              <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                 {pag.render()}
               </div>
             </div>
