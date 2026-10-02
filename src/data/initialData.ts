@@ -1,4 +1,5 @@
 import { ModuloLaudoCatalogo, Cliente, Ativo, Orcamento, AgendaVistoria, Laudo, LaudoTemplate, ChecklistCampo } from '../types';
+import { LAUDO_FALHA_MECANICA_DEF } from './laudoFalhaMecanicaDef';
 
 export const MODULOS_LAUDO_CATALOGO: ModuloLaudoCatalogo[] = [
   {
@@ -211,18 +212,20 @@ export const CLIENTES_INICIAIS: Cliente[] = [
   },
   {
     id: 'cli-adf',
-    razaoSocial: 'ADF',
-    nomeFantasia: 'ADF',
-    cpfCnpj: '',
-    cnpj: '',
-    contatos: [],
+    razaoSocial: 'ADF Caruaru / Ministério Público de Pernambuco',
+    nomeFantasia: 'ADF Caruaru / MPPE',
+    cpfCnpj: '24.417.065/0001-03',
+    cnpj: '24.417.065/0001-03',
+    contatos: [
+      { nome: 'Coordenação de Transportes ADF Caruaru', cargo: 'Gestão de Frotas', telefone: '(81) 3721-0000', email: 'frota@adfcaruaru.pe.gov.br' }
+    ],
     endereco: {
-      logradouro: '',
-      numero: '',
-      bairro: '',
-      cidade: 'Recife',
+      logradouro: 'Av. Agamenon Magalhães',
+      numero: '1000',
+      bairro: 'Maurício de Nassau',
+      cidade: 'Caruaru',
       estado: 'PE',
-      cep: '',
+      cep: '55012-000',
     },
     criadoEm: '2026-03-20T10:00:00Z',
   },
@@ -232,15 +235,15 @@ export const ATIVOS_INICIAIS: Ativo[] = [
   {
     id: 'atv-pgx7098',
     clienteId: 'cli-adf',
-    clienteNome: 'ADF',
-    tipo: 'Caminhão Munck',
-    identificacao: 'PGX7098',
-    fabricante: '',
-    modelo: '',
-    ano: 2022,
-    numeroSerie: '',
-    capacidade: '',
-    localizacao: 'Recife - PE',
+    clienteNome: 'ADF Caruaru / Ministério Público de Pernambuco',
+    tipo: 'Renault Duster',
+    identificacao: 'PGX-9708',
+    fabricante: 'Renault',
+    modelo: 'Duster',
+    ano: 2016,
+    numeroSerie: '093YHSRAF500GJ3983670',
+    capacidade: 'Passageiro / Utilitário',
+    localizacao: 'Caruaru - PE',
     historico: [],
     criadoEm: '2026-03-20T10:30:00Z',
   },
@@ -542,10 +545,65 @@ export const LAUDOS_INICIAIS: Laudo[] = [
     usoIA: { chamadas: 1 },
     criadoEm: '2026-02-20T08:00:00Z',
     atualizadoEm: '2026-02-20T18:00:00Z',
+  },
+  {
+    id: 'lau-2026-002-duster',
+    numero: 'LAU-2026/002',
+    tipo: 'Laudo de Perícia Técnica Veicular – Análise de Falha Mecânica e Apuração de Causa Raiz',
+    tipoLaudoId: 'laudo-falha-mecanica-causa-raiz',
+    categoriaId: 'cat-4',
+    subcategoriaId: 'sub-4-2',
+    clienteId: 'cli-adf',
+    clienteNome: 'ADF Caruaru / Ministério Público de Pernambuco',
+    clienteCnpj: '24.417.065/0001-03',
+    ativoId: 'atv-pgx7098',
+    ativoIdentificacao: 'PGX-9708 (Renault Duster 2016/2016)',
+    status: 'em_andamento',
+    artNumero: 'Registrada junto ao CREA-PE',
+    dataInspecao: '2026-08-20',
+    responsavelNome: 'Vitor Leonardo Cordeiro Linhares',
+    responsavelCrea: 'CREA-PE 1822299490',
+    resumoExecutivo: 'Avaliação técnica pericial das avarias constatadas no conjunto propulsor do Renault Duster PGX-9708. Apuração de Causa Raiz: ruptura da correia dentada do sistema de distribuição por fadiga mecânica, gerando colapso de sincronismo e empenamento de válvulas. Análise temporal atesta que o prazo legal de garantia de 90 dias (CDC Art. 26, II) expirou (> 8 meses decorridos desde a revisão de dez/2025). Inexistem indícios de mau uso pelo condutor.',
+    conclusao: 'Conclui-se de forma peremptória que a pane no motor do veículo decorreu da ruptura da correia dentada, gerando danos severos ao cabeçote e válvulas que demandam retífica. O evento ocorreu ultrapassando o prazo legal de garantia de 90 dias da intervenção passada. Inexistem indícios materiais de mau uso pelo condutor.',
+    checklist: (LAUDO_FALHA_MECANICA_DEF.checklistPadrao || []).map(item => ({ ...item })),
+    secoes: (LAUDO_FALHA_MECANICA_DEF.secoesPadrao || []).map(s => ({
+      id: s.id,
+      titulo: s.titulo,
+      ordem: s.ordem,
+      conteudoHtml: s.conteudoHtml,
+      itens: [],
+      fotos: []
+    })),
+    assinaturaDigital: {
+      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
+      responsavelCrea: 'CREA-PE 1822299490',
+      dataHora: '2026-10-02T10:00:00Z',
+      hashAutenticidade: 'AUT-VL-FALHA-DUSTER-2026-9708'
+    },
+    usoIA: { chamadas: 1 },
+    modoCriacao: 'sugestao_ia',
+    iniciadoComIA: true,
+    criadoEm: '2026-10-01T10:00:00Z',
+    atualizadoEm: '2026-10-02T14:30:00Z',
   }
 ];
 
 export const TEMPLATES_INICIAIS: LaudoTemplate[] = [
+  {
+    id: 'tpl-falha-mecanica-causa-raiz',
+    tipoBase: 'laudo-falha-mecanica-causa-raiz',
+    nome: 'Modelo Oficial — Perícia de Falha Mecânica e Causa Raiz (14 Tópicos)',
+    criadoPorUid: 'master-vitor',
+    criadoEm: '2026-10-01T10:00:00Z',
+    secoes: (LAUDO_FALHA_MECANICA_DEF.secoesPadrao || []).map(s => ({
+      id: s.id,
+      titulo: s.titulo,
+      ordem: s.ordem,
+      conteudoHtml: s.conteudoHtml,
+      itens: [],
+      fotos: []
+    }))
+  },
   {
     id: 'tpl-nr12-padrao',
     tipoBase: 'nr-12',

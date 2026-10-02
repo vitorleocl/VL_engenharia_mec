@@ -147,6 +147,50 @@ export function gerarMinutaTecnicaSecao(
   }
 
   // 5.4. Tabelas de Componentes / Danos / Classificação Primários e Secundários
+  if (tituloNorm.includes('tabela de constatação') || tituloNorm.includes('constatação de danos e integridade técnica')) {
+    return `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3">
+  <thead>
+    <tr>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-center text-xs text-slate-800 w-12">Item</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Nome da Peça / Componente</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-center text-xs text-slate-800 w-28">Condição: ÍNTEGRO</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-center text-xs text-slate-800 w-28">Condição: DANIFICADO</th>
+      <th class="border border-slate-300 bg-slate-100 p-2 font-bold text-left text-xs text-slate-800">Parecer Técnico Pericial</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="border border-slate-300 p-2 text-center text-xs">01</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Correia Dentada (Distribuição)</td>
+      <td class="border border-slate-300 p-2 text-center text-xs text-slate-400">—</td>
+      <td class="border border-slate-300 p-2 text-center text-xs font-bold text-red-600">X</td>
+      <td class="border border-slate-300 p-2 text-xs"><strong>Causa Raiz:</strong> Componente totalmente rompido, apresentando fadiga e descontinuidade estrutural das fibras.</td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-center text-xs">02</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Cabeçote do Motor</td>
+      <td class="border border-slate-300 p-2 text-center text-xs text-slate-400">—</td>
+      <td class="border border-slate-300 p-2 text-center text-xs font-bold text-red-600">X</td>
+      <td class="border border-slate-300 p-2 text-xs"><strong>Dano Secundário:</strong> Válvulas empenadas e sedes comprometidas devido ao choque mecânico pós-ruptura.</td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-center text-xs">03</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Rolamento Tensor</td>
+      <td class="border border-slate-300 p-2 text-center text-xs font-bold text-amber-600">X (Parcial)</td>
+      <td class="border border-slate-300 p-2 text-center text-xs text-slate-400">—</td>
+      <td class="border border-slate-300 p-2 text-xs">Apresenta condições operacionais normais de giro, sem indícios de travamento prévio que provocasse o corte.</td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 p-2 text-center text-xs">04</td>
+      <td class="border border-slate-300 p-2 text-xs font-semibold">Pistões (Bloco do Motor)</td>
+      <td class="border border-slate-300 p-2 text-center text-xs font-bold text-emerald-600">X</td>
+      <td class="border border-slate-300 p-2 text-center text-xs text-slate-400">—</td>
+      <td class="border border-slate-300 p-2 text-xs">Superfícies superiores preservadas estruturalmente, viabilizando a recomposição por meio da retífica do cabeçote.</td>
+    </tr>
+  </tbody>
+</table>`;
+  }
+
   if (tituloNorm.includes('tabela de componentes') || tituloNorm.includes('componentes inspecionados')) {
     return `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3">
   <thead>
