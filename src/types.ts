@@ -70,7 +70,13 @@ export interface Ativo {
   identificacao: string; // Ex: Placa, Chassi, Tag, Prefixo
   fabricante: string;
   modelo?: string;
+  marca?: string;
   ano: number | string;
+  anoFabricacao?: number | string;
+  placa?: string;
+  renavam?: string;
+  chassi?: string;
+  horimetroOuKm?: number | string;
   numeroSerie?: string;
   capacidade?: string;
   localizacao?: string;

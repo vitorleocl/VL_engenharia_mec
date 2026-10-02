@@ -1385,6 +1385,81 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
             ]
           }
         ]
+      },
+      {
+        id: 'sub-4-3',
+        nome: 'Perícia de Causa Raiz e Análise de Falhas Mecânicas em Sistemas Automotivos',
+        tipos: [
+          {
+            id: 'laudo-pericia-causa-raiz-automotiva',
+            codigo: 'VEIC-CAUSA-RAIZ',
+            nome: 'Laudo Pericial de Causa Raiz e Análise de Falhas Mecânicas Automotivas',
+            temHrn: false,
+            hrn: false,
+            normasRef: 'Código de Defesa do Consumidor (Lei nº 8.078/1990 - Art. 18, 20 e 26), Código de Trânsito Brasileiro (CTB), ABNT NBR 13771, ABNT NBR 5462 (Confiabilidade e Mantenabilidade), Metodologias de Investigação de Causa Raiz (Ishikawa, FMEA, Fratografia Macroscópica)',
+            textoBaseApresentacao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
+            apresentacaoPadrao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
+            metodologiaPadrao: 'Investigação pericial baseada no rigor do método científico e da engenharia forense: anamnese cronológica, auditoria de ordens de serviço anteriores, confrontação de odômetros (km na intervenção vs. km na pane), inspeção macroscópica de superfícies de fratura de componentes (correia sincronizadora, tensionadores, válvulas, pistões), verificação de conformidade com os prazos de garantia legal (Art. 26 do CDC) e aplicação de matriz de causa raiz para exclusão fundamentada de hipóteses concorrentes.',
+            secoesEspecificas: [
+              'Cabeçalho Institucional e Identificação do Laudo',
+              'Carta de Apresentação e Notificação Formal',
+              'Sumário Executivo',
+              'Destinatário e Qualificação do Responsável Técnico',
+              'Seção I - Histórico do Evento e Cronologia dos Fatos',
+              'Seção II - Objetivo do Trabalho e Escopo Pericial',
+              'Seção III - Dados do Veículo e Especificações Técnicas',
+              'Seção IV - Registros Fotográficos Principais e Análise Visual',
+              'Seção V - Legislação e Normas Técnicas Aplicáveis (CDC e CTB)',
+              'Seção VI - Constatação de Danos e Análise de Causa Raiz',
+              'Seção VII - Tabela de Constatação de Danos e Integridade Técnica',
+              'Seção VIII - Conclusão Pericial e Respostas aos Quesitos',
+              'Seção IX - Considerações Finais e Anexo da ART CREA-PE'
+            ],
+            checklistInicial: [
+              { campo: "Quilometragem no momento da quebra/pane em comparação com a última revisão registrada", tipoResposta: "VALOR", unidade: "km", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Conferência do hodômetro e ordens de serviço pretéritas" },
+              { campo: "Data do evento de falha versus data da última intervenção mecânica", tipoResposta: "VALOR", unidade: "dias/meses", criterioReferencia: "Código de Defesa do Consumidor Art. 26 (prazo legal de 90 dias)" },
+              { campo: "Sistema de Sincronismo do Motor — Estado da correia dentada/corrente (ruptura, dentes arrancados, desfiamento)", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Análise macroscópica de fratura por fadiga vs contaminação por óleo/combustível" },
+              { campo: "Polias e Tensionadores — Rolamentos, pistas de rolagem, folga axial e torque de fixação", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Travamento ou desalinhamento que induza falha catastrófica" },
+              { campo: "Cabeçote e Trem de Válvulas — Deformação plástica (empenamento) de válvulas de admissão e escape por interferência", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Colisão entre pistão e válvulas decorrente de dessincronismo mecânico" },
+              { campo: "Pistões e Câmaras de Combustão — Marcas de impacto mecânico no topo dos pistões", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Inspeção endoscópica ou direta da cabeça dos êmbolos" },
+              { campo: "Comando de Válvulas e Mancais — Estado dos cames, chavetas e ausência de travamento por lubrificação", tipoResposta: "C_NC_NA", criterioReferencia: "Verificação de película de lubrificação e integridade do eixo" },
+              { campo: "Sistema de Lubrificação — Nível, viscosidade, presença de borra ou contaminação no óleo do motor", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Descarte de hipótese de falta de óleo ou sobreaquecimento primário" },
+              { campo: "Sistema de Arrefecimento — Estanqueidade, aditivação e temperatura no momento da falha", tipoResposta: "C_NC_NA", criterioReferencia: "Ausência de indícios de sobreaquecimento prévio à falha mecânica" },
+              { campo: "Indícios de Mau Uso ou Operação Inadequada — Rotação excessiva (over-rev), sobrecarga ou arrancada brusca", tipoResposta: "C_NC_NA", criterioReferencia: "Análise da memória de falhas da ECU e integridade de embreagem" },
+              { campo: "Avaliação do Nexo Causal entre a falha mecânica e o serviço executado pela oficina anterior", tipoResposta: "SELECAO", opcoes: ["Nexo Causal Ausente (Fim de Vida Útil / Desgaste Natural)", "Nexo Causal Afastado por Prazo e Quilometragem", "Nexo Causal Parcial (Condições Mistas)", "Nexo Causal Direto com Falha de Montagem"], obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Engenharia Diagnóstica e Jurisprudência Técnica do CDC" },
+              { campo: "Enquadramento Legal da Garantia (CDC Lei 8.078/90) — Decurso de prazo decadencial ou garantia contratual", tipoResposta: "SELECAO", opcoes: ["Fora do Prazo de Garantia Legal (> 90 dias / Km Excedida)", "Dentro do Prazo Legal de Garantia (≤ 90 dias)", "Garantia Contratual Estendida Vigente"], criterioReferencia: "Art. 26, inciso II da Lei nº 8.078/1990" }
+            ],
+            secoesPadrao: [
+              { id: 'sec-1', titulo: '1. Cabeçalho Institucional e Identificação do Laudo', ordem: 1 },
+              { id: 'sec-2', titulo: '2. Carta de Apresentação e Notificação Formal', ordem: 2 },
+              { id: 'sec-3', titulo: '3. Sumário Executivo', ordem: 3 },
+              { id: 'sec-4', titulo: '4. Destinatário e Qualificação do Responsável Técnico', ordem: 4 },
+              { id: 'sec-5', titulo: 'Seção I - Histórico do Evento e Cronologia dos Fatos', ordem: 5 },
+              { id: 'sec-6', titulo: 'Seção II - Objetivo do Trabalho e Escopo Pericial', ordem: 6 },
+              { id: 'sec-7', titulo: 'Seção III - Dados do Veículo e Especificações Técnicas', ordem: 7 },
+              { id: 'sec-8', titulo: 'Seção IV - Registros Fotográficos Principais e Análise Visual', ordem: 8 },
+              { id: 'sec-9', titulo: 'Seção V - Legislação e Normas Técnicas Aplicáveis (CDC e CTB)', ordem: 9 },
+              { id: 'sec-10', titulo: 'Seção VI - Constatação de Danos e Análise de Causa Raiz', ordem: 10 },
+              { id: 'sec-11', titulo: 'Seção VII - Tabela de Constatação de Danos e Integridade Técnica', ordem: 11 },
+              { id: 'sec-12', titulo: 'Seção VIII - Conclusão Pericial e Respostas aos Quesitos', ordem: 12 },
+              { id: 'sec-13', titulo: 'Seção IX - Considerações Finais e Anexo da ART CREA-PE', ordem: 13 }
+            ],
+            checklistPadrao: [
+              { id: 'ck-1', descricao: 'Hodômetro e quilometragem rodada entre o serviço e a pane apurados', status: 'conforme', observacao: 'Quilometragem percorrida no intervalo documentada com precisão' },
+              { id: 'ck-2', descricao: 'Datas de entrada, saída e quebra confrontadas com o CDC (90 dias)', status: 'conforme', observacao: 'Prazo decadencial de garantia legal formalmente verificado' },
+              { id: 'ck-3', descricao: 'Inspeção macroscópica da correia dentada e dentes de sincronismo realizada', status: 'nao_conforme', observacao: 'Constatada ruptura mecânica por fadiga operacional ou fim de vida útil' },
+              { id: 'ck-4', descricao: 'Tensionadores, guias e polias dentadas avaliados quanto a travamento', status: 'conforme', observacao: 'Rolamentos giram livres sem travamento ou engripamento prévio' },
+              { id: 'ck-5', descricao: 'Cabeçote do motor periciado (válvulas de admissão e escape)', status: 'nao_conforme', observacao: 'Deformação plástica de válvulas por interferência mecânica catastrófica' },
+              { id: 'ck-6', descricao: 'Câmaras de combustão e topo dos pistões inspecionados', status: 'nao_conforme', observacao: 'Marcas de contato entre prato de válvulas e cabeça de pistões' },
+              { id: 'ck-7', descricao: 'Sistema de lubrificação do motor avaliado (óleo e filtro)', status: 'conforme', observacao: 'Nível e viscosidade adequados, descartando quebra por falta de óleo' },
+              { id: 'ck-8', descricao: 'Sistema de arrefecimento avaliado (líquido e estanqueidade)', status: 'conforme', observacao: 'Sem indícios de sobreaquecimento prévio ao colapso do sincronismo' },
+              { id: 'ck-9', descricao: 'Indícios de mau uso, imperícia ou sobre-rotação descartados tecnicamente', status: 'conforme', observacao: 'Não foram constatados indícios de operação fora das rotações nominais' },
+              { id: 'ck-10', descricao: 'Nexo causal entre o dano e serviços anteriores analisado imparcialmente', status: 'conforme', observacao: 'Nexo causal afastado em razão do decurso de prazo e ciclo de quilometragem' },
+              { id: 'ck-11', descricao: 'Tabela de constatação de danos e integridade técnica preenchida', status: 'conforme', observacao: 'Relação componente a componente com parecer pericial individualizado' },
+              { id: 'ck-12', descricao: 'Respostas aos quesitos do contratante fundamentadas na conclusão', status: 'conforme', observacao: 'Parecer peremptório respondendo diretamente à demanda do cliente' }
+            ]
+          }
+        ]
       }
     ]
   },

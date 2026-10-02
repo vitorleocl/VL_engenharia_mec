@@ -42,6 +42,7 @@ import {
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
+import { GeradorLaudoCausaRaizModal } from './GeradorLaudoCausaRaizModal';
 import { 
   CategoriaLaudoTaxonomia, 
   SubcategoriaLaudoTaxonomia, 
@@ -116,6 +117,9 @@ export const LaudosCentralView: React.FC = () => {
   // PDF Export Modal state
   const [laudoPdfExportar, setLaudoPdfExportar] = useState<Laudo | null>(null);
 
+  // Modal Causa Raiz (Categoria 4)
+  const [modalCausaRaizAberto, setModalCausaRaizAberto] = useState(false);
+
   const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
 
   // Toggle category expansion
@@ -142,6 +146,10 @@ export const LaudosCentralView: React.FC = () => {
     subcat: SubcategoriaLaudoTaxonomia, 
     tipo: TipoLaudoTaxonomia
   ) => {
+    if (tipo.id === 'laudo-pericia-causa-raiz-automotiva' || tipo.codigo === 'VEIC-CAUSA-RAIZ') {
+      setModalCausaRaizAberto(true);
+      return;
+    }
     setSelecaoTaxonomia({ categoria: cat, subcategoria: subcat, tipo });
     setClienteId(clientes[0]?.id || '');
     setAtivoId('');
@@ -256,31 +264,42 @@ export const LaudosCentralView: React.FC = () => {
           </p>
         </div>
 
-        {/* Top Tab Switcher */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+        {/* Top Actions & Tab Switcher */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setAbaAtiva('catalogo')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === 'catalogo'
-                ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
+            onClick={() => setModalCausaRaizAberto(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
+            title="Abrir Gerador Especializado de Laudo Pericial de Causa Raiz (Categoria 4 - Automotiva)"
           >
-            <BookOpen className="w-4 h-4" />
-            <span>Catálogo Taxonômico ({categoriasLaudo.length} Cats)</span>
+            <Wrench className="w-4 h-4 text-amber-300" />
+            <span>Gerador Causa Raiz (Cat. 4)</span>
           </button>
 
-          <button
-            onClick={() => setAbaAtiva('laudos')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              abaAtiva === 'laudos'
-                ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Laudos Registrados ({laudos.length})</span>
-          </button>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setAbaAtiva('catalogo')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                abaAtiva === 'catalogo'
+                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Catálogo ({categoriasLaudo.length} Cats)</span>
+            </button>
+
+            <button
+              onClick={() => setAbaAtiva('laudos')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                abaAtiva === 'laudos'
+                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Laudos Registrados ({laudos.length})</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -826,6 +845,14 @@ export const LaudosCentralView: React.FC = () => {
           onClose={() => setLaudoPdfExportar(null)}
         />
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL GERADOR ESPECIALIZADO DE CAUSA RAIZ (CATEGORIA 4) */}
+      {/* ========================================================================= */}
+      <GeradorLaudoCausaRaizModal
+        isOpen={modalCausaRaizAberto}
+        onClose={() => setModalCausaRaizAberto(false)}
+      />
 
     </div>
   );

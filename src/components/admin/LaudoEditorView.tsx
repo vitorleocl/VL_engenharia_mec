@@ -39,7 +39,8 @@ import {
   Paperclip,
   FileCheck,
   ExternalLink,
-  ZoomIn
+  ZoomIn,
+  Wrench
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -48,6 +49,7 @@ import { Laudo, LaudoSecao, LaudoRevisao, HRNValues, ChecklistCampo } from '../.
 import { TipTapEditor } from './TipTapEditor';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
+import { GeradorLaudoCausaRaizModal } from './GeradorLaudoCausaRaizModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
 
 const PRESET_SECTIONS = [
@@ -133,6 +135,7 @@ export const LaudoEditorView: React.FC = () => {
   const [modalIaAberto, setModalIaAberto] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
   const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
+  const [modalCausaRaizAberto, setModalCausaRaizAberto] = useState(false);
 
   // Form inputs for modals
   const [novaSecaoTitulo, setNovaSecaoTitulo] = useState('');
@@ -856,6 +859,16 @@ export const LaudoEditorView: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
               <span>Redação IA</span>
+            </button>
+
+            {/* Gerador Causa Raiz Categoria 4 */}
+            <button
+              onClick={() => setModalCausaRaizAberto(true)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              title="Abrir Gerador Especializado de Causa Raiz & Falhas Mecânicas (Categoria 4 - Automotiva)"
+            >
+              <Wrench className="w-3.5 h-3.5 text-white" />
+              <span>Gerador Causa Raiz</span>
             </button>
 
             {/* Importar Checklist In Loco */}
@@ -2028,6 +2041,20 @@ export const LaudoEditorView: React.FC = () => {
           ativoId={laudoState.ativoId}
           onClose={() => setModalImportarChecklistAberto(false)}
           onImportar={handleImportarChecklist}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: GERADOR ESPECIALIZADO DE CAUSA RAIZ (CATEGORIA 4)                  */}
+      {/* ========================================================================= */}
+      {modalCausaRaizAberto && (
+        <GeradorLaudoCausaRaizModal
+          isOpen={modalCausaRaizAberto}
+          onClose={() => setModalCausaRaizAberto(false)}
+          laudoExistenteId={laudoState.id}
+          onLaudoAtualizado={(atualizado) => {
+            setLaudoState(prev => prev ? ({ ...prev, ...atualizado }) : null);
+          }}
         />
       )}
 

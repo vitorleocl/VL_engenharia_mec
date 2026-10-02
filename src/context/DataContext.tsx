@@ -28,6 +28,7 @@ import {
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
+import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { 
   sincronizarFirestoreNR12eNR13, 
   sincronizarFirestoreVeicular,
@@ -762,7 +763,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubLaudos = onSnapshot(collection(db, 'laudos'), (snapshot) => {
         if (!snapshot.empty) {
-          const docs = snapshot.docs.map(d => d.data() as Laudo);
+          const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
+          const removidosSet = new Set(laudosRemovidos);
+          const docs = snapshot.docs.map(d => d.data() as Laudo).filter(d => !removidosSet.has(d.id));
           setLaudos(docs);
           saveStorage('vl_laudos', docs);
         }
@@ -1548,10 +1551,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           }),
       tabelaNaoConformidades: [],
-      conclusao: ehModoIA 
-        ? 'Com base nas avaliações e ensaios técnicos preliminares realizados, sugere-se a verificação final dos pontos assinalados como pendentes antes da homologação conclusiva das operações.'
-        : '',
-      secoes: (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
+      conclusao: (tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA
+        ? 'Avaria provocada por dessincronismo decorrente de ruptura por fadiga da correia sincronizadora. Afastada responsabilidade da oficina por decurso de prazo legal do CDC (Art. 26, II - prazo decadencial de 90 dias superado).'
+        : (ehModoIA 
+          ? 'Com base nas avaliações e ensaios técnicos preliminares realizados, sugere-se a verificação final dos pontos assinalados como pendentes antes da homologação conclusiva das operações.'
+          : ''),
+      resumoExecutivo: (tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA
+        ? `Laudo pericial de causa raiz do veículo ${ativo?.identificacao || 'periciado'}. Constatada ruptura de correia dentada por fadiga de material. Nexo causal com serviços anteriores afastado por tempo e quilometragem decorridos.`
+        : undefined,
+      secoes: ((tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA)
+        ? gerarLaudoCausaRaizOffline({
+            ativo: {
+              marca: ativo?.marca || 'Volkswagen',
+              modelo: ativo?.modelo || 'Gol 1.0 MPI Flex',
+              anoModelo: ativo?.anoFabricacao ? `${ativo.anoFabricacao}/${ativo.anoFabricacao}` : '2021/2022',
+              placa: ativo?.placa || 'PGX-7098',
+              renavam: ativo?.renavam || '01248920192',
+              chassi: ativo?.chassi || '9BWCA05U0NT001824',
+              kmAtual: ativo?.horimetroOuKm || 82450,
+              kmIntervencaoPrevia: 59800
+            },
+            contexto: {
+              dataPane: dataInspecao,
+              dataIntervencaoPrevia: '2025-11-10',
+              historicoManutencao: 'Substituição preventiva do conjunto de correias e tensores do motor em oficina mecânica terceirizada credenciada',
+              oficinaTerceirizada: 'Auto Mecânica Terceirizada Frota Ltda',
+              restricaoConfidencialidade: true,
+              kmIntervalo: 22650
+            },
+            evidencias: {
+              descricaoAvarias: 'Ruptura catastrófica da correia dentada sincronizadora com cisalhamento de dentes por fadiga de material. Empenamento severo de válvulas por interferência com pistões.',
+              componentesAvariados: [
+                'Correia Dentada de Sincronismo',
+                'Válvulas de Admissão e Escape',
+                'Cabeçote do Motor (Mancais e Sedes)',
+                'Pistões do Motor',
+                'Tensor da Correia e Rolamentos Guias',
+                'Bloco do Motor e Bielas'
+              ]
+            },
+            escopo: {
+              determinarCausaRaiz: true,
+              analisarNexoCausal: true,
+              verificarGarantiaCDC: true,
+              avaliarMauUso: true
+            },
+            clienteNome: cliente?.razaoSocial,
+            clienteCnpj: cliente?.cnpj,
+            laudoNumero: numero,
+            artNumero,
+            dataEmissao: dataInspecao
+          }).secoes.map((s, idx) => ({
+            id: `sec-${idx + 1}`,
+            titulo: s.titulo,
+            ordem: s.ordem || idx + 1,
+            tipo: idx === 0 ? 'capa' : idx === 1 ? 'apresentacao' : idx === 12 ? 'art_assinatura' : 'corpo_tecnico',
+            conteudoHtml: s.conteudoHtml,
+            itens: [],
+            fotos: []
+          }))
+        : (tipoEncontrado?.secoesPadrao && tipoEncontrado.secoesPadrao.length > 0)
         ? tipoEncontrado.secoesPadrao.map(s => ({
             id: s.id,
             titulo: s.titulo,
