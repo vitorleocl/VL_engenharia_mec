@@ -864,11 +864,11 @@ export const LaudoEditorView: React.FC = () => {
             {/* Gerador Causa Raiz Categoria 4 */}
             <button
               onClick={() => setModalCausaRaizAberto(true)}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
-              title="Abrir Gerador Especializado de Causa Raiz & Falhas Mecânicas (Categoria 4 - Automotiva)"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              title="Abrir Assistente Pericial de Causa Raiz & Falhas Mecânicas (Categoria 4 - Automotiva)"
             >
-              <Wrench className="w-3.5 h-3.5 text-white" />
-              <span>Gerador Causa Raiz</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Perícia Causa Raiz (IA)</span>
             </button>
 
             {/* Importar Checklist In Loco */}

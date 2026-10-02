@@ -1383,23 +1383,21 @@ export const CATEGORIAS_LAUDOS_TAXONOMIA: CategoriaLaudoDef[] = [
               { id: 'ck-15', descricao: 'Comparação de custo de reparo x valor de mercado do veículo realizada', status: 'conforme', observacao: 'Orçamento de recuperação estimado em 38% do valor FIPE' },
               { id: 'ck-16', descricao: 'Parecer conclusivo sobre viabilidade de reparo ou perda total emitido', status: 'conforme', observacao: 'Sinistro classificado tecnicamente como passível de recuperação (Média Monta)' }
             ]
-          }
-        ]
-      },
-      {
-        id: 'sub-4-3',
-        nome: 'Perícia de Causa Raiz e Análise de Falhas Mecânicas em Sistemas Automotivos',
-        tipos: [
+          },
           {
             id: 'laudo-pericia-causa-raiz-automotiva',
             codigo: 'VEIC-CAUSA-RAIZ',
-            nome: 'Laudo Pericial de Causa Raiz e Análise de Falhas Mecânicas Automotivas',
+            nome: 'Perícia de Causa Raiz e Falhas Mecânicas',
+            statusTag: 'NOVO IA',
+            botaoTexto: 'Iniciar Perícia',
+            escopoResumido: '9 Seções Periciais',
+            descricaoCurta: 'Investigação técnico-pericial de panes e falhas em motores e sistemas automotivos, apuração de nexo causal com manutenções anteriores, enquadramento em prazos de garantia (CDC) e descarte de hipótese de mau uso, com análise assistida por IA.',
+            textoBaseApresentacao: 'Investigação técnico-pericial de panes e falhas em motores e sistemas automotivos, apuração de nexo causal com manutenções anteriores, enquadramento em prazos de garantia (CDC) e descarte de hipótese de mau uso, com análise assistida por IA.',
+            apresentacaoPadrao: 'Investigação técnico-pericial de panes e falhas em motores e sistemas automotivos, apuração de nexo causal com manutenções anteriores, enquadramento em prazos de garantia (CDC) e descarte de hipótese de mau uso, com análise assistida por IA.',
+            metodologiaPadrao: 'Investigação pericial baseada no rigor do método científico e da engenharia forense: anamnese cronológica, auditoria de ordens de serviço anteriores, confrontação de odômetros (km na intervenção vs. km na pane), inspeção macroscópica de superfícies de fratura de componentes (correia sincronizadora, tensionadores, válvulas, pistões), verificação de conformidade com os prazos de garantia legal (Art. 26 do CDC) e aplicação de matriz de causa raiz para exclusão fundamentada de hipóteses concorrentes.',
             temHrn: false,
             hrn: false,
             normasRef: 'Código de Defesa do Consumidor (Lei nº 8.078/1990 - Art. 18, 20 e 26), Código de Trânsito Brasileiro (CTB), ABNT NBR 13771, ABNT NBR 5462 (Confiabilidade e Mantenabilidade), Metodologias de Investigação de Causa Raiz (Ishikawa, FMEA, Fratografia Macroscópica)',
-            textoBaseApresentacao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
-            apresentacaoPadrao: 'Laudo de avaliação técnica pericial de nível corporativo e jurídico para determinação de causa raiz de avarias mecânicas em frotas automotivas, nexo causal com intervenções pretéritas, aferição de prazos de garantia legal (CDC) e descarte de mau uso.',
-            metodologiaPadrao: 'Investigação pericial baseada no rigor do método científico e da engenharia forense: anamnese cronológica, auditoria de ordens de serviço anteriores, confrontação de odômetros (km na intervenção vs. km na pane), inspeção macroscópica de superfícies de fratura de componentes (correia sincronizadora, tensionadores, válvulas, pistões), verificação de conformidade com os prazos de garantia legal (Art. 26 do CDC) e aplicação de matriz de causa raiz para exclusão fundamentada de hipóteses concorrentes.',
             secoesEspecificas: [
               'Cabeçalho Institucional e Identificação do Laudo',
               'Carta de Apresentação e Notificação Formal',
