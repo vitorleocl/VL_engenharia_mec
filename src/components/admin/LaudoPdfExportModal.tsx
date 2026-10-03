@@ -590,17 +590,16 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Espaço reservado para aposição de Assinatura Eletrônica GOV.BR */}
-                  <div className="w-full md:w-80 flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center">
-                    <div className="w-11/12 border-b-2 border-slate-400 mb-2 mt-3"></div>
-                    <span className="text-[11px] font-bold text-slate-800">
+                  {/* Espaço amplo para aposição de Assinatura */}
+                  <div className="w-full md:w-80 flex flex-col items-center justify-end p-4 border border-slate-200 rounded-xl bg-slate-50/60 min-h-[145px] text-center">
+                    {/* Área livre para aposição da assinatura */}
+                    <div className="w-full flex-1 min-h-[90px]"></div>
+                    <div className="w-11/12 border-b border-slate-600 mb-2"></div>
+                    <span className="text-[11px] font-bold text-slate-900 tracking-wide">
                       VITOR LEONARDO CORDEIRO LINHARES
                     </span>
                     <span className="text-[9.5px] font-mono text-slate-600">
                       Engenheiro Mecânico • CREA-PE 182229949-0
-                    </span>
-                    <span className="mt-2 text-[8.5px] font-semibold text-[#1565D8] bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                      Espaço reservado para Assinatura Eletrônica (Assinador GOV.BR / ICP-Brasil)
                     </span>
                   </div>
                 </div>
