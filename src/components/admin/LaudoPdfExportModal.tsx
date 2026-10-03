@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   Download, 
@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  EyeOff,
   Camera,
   Layers,
   Paperclip,
@@ -30,8 +31,9 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
-import { Laudo, Cliente, Ativo } from '../../types';
+import { Laudo, LaudoSecao, Cliente, Ativo } from '../../types';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
+import { converterPdfParaImagem } from '../../lib/pdfToImage';
 
 interface LaudoPdfExportModalProps {
   laudo: Laudo;
@@ -39,6 +41,7 @@ interface LaudoPdfExportModalProps {
   ativo?: Ativo;
   isOpen: boolean;
   onClose: () => void;
+  onAtualizarSecoes?: (secoes: LaudoSecao[]) => void;
 }
 
 interface PaginaLaudoDef {
@@ -56,12 +59,37 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
   ativo,
   isOpen,
   onClose,
+  onAtualizarSecoes,
 }) => {
   const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [sucessoDownload, setSucessoDownload] = useState(false);
+  const [menuSecoesAberto, setMenuSecoesAberto] = useState(false);
+
+  // Local state for hidden sections in PDF
+  const [secoesOcultadasLocal, setSecoesOcultadasLocal] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    (laudo.secoes || []).forEach(s => {
+      if (s.ocultaNoPdf) map[s.id] = true;
+    });
+    return map;
+  });
+
+  const handleToggleSecaoNoModal = (secId: string) => {
+    setSecoesOcultadasLocal(prev => {
+      const next = { ...prev, [secId]: !prev[secId] };
+      if (onAtualizarSecoes && laudo.secoes) {
+        const atualizadas = laudo.secoes.map(s => ({
+          ...s,
+          ocultaNoPdf: Boolean(next[s.id]),
+        }));
+        onAtualizarSecoes(atualizadas);
+      }
+      return next;
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -77,7 +105,51 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     minute: '2-digit',
   });
 
-  const secoesOrdenadas = [...(laudo.secoes || [])].sort((a, b) => a.ordem - b.ordem);
+  const [artImagemVisual, setArtImagemVisual] = useState<string | null>(null);
+  const [renderizandoPdfArt, setRenderizandoPdfArt] = useState(false);
+
+  // Carrega ou converte o arquivo da ART para exibição como imagem real
+  useEffect(() => {
+    if (!laudo.artArquivoUrl) {
+      setArtImagemVisual(null);
+      return;
+    }
+
+    // Se já for uma imagem (data:image ou URL de imagem)
+    if (
+      laudo.artTipoArquivo === 'imagem' || 
+      laudo.artArquivoUrl.startsWith('data:image/') ||
+      laudo.artArquivoUrl.match(/\.(jpeg|jpg|png|webp|gif)(\?.*)?$/i)
+    ) {
+      setArtImagemVisual(laudo.artArquivoUrl);
+      return;
+    }
+
+    // Se for PDF, converte para imagem via pdfjs-dist
+    let ativoBool = true;
+    setRenderizandoPdfArt(true);
+    converterPdfParaImagem(laudo.artArquivoUrl)
+      .then((imgDataUrl) => {
+        if (ativoBool) setArtImagemVisual(imgDataUrl);
+      })
+      .catch((err) => {
+        console.error('Falha ao renderizar PDF da ART:', err);
+      })
+      .finally(() => {
+        if (ativoBool) setRenderizandoPdfArt(false);
+      });
+
+    return () => {
+      ativoBool = false;
+    };
+  }, [laudo.artArquivoUrl, laudo.artTipoArquivo]);
+
+  // Filtra apenas seções visíveis (permite ao perito ocultar seções sem excluí-las)
+  const secoesVisiveis = useMemo(() => {
+    return [...(laudo.secoes || [])]
+      .filter(s => !secoesOcultadasLocal[s.id])
+      .sort((a, b) => a.ordem - b.ordem);
+  }, [laudo.secoes, secoesOcultadasLocal]);
 
   // =========================================================================
   // BUILD DISCRETE A4 PAGES FOR THE LAUDO
@@ -298,20 +370,22 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   <span className="uppercase tracking-wider text-[10px]">3. Sumário Executivo das Seções do Laudo</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700 pt-1">
-                  {secoesOrdenadas.map((sec, idx) => (
+                  {secoesVisiveis.map((sec, idx) => (
                     <div key={sec.id} className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
                       <span className="font-medium truncate">{sec.titulo}</span>
                       <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Item {idx + 1}</span>
                     </div>
                   ))}
                   <div className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
-                    <span className="font-medium truncate">Conclusão Pericial & Assinatura Digital</span>
+                    <span className="font-medium truncate">Conclusão Técnica & Assinatura</span>
                     <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Final</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
-                    <span className="font-medium truncate">Anexo Oficial da ART CREA-PE</span>
-                    <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Anexo</span>
-                  </div>
+                  {laudo.artArquivoUrl && (
+                    <div className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
+                      <span className="font-medium truncate">Anexo Oficial da ART CREA-PE</span>
+                      <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Anexo</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -335,9 +409,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     });
 
     // -------------------------------------------------------------------------
-    // PAGES 3..N: SEÇÕES TÉCNICAS DO LAUDO
+    // PAGES 3..N: SEÇÕES TÉCNICAS DO LAUDO (APENAS SEÇÕES VISÍVEIS)
     // -------------------------------------------------------------------------
-    secoesOrdenadas.forEach((secao, idx) => {
+    secoesVisiveis.forEach((secao, idx) => {
       const pageIndex = pageNum++;
       list.push({
         id: `secao-${secao.id}`,
@@ -562,9 +636,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
               )}
 
-              {/* Bloco Oficial de Assinatura Profissional - Espaço Reservado para Assinatura Eletrônica (GOV.BR) */}
-              <div className="pt-2">
-                <div className="p-4 border-2 border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+              {/* Bloco Oficial de Assinatura Profissional */}
+              <div className="pt-3">
+                <div className="p-4 border border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-3.5">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1565D8] shrink-0 bg-slate-100 shadow-sm">
                       <img 
@@ -590,11 +664,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Espaço amplo para aposição de Assinatura */}
-                  <div className="w-full md:w-80 flex flex-col items-center justify-end p-4 border border-slate-200 rounded-xl bg-slate-50/60 min-h-[145px] text-center">
-                    {/* Área livre para aposição da assinatura */}
-                    <div className="w-full flex-1 min-h-[90px]"></div>
-                    <div className="w-11/12 border-b border-slate-600 mb-2"></div>
+                  {/* Linha de Assinatura */}
+                  <div className="w-full md:w-80 flex flex-col items-center justify-end text-center pt-8">
+                    <div className="w-full min-h-[55px]"></div>
+                    <div className="w-full border-b border-slate-700 mb-2"></div>
                     <span className="text-[11px] font-bold text-slate-900 tracking-wide">
                       VITOR LEONARDO CORDEIRO LINHARES
                     </span>
@@ -663,71 +736,39 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               </span>
             </div>
 
-            {/* ART Content: Image or PDF Certificate Frame */}
-            {laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Documento da ART CREA-PE:</span>
-                    <strong className="text-slate-900 font-mono text-sm">{laudo.artNumero || 'Homologada'}</strong>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-500 block text-[10px]">Data de Registro:</span>
-                    <strong className="text-slate-800 font-mono">{laudo.artDataHomologacao ? new Date(laudo.artDataHomologacao).toLocaleDateString('pt-BR') : dataFormatada}</strong>
-                  </div>
-                </div>
-
-                <div className="w-full rounded-xl overflow-hidden border-2 border-slate-300 shadow-sm bg-slate-950 flex items-center justify-center p-2">
+            {/* ART Content: Exibe a imagem real do documento da ART em tamanho integral na página */}
+            {artImagemVisual || (laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl) ? (
+              <div className="w-full flex-1 flex flex-col items-center justify-center">
+                <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
                   <img 
-                    src={laudo.artArquivoUrl} 
+                    src={artImagemVisual || laudo.artArquivoUrl} 
                     alt="Guia da ART CREA-PE" 
-                    className="max-w-full max-h-[560px] object-contain mx-auto rounded"
+                    className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
                     crossOrigin="anonymous"
                   />
                 </div>
-                <p className="text-center text-[10px] text-slate-500 italic">
-                  Reprodução integral do documento de ART emitido junto ao Conselho Regional de Engenharia e Agronomia de Pernambuco (CREA-PE).
+                <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
+                  Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
                 </p>
               </div>
-            ) : laudo.artTipoArquivo === 'pdf' && laudo.artArquivoUrl ? (
-              <div className="p-8 rounded-2xl border-2 border-emerald-300 bg-emerald-50/30 space-y-6 text-center my-6">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-300 shadow-xs">
-                  <ShieldCheck className="w-10 h-10" />
+            ) : renderizandoPdfArt ? (
+              <div className="p-12 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 text-center space-y-3 my-12">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">Renderizando Documento Oficial da ART...</h4>
+                <p className="text-xs text-slate-500">Convertendo o arquivo PDF para imagem em alta resolução para compilação no laudo.</p>
+              </div>
+            ) : laudo.artArquivoUrl ? (
+              <div className="w-full flex-1 flex flex-col items-center justify-center">
+                <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
+                  <img 
+                    src={laudo.artArquivoUrl} 
+                    alt="Guia da ART CREA-PE" 
+                    className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
+                    crossOrigin="anonymous"
+                  />
                 </div>
-
-                <div className="space-y-2 max-w-md mx-auto">
-                  <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider font-mono">
-                    DOCUMENTO PDF OFICIAL ANEXADO
-                  </span>
-                  <h3 className="text-lg font-black text-[#0B1E3D]">
-                    ART CREA-PE Registrada e Vinculada
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    O arquivo digital oficial da Anotação de Responsabilidade Técnica sob número <strong>{laudo.artNumero || 'PE20261822299'}</strong> foi anexado e validado no prontuário pericial.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white border border-slate-200 max-w-md mx-auto text-left text-xs space-y-2 font-mono">
-                  <div className="flex justify-between border-b border-slate-100 pb-1">
-                    <span className="text-slate-400">Nome do Arquivo:</span>
-                    <strong className="text-slate-800 truncate">{laudo.artNomeArquivo || 'ART_CREA_PE.pdf'}</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1">
-                    <span className="text-slate-400">Nº do Registro:</span>
-                    <strong className="text-emerald-700 font-bold">{laudo.artNumero || 'PE20261822299'}</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1">
-                    <span className="text-slate-400">Responsável:</span>
-                    <strong className="text-slate-800">Eng. Vitor Leonardo (CREA 182229949-0)</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Status:</span>
-                    <strong className="text-emerald-700 text-[10px]">Registrada e Vinculada ao Laudo</strong>
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-slate-500 italic max-w-md mx-auto">
-                  A autenticidade da presente ART pode ser confirmada diretamente no portal eletrônico oficial do CREA-PE (www.creape.org.br).
+                <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
+                  Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
                 </p>
               </div>
             ) : (
@@ -760,7 +801,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     });
 
     return list;
-  }, [laudo, cliente, ativo, dataFormatada, emitidoEm, secoesOrdenadas]);
+  }, [laudo, cliente, ativo, dataFormatada, emitidoEm, secoesVisiveis, artImagemVisual, renderizandoPdfArt]);
 
   const totalPaginas = paginasLaudo.length;
   const paginaRenderizar = paginasLaudo.find(p => p.numero === paginaAtual) || paginasLaudo[0];
@@ -852,6 +893,78 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Gerenciar Seções Visíveis no PDF */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuSecoesAberto(!menuSecoesAberto)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                  menuSecoesAberto 
+                    ? 'bg-[#1565D8] text-white border-[#1565D8]' 
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+                title="Decidir quais seções aparecem na versão do PDF"
+              >
+                <Layers className="w-4 h-4 text-blue-400" />
+                <span className="hidden md:inline">Seções do PDF</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-900 text-slate-300">
+                  {secoesVisiveis.length}/{laudo.secoes?.length || 0}
+                </span>
+              </button>
+
+              {menuSecoesAberto && (
+                <div className="absolute right-0 top-full mt-2 w-84 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-3 z-50 text-slate-900 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-[#1565D8]" />
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        Seções Incluídas no PDF
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setMenuSecoesAberto(false)} 
+                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 leading-tight">
+                    Marque ou desmarque para decidir o que vai para o PDF. A contagem de páginas e o sumário ajustam automaticamente.
+                  </p>
+                  <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+                    {(laudo.secoes || []).map((sec, idx) => {
+                      const isVisivel = !secoesOcultadasLocal[sec.id];
+                      return (
+                        <label 
+                          key={sec.id}
+                          className={`flex items-start gap-2.5 p-2 rounded-xl border transition-colors cursor-pointer text-xs ${
+                            isVisivel 
+                              ? 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800' 
+                              : 'bg-amber-50/50 dark:bg-amber-950/20 border-dashed border-amber-200 dark:border-amber-900/40 text-slate-400'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isVisivel}
+                            onChange={() => handleToggleSecaoNoModal(sec.id)}
+                            className="mt-0.5 rounded text-[#1565D8] focus:ring-[#1565D8]"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className={`font-semibold text-xs leading-snug truncate ${!isVisivel ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                              {idx + 1}. {sec.titulo}
+                            </p>
+                            <span className="text-[10px] text-slate-500">
+                              {isVisivel ? 'Incluído no PDF' : 'Oculto do PDF'}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* View Mode Toggle */}
             <div className="hidden sm:flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
               <button

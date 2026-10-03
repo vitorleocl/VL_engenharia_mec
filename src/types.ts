@@ -230,6 +230,7 @@ export interface HRNResult {
 export interface EvidenciaFoto {
   id: string;
   url: string;
+  titulo?: string;
   legenda?: string;
   descricao?: string;
   timestamp?: string;
@@ -402,6 +403,7 @@ export interface LaudoSecao {
   fotos?: EvidenciaFoto[];
   isFixa?: boolean;
   isObrigatoria?: boolean;
+  ocultaNoPdf?: boolean;
 }
 
 export interface LaudoTemplate {

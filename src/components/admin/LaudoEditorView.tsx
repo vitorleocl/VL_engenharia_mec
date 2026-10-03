@@ -24,6 +24,7 @@ import {
   ArrowDown,
   Edit3,
   Eye,
+  EyeOff,
   History,
   RotateCcw,
   Loader2,
@@ -49,6 +50,7 @@ import { TipTapEditor } from './TipTapEditor';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
+import { converterPdfParaImagem } from '../../lib/pdfToImage';
 
 const PRESET_SECTIONS = [
   { 
@@ -154,6 +156,43 @@ export const LaudoEditorView: React.FC = () => {
   const [legendaNovaFotoSecao, setLegendaNovaFotoSecao] = useState('');
   const [modalVisualizarImagemUrl, setModalVisualizarImagemUrl] = useState<{ url: string; titulo?: string } | null>(null);
   const [modalVisualizarArtAberto, setModalVisualizarArtAberto] = useState(false);
+  const [artImagemVisual, setArtImagemVisual] = useState<string | null>(null);
+  const [carregandoArtImagem, setCarregandoArtImagem] = useState(false);
+  const [secaoParaRemoverConfirm, setSecaoParaRemoverConfirm] = useState<LaudoSecao | null>(null);
+
+  // Carrega ou converte a ART para exibição como imagem direta na página
+  useEffect(() => {
+    if (!laudoState?.artArquivoUrl) {
+      setArtImagemVisual(null);
+      return;
+    }
+
+    if (
+      laudoState.artTipoArquivo === 'imagem' ||
+      laudoState.artArquivoUrl.startsWith('data:image/') ||
+      laudoState.artArquivoUrl.match(/\.(jpeg|jpg|png|webp|gif)(\?.*)?$/i)
+    ) {
+      setArtImagemVisual(laudoState.artArquivoUrl);
+      return;
+    }
+
+    let ativoBool = true;
+    setCarregandoArtImagem(true);
+    converterPdfParaImagem(laudoState.artArquivoUrl)
+      .then((imgData) => {
+        if (ativoBool) setArtImagemVisual(imgData);
+      })
+      .catch((err) => {
+        console.error('Falha ao renderizar PDF da ART para imagem:', err);
+      })
+      .finally(() => {
+        if (ativoBool) setCarregandoArtImagem(false);
+      });
+
+    return () => {
+      ativoBool = false;
+    };
+  }, [laudoState?.artArquivoUrl, laudoState?.artTipoArquivo]);
 
   // Synchronize initial active section
   useEffect(() => {
@@ -323,19 +362,33 @@ export const LaudoEditorView: React.FC = () => {
     });
   };
 
-  // Delete section
+  // Toggle Hide / Show section in PDF export
+  const handleToggleOcultarSecao = (secaoId: string) => {
+    if (!laudoState) return;
+    const novasSecoes = laudoState.secoes.map(s => {
+      if (s.id === secaoId) {
+        return { ...s, ocultaNoPdf: !s.ocultaNoPdf };
+      }
+      return s;
+    });
+    agendarAutoSave({
+      ...laudoState,
+      secoes: novasSecoes,
+    });
+  };
+
+  // Open confirmation modal to delete section
   const handleRemoverSecao = (idParaRemover: string) => {
+    if (!laudoState) return;
     const secao = laudoState.secoes.find(s => s.id === idParaRemover);
     if (!secao) return;
+    setSecaoParaRemoverConfirm(secao);
+  };
 
-    if (secao.isObrigatoria) {
-      const confirma = window.confirm(`A seção "${secao.titulo}" é marcada como obrigatória por norma técnica. Deseja realmente removê-la deste laudo?`);
-      if (!confirma) return;
-    } else {
-      const confirma = window.confirm(`Remover a seção "${secao.titulo}"?`);
-      if (!confirma) return;
-    }
-
+  // Confirmed delete section
+  const handleConfirmarRemoverSecao = () => {
+    if (!laudoState || !secaoParaRemoverConfirm) return;
+    const idParaRemover = secaoParaRemoverConfirm.id;
     const novasSecoes = laudoState.secoes.filter(s => s.id !== idParaRemover);
     novasSecoes.forEach((s, idx) => { s.ordem = idx + 1; });
 
@@ -343,6 +396,7 @@ export const LaudoEditorView: React.FC = () => {
       setSecaoAtivaId(novasSecoes[0].id);
     }
 
+    setSecaoParaRemoverConfirm(null);
     agendarAutoSave({
       ...laudoState,
       secoes: novasSecoes,
@@ -1150,11 +1204,16 @@ export const LaudoEditorView: React.FC = () => {
                           </span>
                           <span className={`text-xs font-bold truncate block ${
                             isAtiva ? 'text-[#1565D8] dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'
-                          }`}>
+                          } ${secao.ocultaNoPdf ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
                             {secao.titulo}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {secao.ocultaNoPdf && (
+                            <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                              Oculta no PDF
+                            </span>
+                          )}
                           {secao.isObrigatoria ? (
                             <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                               • Obrigatória
@@ -1169,8 +1228,23 @@ export const LaudoEditorView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Actions for this section: Reorder, Rename, Delete */}
+                  {/* Actions for this section: Hide/Show in PDF, Reorder, Rename, Delete */}
                   <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleOcultarSecao(secao.id);
+                      }}
+                      className={`p-1 rounded transition-colors cursor-pointer ${
+                        secao.ocultaNoPdf
+                          ? 'text-amber-500 hover:text-amber-700 bg-amber-50 dark:bg-amber-950/40'
+                          : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
+                      }`}
+                      title={secao.ocultaNoPdf ? "Seção OCULTA do PDF (Clique para incluir no PDF)" : "Seção VISÍVEL no PDF (Clique para ocultar)"}
+                    >
+                      {secao.ocultaNoPdf ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                     <button
                       onClick={() => handleMoverSecaoCima(idx)}
                       disabled={idx === 0}
@@ -1241,13 +1315,27 @@ export const LaudoEditorView: React.FC = () => {
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleOcultarSecao(secaoAtiva.id)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                      secaoAtiva.ocultaNoPdf
+                        ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                        : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200'
+                    }`}
+                    title={secaoAtiva.ocultaNoPdf ? 'Seção OCULTA do PDF — Clique para incluir na exportação' : 'Seção VISÍVEL no PDF — Clique para ocultar da exportação'}
+                  >
+                    {secaoAtiva.ocultaNoPdf ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-slate-600" />}
+                    <span>{secaoAtiva.ocultaNoPdf ? 'Oculta no PDF' : 'Visível no PDF'}</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setEditandoSecaoId(secaoAtiva.id);
                       setTituloEditando(secaoAtiva.titulo);
                     }}
-                    className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 flex items-center gap-1 cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5 text-slate-400" />
                     <span>Editar Título</span>
@@ -1273,20 +1361,47 @@ export const LaudoEditorView: React.FC = () => {
                       });
                     }}
                     title="Preencher com minuta técnica padrão de engenharia para esta seção"
-                    className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 flex items-center gap-1 cursor-pointer transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <FileText className="w-3.5 h-3.5 text-blue-600" />
                     <span>Minuta Padrão</span>
                   </button>
                   <button
                     onClick={() => setModalIaAberto(true)}
-                    className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 flex items-center gap-1 cursor-pointer transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                     <span>Expandir com IA</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecaoParaRemoverConfirm(secaoAtiva)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    title="Excluir esta seção do laudo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
+
+              {/* Banner if section is hidden from PDF */}
+              {secaoAtiva.ocultaNoPdf && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="flex items-center gap-2">
+                    <EyeOff className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      Esta seção está <strong>OCULTA para a versão em PDF</strong>. O conteúdo permanece salvo e editável aqui, mas não sairá na versão impressa nem contará na paginação.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleOcultarSecao(secaoAtiva.id)}
+                    className="px-2.5 py-1 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-bold shrink-0 cursor-pointer"
+                  >
+                    Tornar Visível no PDF
+                  </button>
+                </div>
+              )}
 
               {/* TipTap Rich Text Editor for this section */}
               <div>
@@ -1471,52 +1586,12 @@ export const LaudoEditorView: React.FC = () => {
         </div>
 
         {laudoState.artArquivoUrl ? (
-          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-              
-              {/* File details and visual representation */}
-              <div className="md:col-span-4 flex items-center gap-3">
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
-                  laudoState.artTipoArquivo === 'pdf'
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-200'
-                    : 'bg-blue-100 text-[#1565D8] dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200'
-                }`}>
-                  {laudoState.artTipoArquivo === 'pdf' ? (
-                    <div className="text-center">
-                      <FileText className="w-6 h-6 mx-auto mb-0.5" />
-                      <span className="text-[9px] uppercase font-black">PDF</span>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <ImageIcon className="w-6 h-6 mx-auto mb-0.5" />
-                      <span className="text-[9px] uppercase font-black">IMG</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase font-mono tracking-wider ${
-                      laudoState.artTipoArquivo === 'pdf'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-blue-600 text-white'
-                    }`}>
-                      {laudoState.artTipoArquivo === 'pdf' ? 'Documento PDF Oficial' : 'Imagem Técnica da ART'}
-                    </span>
-                  </div>
-                  <strong className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block mt-1">
-                    {laudoState.artNomeArquivo || 'art-oficial-crea.pdf'}
-                  </strong>
-                  <span className="text-[10px] text-slate-500 block">
-                    Homologado em: {laudoState.artDataHomologacao ? new Date(laudoState.artDataHomologacao).toLocaleDateString('pt-BR') : 'Data atual'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Number and Date Fields */}
-              <div className="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-4">
+            {/* Top row with ART metadata inputs and actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-3 text-xs">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block text-[11px] mb-1">
                     Nº da ART CREA-PE:
                   </label>
                   <input
@@ -1528,12 +1603,12 @@ export const LaudoEditorView: React.FC = () => {
                       agendarAutoSave({ ...laudoState, artNumero: val });
                     }}
                     placeholder="Ex: PE20261822299"
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold text-[#0B1E3D] dark:text-white"
+                    className="w-48 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold text-[#0B1E3D] dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block text-[11px] mb-1">
                     Data de Registro:
                   </label>
                   <input
@@ -1543,53 +1618,89 @@ export const LaudoEditorView: React.FC = () => {
                       const val = e.target.value;
                       agendarAutoSave({ ...laudoState, artDataHomologacao: val });
                     }}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                    className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                   />
                 </div>
               </div>
 
-              {/* Actions & Preview Button */}
-              <div className="md:col-span-3 flex items-center justify-end gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    if (laudoState.artTipoArquivo === 'imagem') {
-                      setModalVisualizarImagemUrl({ url: laudoState.artArquivoUrl!, titulo: `ART CREA-PE: ${laudoState.artNumero || 'Documento Oficial'}` });
-                    } else {
-                      setModalVisualizarArtAberto(true);
-                    }
+                    const urlVisual = artImagemVisual || laudoState.artArquivoUrl!;
+                    setModalVisualizarImagemUrl({
+                      url: urlVisual,
+                      titulo: `Documento da ART CREA-PE: ${laudoState.artNumero || 'Oficial'}`
+                    });
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 shadow-xs cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1565D8] text-xs font-bold flex items-center gap-1.5 border border-blue-200 cursor-pointer"
+                  title="Ampliar ART em tela cheia"
                 >
-                  <Eye className="w-3.5 h-3.5 text-[#1565D8]" />
-                  <span>Visualizar ART</span>
+                  <ZoomIn className="w-3.5 h-3.5" />
+                  <span>Ampliar Imagem</span>
                 </button>
                 <a
                   href={laudoState.artArquivoUrl}
                   download={laudoState.artNomeArquivo || 'ART_CREA_PE.pdf'}
-                  className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 cursor-pointer"
-                  title="Baixar Arquivo da ART"
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  title="Baixar Arquivo Original da ART"
                 >
                   <Download className="w-4 h-4" />
                 </a>
               </div>
-
             </div>
 
-            {/* If ART is an image, show small thumbnail */}
-            {laudoState.artTipoArquivo === 'imagem' && (
-              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 flex items-center gap-3">
-                <img
-                  src={laudoState.artArquivoUrl}
-                  alt="Miniatura da ART"
-                  className="w-20 h-14 object-cover rounded-lg border border-slate-300 dark:border-slate-700 shadow-xs cursor-pointer hover:opacity-90"
-                  onClick={() => setModalVisualizarImagemUrl({ url: laudoState.artArquivoUrl!, titulo: `ART CREA-PE: ${laudoState.artNumero || 'Oficial'}` })}
-                />
-                <span className="text-[11px] text-slate-600 dark:text-slate-400">
-                  Esta imagem da ART será impressa em página de anexo em tamanho integral na exportação em PDF do laudo técnico.
-                </span>
-              </div>
-            )}
+            {/* Visualização Direta da Imagem Real da ART na Página */}
+            <div className="w-full bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
+              {carregandoArtImagem ? (
+                <div className="p-12 flex flex-col items-center gap-2 text-slate-500">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                  <span className="text-xs font-semibold">Renderizando documento da ART em alta resolução...</span>
+                </div>
+              ) : artImagemVisual ? (
+                <div className="relative group max-w-2xl w-full flex flex-col items-center">
+                  <div 
+                    onClick={() => setModalVisualizarImagemUrl({
+                      url: artImagemVisual,
+                      titulo: `Anotação de Responsabilidade Técnica (ART — CREA-PE) Nº ${laudoState.artNumero || 'Oficial'}`
+                    })}
+                    className="cursor-pointer bg-white rounded-xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden relative p-1 transition-transform hover:scale-[1.01]"
+                    title="Clique para ampliar em tela cheia"
+                  >
+                    <img 
+                      src={artImagemVisual} 
+                      alt="Documento Oficial da ART CREA-PE" 
+                      className="max-h-[640px] w-auto max-w-full object-contain mx-auto rounded"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded">
+                      <span className="px-3.5 py-2 rounded-xl bg-white/95 text-slate-900 text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                        <ZoomIn className="w-4 h-4 text-[#1565D8]" />
+                        Clique para Ampliar em Tela Cheia
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">
+                    Visualização integral do documento de ART CREA-PE vinculado a este laudo técnico.
+                  </p>
+                </div>
+              ) : laudoState.artArquivoUrl ? (
+                <div className="relative group max-w-2xl w-full flex flex-col items-center">
+                  <div 
+                    onClick={() => setModalVisualizarImagemUrl({
+                      url: laudoState.artArquivoUrl!,
+                      titulo: `ART CREA-PE: ${laudoState.artNumero || 'Oficial'}`
+                    })}
+                    className="cursor-pointer bg-white rounded-xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden p-1"
+                  >
+                    <img 
+                      src={laudoState.artArquivoUrl} 
+                      alt="Documento Oficial da ART CREA-PE" 
+                      className="max-h-[640px] w-auto max-w-full object-contain mx-auto rounded"
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : (
           <div
@@ -2015,7 +2126,68 @@ export const LaudoEditorView: React.FC = () => {
           ativo={ativo}
           isOpen={modalPdfAberto}
           onClose={() => setModalPdfAberto(false)}
+          onAtualizarSecoes={(novasSecoes) => {
+            agendarAutoSave({
+              ...laudoState,
+              secoes: novasSecoes,
+            });
+          }}
         />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE SEÇÃO                                   */}
+      {/* ========================================================================= */}
+      {secaoParaRemoverConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-100">
+          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="p-3 bg-red-100 dark:bg-red-950/50 rounded-xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Excluir Seção do Laudo?
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Esta ação removerá a seção e o seu conteúdo deste documento.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              <p className="font-bold text-slate-800 dark:text-slate-200">
+                "{secaoParaRemoverConfirm.titulo}"
+              </p>
+              {secaoParaRemoverConfirm.isObrigatoria && (
+                <p className="text-amber-600 dark:text-amber-400 mt-1 font-semibold">
+                  ⚠️ Esta seção é categorizada como recomendada por norma técnica.
+                </p>
+              )}
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Dica: Se você deseja apenas que ela não saia na impressão do PDF sem perder o conteúdo digitado, utilize o botão <strong>"Ocultar do PDF"</strong>.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSecaoParaRemoverConfirm(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarRemoverSecao}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-sm"
+              >
+                Sim, Excluir Seção
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ========================================================================= */}
