@@ -559,7 +559,7 @@ export const LAUDOS_INICIAIS: Laudo[] = [
     ativoId: 'atv-pgx7098',
     ativoIdentificacao: 'PGX-9708 (Renault Duster 2016/2016)',
     status: 'em_andamento',
-    artNumero: 'Registrada junto ao CREA-PE',
+    artNumero: 'PE20261621255',
     dataInspecao: '2026-08-20',
     responsavelNome: 'Vitor Leonardo Cordeiro Linhares',
     responsavelCrea: 'CREA-PE 1822299490',

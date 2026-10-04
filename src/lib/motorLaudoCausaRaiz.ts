@@ -284,13 +284,57 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
       ordem: 7,
       conteudoHtml: `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3 text-xs">
         <tbody>
-          <tr class="bg-slate-100 font-bold"><td class="p-2 border" colspan="2">ESPECIFICAÇÕES TÉCNICAS OFICIAIS DO ATIVO PERICIADO</td></tr>
-          <tr><td class="p-2 border w-1/3"><strong>Marca / Modelo:</strong></td><td class="p-2 border">${dados.ativo.marca || 'Volkswagen'} ${dados.ativo.modelo || 'Gol'}</td></tr>
-          <tr><td class="p-2 border"><strong>Ano Fabricação / Modelo:</strong></td><td class="p-2 border">${dados.ativo.anoModelo || '2021/2022'}</td></tr>
-          <tr><td class="p-2 border"><strong>Placa de Identificação:</strong></td><td class="p-2 border font-mono font-bold">${dados.ativo.placa || 'PGX-7098'}</td></tr>
-          <tr><td class="p-2 border"><strong>Número do Chassi (VIN):</strong></td><td class="p-2 border font-mono">${dados.ativo.chassi || '9BWCA05U0NT000000'}</td></tr>
-          <tr><td class="p-2 border"><strong>Quilometragem na Vistoria:</strong></td><td class="p-2 border font-bold">${kmAtual}</td></tr>
-          <tr><td class="p-2 border"><strong>Combustível / Motorização:</strong></td><td class="p-2 border">Bicombustível (Etanol/Gasolina) • Motor 4 Cilindros em Linha</td></tr>
+          <tr class="bg-slate-100 font-bold"><td class="p-2 border" colspan="4">ESPECIFICAÇÕES TÉCNICAS OFICIAIS DO ATIVO PERICIADO</td></tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Solicitante:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${dados.clienteNome || 'Ministério Público de Pernambuco'}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${dados.ativo.marca || 'Renault'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${dados.ativo.modelo || 'Duster'}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Passageiro / Utilitário</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-mono font-bold text-xs text-[#0B1E3D]">${dados.ativo.placa || 'PGX-9708'}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${dados.ativo.chassi || '093YHSRAF500GJ3983670'}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${dados.ativo.anoModelo || '2016/2016'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-medium">Bicombustível (Flex) • Motor 4 Cilindros</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Prata / Oficial</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Oficial / Administrativo</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Caruaru / PE</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">Regular • Em Conformidade</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">${kmAtual}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${dados.ativo.kmIntervencaoPrevia ? `${dados.ativo.kmIntervencaoPrevia} km (Registrada na intervenção prévia)` : '149.908 km (Registrada na Intervenção Prévia - Dezembro de 2025)'}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">${dados.contexto?.kmIntervalo ? `${dados.contexto.kmIntervalo} km decorridos entre a manutenção e a pane atual` : '2.622 km decorridos entre a intervenção prévia e a pane mecânica atual'}</td>
+          </tr>
         </tbody>
       </table>`
     },

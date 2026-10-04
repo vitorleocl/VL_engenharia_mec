@@ -169,39 +169,62 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       id: 'sec-7',
       titulo: 'Dados do Veículo',
       ordem: 7,
-      conteudoHtml: `<div class="space-y-2">
-  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO III - DADOS DO VEÍCULO</p>
-  <table class="tiptap-table border-collapse border border-slate-300 w-full my-3">
+      conteudoHtml: `<div class="space-y-3">
+  <div class="border-b-2 border-slate-300 pb-1.5 flex items-center justify-between">
+    <p class="font-bold text-slate-900 text-sm uppercase tracking-wider">SEÇÃO III - DADOS DO VEÍCULO E ESPECIFICAÇÕES TÉCNICAS</p>
+    <span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Veículo Oficial Periciado</span>
+  </div>
+  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-xs">
     <tbody>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700 w-1/4">Proprietário:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Frotista:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Marca:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900">Renault</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Modelo:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900">Duster</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">Renault</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">Duster Dynamique 1.6 16V Hi-Flex</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Espécie / Tipo:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900">Passageiro / Utilitário</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Placa:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-bold">PGX-9708</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">Passageiro / Utilitário</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">PGX-9708</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Chassi N.º (VIN):</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-mono" colspan="3">093YHSRAF500GJ3983670</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">093YHSRAF500GJ3983670</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Ano Fab. / Modelo:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900">2016 / 2016</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Quilometragem Aferida:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-bold">152.530 km (Atual - Agosto de 2026)</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold">2016 / 2016</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-medium">Bicombustível (Flex) • Motor 1.6 16V</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Quilometragem Anterior:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold" colspan="3">149.908 km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">Prata / Oficial</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">Oficial / Administração Pública</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">Caruaru / PE</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">Regular • Em Conformidade</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">152.530 km (Constatada na Vistoria Pericial - Agosto de 2026)</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">149.908 km (Registrada na Intervenção Prévia - Dezembro de 2025)</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">2.622 km decorridos entre a intervenção prévia no motor e a ocorrência da pane atual</td>
       </tr>
     </tbody>
   </table>

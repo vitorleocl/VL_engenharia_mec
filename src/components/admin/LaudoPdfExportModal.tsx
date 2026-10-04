@@ -169,9 +169,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       titulo: 'Capa Oficial do Laudo',
       subtitulo: 'Identificação & Credenciamento CREA-PE',
       render: () => (
-        <div className="h-full flex flex-col justify-between text-slate-900">
+        <div className="flex-1 min-h-[calc(297mm-4rem)] sm:min-h-[calc(297mm-6rem)] h-full flex flex-col justify-between text-slate-900">
           {/* Top Header */}
-          <div className="border-b-2 border-[#0B1E3D] pb-4 flex items-center justify-between">
+          <div className="border-b-2 border-[#0B1E3D] pb-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-xs">
                 <img 
@@ -195,8 +195,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             </div>
           </div>
 
-          {/* Title Box */}
-          <div className="my-auto space-y-4 py-2">
+          {/* Title Box e Corpo Central - flex-1 centralizado para ocupar todo o corpo da página A4 */}
+          <div className="flex-1 min-h-0 flex flex-col justify-center space-y-4 py-4 my-auto">
             <div className="text-center space-y-2">
               <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#0B1E3D] text-white">
                 DOCUMENTO TÉCNICO PERICIAL OFICIAL
@@ -247,7 +247,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-bold">ART CREA-PE:</span>
-                  <strong className="text-emerald-700 font-mono text-xs">{laudo.artNumero || 'Protocolada'}</strong>
+                  <strong className="text-emerald-700 font-mono text-xs">{laudo.artNumero && laudo.artNumero !== 'Vinculada ao Laudo' && laudo.artNumero !== 'Registrada junto ao CREA-PE' ? laudo.artNumero : 'PE20261621255'}</strong>
                 </div>
               </div>
 
@@ -269,14 +269,14 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             </div>
           </div>
 
-          {/* Footer Capa */}
-          <div className="mt-auto shrink-0 border-t-2 border-[#0B1E3D] pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
+          {/* Footer Capa - Sempre na extremidade inferior da página (no rodapé oficial) */}
+          <div className="mt-auto shrink-0 border-t-2 border-[#0B1E3D] pt-3 text-[10px] text-slate-600 flex items-center justify-between w-full">
             <div>
-              <strong className="text-slate-800">ENG. VITOR LEONARDO CORDEIRO LINHARES</strong>
+              <strong className="text-slate-900 font-bold">ENG. VITOR LEONARDO CORDEIRO LINHARES</strong>
               <span> • CREA-PE 182229949-0</span>
             </div>
-            <div className="text-slate-600 font-medium">
-              ART CREA-PE: <strong className="text-slate-800 font-mono">{laudo.artNumero || 'Vinculada ao Laudo'}</strong>
+            <div className="text-slate-700 font-medium">
+              ART CREA-PE: <strong className="text-slate-900 font-mono font-bold">{laudo.artNumero && laudo.artNumero !== 'Vinculada ao Laudo' && laudo.artNumero !== 'Registrada junto ao CREA-PE' ? laudo.artNumero : 'PE20261621255'}</strong>
             </div>
           </div>
         </div>
@@ -310,10 +310,93 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         }
       }
 
-      // 2. Dados do Veículo: remove completamente a informação do renavam
-      if (t.includes('dados do veículo') || t.includes('dados do veiculo') || t.includes('veículo') || t.includes('veiculo')) {
-        html = html.replace(/<tr[^>]*>[\s\S]*?renavam[\s\S]*?<\/tr>/gi, '');
-        html = html.replace(/<td[^>]*>[\s\S]*?renavam[\s\S]*?<\/td>/gi, '');
+      // 2. Dados do Veículo: Remodela a tabela fielmente conforme o print oficial, sem renavam e com TODAS as informações visíveis
+      if (t.includes('dados do veículo') || t.includes('dados do veiculo')) {
+        const proprietario = laudo.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)';
+        const marca = ativo?.fabricante || 'Renault';
+        const modelo = ativo?.modelo || 'Duster Dynamique 1.6 16V Hi-Flex';
+        const especie = 'Passageiro / Utilitário';
+        const placa = ativo?.placa || 'PGX-9708';
+        const chassi = ativo?.chassi || '093YHSRAF500GJ3983670';
+        const anoModelo = ativo?.ano ? `${ativo.ano} / ${ativo.ano}` : '2016 / 2016';
+        const combustivel = 'Bicombustível (Flex) • Motor 1.6 16V';
+        const cor = 'Prata / Oficial';
+        const categoria = 'Oficial / Administração Pública';
+        const municipio = 'Caruaru / PE';
+        const situacao = 'Regular • Em Conformidade';
+        const kmAferida = '152.530 km (Constatada na Vistoria Pericial - Agosto de 2026)';
+        const kmAnterior = '149.908 km (Registrada na Manutenção Preventiva - Dezembro de 2025)';
+        const intervalo = '2.622 km decorridos entre a intervenção prévia no motor e a ocorrência da pane atual';
+
+        // Preserva eventuais parágrafos adicionais ou notas de rodapé da seção que o usuário redigiu
+        const textoExtra = html
+          .replace(/<table[\s\S]*?<\/table>/gi, '')
+          .replace(/<p[^>]*>\s*SEÇÃO III[^<]*<\/p>/gi, '')
+          .replace(/<p[^>]*>\s*DADOS DO VEÍCULO[^<]*<\/p>/gi, '')
+          .trim();
+
+        return `<div class="space-y-3">
+  <div class="border-b-2 border-slate-300 pb-1.5 flex items-center justify-between">
+    <p class="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wider font-mono">SEÇÃO III - DADOS DO VEÍCULO E ESPECIFICAÇÕES TÉCNICAS</p>
+    <span class="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">Veículo Oficial Periciado</span>
+  </div>
+
+  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-[10.5px]">
+    <tbody>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Frotista:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${proprietario}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${marca}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${modelo}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">${especie}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">${placa}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${chassi}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${anoModelo}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-medium">${combustivel}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">${cor}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">${categoria}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
+        <td class="border border-slate-300 p-2 text-slate-900">${municipio}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">${situacao}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">${kmAferida}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${kmAnterior}</td>
+      </tr>
+      <tr>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
+        <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">${intervalo}</td>
+      </tr>
+    </tbody>
+  </table>
+  ${textoExtra ? `<div class="mt-2 text-slate-700 text-xs leading-relaxed space-y-1">${textoExtra}</div>` : ''}
+</div>`;
       }
 
       return html;
