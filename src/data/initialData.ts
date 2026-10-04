@@ -217,15 +217,15 @@ export const CLIENTES_INICIAIS: Cliente[] = [
     cpfCnpj: '24.417.065/0001-03',
     cnpj: '24.417.065/0001-03',
     contatos: [
-      { nome: 'Coordenação de Transportes ADF Caruaru', cargo: 'Gestão de Frotas', telefone: '(81) 3721-0000', email: 'frota@adfcaruaru.pe.gov.br' }
+      { nome: 'Thiago Cunha', cargo: 'Contato Técnico', telefone: '(81) 3721-0000', email: 'adfcentroautomotivo@gmail.com' }
     ],
     endereco: {
-      logradouro: 'Av. Agamenon Magalhães',
-      numero: '1000',
-      bairro: 'Maurício de Nassau',
+      logradouro: 'Avenida Jose Pinheiro dos Santos',
+      numero: '20',
+      bairro: 'Pinheiropolis',
       cidade: 'Caruaru',
       estado: 'PE',
-      cep: '55012-000',
+      cep: '55030-000',
     },
     criadoEm: '2026-03-20T10:00:00Z',
   },

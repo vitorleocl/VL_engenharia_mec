@@ -24,9 +24,7 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
     'Legislação e Normas Técnicas',
     'Constatação de Danos e Análise de Causa Raiz',
     'Tabela de Constatação de Danos e Integridade Técnica',
-    'Conclusão',
-    'Considerações Finais',
-    'ART e Responsabilidade Técnica'
+    'Conclusão Técnica & Assinatura'
   ],
   checklistInicial: [
     { campo: "Identificação Cadastral — CRLV, Chassi (VIN), Modelo e Placa conferidos in loco", tipoResposta: "C_NC_NA", obrigatorioFoto: true, exigeFotoSeNaoConforme: true, criterioReferencia: "Confronto com cadastro oficial e CRLV" },
@@ -88,19 +86,26 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       id: 'sec-3',
       titulo: 'Sumário Executivo',
       ordem: 3,
-      conteudoHtml: `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-  <h3 class="text-xs font-bold text-slate-900 uppercase border-b border-slate-200 pb-2">Sumário Executivo</h3>
-  <ol class="list-decimal pl-5 space-y-1 text-xs text-slate-700">
-    <li>Histórico do Evento</li>
-    <li>Objetivo do Trabalho e Metodologia Pericial</li>
-    <li>Dados do Veículo</li>
-    <li>Registros Fotográficos Principais</li>
-    <li>Legislação e Normas Técnicas</li>
-    <li>Constatação de Danos e Análise de Causa Raiz</li>
-    <li>Tabela de Constatação de Danos e Integridade Técnica</li>
-    <li>Conclusão</li>
-    <li>Considerações Finais</li>
-  </ol>
+      conteudoHtml: `<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+  <div class="border-b border-slate-200 pb-2">
+    <h3 class="text-xs font-black text-[#0B1E3D] uppercase tracking-wider">Sumário Executivo & Estrutura do Laudo</h3>
+    <p class="text-[10px] text-slate-500">Relação sequencial das seções técnicas que compõem este laudo pericial:</p>
+  </div>
+  <div class="space-y-1.5 text-xs text-slate-700">
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">1. Cabeçalho Institucional & Credenciamento CREA-PE</span><span class="font-mono text-slate-500 font-bold">Pág. 2</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">2. Carta de Apresentação Técnica</span><span class="font-mono text-slate-500 font-bold">Pág. 3</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">3. Sumário Executivo</span><span class="font-mono text-slate-500 font-bold">Pág. 4</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">4. Destinatário e Qualificação do Responsável Técnico</span><span class="font-mono text-slate-500 font-bold">Pág. 5</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">5. Histórico do Evento e Intervenções Anteriores</span><span class="font-mono text-slate-500 font-bold">Pág. 6</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">6. Objetivo do Trabalho e Metodologia Pericial</span><span class="font-mono text-slate-500 font-bold">Pág. 7</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">7. Dados do Veículo e Especificações Oficiais</span><span class="font-mono text-slate-500 font-bold">Pág. 8</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">8. Registros Fotográficos Principais</span><span class="font-mono text-slate-500 font-bold">Pág. 9</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">9. Legislação Aplicada e Normas Técnicas ABNT</span><span class="font-mono text-slate-500 font-bold">Pág. 10</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">10. Constatação de Danos e Análise de Causa Raiz</span><span class="font-mono text-slate-500 font-bold">Pág. 11</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">11. Tabela de Constatação de Danos e Integridade Técnica</span><span class="font-mono text-slate-500 font-bold">Pág. 12</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200"><span class="font-medium">12. Conclusão Técnica Pericial & Assinatura</span><span class="font-mono text-slate-500 font-bold">Pág. 13</span></div>
+    <div class="flex items-center justify-between py-1 border-b border-dotted border-slate-200 text-emerald-800 font-semibold"><span class="font-medium">Anexo: Anotação de Responsabilidade Técnica (ART — CREA-PE)</span><span class="font-mono font-bold">Pág. 14</span></div>
+  </div>
 </div>`
     },
     {
@@ -114,6 +119,14 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">ADF Caruaru / Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
     </tr>
     <tr>
+      <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Endereço Operacional:</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900">Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE</td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Contato Técnico:</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">Thiago Cunha (adfcentroautomotivo@gmail.com)</td>
+    </tr>
+    <tr>
       <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Perito Responsável:</td>
       <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">Vitor Leonardo Cordeiro Linhares</td>
     </tr>
@@ -123,7 +136,7 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
     </tr>
     <tr>
       <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Registro Profissional:</td>
-      <td class="border border-slate-300 p-2 text-xs text-slate-900">CREA-PE 1822299490</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-mono font-bold">CREA-PE 1822299490</td>
     </tr>
   </tbody>
 </table>`
@@ -177,10 +190,8 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
         <td class="border border-slate-300 p-2 text-xs text-slate-900 font-bold">PGX-9708</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">RENAVAM:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900">[Inserir Renavam se aplicável]</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Chassi N.º:</td>
-        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-mono">093YHSRAF500GJ3983670</td>
+        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Chassi N.º (VIN):</td>
+        <td class="border border-slate-300 p-2 text-xs text-slate-900 font-mono" colspan="3">093YHSRAF500GJ3983670</td>
       </tr>
       <tr>
         <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Ano Fab. / Modelo:</td>

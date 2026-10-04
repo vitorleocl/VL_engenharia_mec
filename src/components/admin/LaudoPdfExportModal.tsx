@@ -47,7 +47,7 @@ interface LaudoPdfExportModalProps {
 interface PaginaLaudoDef {
   id: string;
   numero: number;
-  tipo: 'capa' | 'cadastro' | 'secao' | 'conclusao' | 'art';
+  tipo: 'capa' | 'cadastro' | 'secao' | 'conclusao' | 'art' | 'sumario';
   titulo: string;
   subtitulo?: string;
   render: () => React.ReactNode;
@@ -193,18 +193,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </p>
               </div>
             </div>
-
-            <div className="text-right text-[10px] text-slate-600 space-y-0.5 font-medium">
-              <p className="font-bold text-slate-800">Recife - PE • Atendimento Nacional</p>
-              <p className="flex items-center justify-end gap-1">
-                <Phone className="w-2.5 h-2.5 text-[#1565D8]" />
-                <span>(81) 98444-2592</span>
-              </p>
-              <p className="flex items-center justify-end gap-1">
-                <Mail className="w-2.5 h-2.5 text-[#1565D8]" />
-                <span>vlengenhariamec@gmail.com</span>
-              </p>
-            </div>
           </div>
 
           {/* Title Box */}
@@ -295,133 +283,123 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       ),
     });
 
-    // -------------------------------------------------------------------------
-    // PAGE 2: IDENTIFICAÇÃO CADASTRAL & SUMÁRIO EXECUTIVO
-    // -------------------------------------------------------------------------
-    list.push({
-      id: 'cadastro',
-      numero: pageNum++,
-      tipo: 'cadastro',
-      titulo: 'Identificação & Sumário',
-      subtitulo: 'Dados Cadastrais, Ativo e Estrutura do Laudo',
-      render: () => (
-        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
-          <div className="flex-1">
-            {/* Standard Header */}
-            <div className="border-b-2 border-[#0B1E3D] pb-3 mb-5 flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                <div>
-                  <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                  <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                    {laudo.tipo} • Laudo Nº {laudo.numero}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right text-[9px] text-slate-500 font-mono">
-                <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                <p>Página 2 de {list.length + 1}</p>
-              </div>
-            </div>
+    // =========================================================================
+    // SEÇÕES TÉCNICAS DO LAUDO (COM NUMERAÇÃO DINÂMICA E SEM DUPLICIDADE)
+    // =========================================================================
+    const normalizarHtmlSecao = (sec: LaudoSecao): string => {
+      let html = sec.conteudoHtml || '';
+      const t = sec.titulo.toLowerCase();
 
-            <div className="space-y-4 text-xs">
-              {/* Card Cliente */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-[#0B1E3D] border-b border-slate-200 pb-1">
-                  <Building2 className="w-3.5 h-3.5 text-[#1565D8]" />
-                  <span className="uppercase tracking-wider text-[10px]">1. Identificação do Cliente / Solicitante</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                  <p><strong>Razão Social:</strong> {laudo.clienteNome}</p>
-                  <p><strong>CNPJ/CPF:</strong> {cliente?.cpfCnpj || 'Inscrito sob cadastro formal'}</p>
-                  <p className="col-span-2">
-                    <strong>Endereço Operacional:</strong> {cliente?.endereco 
-                      ? `${cliente.endereco.logradouro}, ${cliente.endereco.numero} - ${cliente.endereco.bairro}, ${cliente.endereco.cidade}/${cliente.endereco.estado}`
-                      : 'Endereço fornecido na contratação técnica'}
-                  </p>
-                  {cliente?.contatos?.[0] && (
-                    <p className="col-span-2">
-                      <strong>Contato Técnico:</strong> {cliente.contatos[0].nome} ({cliente.contatos[0].telefone || cliente.contatos[0].email})
-                    </p>
-                  )}
-                </div>
-              </div>
+      // 1. Destinatário e Qualificação: Garante endereço operacional e contato técnico solicitados
+      if (t.includes('destinatário') || t.includes('destinatario') || t.includes('qualificação') || t.includes('qualificacao')) {
+        if (!html.includes('Avenida Jose Pinheiro dos Santos') && !html.includes('Pinheiropolis')) {
+          const rowsInfo = `
+    <tr>
+      <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Endereço Operacional:</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900">Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE</td>
+    </tr>
+    <tr>
+      <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Contato Técnico:</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">Thiago Cunha (adfcentroautomotivo@gmail.com)</td>
+    </tr>`;
+          if (html.includes('Contratante') || html.includes('contratante')) {
+            html = html.replace(/(<tr[^>]*>[\s\S]*?Contratante[\s\S]*?<\/tr>)/i, `$1${rowsInfo}`);
+          } else if (html.includes('<tbody>')) {
+            html = html.replace('<tbody>', `<tbody>${rowsInfo}`);
+          }
+        }
+      }
 
-              {/* Card Ativo */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-[#0B1E3D] border-b border-slate-200 pb-1">
-                  <Cpu className="w-3.5 h-3.5 text-[#1565D8]" />
-                  <span className="uppercase tracking-wider text-[10px]">2. Ficha Técnica do Equipamento / TAG</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                  <p><strong>Identificação / TAG:</strong> {laudo.ativoIdentificacao}</p>
-                  <p><strong>Fabricante / Modelo:</strong> {ativo ? `${ativo.fabricante} • ${ativo.modelo || 'Série comercial'}` : 'Conforme plaqueta afixada'}</p>
-                  <p><strong>Ano de Fabricação:</strong> {ativo?.ano || 'Conforme vistoria'}</p>
-                  <p><strong>Número de Série:</strong> {ativo?.numeroSerie || 'Identificado em campo'}</p>
-                  {ativo?.capacidade && <p><strong>Capacidade Nominal:</strong> {ativo.capacidade}</p>}
-                  {ativo?.localizacao && <p><strong>Setor / Localização:</strong> {ativo.localizacao}</p>}
-                </div>
-              </div>
+      // 2. Dados do Veículo: remove completamente a informação do renavam
+      if (t.includes('dados do veículo') || t.includes('dados do veiculo') || t.includes('veículo') || t.includes('veiculo')) {
+        html = html.replace(/<tr[^>]*>[\s\S]*?renavam[\s\S]*?<\/tr>/gi, '');
+        html = html.replace(/<td[^>]*>[\s\S]*?renavam[\s\S]*?<\/td>/gi, '');
+      }
 
-              {/* Card Sumário */}
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
-                <div className="flex items-center gap-1.5 font-bold text-[#0B1E3D] border-b border-slate-200 pb-1">
-                  <ListOrdered className="w-3.5 h-3.5 text-[#1565D8]" />
-                  <span className="uppercase tracking-wider text-[10px]">3. Sumário Executivo das Seções do Laudo</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700 pt-1">
-                  {secoesVisiveis.map((sec, idx) => (
-                    <div key={sec.id} className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
-                      <span className="font-medium truncate">{sec.titulo}</span>
-                      <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Item {idx + 1}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
-                    <span className="font-medium truncate">Conclusão Técnica & Assinatura</span>
-                    <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Final</span>
-                  </div>
-                  {laudo.artArquivoUrl && (
-                    <div className="flex items-center justify-between border-b border-dotted border-slate-200 py-0.5">
-                      <span className="font-medium truncate">Anexo Oficial da ART CREA-PE</span>
-                      <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">Anexo</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+      return html;
+    };
 
-              {/* Metodologia */}
-              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/40 text-[11px] text-slate-700 space-y-1">
-                <strong className="text-[#0B1E3D] block text-xs">Diretrizes Normativas & Metodologia Aplicada:</strong>
-                <p className="leading-relaxed">
-                  Os trabalhos periciais foram executados sob a metodologia de engenharia diagnóstica, inspeção visual minuciosa e aplicação rigorosa das Normas Brasileiras da ABNT e Normas Regulamentadoras federais pertinentes.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Standard Footer */}
-          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-            <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-            <span className="font-mono">Página 2</span>
-          </div>
-        </div>
-      ),
+    // Identifica se existe seção de conclusão entre as seções visíveis
+    const secaoConclusao = secoesVisiveis.find(s => {
+      const t = s.titulo.toLowerCase();
+      return t.includes('conclusão') || t.includes('conclusao');
     });
 
-    // -------------------------------------------------------------------------
-    // PAGES 3..N: SEÇÕES TÉCNICAS DO LAUDO (APENAS SEÇÕES VISÍVEIS)
-    // -------------------------------------------------------------------------
-    secoesVisiveis.forEach((secao, idx) => {
-      const pageIndex = pageNum++;
+    const secaoConsideracoes = secoesVisiveis.find(s => {
+      const t = s.titulo.toLowerCase();
+      return t.includes('considerações finais') || t.includes('consideracoes finais');
+    });
+
+    // Filtra seções que não devem gerar páginas duplicadas/isoladas
+    const secoesFiltradas = secoesVisiveis.filter(s => {
+      const t = s.titulo.toLowerCase();
+      // Não duplica placeholder de texto da ART quando há o anexo visual oficial
+      if (t.includes('art e responsabilidade') || (t.includes('anexo da art') && (laudo.artArquivoUrl || artImagemVisual))) {
+        return false;
+      }
+      // Se houver considerações finais e conclusão, incorpora nas considerações da conclusão para não gerar página de 2 linhas
+      if (secaoConsideracoes && s.id === secaoConsideracoes.id && secaoConclusao) {
+        return false;
+      }
+      return true;
+    });
+
+    // Mapeamento dinâmico de páginas (Capa é pág 1, seções iniciam na pág 2)
+    const pageMap: Record<string, number> = {};
+    secoesFiltradas.forEach(s => {
+      pageMap[s.id] = pageNum++;
+    });
+
+    const conclusaoPageIndex = secaoConclusao ? pageMap[secaoConclusao.id] : pageNum++;
+    const temArtAnexo = Boolean(artImagemVisual || (laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl) || laudo.artArquivoUrl);
+    const artPageIndex = temArtAnexo ? pageNum++ : 0;
+    const totalEstimado = pageNum - 1;
+
+    // Itens dinâmicos para o Sumário Executivo com numeração exata de cada página
+    const itensSumario: { numero: number; titulo: string; pagina: number }[] = [];
+    let itemCounter = 1;
+
+    secoesFiltradas.forEach(s => {
+      const isConclusao = s.id === secaoConclusao?.id;
+      itensSumario.push({
+        numero: itemCounter++,
+        titulo: isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : s.titulo,
+        pagina: pageMap[s.id] || 0,
+      });
+    });
+
+    if (!secaoConclusao) {
+      itensSumario.push({
+        numero: itemCounter++,
+        titulo: 'Conclusão Técnica & Assinatura',
+        pagina: conclusaoPageIndex,
+      });
+    }
+
+    if (temArtAnexo) {
+      itensSumario.push({
+        numero: itemCounter++,
+        titulo: 'Anexo Oficial da ART CREA-PE',
+        pagina: artPageIndex,
+      });
+    }
+
+    // Geração das páginas das seções técnicas
+    secoesFiltradas.forEach((secao, idx) => {
+      const pageIndex = pageMap[secao.id];
+      const tLower = secao.titulo.toLowerCase();
+      const isSumario = tLower.includes('sumário') || tLower.includes('sumario');
+      const isConclusao = secao.id === secaoConclusao?.id;
+
       list.push({
         id: `secao-${secao.id}`,
         numero: pageIndex,
-        tipo: 'secao',
+        tipo: isConclusao ? 'conclusao' : isSumario ? 'sumario' : 'secao',
         titulo: secao.titulo,
-        subtitulo: `Seção Técnica ${idx + 1}`,
+        subtitulo: isConclusao ? 'Parecer Conclusivo & Assinatura' : `Seção Técnica ${idx + 1}`,
         render: () => (
           <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col">
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
@@ -435,7 +413,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
                 <div className="text-right text-[9px] text-slate-500 font-mono">
                   <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                  <p>Página {pageIndex}</p>
+                  <p>Página {pageIndex} de {totalEstimado}</p>
                 </div>
               </div>
 
@@ -446,7 +424,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     ITEM {idx + 1}
                   </span>
                   <h2 className="text-base font-black text-[#0B1E3D]">
-                    {secao.titulo}
+                    {isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : secao.titulo}
                   </h2>
                 </div>
                 {secao.isObrigatoria && (
@@ -454,17 +432,134 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     Requisito Normativo
                   </span>
                 )}
+                {isConclusao && (
+                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Parecer Pericial Homologado
+                  </span>
+                )}
               </div>
 
-              {/* Rich Text HTML Content */}
-              {secao.conteudoHtml && (
-                <div 
-                  className="prose prose-sm max-w-none text-slate-800 text-[11px] leading-relaxed mb-4"
-                  dangerouslySetInnerHTML={{ __html: secao.conteudoHtml }}
-                />
+              {/* RENDERIZAÇÃO ESPECIAL 1: SUMÁRIO EXECUTIVO VISUALMENTE APRIMORADO COM PÁGINAS EXATAS */}
+              {isSumario ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 to-[#0B1E3D] text-white flex items-center justify-between shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest block font-mono">
+                        ESTRUTURA ANALÍTICA DO LAUDO
+                      </span>
+                      <h3 className="text-sm font-black tracking-tight text-white uppercase mt-0.5">
+                        Sumário Executivo & Relação de Seções
+                      </h3>
+                    </div>
+                    <div className="text-right text-[10px] text-slate-300 font-mono">
+                      <span className="px-2.5 py-1 rounded bg-white/10 text-white font-bold border border-white/20">
+                        Total de {totalEstimado} páginas
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Lista de seções com paginação precisa e design técnico */}
+                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs divide-y divide-slate-100">
+                    {itensSumario.map((item) => (
+                      <div 
+                        key={item.numero}
+                        className="flex items-center justify-between px-3.5 py-2 hover:bg-slate-50 transition-colors text-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-6 h-6 rounded-md bg-blue-50 text-[#1565D8] font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-blue-100">
+                            {String(item.numero).padStart(2, '0')}
+                          </span>
+                          <span className="font-semibold text-slate-800 truncate">
+                            {item.titulo}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                          <div className="w-12 sm:w-24 border-b border-dotted border-slate-300"></div>
+                          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10.5px] font-bold border border-slate-200">
+                            Pág. {String(item.pagina).padStart(2, '0')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Diretrizes Normativas e Metodologia */}
+                  <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50 text-[10.5px] text-slate-700 space-y-1">
+                    <strong className="text-[#0B1E3D] block text-xs">Observações da Estrutura Pericial:</strong>
+                    <p className="leading-relaxed">
+                      A numeração de páginas segue rigorosamente a ordem sequencial das diligências, constatações materiais e fundamentação normativa do laudo, assegurando conformidade com as diretrizes do CONFEA/CREA e do Código de Defesa do Consumidor.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Rich Text HTML Content com sanitização e injeção de dados corretos */
+                secao.conteudoHtml && (
+                  <div 
+                    className="prose prose-sm max-w-none text-slate-800 text-[11px] leading-relaxed mb-3"
+                    dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secao) }}
+                  />
+                )
               )}
 
-              {/* Evidências Fotográficas da Seção - Zoom menor e enquadramento completo com object-contain */}
+              {/* RENDERIZAÇÃO ESPECIAL 2: CONCLUSÃO TÉCNICA E ASSINATURA EM UMA ÚNICA PÁGINA */}
+              {isConclusao && (
+                <>
+                  {/* Se houver considerações finais adicionais, anexa neste mesmo bloco */}
+                  {secaoConsideracoes && (
+                    <div 
+                      className="prose prose-sm max-w-none text-slate-700 text-[10.5px] leading-relaxed mb-3 border-t border-slate-200 pt-2"
+                      dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secaoConsideracoes) }}
+                    />
+                  )}
+
+                  {/* Bloco Oficial de Assinatura Profissional - Espaço limpo e sem poluição para assinar posteriormente */}
+                  <div className="pt-3 mt-auto">
+                    <div className="p-4 border border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1565D8] shrink-0 bg-slate-100 shadow-sm">
+                          <img 
+                            src="/vitor-leonardo.png" 
+                            alt="Eng. Vitor Leonardo" 
+                            className="w-full h-full object-cover"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-black text-sm text-[#0B1E3D] leading-tight">
+                            VITOR LEONARDO CORDEIRO LINHARES
+                          </h4>
+                          <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wide">
+                            Engenheiro Mecânico • Perito Técnico Responsável
+                          </p>
+                          <p className="text-[10px] font-mono text-slate-600 mt-0.5">
+                            Registro Profissional: <strong>CREA-PE 182229949-0</strong>
+                          </p>
+                          <p className="text-[9.5px] text-slate-500 mt-0.5">
+                            ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Linha de Assinatura com espaço limpo para assinar posteriormente (física ou Gov.br) */}
+                      <div className="w-full md:w-80 flex flex-col items-center justify-end text-center pt-2">
+                        <div className="w-full min-h-[60px] flex items-center justify-center">
+                          {/* Espaço em branco reservado para assinatura manual ou aposição de certificado digital */}
+                        </div>
+                        <div className="w-full border-b border-slate-700 mb-2"></div>
+                        <span className="text-[11px] font-bold text-slate-900 tracking-wide">
+                          VITOR LEONARDO CORDEIRO LINHARES
+                        </span>
+                        <span className="text-[9.5px] font-mono text-slate-600">
+                          Engenheiro Mecânico • CREA-PE 182229949-0
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Evidências Fotográficas da Seção */}
               {secao.fotos && secao.fotos.length > 0 && (
                 <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-[11px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -560,245 +655,247 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       });
     });
 
-    // -------------------------------------------------------------------------
-    // PAGE N+1: CONCLUSÃO PERICIAL & ASSINATURA DIGITAL
-    // -------------------------------------------------------------------------
-    const conclusaoPageIndex = pageNum++;
-    list.push({
-      id: 'conclusao',
-      numero: conclusaoPageIndex,
-      tipo: 'conclusao',
-      titulo: 'Conclusão Técnica & Assinatura',
-      subtitulo: 'Parecer Conclusivo & Responsabilidade Técnica',
-      render: () => (
-        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
-          <div className="flex-1">
-            {/* Standard Header */}
-            <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                <div>
-                  <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                  <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                    {laudo.tipo} • Laudo Nº {laudo.numero}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right text-[9px] text-slate-500 font-mono">
-                <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                <p>Página {conclusaoPageIndex}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="pb-2 border-b border-slate-200">
-                <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                  PARECER CONCLUSIVO
-                </span>
-                <h2 className="text-base font-black text-[#0B1E3D]">
-                  Conclusão Técnica Pericial & Recomendações
-                </h2>
-              </div>
-
-              {/* Parecer Conclusivo */}
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2 text-[11px] text-slate-800 leading-relaxed">
-                <strong className="text-[#0B1E3D] block text-xs">Parecer Técnico do Perito Responsável:</strong>
-                <p>
-                  Com base nas inspeções visuais, verificações dimensionais e análises de conformidade realizadas no equipamento <strong>{laudo.ativoIdentificacao}</strong>, atesta-se que as condições operacionais foram diagnosticadas e confrontadas com as normas técnicas da ABNT e Normas Regulamentadoras vigentes.
-                </p>
-                <p>
-                  As não conformidades porventura apontadas no corpo deste laudo demandam cumprimento rigoroso dos planos de ação e cronogramas recomendados pela equipe técnica para garantia da integridade física e segurança operacional dos trabalhadores.
-                </p>
-              </div>
-
-              {/* Apreciação HRN se existente */}
-              {laudo.hrnCalculoGeral && (
-                <div className="p-3.5 rounded-xl border border-slate-300 bg-slate-50 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
-                    <span className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider">
-                      Apreciação Quantitativa de Risco (Método HRN)
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-slate-700">
-                      Score Global: {laudo.hrnCalculoGeral.score.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span 
-                      className="px-2.5 py-1 rounded text-white font-bold text-[10px] uppercase shrink-0"
-                      style={{ backgroundColor: laudo.hrnCalculoGeral.cor }}
-                    >
-                      Risco: {laudo.hrnCalculoGeral.nivel}
-                    </span>
-                    <p className="text-[11px] text-slate-600 leading-tight">
-                      {laudo.hrnCalculoGeral.recomendacao}
+    // Se nenhuma seção de conclusão existia nas seções, adiciona a página padrão de Conclusão & Assinatura
+    if (!secaoConclusao) {
+      list.push({
+        id: 'conclusao',
+        numero: conclusaoPageIndex,
+        tipo: 'conclusao',
+        titulo: 'Conclusão Técnica & Assinatura',
+        subtitulo: 'Parecer Conclusivo & Responsabilidade Técnica',
+        render: () => (
+          <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+            <div className="flex-1 flex flex-col">
+              {/* Standard Header */}
+              <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+                  <div>
+                    <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
+                    <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
+                      {laudo.tipo} • Laudo Nº {laudo.numero}
                     </p>
                   </div>
                 </div>
-              )}
-
-              {/* Bloco Oficial de Assinatura Profissional */}
-              <div className="pt-3">
-                <div className="p-4 border border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1565D8] shrink-0 bg-slate-100 shadow-sm">
-                      <img 
-                        src="/vitor-leonardo.png" 
-                        alt="Eng. Vitor Leonardo" 
-                        className="w-full h-full object-cover"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-sm text-[#0B1E3D] leading-tight">
-                        VITOR LEONARDO CORDEIRO LINHARES
-                      </h4>
-                      <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wide">
-                        Engenheiro Mecânico • Perito Técnico Responsável
-                      </p>
-                      <p className="text-[10px] font-mono text-slate-600 mt-0.5">
-                        Registro Profissional: <strong>CREA-PE 182229949-0</strong>
-                      </p>
-                      <p className="text-[9.5px] text-slate-500 mt-0.5">
-                        ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Linha de Assinatura */}
-                  <div className="w-full md:w-80 flex flex-col items-center justify-end text-center pt-8">
-                    <div className="w-full min-h-[55px]"></div>
-                    <div className="w-full border-b border-slate-700 mb-2"></div>
-                    <span className="text-[11px] font-bold text-slate-900 tracking-wide">
-                      VITOR LEONARDO CORDEIRO LINHARES
-                    </span>
-                    <span className="text-[9.5px] font-mono text-slate-600">
-                      Engenheiro Mecânico • CREA-PE 182229949-0
-                    </span>
-                  </div>
+                <div className="text-right text-[9px] text-slate-500 font-mono">
+                  <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
+                  <p>Página {conclusaoPageIndex} de {totalEstimado}</p>
                 </div>
               </div>
 
+              <div className="space-y-4 text-xs">
+                <div className="pb-2 border-b border-slate-200">
+                  <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
+                    PARECER CONCLUSIVO
+                  </span>
+                  <h2 className="text-base font-black text-[#0B1E3D]">
+                    Conclusão Técnica Pericial & Recomendações
+                  </h2>
+                </div>
+
+                {/* Parecer Conclusivo */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2 text-[11px] text-slate-800 leading-relaxed">
+                  <strong className="text-[#0B1E3D] block text-xs">Parecer Técnico do Perito Responsável:</strong>
+                  <p>
+                    Com base nas inspeções visuais, verificações dimensionais e análises de conformidade realizadas no equipamento <strong>{laudo.ativoIdentificacao}</strong>, atesta-se que as condições operacionais foram diagnosticadas e confrontadas com as normas técnicas da ABNT e Normas Regulamentadoras vigentes.
+                  </p>
+                  <p>
+                    As não conformidades porventura apontadas no corpo deste laudo demandam cumprimento rigoroso dos planos de ação e cronogramas recomendados pela equipe técnica para garantia da integridade física e segurança operacional dos trabalhadores.
+                  </p>
+                </div>
+
+                {/* Apreciação HRN se existente */}
+                {laudo.hrnCalculoGeral && (
+                  <div className="p-3.5 rounded-xl border border-slate-300 bg-slate-50 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                      <span className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider">
+                        Apreciação Quantitativa de Risco (Método HRN)
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-slate-700">
+                        Score Global: {laudo.hrnCalculoGeral.score.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span 
+                        className="px-2.5 py-1 rounded text-white font-bold text-[10px] uppercase shrink-0"
+                        style={{ backgroundColor: laudo.hrnCalculoGeral.cor }}
+                      >
+                        Risco: {laudo.hrnCalculoGeral.nivel}
+                      </span>
+                      <p className="text-[11px] text-slate-600 leading-tight">
+                        {laudo.hrnCalculoGeral.recomendacao}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bloco Oficial de Assinatura Profissional - Espaço limpo para assinar posteriormente */}
+                <div className="pt-3 mt-auto">
+                  <div className="p-4 border border-slate-300 rounded-2xl bg-white shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#1565D8] shrink-0 bg-slate-100 shadow-sm">
+                        <img 
+                          src="/vitor-leonardo.png" 
+                          alt="Eng. Vitor Leonardo" 
+                          className="w-full h-full object-cover"
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm text-[#0B1E3D] leading-tight">
+                          VITOR LEONARDO CORDEIRO LINHARES
+                        </h4>
+                        <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wide">
+                          Engenheiro Mecânico • Perito Técnico Responsável
+                        </p>
+                        <p className="text-[10px] font-mono text-slate-600 mt-0.5">
+                          Registro Profissional: <strong>CREA-PE 182229949-0</strong>
+                        </p>
+                        <p className="text-[9.5px] text-slate-500 mt-0.5">
+                          ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Linha de Assinatura com espaço limpo para assinar posteriormente */}
+                    <div className="w-full md:w-80 flex flex-col items-center justify-end text-center pt-2">
+                      <div className="w-full min-h-[60px] flex items-center justify-center">
+                        {/* Espaço limpo em branco para assinatura posterior */}
+                      </div>
+                      <div className="w-full border-b border-slate-700 mb-2"></div>
+                      <span className="text-[11px] font-bold text-slate-900 tracking-wide">
+                        VITOR LEONARDO CORDEIRO LINHARES
+                      </span>
+                      <span className="text-[9.5px] font-mono text-slate-600">
+                        Engenheiro Mecânico • CREA-PE 182229949-0
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Standard Footer - Sempre fixado na parte inferior da página */}
+            <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
+              <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
+              <span className="font-mono">Página {conclusaoPageIndex}</span>
             </div>
           </div>
-
-          {/* Standard Footer - Sempre fixado na parte inferior da página */}
-          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-            <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-            <span className="font-mono">Página {conclusaoPageIndex}</span>
-          </div>
-        </div>
-      ),
-    });
+        ),
+      });
+    }
 
     // -------------------------------------------------------------------------
-    // PAGE N+2: ANEXO OFICIAL DA ART CREA-PE
+    // ANEXO OFICIAL DA ART CREA-PE
     // Dedicated page for ART attachment (PDF or Image)
     // -------------------------------------------------------------------------
-    const artPageIndex = pageNum++;
-    list.push({
-      id: 'art',
-      numero: artPageIndex,
-      tipo: 'art',
-      titulo: 'Anexo Oficial da ART CREA-PE',
-      subtitulo: 'Anotação de Responsabilidade Técnica Homologada',
-      render: () => (
-        <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
-          <div className="flex-1">
-            {/* Standard Header */}
-            <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+    if (temArtAnexo && artPageIndex > 0) {
+      list.push({
+        id: 'art',
+        numero: artPageIndex,
+        tipo: 'art',
+        titulo: 'Anexo Oficial da ART CREA-PE',
+        subtitulo: 'Anotação de Responsabilidade Técnica Homologada',
+        render: () => (
+          <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
+            <div className="flex-1">
+              {/* Standard Header */}
+              <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+                  <div>
+                    <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
+                    <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
+                      {laudo.tipo} • Laudo Nº {laudo.numero}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right text-[9px] text-slate-500 font-mono">
+                  <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
+                  <p>Página {artPageIndex} de {totalEstimado}</p>
+                </div>
+              </div>
+
+              {/* ART Header Banner */}
+              <div className="mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                  <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                    {laudo.tipo} • Laudo Nº {laudo.numero}
-                  </p>
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider font-mono">
+                    ANEXO OBRIGATÓRIO
+                  </span>
+                  <h2 className="text-base font-black text-[#0B1E3D]">
+                    Anotação de Responsabilidade Técnica (ART — CREA-PE)
+                  </h2>
                 </div>
-              </div>
-              <div className="text-right text-[9px] text-slate-500 font-mono">
-                <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                <p>Página {artPageIndex}</p>
-              </div>
-            </div>
-
-            {/* ART Header Banner */}
-            <div className="mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider font-mono">
-                  ANEXO OBRIGATÓRIO
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  ART Registrada CREA-PE
                 </span>
-                <h2 className="text-base font-black text-[#0B1E3D]">
-                  Anotação de Responsabilidade Técnica (ART — CREA-PE)
-                </h2>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                ART Registrada CREA-PE
-              </span>
-            </div>
 
-            {/* ART Content: Exibe a imagem real do documento da ART em tamanho integral na página */}
-            {artImagemVisual || (laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl) ? (
-              <div className="w-full flex-1 flex flex-col items-center justify-center">
-                <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
-                  <img 
-                    src={artImagemVisual || laudo.artArquivoUrl} 
-                    alt="Guia da ART CREA-PE" 
-                    className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
-                    crossOrigin="anonymous"
-                  />
-                </div>
-                <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
-                  Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
-                </p>
-              </div>
-            ) : renderizandoPdfArt ? (
-              <div className="p-12 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 text-center space-y-3 my-12">
-                <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-800">Renderizando Documento Oficial da ART...</h4>
-                <p className="text-xs text-slate-500">Convertendo o arquivo PDF para imagem em alta resolução para compilação no laudo.</p>
-              </div>
-            ) : laudo.artArquivoUrl ? (
-              <div className="w-full flex-1 flex flex-col items-center justify-center">
-                <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
-                  <img 
-                    src={laudo.artArquivoUrl} 
-                    alt="Guia da ART CREA-PE" 
-                    className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
-                    crossOrigin="anonymous"
-                  />
-                </div>
-                <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
-                  Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
-                </p>
-              </div>
-            ) : (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-center space-y-4 my-6">
-                <div className="w-14 h-14 rounded-2xl bg-blue-100 text-[#1565D8] flex items-center justify-center mx-auto">
-                  <ShieldCheck className="w-8 h-8" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-slate-800">
-                    Anotação de Responsabilidade Técnica Vinculada
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Nº da ART CREA-PE: <strong className="text-slate-800 font-mono">{laudo.artNumero || 'Em homologação junto ao CREA-PE'}</strong>
+              {/* ART Content: Exibe a imagem real do documento da ART em tamanho integral na página */}
+              {artImagemVisual || (laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl) ? (
+                <div className="w-full flex-1 flex flex-col items-center justify-center">
+                  <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
+                    <img 
+                      src={artImagemVisual || laudo.artArquivoUrl} 
+                      alt="Guia da ART CREA-PE" 
+                      className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                  <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
+                    Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
                   </p>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-slate-200 max-w-md mx-auto text-[11px] text-slate-600 leading-relaxed">
-                  Para anexar o comprovante em PDF ou imagem da ART, utilize a área de anexo na tela de edição do laudo.
+              ) : renderizandoPdfArt ? (
+                <div className="p-12 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 text-center space-y-3 my-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-800">Renderizando Documento Oficial da ART...</h4>
+                  <p className="text-xs text-slate-500">Convertendo o arquivo PDF para imagem em alta resolução para compilação no laudo.</p>
                 </div>
-              </div>
-            )}
-          </div>
+              ) : laudo.artArquivoUrl ? (
+                <div className="w-full flex-1 flex flex-col items-center justify-center">
+                  <div className="w-full h-full flex-1 rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-white flex items-center justify-center p-2 min-h-[640px]">
+                    <img 
+                      src={laudo.artArquivoUrl} 
+                      alt="Guia da ART CREA-PE" 
+                      className="max-w-full max-h-[720px] object-contain mx-auto rounded shadow-xs"
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                  <p className="text-center text-[9.5px] text-slate-500 italic mt-1.5">
+                    Reprodução integral do documento de ART emitido junto ao CREA-PE vinculado a este laudo pericial.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-8 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-center space-y-4 my-6">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-100 text-[#1565D8] flex items-center justify-center mx-auto">
+                    <ShieldCheck className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-800">
+                      Anotação de Responsabilidade Técnica Vinculada
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Nº da ART CREA-PE: <strong className="text-slate-800 font-mono">{laudo.artNumero || 'Em homologação junto ao CREA-PE'}</strong>
+                    </p>
+                  </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 max-w-md mx-auto text-[11px] text-slate-600 leading-relaxed">
+                    Para anexar o comprovante em PDF ou imagem da ART, utilize a área de anexo na tela de edição do laudo.
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Standard Footer - Sempre fixado na parte inferior da página */}
-          <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-            <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-            <span className="font-mono">Página {artPageIndex} (Final)</span>
+            {/* Standard Footer - Sempre fixado na parte inferior da página */}
+            <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
+              <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
+              <span className="font-mono">Página {artPageIndex} (Final)</span>
+            </div>
           </div>
-        </div>
-      ),
-    });
+        ),
+      });
+    }
 
     return list;
   }, [laudo, cliente, ativo, dataFormatada, emitidoEm, secoesVisiveis, artImagemVisual, renderizandoPdfArt]);

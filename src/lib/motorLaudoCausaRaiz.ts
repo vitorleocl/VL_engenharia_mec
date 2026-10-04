@@ -229,21 +229,34 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
       id: 'sec-4',
       titulo: '4. Destinatário e Qualificação do Responsável Técnico',
       ordem: 4,
-      conteudoHtml: `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-xs">
-        <div class="border border-slate-300 p-3 rounded bg-white">
-          <p class="font-bold text-slate-800 uppercase border-b pb-1 mb-2">Dados do Solicitante / Contratante</p>
-          <p><strong>Razão Social:</strong> ${clienteNome}</p>
-          <p><strong>Atividade:</strong> Operações de Transporte e Logística Corporativa</p>
-          <p><strong>Localidade:</strong> Recife e Região Metropolitana / PE</p>
-        </div>
-        <div class="border border-slate-300 p-3 rounded bg-white">
-          <p class="font-bold text-slate-800 uppercase border-b pb-1 mb-2">Qualificação do Perito Encarregado</p>
-          <p><strong>Perito Responsável:</strong> Eng. Vitor Leonardo</p>
-          <p><strong>Formação:</strong> Engenheiro Mecânico</p>
-          <p><strong>Registro Profissional:</strong> CREA-PE 1822299490</p>
-          <p><strong>Especialidade:</strong> Engenharia Veicular, Diagnóstica e Perícias de Causa Raiz</p>
-        </div>
-      </div>`
+      conteudoHtml: `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3 text-xs">
+        <tbody>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/3">Contratante / Solicitante:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${clienteNome}</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Endereço Operacional:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Contato Técnico:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">Thiago Cunha (adfcentroautomotivo@gmail.com)</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Perito Responsável:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">Eng. Vitor Leonardo Cordeiro Linhares</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Titulação & Habilitação:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">Engenheiro Mecânico • Perito Técnico Especialista</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Registro Profissional:</td>
+            <td class="border border-slate-300 p-2 text-slate-900 font-mono font-bold">CREA-PE 182229949-0</td>
+          </tr>
+        </tbody>
+      </table>`
     },
     {
       id: 'sec-5',
@@ -276,7 +289,6 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
           <tr><td class="p-2 border"><strong>Ano Fabricação / Modelo:</strong></td><td class="p-2 border">${dados.ativo.anoModelo || '2021/2022'}</td></tr>
           <tr><td class="p-2 border"><strong>Placa de Identificação:</strong></td><td class="p-2 border font-mono font-bold">${dados.ativo.placa || 'PGX-7098'}</td></tr>
           <tr><td class="p-2 border"><strong>Número do Chassi (VIN):</strong></td><td class="p-2 border font-mono">${dados.ativo.chassi || '9BWCA05U0NT000000'}</td></tr>
-          <tr><td class="p-2 border"><strong>Código RENAVAM:</strong></td><td class="p-2 border font-mono">${dados.ativo.renavam || '01234567890'}</td></tr>
           <tr><td class="p-2 border"><strong>Quilometragem na Vistoria:</strong></td><td class="p-2 border font-bold">${kmAtual}</td></tr>
           <tr><td class="p-2 border"><strong>Combustível / Motorização:</strong></td><td class="p-2 border">Bicombustível (Etanol/Gasolina) • Motor 4 Cilindros em Linha</td></tr>
         </tbody>
