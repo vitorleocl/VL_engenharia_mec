@@ -427,10 +427,238 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       return true;
     });
 
-    // Mapeamento dinâmico de páginas (Capa é pág 1, seções iniciam na pág 2)
+    // Função para dividir seções longas em páginas dinâmicas preservando 100% do conteúdo
+    interface SubPaginaInfo {
+      isContinuacao: boolean;
+      subIndex: number;
+      totalSubs: number;
+      tituloExibicao: string;
+      html: string;
+      fotos?: LaudoFoto[];
+      itens?: LaudoItemChecklist[];
+    }
+
+    const dividirSecaoEmPaginas = (secao: LaudoSecao): SubPaginaInfo[] => {
+      let rawHtml = normalizarHtmlSecao(secao);
+      const tLower = secao.titulo.toLowerCase();
+
+      // 1. Quebra de página explícita inserida no editor (via botão de quebra ou tags HTML)
+      const hasExplicitBreak = 
+        rawHtml.includes('data-page-break') || 
+        rawHtml.includes('class="page-break"') || 
+        rawHtml.includes("class='page-break'") || 
+        rawHtml.includes('<!-- pagebreak -->');
+
+      if (hasExplicitBreak) {
+        const parts = rawHtml.split(
+          /(?:<div[^>]*class="[^"]*page-break[^"]*"[^>]*>[\s\S]*?<\/div>|<div[^>]*data-page-break="true"[^>]*>[\s\S]*?<\/div>|<hr[^>]*class="[^"]*page-break[^"]*"[^>]*\/?>|<hr[^>]*data-page-break="true"[^>]*\/?>|<!--\s*pagebreak\s*-->)/i
+        ).map(p => p.trim()).filter(p => p.length > 0);
+
+        if (parts.length > 1) {
+          return parts.map((partHtml, pIdx) => ({
+            isContinuacao: pIdx > 0,
+            subIndex: pIdx + 1,
+            totalSubs: parts.length,
+            tituloExibicao: pIdx === 0 ? secao.titulo : `${secao.titulo} (Continuação)`,
+            html: partHtml,
+            fotos: pIdx === 0 ? secao.fotos : [],
+            itens: pIdx === 0 ? secao.itens : [],
+          }));
+        }
+      }
+
+      // 2. Seção: "Constatação de Danos e Análise de Causa Raiz"
+      if (tLower.includes('constatação de danos') || tLower.includes('constatacao de danos') || tLower.includes('causa raiz')) {
+        const amberIndex = rawHtml.indexOf('<div class="p-3 bg-amber-50');
+        if (amberIndex !== -1) {
+          let part1 = rawHtml.substring(0, amberIndex).trim();
+          if (!part1.endsWith('</div>')) part1 += '</div>';
+          
+          let part2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n<p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO VI - CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (CONTINUAÇÃO)</p>\n${rawHtml.substring(amberIndex).trim()}`;
+
+          return [
+            {
+              isContinuacao: false,
+              subIndex: 1,
+              totalSubs: 2,
+              tituloExibicao: secao.titulo,
+              html: part1,
+              fotos: secao.fotos,
+              itens: secao.itens,
+            },
+            {
+              isContinuacao: true,
+              subIndex: 2,
+              totalSubs: 2,
+              tituloExibicao: `${secao.titulo} (Continuação)`,
+              html: part2,
+              fotos: [],
+              itens: [],
+            }
+          ];
+        }
+
+        // Divisão por parágrafos para textos customizados longos
+        const pMatches = [...rawHtml.matchAll(/<p[^>]*>[\s\S]*?<\/p>/gi)];
+        if (pMatches.length >= 3 && rawHtml.length > 1200) {
+          const mid = Math.ceil(pMatches.length / 2);
+          const splitPos = pMatches[mid].index!;
+          let p1 = rawHtml.substring(0, splitPos).trim();
+          if (!p1.endsWith('</div>')) p1 += '</div>';
+          let p2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n<p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO VI - CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (CONTINUAÇÃO)</p>\n${rawHtml.substring(splitPos).trim()}`;
+          return [
+            { isContinuacao: false, subIndex: 1, totalSubs: 2, tituloExibicao: secao.titulo, html: p1, fotos: secao.fotos, itens: secao.itens },
+            { isContinuacao: true, subIndex: 2, totalSubs: 2, tituloExibicao: `${secao.titulo} (Continuação)`, html: p2, fotos: [], itens: [] }
+          ];
+        }
+      }
+
+      // 3. Seção: "Registros Fotográficos Principais"
+      if (tLower.includes('registros fotográficos') || tLower.includes('registros fotograficos') || tLower.includes('registro fotográfico')) {
+        // Se houver fotos no array da seção
+        if (secao.fotos && secao.fotos.length > 2) {
+          return [
+            {
+              isContinuacao: false,
+              subIndex: 1,
+              totalSubs: 2,
+              tituloExibicao: secao.titulo,
+              html: rawHtml,
+              fotos: secao.fotos.slice(0, 2),
+              itens: secao.itens,
+            },
+            {
+              isContinuacao: true,
+              subIndex: 2,
+              totalSubs: 2,
+              tituloExibicao: `${secao.titulo} (Continuação)`,
+              html: `<div class="space-y-3">
+  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS (CONTINUAÇÃO)</p>
+  <p class="text-[12px] text-slate-500 italic">(Registros fotográficos complementares da vistoria pericial)</p>
+</div>`,
+              fotos: secao.fotos.slice(2),
+              itens: [],
+            }
+          ];
+        }
+
+        // Se houver cards de figuras no HTML
+        const cardParts = rawHtml.split(/(?=<div class="p-3 border border-slate-200)/i);
+        if (cardParts.length > 2) {
+          const cards: string[] = [];
+          for (let i = 1; i < cardParts.length; i++) {
+            let cHtml = cardParts[i];
+            if (i === cardParts.length - 1) {
+              cHtml = cHtml.replace(/<\/div>\s*<\/div>\s*$/, '');
+            }
+            cards.push(cHtml.trim());
+          }
+
+          if (cards.length >= 3) {
+            const enhanceCard = (c: string) => 
+              c.replace(/h-44/g, 'h-64 sm:h-72 min-h-[240px]')
+               .replace(/text-xs/g, 'text-[12.5px]');
+
+            const part1Html = `<div class="space-y-3">
+  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS</p>
+  <p class="text-[12px] text-slate-500 italic">(Registros fotográficos periciais em alta resolução com legendas técnicas detalhadas)</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
+    ${enhanceCard(cards[0])}
+    ${enhanceCard(cards[1])}
+  </div>
+</div>`;
+
+            const part2Cards = cards.slice(2).map(enhanceCard).join('\n');
+            const part2Html = `<div class="space-y-3">
+  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS (CONTINUAÇÃO)</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
+    ${part2Cards}
+  </div>
+</div>`;
+
+            return [
+              {
+                isContinuacao: false,
+                subIndex: 1,
+                totalSubs: 2,
+                tituloExibicao: secao.titulo,
+                html: part1Html,
+                fotos: secao.fotos,
+                itens: secao.itens,
+              },
+              {
+                isContinuacao: true,
+                subIndex: 2,
+                totalSubs: 2,
+                tituloExibicao: `${secao.titulo} (Continuação)`,
+                html: part2Html,
+                fotos: [],
+                itens: [],
+              }
+            ];
+          }
+        }
+      }
+
+      // Padrão: 1 página única
+      return [
+        {
+          isContinuacao: false,
+          subIndex: 1,
+          totalSubs: 1,
+          tituloExibicao: secao.titulo,
+          html: rawHtml,
+          fotos: secao.fotos,
+          itens: secao.itens,
+        }
+      ];
+    };
+
+    // Mapeamento dinâmico de páginas considerando as sub-páginas geradas
     const pageMap: Record<string, number> = {};
-    secoesFiltradas.forEach(s => {
-      pageMap[s.id] = pageNum++;
+    const subPaginasProcessadas: {
+      id: string;
+      secaoOriginalId: string;
+      numeroPagina: number;
+      itemNumero: number;
+      titulo: string;
+      subtitulo: string;
+      isContinuacao: boolean;
+      subIndex: number;
+      totalSubs: number;
+      conteudoHtml: string;
+      fotos?: LaudoFoto[];
+      itens?: LaudoItemChecklist[];
+      isSumario: boolean;
+      isConclusao: boolean;
+      isObrigatoria?: boolean;
+    }[] = [];
+
+    secoesFiltradas.forEach((secao, idx) => {
+      const subs = dividirSecaoEmPaginas(secao);
+      // O Sumário Executivo aponta SEMPRE para a PRIMEIRA página desta seção:
+      pageMap[secao.id] = pageNum;
+
+      subs.forEach((sub) => {
+        const pagNumero = pageNum++;
+        subPaginasProcessadas.push({
+          id: `${secao.id}-p${sub.subIndex}`,
+          secaoOriginalId: secao.id,
+          numeroPagina: pagNumero,
+          itemNumero: idx + 1,
+          titulo: sub.tituloExibicao,
+          subtitulo: sub.isContinuacao ? `Seção Técnica ${idx + 1} — Continuação` : `Seção Técnica ${idx + 1}`,
+          isContinuacao: sub.isContinuacao,
+          subIndex: sub.subIndex,
+          totalSubs: sub.totalSubs,
+          conteudoHtml: sub.html,
+          fotos: sub.fotos,
+          itens: sub.itens,
+          isSumario: secao.titulo.toLowerCase().includes('sumário') || secao.titulo.toLowerCase().includes('sumario'),
+          isConclusao: secao.id === secaoConclusao?.id,
+          isObrigatoria: secao.isObrigatoria,
+        });
+      });
     });
 
     const conclusaoPageIndex = secaoConclusao ? pageMap[secaoConclusao.id] : pageNum++;
@@ -467,19 +695,16 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       });
     }
 
-    // Geração das páginas das seções técnicas
-    secoesFiltradas.forEach((secao, idx) => {
-      const pageIndex = pageMap[secao.id];
-      const tLower = secao.titulo.toLowerCase();
-      const isSumario = tLower.includes('sumário') || tLower.includes('sumario');
-      const isConclusao = secao.id === secaoConclusao?.id;
+    // Geração das páginas das seções técnicas (com quebra e controle dinâmico)
+    subPaginasProcessadas.forEach((subPag) => {
+      const pageIndex = subPag.numeroPagina;
 
       list.push({
-        id: `secao-${secao.id}`,
+        id: `secao-${subPag.id}`,
         numero: pageIndex,
-        tipo: isConclusao ? 'conclusao' : isSumario ? 'sumario' : 'secao',
-        titulo: secao.titulo,
-        subtitulo: isConclusao ? 'Parecer Conclusivo & Assinatura' : `Seção Técnica ${idx + 1}`,
+        tipo: subPag.isConclusao ? 'conclusao' : subPag.isSumario ? 'sumario' : 'secao',
+        titulo: subPag.titulo,
+        subtitulo: subPag.subtitulo,
         render: () => (
           <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
             <div className="flex-1 flex flex-col">
@@ -504,18 +729,23 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               <div className="mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                    ITEM {idx + 1}
+                    ITEM {subPag.itemNumero}{subPag.isContinuacao ? ' (CONTINUAÇÃO)' : ''}
                   </span>
                   <h2 className="text-base font-black text-[#0B1E3D]">
-                    {isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : secao.titulo}
+                    {subPag.isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : subPag.titulo}
                   </h2>
                 </div>
-                {secao.isObrigatoria && (
+                {subPag.isObrigatoria && (
                   <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                     Requisito Normativo
                   </span>
                 )}
-                {isConclusao && (
+                {subPag.isContinuacao && (
+                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                    Pág. {subPag.subIndex} de {subPag.totalSubs}
+                  </span>
+                )}
+                {subPag.isConclusao && (
                   <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                     Parecer Pericial Homologado
                   </span>
@@ -523,7 +753,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               </div>
 
               {/* RENDERIZAÇÃO ESPECIAL 1: SUMÁRIO EXECUTIVO VISUALMENTE APRIMORADO COM PÁGINAS EXATAS */}
-              {isSumario ? (
+              {subPag.isSumario ? (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 to-[#0B1E3D] text-white flex items-center justify-between shadow-xs">
                     <div>
@@ -576,22 +806,22 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   </div>
                 </div>
               ) : (
-                /* Rich Text HTML Content com sanitização e injeção de dados corretos */
-                secao.conteudoHtml && (
+                /* Rich Text HTML Content com tipografia ampliada de 10pt (text-[13px]) e leitura confortável */
+                subPag.conteudoHtml && (
                   <div 
-                    className="prose prose-sm max-w-none text-slate-800 text-[11px] leading-relaxed mb-3"
-                    dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secao) }}
+                    className="prose prose-sm max-w-none text-slate-800 text-[13px] leading-relaxed mb-3 font-normal"
+                    dangerouslySetInnerHTML={{ __html: subPag.conteudoHtml }}
                   />
                 )
               )}
 
               {/* RENDERIZAÇÃO ESPECIAL 2: CONCLUSÃO TÉCNICA E ASSINATURA EM UMA ÚNICA PÁGINA */}
-              {isConclusao && (
+              {subPag.isConclusao && (
                 <>
                   {/* Se houver considerações finais adicionais, anexa neste mesmo bloco */}
                   {secaoConsideracoes && (
                     <div 
-                      className="prose prose-sm max-w-none text-slate-700 text-[10.5px] leading-relaxed mb-3 border-t border-slate-200 pt-2"
+                      className="prose prose-sm max-w-none text-slate-700 text-[12px] leading-relaxed mb-3 border-t border-slate-200 pt-2"
                       dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secaoConsideracoes) }}
                     />
                   )}
@@ -642,23 +872,21 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </>
               )}
 
-              {/* Evidências Fotográficas da Seção */}
-              {secao.fotos && secao.fotos.length > 0 && (
-                <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <h4 className="text-[11px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-[#1565D8]" />
-                    <span>Registro Fotográfico da Seção ({secao.fotos.length})</span>
+              {/* Evidências Fotográficas da Seção com dimensões ampliadas e alta legibilidade */}
+              {subPag.fotos && subPag.fotos.length > 0 && (
+                <div className="my-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <h4 className="text-[11.5px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-[#1565D8]" />
+                    <span>Registro Fotográfico da Seção ({subPag.fotos.length} {subPag.fotos.length === 1 ? 'imagem' : 'imagens'})</span>
                   </h4>
-                  <div className={`grid gap-3 ${
-                    secao.fotos.length === 1 
-                      ? 'grid-cols-1 max-w-md mx-auto' 
-                      : secao.fotos.length === 2 
-                      ? 'grid-cols-2' 
-                      : 'grid-cols-2 sm:grid-cols-3'
+                  <div className={`grid gap-4 ${
+                    subPag.fotos.length === 1 
+                      ? 'grid-cols-1 max-w-lg mx-auto' 
+                      : 'grid-cols-1 sm:grid-cols-2'
                   }`}>
-                    {secao.fotos.map((foto) => (
-                      <div key={foto.id} className="rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs flex flex-col">
-                        <div className="h-44 sm:h-48 w-full bg-slate-100 flex items-center justify-center p-1.5 overflow-hidden">
+                    {subPag.fotos.map((foto) => (
+                      <div key={foto.id} className="rounded-xl overflow-hidden border border-slate-300 bg-white shadow-xs flex flex-col">
+                        <div className="h-60 sm:h-72 w-full bg-slate-100 flex items-center justify-center p-2 overflow-hidden">
                           <img 
                             src={foto.url} 
                             alt={foto.descricao || 'Evidência'} 
@@ -666,9 +894,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                             crossOrigin="anonymous"
                           />
                         </div>
-                        <p className="p-1.5 text-[10px] text-slate-600 italic leading-tight border-t border-slate-100 bg-white">
-                          {foto.descricao || 'Foto pericial registrada'}
-                        </p>
+                        <div className="p-2.5 text-[12px] text-slate-700 leading-snug border-t border-slate-200 bg-slate-50/80">
+                          <strong className="block text-slate-900 text-[11px] uppercase tracking-wider mb-0.5">Evidência Fotográfica:</strong>
+                          <span>{foto.descricao || 'Foto pericial registrada'}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -676,54 +905,62 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               )}
 
               {/* Checklist Table if present */}
-              {secao.itens && secao.itens.length > 0 && (
+              {subPag.itens && subPag.itens.length > 0 && (
                 <div className="mt-3">
-                  <table className="w-full text-left text-[10px] border-collapse border border-slate-300">
+                  <table className="w-full text-left text-[11px] border-collapse border border-slate-300">
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 border-b border-slate-300">
-                        <th className="p-1.5 font-bold w-7/12">Item / Requisito Normativo</th>
-                        <th className="p-1.5 font-bold w-2/12 text-center">Status</th>
-                        <th className="p-1.5 font-bold w-3/12">Observações</th>
+                        <th className="p-2 font-bold w-7/12">Item / Requisito Normativo</th>
+                        <th className="p-2 font-bold w-2/12 text-center">Status</th>
+                        <th className="p-2 font-bold w-3/12">Observações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                      {secao.itens.map((item) => (
+                      {subPag.itens.map((item) => (
                         <tr key={item.id}>
-                          <td className="p-1.5 text-slate-800 align-top">
+                          <td className="p-2 text-slate-800 align-top">
                             <span className="font-semibold block">{item.requisito}</span>
                             {item.normaRef && (
-                              <span className="text-[9px] text-slate-500 font-mono">Ref: {item.normaRef}</span>
+                              <span className="text-[9.5px] text-slate-500 font-mono">Ref: {item.normaRef}</span>
                             )}
                           </td>
-                          <td className="p-1.5 text-center align-top">
+                          <td className="p-2 text-center align-top">
                             {item.status === 'conforme' && (
-                              <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-emerald-100 text-emerald-800">
+                              <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-emerald-100 text-emerald-800">
                                 CONFORME
                               </span>
                             )}
                             {item.status === 'nao_conforme' && (
-                              <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-red-100 text-red-800">
+                              <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-red-100 text-red-800">
                                 NÃO CONFORME
                               </span>
                             )}
                             {item.status === 'nao_aplicavel' && (
-                              <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-slate-100 text-slate-600">
+                              <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-slate-100 text-slate-600">
                                 NÃO APLICÁVEL
                               </span>
                             )}
                             {item.status === 'pendente' && (
-                              <span className="px-1.5 py-0.5 rounded font-bold text-[8px] bg-amber-100 text-amber-800">
+                              <span className="px-2 py-0.5 rounded font-bold text-[9px] bg-amber-100 text-amber-800">
                                 PENDENTE
                               </span>
                             )}
                           </td>
-                          <td className="p-1.5 text-slate-600 align-top text-[10px]">
+                          <td className="p-2 text-slate-600 align-top text-[11px]">
                             {item.observacao || '—'}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Indicador de Continuação se a seção continuar na página seguinte */}
+              {!subPag.isContinuacao && subPag.totalSubs > 1 && (
+                <div className="mt-auto pt-3 border-t border-slate-200 flex justify-between items-center text-[11.5px] text-blue-700 font-bold font-mono">
+                  <span>{subPag.titulo}</span>
+                  <span className="flex items-center gap-1">Continua na página seguinte ➔</span>
                 </div>
               )}
             </div>

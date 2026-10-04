@@ -36,7 +36,8 @@ import {
   Split,
   Combine,
   Rows,
-  Columns
+  Columns,
+  Scissors
 } from 'lucide-react';
 
 interface TipTapEditorProps {
@@ -434,6 +435,21 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
               title="Inserir Imagem por Link / URL da Web"
             >
               Via URL
+            </button>
+          </div>
+
+          {/* Quebra de Página para o PDF */}
+          <div className="flex items-center gap-1 bg-blue-50/80 dark:bg-blue-950/30 p-1 rounded-lg border border-blue-300 dark:border-blue-800">
+            <button
+              type="button"
+              onClick={() => {
+                editor.chain().focus().insertContent('<hr class="page-break" data-page-break="true" style="page-break-after: always; border: 0; border-top: 2px dashed #1565D8; margin: 18px 0;" /><p></p>').run();
+              }}
+              className="px-2 py-1 rounded bg-white dark:bg-slate-900 hover:bg-blue-100 dark:hover:bg-slate-800 text-[#1565D8] dark:text-blue-300 flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+              title="Inserir Quebra de Página (Página Seguinte no PDF)"
+            >
+              <Scissors className="w-4 h-4 text-[#1565D8]" />
+              <span className="hidden sm:inline">Quebra de Página</span>
             </button>
           </div>
 
