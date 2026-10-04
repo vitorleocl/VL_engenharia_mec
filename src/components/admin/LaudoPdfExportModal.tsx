@@ -169,9 +169,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       titulo: 'Capa Oficial do Laudo',
       subtitulo: 'Identificação & Credenciamento CREA-PE',
       render: () => (
-        <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
+        <div className="flex-1 min-h-[calc(297mm-4rem)] sm:min-h-[calc(297mm-6rem)] h-full flex flex-col justify-between text-slate-900">
           {/* Top Header */}
-          <div className="border-b-2 border-[#0B1E3D] pb-3 flex items-center justify-between shrink-0">
+          <div className="border-b-2 border-[#0B1E3D] pb-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-xs">
                 <img 
@@ -195,9 +195,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             </div>
           </div>
 
-          {/* Title Box e Corpo Central */}
-          <div className="flex-1 min-h-0 flex flex-col justify-center space-y-3.5 py-2.5 my-auto">
-            <div className="text-center space-y-1.5">
+          {/* Title Box e Corpo Central - flex-1 centralizado para ocupar todo o corpo da página A4 */}
+          <div className="flex-1 min-h-0 flex flex-col justify-center space-y-4 py-4 my-auto">
+            <div className="text-center space-y-2">
               <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#0B1E3D] text-white">
                 DOCUMENTO TÉCNICO PERICIAL OFICIAL
               </span>
@@ -216,7 +216,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   <img 
                     src={laudo.capaFotoUrl} 
                     alt="Foto de Capa do Equipamento" 
-                    className="w-full h-52 object-cover"
+                    className="w-full h-56 object-cover"
                     crossOrigin="anonymous"
                   />
                   <div className="bg-[#0B1E3D] text-white text-[10px] py-1.5 px-3 font-semibold text-center italic">
@@ -224,7 +224,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="p-7 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/80 text-center space-y-2">
+                <div className="p-8 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/80 text-center space-y-2">
                   <div className="w-12 h-12 rounded-full bg-blue-100 text-[#1565D8] flex items-center justify-center mx-auto">
                     <Cpu className="w-6 h-6" />
                   </div>
@@ -270,7 +270,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           </div>
 
           {/* Footer Capa - Sempre na extremidade inferior da página (no rodapé oficial) */}
-          <div className="shrink-0 mt-auto border-t-2 border-[#0B1E3D] pt-3 text-[10.5px] text-slate-600 flex items-center justify-between w-full">
+          <div className="mt-auto shrink-0 border-t-2 border-[#0B1E3D] pt-3 text-[10px] text-slate-600 flex items-center justify-between w-full">
             <div>
               <strong className="text-slate-900 font-bold">ENG. VITOR LEONARDO CORDEIRO LINHARES</strong>
               <span> • CREA-PE 182229949-0</span>
@@ -311,14 +311,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       }
 
       // 2. Dados do Veículo: Remodela a tabela fielmente conforme o print oficial, sem renavam e com TODAS as informações visíveis
-      if (
-        t.includes('dados do veículo') || 
-        t.includes('dados do veiculo') || 
-        sec.id === 'sec-7' ||
-        (t.includes('veículo') && t.includes('especifica')) ||
-        (t.includes('veiculo') && t.includes('especifica')) ||
-        t.includes('dados do ativo')
-      ) {
+      if (t.includes('dados do veículo') || t.includes('dados do veiculo')) {
         const proprietario = laudo.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)';
         const marca = ativo?.fabricante || 'Renault';
         const modelo = ativo?.modelo || 'Duster Dynamique 1.6 16V Hi-Flex';
@@ -340,7 +333,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           .replace(/<table[\s\S]*?<\/table>/gi, '')
           .replace(/<p[^>]*>\s*SEÇÃO III[^<]*<\/p>/gi, '')
           .replace(/<p[^>]*>\s*DADOS DO VEÍCULO[^<]*<\/p>/gi, '')
-          .replace(/<div class="border-b-2[\s\S]*?<\/div>/gi, '')
           .trim();
 
         return `<div class="space-y-3">
@@ -349,7 +341,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     <span class="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">Veículo Oficial Periciado</span>
   </div>
 
-  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-[11.5px] leading-snug">
+  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-[10.5px]">
     <tbody>
       <tr>
         <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Frotista:</td>
@@ -403,7 +395,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       </tr>
     </tbody>
   </table>
-  ${textoExtra ? `<div class="mt-2 text-slate-700 text-[13px] leading-relaxed space-y-1">${textoExtra}</div>` : ''}
+  ${textoExtra ? `<div class="mt-2 text-slate-700 text-xs leading-relaxed space-y-1">${textoExtra}</div>` : ''}
 </div>`;
       }
 
@@ -435,57 +427,27 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       return true;
     });
 
-    // Helpers para identificar seções que demandam quebra de página (multi-página dinâmica)
-    const isSecaoCausaRaiz = (s: LaudoSecao) => {
-      const t = s.titulo.toLowerCase();
-      return (
-        (t.includes('constata') && t.includes('danos')) || 
-        (t.includes('causa') && t.includes('raiz') && !t.includes('tabela')) ||
-        s.id === 'sec-10'
-      );
-    };
-
-    const isSecaoFotosPrincipais = (s: LaudoSecao) => {
-      const t = s.titulo.toLowerCase();
-      return (t.includes('registro') && t.includes('fotogr')) || s.id === 'sec-8';
-    };
-
-    const getNumeroPaginasSecao = (s: LaudoSecao): number => {
-      if (isSecaoCausaRaiz(s)) return 2;
-      if (isSecaoFotosPrincipais(s)) return 2;
-      return 1;
-    };
-
-    // Mapeamento dinâmico de páginas (Capa é pág 1, seções técnicas iniciam na pág 2)
-    let runningPageNum = 2;
+    // Mapeamento dinâmico de páginas (Capa é pág 1, seções iniciam na pág 2)
     const pageMap: Record<string, number> = {};
-
     secoesFiltradas.forEach(s => {
-      pageMap[s.id] = runningPageNum;
-      runningPageNum += getNumeroPaginasSecao(s);
+      pageMap[s.id] = pageNum++;
     });
 
-    const conclusaoPageIndex = secaoConclusao ? pageMap[secaoConclusao.id] : runningPageNum++;
+    const conclusaoPageIndex = secaoConclusao ? pageMap[secaoConclusao.id] : pageNum++;
     const temArtAnexo = Boolean(artImagemVisual || (laudo.artTipoArquivo === 'imagem' && laudo.artArquivoUrl) || laudo.artArquivoUrl);
-    const artPageIndex = temArtAnexo ? runningPageNum++ : 0;
-    const totalEstimado = runningPageNum - 1;
+    const artPageIndex = temArtAnexo ? pageNum++ : 0;
+    const totalEstimado = pageNum - 1;
 
     // Itens dinâmicos para o Sumário Executivo com numeração exata de cada página
-    const itensSumario: { numero: number; titulo: string; paginaTexto: string }[] = [];
+    const itensSumario: { numero: number; titulo: string; pagina: number }[] = [];
     let itemCounter = 1;
 
     secoesFiltradas.forEach(s => {
       const isConclusao = s.id === secaoConclusao?.id;
-      const numPags = getNumeroPaginasSecao(s);
-      const startP = pageMap[s.id] || 0;
-      const pagTexto = numPags > 1 
-        ? `Págs. ${String(startP).padStart(2, '0')}-${String(startP + numPags - 1).padStart(2, '0')}`
-        : `Pág. ${String(startP).padStart(2, '0')}`;
-
       itensSumario.push({
         numero: itemCounter++,
         titulo: isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : s.titulo,
-        paginaTexto: pagTexto,
+        pagina: pageMap[s.id] || 0,
       });
     });
 
@@ -493,7 +455,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       itensSumario.push({
         numero: itemCounter++,
         titulo: 'Conclusão Técnica & Assinatura',
-        paginaTexto: `Pág. ${String(conclusaoPageIndex).padStart(2, '0')}`,
+        pagina: conclusaoPageIndex,
       });
     }
 
@@ -501,465 +463,25 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       itensSumario.push({
         numero: itemCounter++,
         titulo: 'Anexo Oficial da ART CREA-PE',
-        paginaTexto: `Pág. ${String(artPageIndex).padStart(2, '0')}`,
+        pagina: artPageIndex,
       });
     }
 
-    // Geração das páginas das seções técnicas (com quebras dinâmicas)
+    // Geração das páginas das seções técnicas
     secoesFiltradas.forEach((secao, idx) => {
-      const startPage = pageMap[secao.id];
+      const pageIndex = pageMap[secao.id];
       const tLower = secao.titulo.toLowerCase();
       const isSumario = tLower.includes('sumário') || tLower.includes('sumario');
       const isConclusao = secao.id === secaoConclusao?.id;
 
-      // =======================================================================
-      // CASO 1: SEÇÃO DE REGISTROS FOTOGRÁFICOS PRINCIPAIS (DIVIDIDA EM 2 PÁGINAS COM IMAGENS AMPLIADAS)
-      // =======================================================================
-      if (isSecaoFotosPrincipais(secao)) {
-        // PÁGINA 1 DE FOTOS: Cabeçote Desmontado e Correia Dentada Rompida (Grandes & Nitidas)
-        list.push({
-          id: `secao-${secao.id}-p1`,
-          numero: startPage,
-          tipo: 'secao',
-          titulo: secao.titulo,
-          subtitulo: 'Parte 1: Evidências Macroscópicas do Conjunto Propulsor',
-          render: () => (
-            <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
-              <div className="flex-1 flex flex-col">
-                {/* Standard Header */}
-                <div className="border-b-2 border-[#0B1E3D] pb-3 mb-3 flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                    <div>
-                      <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                      <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        {laudo.tipo} • Laudo Nº {laudo.numero}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-500 font-mono">
-                    <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                    <p>Página {startPage} de {totalEstimado}</p>
-                  </div>
-                </div>
-
-                {/* Section Header */}
-                <div className="mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                      ITEM {idx + 1}
-                    </span>
-                    <h2 className="text-base font-black text-[#0B1E3D]">
-                      {secao.titulo}
-                    </h2>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    Parte 1 de 2 • Evidências do Motor
-                  </span>
-                </div>
-
-                {/* Fotos 1 e 2 Ampliadas em Alta Resolução */}
-                <div className="space-y-3.5 my-auto">
-                  {/* Figura 1: Cabeçote Desmontado */}
-                  <div className="p-3 border border-slate-300 rounded-xl bg-slate-50/80 shadow-2xs">
-                    <div className="h-44 sm:h-48 w-full bg-slate-900 rounded-lg flex flex-col items-center justify-center p-3 text-center border border-slate-700 overflow-hidden relative">
-                      <div className="w-12 h-12 rounded-full bg-blue-600/30 text-blue-400 flex items-center justify-center mb-1.5 border border-blue-500/40">
-                        <Camera className="w-6 h-6" />
-                      </div>
-                      <span className="text-xs font-mono font-bold text-white tracking-wide">
-                        [FIGURA 01 — CABEÇOTE DO MOTOR DESMONTADO EM BANCADA PERICIAL]
-                      </span>
-                      <p className="text-[10px] text-slate-300 mt-1 max-w-md">
-                        Inspeção visual direta evidenciando choque mecânico e avarias severas nas sedes e guias de válvulas.
-                      </p>
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/60 text-slate-300 text-[9px] font-mono border border-white/10">
-                        Inspeção In Loco
-                      </div>
-                    </div>
-                    <div className="mt-2 text-slate-800">
-                      <h4 className="text-[11.5px] font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-600"></span>
-                        Figura 01 — Vista Superior do Cabeçote do Motor Renault Duster (Hi-Flex 1.6 16V)
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 text-justify">
-                        Vista do conjunto do cabeçote desmontado em bancada nas dependências da ADF Caruaru. O exame pericial atesta a ocorrência de interferência mecânica direta ("atropelamento de válvulas") provocada pela perda instantânea do sincronismo com o virabrequim, gerando empenamento de hastes e danos nas sedes que inviabilizam o funcionamento do propulsor.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Figura 2: Correia Dentada Rompida */}
-                  <div className="p-3 border border-slate-300 rounded-xl bg-slate-50/80 shadow-2xs">
-                    <div className="h-44 sm:h-48 w-full bg-slate-900 rounded-lg flex flex-col items-center justify-center p-3 text-center border border-slate-700 overflow-hidden relative">
-                      <div className="w-12 h-12 rounded-full bg-amber-600/30 text-amber-400 flex items-center justify-center mb-1.5 border border-amber-500/40">
-                        <AlertTriangle className="w-6 h-6" />
-                      </div>
-                      <span className="text-xs font-mono font-bold text-white tracking-wide">
-                        [FIGURA 02 — DETALHE MACROSCÓPICO DA CORREIA DENTADA ROMPIDA]
-                      </span>
-                      <p className="text-[10px] text-slate-300 mt-1 max-w-md">
-                        Evidência da descontinuidade estrutural e desfibramento total dos cordonéis de tração por fadiga mecânica cíclica.
-                      </p>
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-mono border border-amber-500/30">
-                        Causa Raiz Primária
-                      </div>
-                    </div>
-                    <div className="mt-2 text-slate-800">
-                      <h4 className="text-[11.5px] font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                        Figura 02 — Macrofotografia da Correia de Sincronismo Danificada
-                      </h4>
-                      <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 text-justify">
-                        Registro macroscópico da zona de ruptura da correia dentada, demonstrando estilhaçamento por fadiga mecânica e perda de resistência tênsil do composto polimérico elastomérico. O exame constata a ausência de marcas de fricção lateral com guias ou travamento do tensionador, confirmando o esgotamento da vida útil do componente após o transcurso da garantia legal.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Standard Footer */}
-              <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-                <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-                <span className="font-mono">Página {startPage}</span>
-              </div>
-            </div>
-          ),
-        });
-
-        // PÁGINA 2 DE FOTOS: Odômetro Ampliado e Confronto Instrumental Oficial
-        list.push({
-          id: `secao-${secao.id}-p2`,
-          numero: startPage + 1,
-          tipo: 'secao',
-          titulo: `${secao.titulo} (Continuação)`,
-          subtitulo: 'Parte 2: Rastreabilidade Instrumental e Odômetro',
-          render: () => (
-            <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
-              <div className="flex-1 flex flex-col">
-                {/* Standard Header */}
-                <div className="border-b-2 border-[#0B1E3D] pb-3 mb-3 flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                    <div>
-                      <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                      <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        {laudo.tipo} • Laudo Nº {laudo.numero}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-500 font-mono">
-                    <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                    <p>Página {startPage + 1} de {totalEstimado}</p>
-                  </div>
-                </div>
-
-                {/* Section Header */}
-                <div className="mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                      ITEM {idx + 1} (CONTINUAÇÃO)
-                    </span>
-                    <h2 className="text-base font-black text-[#0B1E3D]">
-                      {secao.titulo}
-                    </h2>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    Parte 2 de 2 • Rastreabilidade Instrumental
-                  </span>
-                </div>
-
-                {/* Figura 3 Ampliada: Odômetro do Veículo e Quadro de Aferição */}
-                <div className="space-y-3.5 my-auto">
-                  <div className="p-3.5 border border-slate-300 rounded-xl bg-slate-50/80 shadow-2xs">
-                    <div className="h-52 sm:h-56 w-full bg-slate-900 rounded-lg flex flex-col items-center justify-center p-4 text-center border border-slate-700 overflow-hidden relative">
-                      <div className="w-14 h-14 rounded-full bg-emerald-600/30 text-emerald-400 flex items-center justify-center mb-2 border border-emerald-500/40">
-                        <CheckCircle2 className="w-7 h-7" />
-                      </div>
-                      <span className="text-sm font-mono font-black text-emerald-400 tracking-wider">
-                        [ODÔMETRO AFERIDO: 152.530 km]
-                      </span>
-                      <p className="text-xs text-slate-300 mt-1 max-w-md">
-                        Painel de instrumentos do Renault Duster PGX-9708 registrado na entrada da oficina pericial.
-                      </p>
-                      <div className="absolute top-2 right-2 px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
-                        Comprovação Material
-                      </div>
-                    </div>
-                    <div className="mt-2 text-slate-800">
-                      <h4 className="text-[12px] font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                        Figura 03 — Painel de Instrumentos e Odômetro Digital do Veículo Oficial
-                      </h4>
-                      <p className="text-[11.5px] text-slate-600 leading-relaxed mt-0.5 text-justify">
-                        Registro visual direto do odômetro do veículo no momento da vistoria pericial realizada em agosto de 2026, comprovando fidedignamente a marcação de 152.530 km. Este dado material confronta-se com a quilometragem de 149.908 km anotada na manutenção preventiva de dezembro de 2025, certificando o percurso exíguo de apenas 2.622 km entre as intervenções.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Quadro Analítico Instrumental e Confronto Temporal */}
-                  <div className="p-3.5 rounded-xl border border-slate-300 bg-white space-y-2">
-                    <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider font-mono border-b border-slate-200 pb-1.5">
-                      Quadro Pericial de Confronto Métrico & Temporal (CDC Art. 26)
-                    </h4>
-                    <table className="w-full text-[11.5px] border-collapse border border-slate-300">
-                      <tbody>
-                        <tr className="border-b border-slate-200">
-                          <td className="p-2 font-bold text-slate-700 bg-slate-50 w-1/2 border-r border-slate-200">Quilometragem na Manutenção Prévia (Dez/2025):</td>
-                          <td className="p-2 text-slate-900 font-mono font-semibold">149.908 km</td>
-                        </tr>
-                        <tr className="border-b border-slate-200">
-                          <td className="p-2 font-bold text-slate-700 bg-slate-50 border-r border-slate-200">Quilometragem Constatada na Pane (Ago/2026):</td>
-                          <td className="p-2 text-slate-900 font-mono font-bold text-emerald-800">152.530 km</td>
-                        </tr>
-                        <tr className="border-b border-slate-200">
-                          <td className="p-2 font-bold text-slate-700 bg-slate-50 border-r border-slate-200">Delta Quilométrico Percorrido:</td>
-                          <td className="p-2 text-[#1565D8] font-mono font-black">2.622 km (Uso Operacional Reduzido)</td>
-                        </tr>
-                        <tr className="border-b border-slate-200">
-                          <td className="p-2 font-bold text-slate-700 bg-slate-50 border-r border-slate-200">Transcurso Temporal Efetivo:</td>
-                          <td className="p-2 text-slate-900 font-semibold">&gt; 8 Meses decorridos (aprox. 245 dias)</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 font-bold text-slate-700 bg-slate-50 border-r border-slate-200">Enquadramento Legal da Garantia (CDC):</td>
-                          <td className="p-2 text-amber-800 font-bold bg-amber-50/50">Prazo legal de 90 dias esgotado temporalmente</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Fotos Adicionais do Perito se existentes */}
-                  {secao.fotos && secao.fotos.length > 0 && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <span className="text-[10px] font-bold text-[#0B1E3D] uppercase tracking-wider block mb-2">
-                        Evidências Anexadas Complementares ({secao.fotos.length})
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {secao.fotos.slice(0, 2).map((foto) => (
-                          <div key={foto.id} className="rounded-lg overflow-hidden border border-slate-200 bg-white">
-                            <img src={foto.url} alt="Foto complementar" className="h-28 w-full object-cover" crossOrigin="anonymous" />
-                            <p className="p-1 text-[9.5px] text-slate-600 italic truncate">{foto.descricao || 'Registro pericial'}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Standard Footer */}
-              <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-                <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-                <span className="font-mono">Página {startPage + 1}</span>
-              </div>
-            </div>
-          ),
-        });
-        return;
-      }
-
-      // =======================================================================
-      // CASO 2: SEÇÃO DE CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (DIVIDIDA EM 2 PÁGINAS COM TEXTO TAMANHO 10PT)
-      // =======================================================================
-      if (isSecaoCausaRaiz(secao)) {
-        // PÁGINA 1: Dinâmica da Pane Mecânica & Diagnóstico dos Componentes
-        list.push({
-          id: `secao-${secao.id}-p1`,
-          numero: startPage,
-          tipo: 'secao',
-          titulo: secao.titulo,
-          subtitulo: 'Parte 1: Dinâmica da Pane & Diagnóstico Pericial',
-          render: () => (
-            <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
-              <div className="flex-1 flex flex-col">
-                {/* Standard Header */}
-                <div className="border-b-2 border-[#0B1E3D] pb-3 mb-3 flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                    <div>
-                      <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                      <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        {laudo.tipo} • Laudo Nº {laudo.numero}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-500 font-mono">
-                    <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                    <p>Página {startPage} de {totalEstimado}</p>
-                  </div>
-                </div>
-
-                {/* Section Header */}
-                <div className="mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                      ITEM {idx + 1}
-                    </span>
-                    <h2 className="text-base font-black text-[#0B1E3D]">
-                      {secao.titulo}
-                    </h2>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    Parte 1 de 2 • Mecânica da Falha
-                  </span>
-                </div>
-
-                {/* Conteúdo Técnico com Texto Tamanho 10pt (13.5px) Confortável e Legível */}
-                <div className="space-y-3.5 my-auto text-[13.5px] leading-relaxed text-slate-800 text-justify">
-                  <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 space-y-1.5">
-                    <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#1565D8]"></span>
-                      1. Dinâmica da Falha Mecânica no Conjunto Propulsor
-                    </h4>
-                    <p>
-                      A inspeção técnica pautada nas evidências físicas comprova que a pane mecânica do veículo oficial foi deflagrada pela <strong>ruptura total da correia dentada do sistema de distribuição</strong>. O rompimento abrupto do componente causou a perda imediata da sincronização cinemática entre o eixo virabrequim e o comando de válvulas no cabeçote.
-                    </p>
-                    <p>
-                      Em razão desse dessincronismo, as válvulas de admissão e escape permaneceram em posição aberta durante o movimento ascendente dos êmbolos, gerando o severo choque de interferência física contra a coroa dos pistões (fenômeno conhecido pericialmente como <em>"atropelamento de válvulas"</em>). Tal colisão provocou o empenamento generalizado das válvulas, avarias nas sedes e guias do cabeçote, tornando mandatória a execução de novos serviços especializados de retífica e substituição dos componentes móveis internos.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-300 bg-white space-y-1.5 shadow-2xs">
-                    <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-slate-700"></span>
-                      2. Exame Macroscópico da Correia e Fadiga por Tração Cíclica
-                    </h4>
-                    <p>
-                      Adicionalmente, a análise pericial macroscópica conduzida nas extremidades da correia dentada rompida revelou o aspecto morfológico típico de <strong>fadiga mecânica progressiva com estilhaçamento por tração cíclica em ponto de torção</strong>. As fibras de cordonéis internos apresentaram desfibramento uniforme com estiramento desordenado, sem evidências de marcas de atrito lateral crônico causadas por desalinhamento de polias ou travamento do tensionador.
-                    </p>
-                    <p>
-                      A ausência de estrias longitudinais de fricção lateral corrobora que as polias e o rolamento tensor operavam em alinhamento geométrico satisfatório, apontando para a falha primária da própria correia decorrente da combinação entre regime de tensão operacional e degradação elastomérica.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5">
-                    <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                      3. Comportamento e Vida Útil dos Polímeros Elastoméricos
-                    </h4>
-                    <p>
-                      Cumpre registrar que, embora a intervenção preventiva realizada em dezembro de 2025 tenha sido ampla — abrangendo retífica de cabeçote, troca de junta, bomba d'água, correia dentada, tensor e filtros —, a durabilidade de artefatos elastoméricos é governada por ciclos térmicos contínuos e intempéries climáticas. Tais fatores promovem o envelhecimento e a perda de elasticidade do polímero ao longo do tempo, independentemente de o veículo percorrer baixa quilometragem, sendo disciplinados legalmente pelo prazo decadencial da garantia.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Standard Footer */}
-              <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-                <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-                <span className="font-mono">Página {startPage}</span>
-              </div>
-            </div>
-          ),
-        });
-
-        // PÁGINA 2: Análise Temporal de Garantia (CDC Art. 26) & Nexo Causal
-        list.push({
-          id: `secao-${secao.id}-p2`,
-          numero: startPage + 1,
-          tipo: 'secao',
-          titulo: `${secao.titulo} (Continuação)`,
-          subtitulo: 'Parte 2: Análise Temporal de Garantia (CDC) & Nexo Causal',
-          render: () => (
-            <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
-              <div className="flex-1 flex flex-col">
-                {/* Standard Header */}
-                <div className="border-b-2 border-[#0B1E3D] pb-3 mb-3 flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
-                    <div>
-                      <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
-                      <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        {laudo.tipo} • Laudo Nº {laudo.numero}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[9px] text-slate-500 font-mono">
-                    <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                    <p>Página {startPage + 1} de {totalEstimado}</p>
-                  </div>
-                </div>
-
-                {/* Section Header */}
-                <div className="mb-3 pb-2 border-b border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                      ITEM {idx + 1} (CONTINUAÇÃO)
-                    </span>
-                    <h2 className="text-base font-black text-[#0B1E3D]">
-                      {secao.titulo}
-                    </h2>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded text-[9.5px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                    Parte 2 de 2 • Análise Jurídico-Normativa & Nexo Causal
-                  </span>
-                </div>
-
-                {/* Conteúdo da Continuação com Texto 10pt (13.5px) */}
-                <div className="space-y-3.5 my-auto text-[13.5px] leading-relaxed text-slate-800 text-justify">
-                  {/* Destaque Amarelo Oficial da Análise Temporal e Garantia CDC */}
-                  <div className="p-4 bg-amber-50/90 border-2 border-amber-400 rounded-xl space-y-2 shadow-2xs">
-                    <div className="flex items-center gap-2 border-b border-amber-300/80 pb-1.5">
-                      <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
-                      <h4 className="font-black text-amber-950 text-xs sm:text-sm uppercase tracking-wider font-mono">
-                        Análise Temporal e Jurídica de Garantia (CDC Art. 26, Inciso II)
-                      </h4>
-                    </div>
-                    <p className="text-amber-950 font-medium">
-                      Sob a ótica da análise temporal e do arcabouço normativo do <strong>Código de Defesa do Consumidor (Lei n.º 8.078/1990)</strong>, constata-se documentalmente que a intervenção prévia no motor foi finalizada em <strong>dezembro de 2025</strong>, enquanto a manifestação da quebra ocorreu em <strong>agosto de 2026</strong>.
-                    </p>
-                    <p className="text-amber-950">
-                      Destaca-se enfaticamente que, a despeito de o veículo ter percorrido uma quilometragem bastante exígua no intervalo (<strong>apenas 2.622 km</strong>), o decurso temporal superior a <strong>8 (oito) meses</strong> excede largamente o prazo legal e decadencial de <strong>90 (noventa) dias</strong> estipulado no art. 26, inciso II do CDC para reclamação de vícios em serviços e produtos duráveis.
-                    </p>
-                    <div className="p-2.5 bg-amber-100/80 rounded-lg text-[12.5px] font-bold text-amber-900 border border-amber-300">
-                      Conclusão Temporal: O evento danoso encontra-se juridicamente e temporalmente fora do prazo de garantia legal da manutenção anterior realizada pela oficina terceirizada.
-                    </div>
-                  </div>
-
-                  {/* Nexo Causal e Ausência de Mau Uso */}
-                  <div className="p-3.5 rounded-xl border border-slate-300 bg-white space-y-1.5 shadow-2xs">
-                    <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      4. Apuração de Nexo Causal e Isenção de Mau Uso pelo Condutor
-                    </h4>
-                    <p>
-                      O exame técnico pericial dos pistões, velas e componentes do bloco descarta peremptoriamente quaisquer indícios materiais de negligência operacional, sobregiro mecânico intencional, calço hidráulico por submersão ou operação contínua sem fluido lubrificante ou arrefecimento por parte do motorista oficial do Ministério Público de Pernambuco.
-                    </p>
-                    <p>
-                      Trata-se categoricamente de um evento fortuito decorrente da descontinuidade mecânica da correia de sincronismo sob regime rotineiro de operação, deflagrado após a expiração formal da janela temporal de responsabilidade civil da oficina fornecedora anterior.
-                    </p>
-                  </div>
-
-                  {/* Síntese Pericial de Fechamento da Seção */}
-                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-[12.5px] text-slate-700 leading-normal">
-                    <strong className="text-[#0B1E3D] block text-xs font-mono uppercase mb-1">
-                      Síntese da Investigação Causal:
-                    </strong>
-                    Causa Raiz Primária: Ruptura da correia dentada por fadiga mecânica • Danos Consequentes: Atropelamento e empenamento de válvulas no cabeçote • Enquadramento: Fora de garantia temporal • Ação Recomendada: Execução de nova retífica completa com substituição do kit de sincronismo e tensor homologados.
-                  </div>
-                </div>
-              </div>
-
-              {/* Standard Footer */}
-              <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
-                <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-                <span className="font-mono">Página {startPage + 1}</span>
-              </div>
-            </div>
-          ),
-        });
-        return;
-      }
-
-      // =======================================================================
-      // CASO 3: SEÇÕES PADRÃO (SUMÁRIO, APRESENTAÇÃO, DADOS DO VEÍCULO, TABELA, CONCLUSÃO)
-      // =======================================================================
       list.push({
         id: `secao-${secao.id}`,
-        numero: startPage,
+        numero: pageIndex,
         tipo: isConclusao ? 'conclusao' : isSumario ? 'sumario' : 'secao',
         titulo: secao.titulo,
         subtitulo: isConclusao ? 'Parecer Conclusivo & Assinatura' : `Seção Técnica ${idx + 1}`,
         render: () => (
-          <div className="flex-1 flex flex-col justify-between h-full min-h-0 w-full text-slate-900">
+          <div className="flex-1 flex flex-col justify-between h-full min-h-full w-full text-slate-900">
             <div className="flex-1 flex flex-col">
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
@@ -974,7 +496,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
                 <div className="text-right text-[9px] text-slate-500 font-mono">
                   <p>ART CREA-PE: <strong>{laudo.artNumero || 'Homologada'}</strong></p>
-                  <p>Página {startPage} de {totalEstimado}</p>
+                  <p>Página {pageIndex} de {totalEstimado}</p>
                 </div>
               </div>
 
@@ -1030,15 +552,15 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                           <span className="w-6 h-6 rounded-md bg-blue-50 text-[#1565D8] font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-blue-100">
                             {String(item.numero).padStart(2, '0')}
                           </span>
-                          <span className="font-semibold text-slate-800 truncate text-[12.5px]">
+                          <span className="font-semibold text-slate-800 truncate">
                             {item.titulo}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2 shrink-0 ml-3">
                           <div className="w-12 sm:w-24 border-b border-dotted border-slate-300"></div>
-                          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[11px] font-bold border border-slate-200">
-                            {item.paginaTexto}
+                          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10.5px] font-bold border border-slate-200">
+                            Pág. {String(item.pagina).padStart(2, '0')}
                           </span>
                         </div>
                       </div>
@@ -1046,7 +568,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   </div>
 
                   {/* Diretrizes Normativas e Metodologia */}
-                  <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50 text-[11.5px] text-slate-700 space-y-1">
+                  <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50 text-[10.5px] text-slate-700 space-y-1">
                     <strong className="text-[#0B1E3D] block text-xs">Observações da Estrutura Pericial:</strong>
                     <p className="leading-relaxed">
                       A numeração de páginas segue rigorosamente a ordem sequencial das diligências, constatações materiais e fundamentação normativa do laudo, assegurando conformidade com as diretrizes do CONFEA/CREA e do Código de Defesa do Consumidor.
@@ -1054,10 +576,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   </div>
                 </div>
               ) : (
-                /* Rich Text HTML Content com sanitização e texto tamanho 10pt (13.5px) */
+                /* Rich Text HTML Content com sanitização e injeção de dados corretos */
                 secao.conteudoHtml && (
                   <div 
-                    className="prose prose-sm max-w-none text-slate-800 text-[13.5px] leading-relaxed mb-3"
+                    className="prose prose-sm max-w-none text-slate-800 text-[11px] leading-relaxed mb-3"
                     dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secao) }}
                   />
                 )
@@ -1069,7 +591,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                   {/* Se houver considerações finais adicionais, anexa neste mesmo bloco */}
                   {secaoConsideracoes && (
                     <div 
-                      className="prose prose-sm max-w-none text-slate-700 text-[12.5px] leading-relaxed mb-3 border-t border-slate-200 pt-2"
+                      className="prose prose-sm max-w-none text-slate-700 text-[10.5px] leading-relaxed mb-3 border-t border-slate-200 pt-2"
                       dangerouslySetInnerHTML={{ __html: normalizarHtmlSecao(secaoConsideracoes) }}
                     />
                   )}
@@ -1121,7 +643,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               )}
 
               {/* Evidências Fotográficas da Seção */}
-              {secao.fotos && secao.fotos.length > 0 && !isSecaoFotosPrincipais(secao) && (
+              {secao.fotos && secao.fotos.length > 0 && (
                 <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-[11px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5 text-[#1565D8]" />
@@ -1156,7 +678,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Checklist Table if present */}
               {secao.itens && secao.itens.length > 0 && (
                 <div className="mt-3">
-                  <table className="w-full text-left text-[11px] border-collapse border border-slate-300">
+                  <table className="w-full text-left text-[10px] border-collapse border border-slate-300">
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 border-b border-slate-300">
                         <th className="p-1.5 font-bold w-7/12">Item / Requisito Normativo</th>
@@ -1209,7 +731,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             {/* Standard Footer - Sempre fixado na parte inferior da página */}
             <div className="mt-auto shrink-0 border-t border-slate-300 pt-3 text-[9px] text-slate-500 flex items-center justify-between w-full">
               <span>VL Engenharia Mecânica • CREA-PE 182229949-0</span>
-              <span className="font-mono">Página {startPage}</span>
+              <span className="font-mono">Página {pageIndex}</span>
             </div>
           </div>
         ),
@@ -1741,18 +1263,11 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             {modoVisualizacao === 'pagina' ? (
               // Single page render with mechanical watermark
               <div 
-                className="printable-document bg-white text-slate-900 p-8 sm:p-10 shadow-xl border border-slate-300 flex flex-col justify-between relative overflow-hidden mx-auto"
-                style={{ 
-                  width: '210mm',
-                  height: '297mm',
-                  minHeight: '297mm',
-                  maxHeight: '297mm',
-                  boxSizing: 'border-box',
-                  fontFamily: 'system-ui, -apple-system, sans-serif' 
-                }}
+                className="printable-document bg-white text-slate-900 min-h-[297mm] p-8 sm:p-12 shadow-xl border border-slate-300 flex flex-col justify-between relative overflow-hidden"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 <EngineeringWatermark opacity="opacity-[0.045]" />
-                <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-0 w-full">
+                <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                   {paginaRenderizar.render()}
                 </div>
               </div>
@@ -1761,18 +1276,11 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               paginasLaudo.map((pag) => (
                 <div 
                   key={`preview-${pag.id}`}
-                  className="printable-document bg-white text-slate-900 p-8 sm:p-10 shadow-xl border border-slate-300 flex flex-col justify-between page-break-after-always relative mb-6 overflow-hidden mx-auto"
-                  style={{ 
-                    width: '210mm',
-                    height: '297mm',
-                    minHeight: '297mm',
-                    maxHeight: '297mm',
-                    boxSizing: 'border-box',
-                    fontFamily: 'system-ui, -apple-system, sans-serif' 
-                  }}
+                  className="printable-document bg-white text-slate-900 min-h-[297mm] p-8 sm:p-12 shadow-xl border border-slate-300 flex flex-col justify-between page-break-after-always relative mb-6 overflow-hidden"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
                   <EngineeringWatermark opacity="opacity-[0.045]" />
-                  <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-0 w-full">
+                  <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                     {pag.render()}
                   </div>
                 </div>
@@ -1798,7 +1306,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               style={{ boxSizing: 'border-box' }}
             >
               <EngineeringWatermark opacity="opacity-[0.045]" />
-              <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-0 w-full">
+              <div className="relative z-10 flex-1 flex flex-col justify-between h-full min-h-full w-full">
                 {pag.render()}
               </div>
             </div>
