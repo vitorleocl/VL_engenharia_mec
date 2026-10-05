@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
-import { Laudo, LaudoSecao, Cliente, Ativo } from '../../types';
+import { Laudo, LaudoSecao, Cliente, Ativo, EvidenciaFoto, LaudoItemChecklist } from '../../types';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
 import { converterPdfParaImagem } from '../../lib/pdfToImage';
 
@@ -434,7 +434,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       totalSubs: number;
       tituloExibicao: string;
       html: string;
-      fotos?: LaudoFoto[];
+      fotos?: EvidenciaFoto[];
       itens?: LaudoItemChecklist[];
     }
 
@@ -627,7 +627,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       subIndex: number;
       totalSubs: number;
       conteudoHtml: string;
-      fotos?: LaudoFoto[];
+      fotos?: EvidenciaFoto[];
       itens?: LaudoItemChecklist[];
       isSumario: boolean;
       isConclusao: boolean;
