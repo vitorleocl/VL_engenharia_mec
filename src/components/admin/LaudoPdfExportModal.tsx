@@ -428,6 +428,38 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       return true;
     });
 
+    // Função utilitária para remover títulos repetitivos ou indesejados no PDF
+    const limparTitulosIndesejados = (html: string, isContinuacao: boolean): string => {
+      if (!html) return '';
+      let cleaned = html;
+
+      // 1. Remove qualquer menção a SEÇÃO VI - CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (CONTINUAÇÃO)
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+\s*-\s*CONSTATAÇÃO\s+DE\s+DANOS[\s\S]*?\(CONTINUAÇÃO\)[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/SEÇÃO\s+[IVXLCDM]+\s*-\s*CONSTATAÇÃO\s+DE\s+DANOS[^\n<]*\(CONTINUAÇÃO\)[^\n<]*/gi, '');
+
+      // 2. Remove SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS (CONTINUAÇÃO)
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+\s*-\s*REGISTROS\s+FOTOGRÁFICOS[\s\S]*?\(CONTINUAÇÃO\)[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/SEÇÃO\s+[IVXLCDM]+\s*-\s*REGISTROS\s+FOTOGRÁFICOS[^\n<]*\(CONTINUAÇÃO\)[^\n<]*/gi, '');
+
+      // 3. Remove (Registros fotográficos complementares da vistoria pericial)
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Registros\s+fotogr[aá]ficos\s+complementares[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/\(?\s*Registros\s+fotogr[aá]ficos\s+complementares[^\n<]*\)?/gi, '');
+
+      // 4. Remove legendas/subtítulos de instruções que poluem as fotos no PDF
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Registros\s+fotogr[aá]ficos\s+periciais\s+em\s+alta\s+resolu[cç][aã]o[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Insira\s+as\s+imagens\s+correspondentes[\s\S]*?<\/p>/gi, '');
+
+      // 5. Se for página de continuação, remove qualquer repetição de cabeçalho interno de Seção
+      if (isContinuacao) {
+        cleaned = cleaned.replace(/<p[^>]*font-bold[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+[\s\S]*?<\/p>/gi, '');
+      }
+
+      // 6. Remove qualquer tag isolada com (CONTINUAÇÃO)
+      cleaned = cleaned.replace(/<p[^>]*>\s*\(?CONTINUAÇÃO\)?\s*<\/p>/gi, '');
+
+      return cleaned;
+    };
+
     // Função para dividir seções longas em páginas dinâmicas preservando 100% do conteúdo
     interface SubPaginaInfo {
       isContinuacao: boolean;
@@ -460,8 +492,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             isContinuacao: pIdx > 0,
             subIndex: pIdx + 1,
             totalSubs: parts.length,
-            tituloExibicao: pIdx === 0 ? secao.titulo : `${secao.titulo} (Continuação)`,
-            html: partHtml,
+            tituloExibicao: secao.titulo,
+            html: limparTitulosIndesejados(partHtml, pIdx > 0),
             fotos: pIdx === 0 ? secao.fotos : [],
             itens: pIdx === 0 ? secao.itens : [],
           }));
@@ -482,7 +514,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           let part1 = rawHtml.substring(0, amberIndex).trim();
           if (!part1.endsWith('</div>')) part1 += '</div>';
           
-          let part2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n<p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO VI - CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (CONTINUAÇÃO)</p>\n${rawHtml.substring(amberIndex).trim()}`;
+          let part2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n${rawHtml.substring(amberIndex).trim()}`;
 
           return [
             {
@@ -490,7 +522,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               subIndex: 1,
               totalSubs: 2,
               tituloExibicao: secao.titulo,
-              html: part1,
+              html: limparTitulosIndesejados(part1, false),
               fotos: secao.fotos,
               itens: secao.itens,
             },
@@ -498,8 +530,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               isContinuacao: true,
               subIndex: 2,
               totalSubs: 2,
-              tituloExibicao: `${secao.titulo} (Continuação)`,
-              html: part2,
+              tituloExibicao: secao.titulo,
+              html: limparTitulosIndesejados(part2, true),
               fotos: [],
               itens: [],
             }
@@ -513,10 +545,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           const splitPos = pMatches[mid].index!;
           let p1 = rawHtml.substring(0, splitPos).trim();
           if (!p1.endsWith('</div>')) p1 += '</div>';
-          let p2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n<p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO VI - CONSTATAÇÃO DE DANOS E ANÁLISE DE CAUSA RAIZ (CONTINUAÇÃO)</p>\n${rawHtml.substring(splitPos).trim()}`;
+          let p2 = `<div class="space-y-3 text-[13px] text-slate-700 leading-relaxed">\n${rawHtml.substring(splitPos).trim()}`;
           return [
-            { isContinuacao: false, subIndex: 1, totalSubs: 2, tituloExibicao: secao.titulo, html: p1, fotos: secao.fotos, itens: secao.itens },
-            { isContinuacao: true, subIndex: 2, totalSubs: 2, tituloExibicao: `${secao.titulo} (Continuação)`, html: p2, fotos: [], itens: [] }
+            { isContinuacao: false, subIndex: 1, totalSubs: 2, tituloExibicao: secao.titulo, html: limparTitulosIndesejados(p1, false), fotos: secao.fotos, itens: secao.itens },
+            { isContinuacao: true, subIndex: 2, totalSubs: 2, tituloExibicao: secao.titulo, html: limparTitulosIndesejados(p2, true), fotos: [], itens: [] }
           ];
         }
       }
@@ -531,7 +563,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               subIndex: 1,
               totalSubs: 2,
               tituloExibicao: secao.titulo,
-              html: rawHtml,
+              html: limparTitulosIndesejados(rawHtml, false),
               fotos: secao.fotos.slice(0, 2),
               itens: secao.itens,
             },
@@ -539,11 +571,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               isContinuacao: true,
               subIndex: 2,
               totalSubs: 2,
-              tituloExibicao: `${secao.titulo} (Continuação)`,
-              html: `<div class="space-y-3">
-  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS (CONTINUAÇÃO)</p>
-  <p class="text-[12px] text-slate-500 italic">(Registros fotográficos complementares da vistoria pericial)</p>
-</div>`,
+              tituloExibicao: secao.titulo,
+              html: `<div class="space-y-3"></div>`,
               fotos: secao.fotos.slice(2),
               itens: [],
             }
@@ -568,8 +597,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                .replace(/text-xs/g, 'text-[12.5px]');
 
             const part1Html = `<div class="space-y-3">
-  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS</p>
-  <p class="text-[12px] text-slate-500 italic">(Registros fotográficos periciais em alta resolução com legendas técnicas detalhadas)</p>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
     ${enhanceCard(cards[0])}
     ${enhanceCard(cards[1])}
@@ -578,7 +605,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
 
             const part2Cards = cards.slice(2).map(enhanceCard).join('\n');
             const part2Html = `<div class="space-y-3">
-  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS (CONTINUAÇÃO)</p>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
     ${part2Cards}
   </div>
@@ -590,7 +616,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 subIndex: 1,
                 totalSubs: 2,
                 tituloExibicao: secao.titulo,
-                html: part1Html,
+                html: limparTitulosIndesejados(part1Html, false),
                 fotos: secao.fotos,
                 itens: secao.itens,
               },
@@ -598,8 +624,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 isContinuacao: true,
                 subIndex: 2,
                 totalSubs: 2,
-                tituloExibicao: `${secao.titulo} (Continuação)`,
-                html: part2Html,
+                tituloExibicao: secao.titulo,
+                html: limparTitulosIndesejados(part2Html, true),
                 fotos: [],
                 itens: [],
               }
@@ -615,7 +641,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           subIndex: 1,
           totalSubs: 1,
           tituloExibicao: secao.titulo,
-          html: rawHtml,
+          html: limparTitulosIndesejados(rawHtml, false),
           fotos: secao.fotos,
           itens: secao.itens,
         }
@@ -655,7 +681,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           numeroPagina: pagNumero,
           itemNumero: idx + 1,
           titulo: sub.tituloExibicao,
-          subtitulo: sub.isContinuacao ? `Seção Técnica ${idx + 1} — Continuação` : `Seção Técnica ${idx + 1}`,
+          subtitulo: `Seção Técnica ${idx + 1}`,
           isContinuacao: sub.isContinuacao,
           subIndex: sub.subIndex,
           totalSubs: sub.totalSubs,
@@ -737,7 +763,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               <div className="mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold text-[#1565D8] uppercase tracking-wider font-mono">
-                    ITEM {subPag.itemNumero}{subPag.isContinuacao ? ' (CONTINUAÇÃO)' : ''}
+                    ITEM {subPag.itemNumero}
                   </span>
                   <h2 className="text-base font-black text-[#0B1E3D]">
                     {subPag.isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : subPag.titulo}
