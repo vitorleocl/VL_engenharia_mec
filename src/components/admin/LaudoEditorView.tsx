@@ -51,6 +51,7 @@ import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
 import { converterPdfParaImagem } from '../../lib/pdfToImage';
+import { redimensionarImagemArquivo } from '../../lib/imageUtils';
 
 const PRESET_SECTIONS = [
   { 
@@ -201,11 +202,26 @@ export const LaudoEditorView: React.FC = () => {
     }
   }, [laudoState, secaoAtivaId]);
 
-  // Clean timer on unmount
+  const laudoStateRef = useRef(laudoState);
   useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) {
+    laudoStateRef.current = laudoState;
+  }, [laudoState]);
+
+  // Clean timer and flush pending saves on unmount / reload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (autoSaveTimerRef.current && laudoStateRef.current) {
         clearTimeout(autoSaveTimerRef.current);
+        executarSalvar(laudoStateRef.current);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (autoSaveTimerRef.current && laudoStateRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        executarSalvar(laudoStateRef.current);
       }
     };
   }, []);
@@ -299,7 +315,7 @@ export const LaudoEditorView: React.FC = () => {
 
     autoSaveTimerRef.current = setTimeout(() => {
       executarSalvar(novoEstado);
-    }, 1200);
+    }, 400);
   };
 
   // Immediate save on user demand
@@ -574,31 +590,36 @@ export const LaudoEditorView: React.FC = () => {
   };
 
   // Cover Photo Handlers
-  const handleCapaFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCapaFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        agendarAutoSave({
-          ...laudoState,
-          capaFotoUrl: base64,
-          capaFotoLegenda: laudoState.capaFotoLegenda || 'Equipamento em Avaliação Pericial',
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const base64 = await redimensionarImagemArquivo(file, 1200, 800, 0.85);
+      const novoEstado = {
+        ...laudoState,
+        capaFotoUrl: base64,
+        capaFotoLegenda: laudoState.capaFotoLegenda && 
+                         laudoState.capaFotoLegenda !== 'Equipamento em Avaliação Pericial' &&
+                         laudoState.capaFotoLegenda !== 'Fotografia técnica do equipamento em avaliação pericial'
+                         ? laudoState.capaFotoLegenda : undefined,
+      };
+      setLaudoState(novoEstado);
+      executarSalvar(novoEstado, 'Foto de capa atualizada');
+    } catch (err) {
+      console.warn('Erro ao redimensionar foto de capa:', err);
+    }
     e.target.value = '';
   };
 
   const handleRemoverCapaFoto = () => {
-    agendarAutoSave({
+    const novoEstado = {
       ...laudoState,
       capaFotoUrl: undefined,
       capaFotoLegenda: undefined,
-    });
+    };
+    setLaudoState(novoEstado);
+    executarSalvar(novoEstado, 'Foto de capa removida');
   };
 
   const handleCapaLegendaChange = (legenda: string) => {
@@ -609,55 +630,57 @@ export const LaudoEditorView: React.FC = () => {
   };
 
   // Section Photo & Evidences Handlers
-  const handleFotoSecaoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFotoSecaoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !secaoAtiva) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (base64) {
-        const novaFoto = {
-          id: `foto-${Date.now()}`,
-          url: base64,
-          descricao: legendaNovaFotoSecao.trim() || `Evidência Fotográfica - ${secaoAtiva.titulo}`,
-          dataHora: new Date().toISOString(),
-          autorUid: currentUser?.uid,
-        };
+    try {
+      const base64 = await redimensionarImagemArquivo(file, 1200, 900, 0.82);
+      const novaFoto = {
+        id: `foto-${Date.now()}`,
+        url: base64,
+        descricao: legendaNovaFotoSecao.trim() || `Evidência Fotográfica - ${secaoAtiva.titulo}`,
+        dataHora: new Date().toISOString(),
+        autorUid: currentUser?.uid,
+      };
 
-        const fotosSecao = secaoAtiva.fotos || [];
-        const novasSecoes = laudoState.secoes.map(s => {
-          if (s.id === secaoAtiva.id) {
-            return { ...s, fotos: [...fotosSecao, novaFoto] };
-          }
-          return s;
-        });
+      const fotosSecao = secaoAtiva.fotos || [];
+      const novasSecoes = laudoState.secoes.map(s => {
+        if (s.id === secaoAtiva.id) {
+          return { ...s, fotos: [...fotosSecao, novaFoto] };
+        }
+        return s;
+      });
 
-        setLegendaNovaFotoSecao('');
-        agendarAutoSave({
-          ...laudoState,
-          secoes: novasSecoes,
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+      setLegendaNovaFotoSecao('');
+      const novoEstado = {
+        ...laudoState,
+        secoes: novasSecoes,
+      };
+      setLaudoState(novoEstado);
+      executarSalvar(novoEstado, `Foto anexada à seção: ${secaoAtiva.titulo}`);
+    } catch (err) {
+      console.warn('Erro ao redimensionar foto da seção:', err);
+    }
     e.target.value = '';
   };
 
   const handleInserirFotoNoTexto = (fotoUrl: string, legenda?: string) => {
     if (!secaoAtiva) return;
-    const blocoHtml = `<div class="my-4 text-center"><img src="${fotoUrl}" alt="${legenda || 'Evidência Técnica'}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:8px; border:1px solid #cbd5e1; margin:0 auto; display:block;" /><p style="font-size:11px; color:#64748b; font-style:italic; margin-top:6px; font-weight:600;">${legenda || 'Evidência fotográfica pericial'}</p></div><p></p>`;
+    const blocoHtml = `<div class="my-4 text-center"><img src="${fotoUrl}" alt="${legenda || 'Evidência Técnica'}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:8px; border:1px solid #cbd5e1; margin:0 auto; display:block;" />${legenda ? `<p style="font-size:11px; color:#64748b; font-style:italic; margin-top:6px; font-weight:600;">${legenda}</p>` : ''}</div><p></p>`;
     const novoConteudo = (secaoAtiva.conteudoHtml || '') + blocoHtml;
     const novasSecoes = laudoState.secoes.map(s => {
       if (s.id === secaoAtiva.id) {
-        return { ...s, conteudoHtml: novoConteudo };
+        return { ...s, conteudoHtml: novoConteudo, conteudoJson: undefined };
       }
       return s;
     });
-    agendarAutoSave({
+    const novoEstado = {
       ...laudoState,
       secoes: novasSecoes,
-    });
+    };
+    setLaudoState(novoEstado);
+    executarSalvar(novoEstado, `Evidência inserida no corpo da seção: ${secaoAtiva.titulo}`);
   };
 
   const handleRemoverFotoSecao = (fotoId: string) => {

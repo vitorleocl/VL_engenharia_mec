@@ -1698,7 +1698,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarLaudo = (id: string, dados: Partial<Laudo>) => {
-    setLaudos(prev => prev.map(l => l.id === id ? { ...l, ...dados, atualizadoEm: new Date().toISOString() } : l));
+    setLaudos(prev => {
+      const atualizados = prev.map(l => l.id === id ? { ...l, ...dados, atualizadoEm: new Date().toISOString() } : l);
+      saveStorage('vl_laudos', atualizados);
+      fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ laudos: atualizados })
+      }).catch(err => console.warn('Aviso sincronizacao laudos:', err));
+      return atualizados;
+    });
     registrarLog('laudos', id, 'editar', `Laudo atualizado: ${dados.numero || id}`);
   };
 

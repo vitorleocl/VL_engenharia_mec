@@ -11,6 +11,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
+import { redimensionarImagemArquivo } from '../../lib/imageUtils';
 
 import { 
   Bold, 
@@ -114,7 +115,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
         },
       }),
     ],
-    content: contentJson || contentHtml || '<p></p>',
+    content: contentHtml || '<p></p>',
     editable: !readOnly,
     onUpdate: ({ editor }) => {
       if (onChange) {
@@ -132,19 +133,35 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
     }
   }, [editor, contentHtml, readOnly]);
 
-  // Handle local image upload via file input
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local image upload via file input com compressão para evitar estouro de limite de storage
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      if (base64Url) {
-        editor.chain().focus().setImage({ src: base64Url, alt: file.name }).run();
+    try {
+      const optimizedUrl = await redimensionarImagemArquivo(file, 1200, 900, 0.82);
+      editor.chain().focus().setImage({ src: optimizedUrl, alt: file.name }).run();
+      if (onChange) {
+        setTimeout(() => {
+          onChange(editor.getHTML(), editor.getJSON());
+        }, 80);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Erro ao otimizar imagem, usando fallback:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Url = event.target?.result as string;
+        if (base64Url) {
+          editor.chain().focus().setImage({ src: base64Url, alt: file.name }).run();
+          if (onChange) {
+            setTimeout(() => {
+              onChange(editor.getHTML(), editor.getJSON());
+            }, 80);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
     e.target.value = '';
   };
 

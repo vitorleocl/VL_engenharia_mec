@@ -188,9 +188,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wider mt-1">
                   Consultoria Técnica, Perícias & Segurança Operacional
                 </p>
-                <p className="text-[10px] text-slate-600 font-mono mt-0.5">
-                  Registro Profissional: <strong>CREA-PE 182229949-0</strong> • E-mail: vlengenhariamec@gmail.com
-                </p>
               </div>
             </div>
           </div>
@@ -219,9 +216,13 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     className="w-full h-56 object-cover"
                     crossOrigin="anonymous"
                   />
-                  <div className="bg-[#0B1E3D] text-white text-[10px] py-1.5 px-3 font-semibold text-center italic">
-                    {laudo.capaFotoLegenda || 'Fotografia técnica do equipamento em avaliação pericial'}
-                  </div>
+                  {laudo.capaFotoLegenda && 
+                   laudo.capaFotoLegenda !== 'Equipamento em Avaliação Pericial' && 
+                   laudo.capaFotoLegenda !== 'Fotografia técnica do equipamento em avaliação pericial' && (
+                    <div className="bg-[#0B1E3D] text-white text-[10px] py-1.5 px-3 font-semibold text-center italic">
+                      {laudo.capaFotoLegenda}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-8 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/80 text-center space-y-2">
@@ -467,8 +468,15 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         }
       }
 
-      // 2. Seção: "Constatação de Danos e Análise de Causa Raiz"
-      if (tLower.includes('constatação de danos') || tLower.includes('constatacao de danos') || tLower.includes('causa raiz')) {
+      // 2. Seção: "Constatação de Danos e Análise de Causa Raiz" (NÃO se aplica à Tabela de Danos!)
+      const isTabela = tLower.includes('tabela');
+      const isCausaRaiz = !isTabela && (
+        tLower.includes('causa raiz') || 
+        tLower.includes('constatação de danos') || 
+        tLower.includes('constatacao de danos')
+      );
+
+      if (isCausaRaiz) {
         const amberIndex = rawHtml.indexOf('<div class="p-3 bg-amber-50');
         if (amberIndex !== -1) {
           let part1 = rawHtml.substring(0, amberIndex).trim();
@@ -845,9 +853,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                           <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wide">
                             Engenheiro Mecânico • Perito Técnico Responsável
                           </p>
-                          <p className="text-[10px] font-mono text-slate-600 mt-0.5">
-                            Registro Profissional: <strong>CREA-PE 182229949-0</strong>
-                          </p>
                           <p className="text-[9.5px] text-slate-500 mt-0.5">
                             ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
                           </p>
@@ -895,7 +900,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                           />
                         </div>
                         <div className="p-2.5 text-[12px] text-slate-700 leading-snug border-t border-slate-200 bg-slate-50/80">
-                          <strong className="block text-slate-900 text-[11px] uppercase tracking-wider mb-0.5">Evidência Fotográfica:</strong>
                           <span>{foto.descricao || 'Foto pericial registrada'}</span>
                         </div>
                       </div>
@@ -1067,9 +1071,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                         </h4>
                         <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wide">
                           Engenheiro Mecânico • Perito Técnico Responsável
-                        </p>
-                        <p className="text-[10px] font-mono text-slate-600 mt-0.5">
-                          Registro Profissional: <strong>CREA-PE 182229949-0</strong>
                         </p>
                         <p className="text-[9.5px] text-slate-500 mt-0.5">
                           ART Vinculada: <strong>{laudo.artNumero || 'Registrada junto ao CREA-PE'}</strong>
