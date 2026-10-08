@@ -63,15 +63,15 @@ export const TITULOS_13_SECOES_CAUSA_RAIZ = [
   '2. Carta de Apresentação e Notificação Formal',
   '3. Sumário Executivo',
   '4. Destinatário e Qualificação do Responsável Técnico',
-  'Seção I - Histórico do Evento e Cronologia dos Fatos',
-  'Seção II - Objetivo do Trabalho e Escopo Pericial',
-  'Seção III - Dados do Veículo e Especificações Técnicas',
-  'Seção IV - Registros Fotográficos Principais e Análise Visual',
-  'Seção V - Legislação e Normas Técnicas Aplicáveis (CDC e CTB)',
-  'Seção VI - Constatação de Danos e Análise de Causa Raiz',
-  'Seção VII - Tabela de Constatação de Danos e Integridade Técnica',
-  'Seção VIII - Conclusão Pericial e Respostas aos Quesitos',
-  'Seção IX - Considerações Finais e Anexo da ART CREA-PE'
+  'Histórico do Evento e Cronologia dos Fatos',
+  'Objetivo do Trabalho e Escopo Pericial',
+  'Dados do Veículo e Especificações Técnicas',
+  'Registros Fotográficos Principais e Análise Visual',
+  'Legislação e Normas Técnicas Aplicáveis (CDC e CTB)',
+  'Constatação de Danos e Análise de Causa Raiz',
+  'Tabela de Constatação de Danos e Integridade Técnica',
+  'Conclusão Pericial e Respostas aos Quesitos',
+  'Considerações Finais e Anexo da ART CREA-PE'
 ];
 
 export function construirPromptSistemaCausaRaiz(): string {
@@ -153,15 +153,15 @@ Retorne estritamente um JSON estruturado com os campos:
     { "id": "sec-2", "titulo": "2. Carta de Apresentação e Notificação Formal", "conteudoHtml": "..." },
     { "id": "sec-3", "titulo": "3. Sumário Executivo", "conteudoHtml": "..." },
     { "id": "sec-4", "titulo": "4. Destinatário e Qualificação do Responsável Técnico", "conteudoHtml": "..." },
-    { "id": "sec-5", "titulo": "Seção I - Histórico do Evento e Cronologia dos Fatos", "conteudoHtml": "..." },
-    { "id": "sec-6", "titulo": "Seção II - Objetivo do Trabalho e Escopo Pericial", "conteudoHtml": "..." },
-    { "id": "sec-7", "titulo": "Seção III - Dados do Veículo e Especificações Técnicas", "conteudoHtml": "..." },
-    { "id": "sec-8", "titulo": "Seção IV - Registros Fotográficos Principais e Análise Visual", "conteudoHtml": "..." },
-    { "id": "sec-9", "titulo": "Seção V - Legislação e Normas Técnicas Aplicáveis (CDC e CTB)", "conteudoHtml": "..." },
-    { "id": "sec-10", "titulo": "Seção VI - Constatação de Danos e Análise de Causa Raiz", "conteudoHtml": "..." },
-    { "id": "sec-11", "titulo": "Seção VII - Tabela de Constatação de Danos e Integridade Técnica", "conteudoHtml": "..." },
-    { "id": "sec-12", "titulo": "Seção VIII - Conclusão Pericial e Respostas aos Quesitos", "conteudoHtml": "..." },
-    { "id": "sec-13", "titulo": "Seção IX - Considerações Finais e Anexo da ART CREA-PE", "conteudoHtml": "..." }
+    { "id": "sec-5", "titulo": "Histórico do Evento e Cronologia dos Fatos", "conteudoHtml": "..." },
+    { "id": "sec-6", "titulo": "Objetivo do Trabalho e Escopo Pericial", "conteudoHtml": "..." },
+    { "id": "sec-7", "titulo": "Dados do Veículo e Especificações Técnicas", "conteudoHtml": "..." },
+    { "id": "sec-8", "titulo": "Registros Fotográficos Principais e Análise Visual", "conteudoHtml": "..." },
+    { "id": "sec-9", "titulo": "Legislação e Normas Técnicas Aplicáveis (CDC e CTB)", "conteudoHtml": "..." },
+    { "id": "sec-10", "titulo": "Constatação de Danos e Análise de Causa Raiz", "conteudoHtml": "..." },
+    { "id": "sec-11", "titulo": "Tabela de Constatação de Danos e Integridade Técnica", "conteudoHtml": "..." },
+    { "id": "sec-12", "titulo": "Conclusão Pericial e Respostas aos Quesitos", "conteudoHtml": "..." },
+    { "id": "sec-13", "titulo": "Considerações Finais e Anexo da ART CREA-PE", "conteudoHtml": "..." }
   ]
 }`;
 }
@@ -280,67 +280,46 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
     },
     {
       id: 'sec-7',
-      titulo: 'Seção III - Dados do Veículo e Especificações Técnicas',
+      titulo: 'Dados do Veículo e Especificações Técnicas',
       ordem: 7,
       conteudoHtml: `<table class="tiptap-table border-collapse border border-slate-300 w-full my-3 text-xs">
         <tbody>
-          <tr class="bg-slate-100 font-bold"><td class="p-2 border" colspan="4">ESPECIFICAÇÕES TÉCNICAS OFICIAIS DO ATIVO PERICIADO</td></tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Solicitante:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${dados.clienteNome || 'Ministério Público de Pernambuco'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Proprietário:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${dados.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)'}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${dados.ativo.marca || 'Renault'}</td>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${dados.ativo.modelo || 'Duster'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Marca:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.marca || 'Renault'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Modelo:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.modelo || 'Duster'}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
-            <td class="border border-slate-300 p-2 text-slate-900">Passageiro / Utilitário</td>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-mono font-bold text-xs text-[#0B1E3D]">${dados.ativo.placa || 'PGX-9708'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Espécie / Tipo:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900">Passageiro / Utilitário</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Placa:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-bold text-xs text-[#0B1E3D]">${dados.ativo.placa || 'PGX-9708'}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${dados.ativo.chassi || '093YHSRAF500GJ3983670'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Chassi N.º:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${dados.ativo.chassi || '093YHSRAF500GJ3983670'}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${dados.ativo.anoModelo || '2016/2016'}</td>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-medium">Bicombustível (Flex) • Motor 4 Cilindros</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold">${dados.ativo.anoModelo || '2016 / 2016'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Aferida:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-bold">${kmAtual ? `${kmAtual} (Atual - Agosto de 2026)` : '152.530 km (Atual - Agosto de 2026)'}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
-            <td class="border border-slate-300 p-2 text-slate-900">Prata / Oficial</td>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
-            <td class="border border-slate-300 p-2 text-slate-900">Oficial / Administrativo</td>
-          </tr>
-          <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
-            <td class="border border-slate-300 p-2 text-slate-900">Caruaru / PE</td>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">Regular • Em Conformidade</td>
-          </tr>
-          <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">${kmAtual}</td>
-          </tr>
-          <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${dados.ativo.kmIntervencaoPrevia ? `${dados.ativo.kmIntervencaoPrevia} km (Registrada na intervenção prévia)` : '149.908 km (Registrada na Intervenção Prévia - Dezembro de 2025)'}</td>
-          </tr>
-          <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">${dados.contexto?.kmIntervalo ? `${dados.contexto.kmIntervalo} km decorridos entre a manutenção e a pane atual` : '2.622 km decorridos entre a intervenção prévia e a pane mecânica atual'}</td>
+            <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Anterior:</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${dados.ativo.kmIntervencaoPrevia ? `${dados.ativo.kmIntervencaoPrevia} km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km` : '149.908 km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km'}</td>
           </tr>
         </tbody>
       </table>`
     },
     {
       id: 'sec-8',
-      titulo: 'Seção IV - Registros Fotográficos Principais e Análise Visual',
+      titulo: 'Registros Fotográficos Principais e Análise Visual',
       ordem: 8,
       conteudoHtml: `<p class="leading-relaxed mb-3">Abaixo são consolidados os registros fotográficos macroscópicos obtidos no desmonte preliminar do compartimento do motor:</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">

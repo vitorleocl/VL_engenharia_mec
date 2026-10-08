@@ -311,88 +311,59 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         }
       }
 
-      // 2. Dados do Veículo: Remodela a tabela fielmente conforme o print oficial, sem renavam e com TODAS as informações visíveis
+      // 2. Dados do Veículo: Remodela a tabela fielmente conforme o print oficial, sem renavam e com os campos solicitados
       if (t.includes('dados do veículo') || t.includes('dados do veiculo')) {
         const proprietario = laudo.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)';
         const marca = ativo?.fabricante || 'Renault';
-        const modelo = ativo?.modelo || 'Duster Dynamique 1.6 16V Hi-Flex';
+        const modelo = 'Duster';
         const especie = 'Passageiro / Utilitário';
         const placa = ativo?.placa || 'PGX-9708';
         const chassi = ativo?.chassi || '093YHSRAF500GJ3983670';
         const anoModelo = ativo?.ano ? `${ativo.ano} / ${ativo.ano}` : '2016 / 2016';
-        const combustivel = 'Bicombustível (Flex) • Motor 1.6 16V';
-        const cor = 'Prata / Oficial';
-        const categoria = 'Oficial / Administração Pública';
-        const municipio = 'Caruaru / PE';
-        const situacao = 'Regular • Em Conformidade';
-        const kmAferida = '152.530 km (Constatada na Vistoria Pericial - Agosto de 2026)';
-        const kmAnterior = '149.908 km (Registrada na Manutenção Preventiva - Dezembro de 2025)';
-        const intervalo = '2.622 km decorridos entre a intervenção prévia no motor e a ocorrência da pane atual';
+        const kmAferida = (ativo as any)?.kmAtual ? `${(ativo as any).kmAtual} km (Atual - Agosto de 2026)` : '152.530 km (Atual - Agosto de 2026)';
+        const kmAnterior = (ativo as any)?.kmIntervencaoPrevia 
+          ? `${(ativo as any).kmIntervencaoPrevia} km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km` 
+          : '149.908 km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km';
 
         // Preserva eventuais parágrafos adicionais ou notas de rodapé da seção que o usuário redigiu
         const textoExtra = html
           .replace(/<table[\s\S]*?<\/table>/gi, '')
-          .replace(/<p[^>]*>\s*SEÇÃO III[^<]*<\/p>/gi, '')
+          .replace(/<p[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+[\s\S]*?<\/p>/gi, '')
           .replace(/<p[^>]*>\s*DADOS DO VEÍCULO[^<]*<\/p>/gi, '')
           .trim();
 
         return `<div class="space-y-3">
-  <div class="border-b-2 border-slate-300 pb-1.5 flex items-center justify-between">
-    <p class="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wider font-mono">SEÇÃO III - DADOS DO VEÍCULO E ESPECIFICAÇÕES TÉCNICAS</p>
-    <span class="text-[9.5px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">Veículo Oficial Periciado</span>
-  </div>
-
-  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-[10.5px]">
+  <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-[11px]">
     <tbody>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Frotista:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${proprietario}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Proprietário:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${proprietario}</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${marca}</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">${modelo}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Marca:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${marca}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Modelo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${modelo}</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">${especie}</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">${placa}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Espécie / Tipo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900">${especie}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Placa:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">${placa}</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${chassi}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Chassi N.º:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${chassi}</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${anoModelo}</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-medium">${combustivel}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold">${anoModelo}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Aferida:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-bold">${kmAferida}</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">${cor}</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">${categoria}</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">${municipio}</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">${situacao}</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">${kmAferida}</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">${kmAnterior}</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">${intervalo}</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Anterior:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${kmAnterior}</td>
       </tr>
     </tbody>
   </table>
@@ -445,7 +416,13 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Registros\s+fotogr[aá]ficos\s+complementares[\s\S]*?<\/p>/gi, '');
       cleaned = cleaned.replace(/\(?\s*Registros\s+fotogr[aá]ficos\s+complementares[^\n<]*\)?/gi, '');
 
-      // 4. Remove legendas/subtítulos de instruções que poluem as fotos no PDF
+      // 4. Remove cabeçalhos duplicados de Seção interna (ex: SEÇÃO III - DADOS DO VEÍCULO... ou SEÇÃO IV - REGISTROS FOTOGRÁFICOS)
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+\s*-\s*DADOS\s+DO\s+VE[IÍ]CULO[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/SEÇÃO\s+[IVXLCDM]+\s*-\s*DADOS\s+DO\s+VE[IÍ]CULO[^\n<]*/gi, '');
+      cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?SEÇÃO\s+[IVXLCDM]+\s*-\s*REGISTROS\s+FOTOGR[AÁ]FICOS[\s\S]*?<\/p>/gi, '');
+      cleaned = cleaned.replace(/SEÇÃO\s+[IVXLCDM]+\s*-\s*REGISTROS\s+FOTOGR[AÁ]FICOS[^\n<]*/gi, '');
+
+      // 5. Remove legendas/subtítulos de instruções que poluem as fotos no PDF
       cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Registros\s+fotogr[aá]ficos\s+periciais\s+em\s+alta\s+resolu[cç][aã]o[\s\S]*?<\/p>/gi, '');
       cleaned = cleaned.replace(/<p[^>]*>[\s\S]*?Insira\s+as\s+imagens\s+correspondentes[\s\S]*?<\/p>/gi, '');
 
@@ -592,18 +569,24 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           }
 
           if (cards.length >= 3) {
-            const enhanceCard = (c: string) => 
-              c.replace(/h-44/g, 'h-64 sm:h-72 min-h-[240px]')
-               .replace(/text-xs/g, 'text-[12.5px]');
+            const enhanceCard = (c: string, idx: number) => {
+              let res = c
+                .replace(/h-44/g, 'h-64 sm:h-72 min-h-[240px]')
+                .replace(/text-xs/g, 'text-[12.5px]');
+              // Normaliza a enumeração conforme a sequência global (Figura 1, Figura 2, Figura 3...)
+              const seq = idx + 1;
+              res = res.replace(/Figura\s+\d+/gi, `Figura ${seq}`);
+              return res;
+            };
 
             const part1Html = `<div class="space-y-3">
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
-    ${enhanceCard(cards[0])}
-    ${enhanceCard(cards[1])}
+    ${enhanceCard(cards[0], 0)}
+    ${enhanceCard(cards[1], 1)}
   </div>
 </div>`;
 
-            const part2Cards = cards.slice(2).map(enhanceCard).join('\n');
+            const part2Cards = cards.slice(2).map((c, i) => enhanceCard(c, 2 + i)).join('\n');
             const part2Html = `<div class="space-y-3">
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
     ${part2Cards}
@@ -903,33 +886,44 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </>
               )}
 
-              {/* Evidências Fotográficas da Seção com dimensões ampliadas e alta legibilidade */}
+              {/* Evidências Fotográficas da Seção com dimensões ampliadas e alta legibilidade com enumeração sequencial */}
               {subPag.fotos && subPag.fotos.length > 0 && (
                 <div className="my-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-[11.5px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     <Camera className="w-4 h-4 text-[#1565D8]" />
-                    <span>Registro Fotográfico da Seção ({subPag.fotos.length} {subPag.fotos.length === 1 ? 'imagem' : 'imagens'})</span>
+                    <span>Registros Fotográficos Principais ({subPag.fotos.length} {subPag.fotos.length === 1 ? 'imagem' : 'imagens'})</span>
                   </h4>
                   <div className={`grid gap-4 ${
                     subPag.fotos.length === 1 
                       ? 'grid-cols-1 max-w-lg mx-auto' 
                       : 'grid-cols-1 sm:grid-cols-2'
                   }`}>
-                    {subPag.fotos.map((foto) => (
-                      <div key={foto.id} className="rounded-xl overflow-hidden border border-slate-300 bg-white shadow-xs flex flex-col">
-                        <div className="h-60 sm:h-72 w-full bg-slate-100 flex items-center justify-center p-2 overflow-hidden">
-                          <img 
-                            src={foto.url} 
-                            alt={foto.descricao || 'Evidência'} 
-                            className="max-h-full max-w-full object-contain"
-                            crossOrigin="anonymous"
-                          />
+                    {subPag.fotos.map((foto, fIdx) => {
+                      const figNumero = (subPag.subIndex > 1 ? (subPag.subIndex - 1) * 2 : 0) + fIdx + 1;
+                      return (
+                        <div key={foto.id} className="rounded-xl overflow-hidden border border-slate-300 bg-white shadow-xs flex flex-col">
+                          <div className="h-60 sm:h-72 w-full bg-slate-100 flex items-center justify-center p-2 overflow-hidden relative">
+                            <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded bg-[#0B1E3D] text-white text-[11px] font-bold font-mono shadow-sm">
+                              Figura {figNumero}
+                            </span>
+                            <img 
+                              src={foto.url} 
+                              alt={foto.descricao || `Figura ${figNumero}`} 
+                              className="max-h-full max-w-full object-contain"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                          <div className="p-3 text-[12px] text-slate-700 leading-snug border-t border-slate-200 bg-slate-50/80">
+                            <div className="font-bold text-[#0B1E3D] text-[12px] mb-1">
+                              Figura {figNumero}{foto.titulo ? ` — ${foto.titulo}` : ''}
+                            </div>
+                            <p className="text-slate-600 leading-relaxed text-[11.5px]">
+                              {foto.descricao || foto.legenda || 'Registro fotográfico pericial da vistoria.'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="p-2.5 text-[12px] text-slate-700 leading-snug border-t border-slate-200 bg-slate-50/80">
-                          <span>{foto.descricao || 'Foto pericial registrada'}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1167,9 +1161,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* ART Header Banner */}
               <div className="mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider font-mono">
-                    ANEXO OBRIGATÓRIO
-                  </span>
                   <h2 className="text-base font-black text-[#0B1E3D]">
                     Anotação de Responsabilidade Técnica (ART — CREA-PE)
                   </h2>

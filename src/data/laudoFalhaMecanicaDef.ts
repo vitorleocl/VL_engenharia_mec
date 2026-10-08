@@ -170,61 +170,37 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       titulo: 'Dados do Veículo',
       ordem: 7,
       conteudoHtml: `<div class="space-y-3">
-  <div class="border-b-2 border-slate-300 pb-1.5 flex items-center justify-between">
-    <p class="font-bold text-slate-900 text-sm uppercase tracking-wider">SEÇÃO III - DADOS DO VEÍCULO E ESPECIFICAÇÕES TÉCNICAS</p>
-    <span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Veículo Oficial Periciado</span>
-  </div>
   <table class="tiptap-table border-collapse border border-slate-300 w-full my-2 text-xs">
     <tbody>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Proprietário / Frotista:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Proprietário:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Marca / Fabricante:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">Renault</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700 w-1/4">Modelo / Versão:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 w-1/4 font-semibold">Duster Dynamique 1.6 16V Hi-Flex</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Marca:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">Renault</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Modelo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">Duster</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Espécie / Tipo:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">Passageiro / Utilitário</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Placa de Identificação:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">PGX-9708</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Espécie / Tipo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900">Passageiro / Utilitário</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Placa:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-bold font-mono text-xs text-[#0B1E3D]">PGX-9708</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Número do Chassi (VIN):</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-mono font-medium tracking-wider" colspan="3">093YHSRAF500GJ3983670</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Chassi N.º:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-medium tracking-wider" colspan="3">093YHSRAF500GJ3983670</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Ano Fab. / Modelo:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold">2016 / 2016</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Combustível / Motorização:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-medium">Bicombustível (Flex) • Motor 1.6 16V</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Ano Fab. / Modelo:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold">2016 / 2016</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Aferida:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-bold">152.530 km (Atual - Agosto de 2026)</td>
       </tr>
       <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Cor Predominante:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">Prata / Oficial</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Categoria / Uso:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">Oficial / Administração Pública</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Município / UF:</td>
-        <td class="border border-slate-300 p-2 text-slate-900">Caruaru / PE</td>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Situação Cadastral:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 text-emerald-800 font-semibold">Regular • Em Conformidade</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Aferida:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold" colspan="3">152.530 km (Constatada na Vistoria Pericial - Agosto de 2026)</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Quilometragem Anterior:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-semibold" colspan="3">149.908 km (Registrada na Intervenção Prévia - Dezembro de 2025)</td>
-      </tr>
-      <tr>
-        <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Intervalo Percorrido:</td>
-        <td class="border border-slate-300 p-2 text-slate-900 font-bold text-[#1565D8]" colspan="3">2.622 km decorridos entre a intervenção prévia no motor e a ocorrência da pane atual</td>
+        <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Anterior:</td>
+        <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">149.908 km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km</td>
       </tr>
     </tbody>
   </table>
@@ -235,22 +211,39 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
       titulo: 'Registros Fotográficos Principais',
       ordem: 8,
       conteudoHtml: `<div class="space-y-3">
-  <p class="font-bold text-slate-900 text-sm border-b border-slate-200 pb-1">SEÇÃO IV - REGISTROS FOTOGRÁFICOS PRINCIPAIS</p>
-  <p class="text-xs text-slate-500 italic">(Insira as imagens correspondentes nos campos de fotos da seção com enquadramento integral sem corte e utilize as legendas técnicas)</p>
+  <p class="text-xs text-slate-500 italic mb-2">(Registros fotográficos periciais da vistoria técnica numerados sequencialmente com legendas analíticas)</p>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-3 my-3">
     <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
-      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 1: Cabeçote Desmontado em Bancada]</div>
-      <p class="text-xs font-bold text-slate-800">Figura 1</p>
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2 relative">
+        <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#0B1E3D] text-white font-mono text-[10px] font-bold">Figura 1</span>
+        [Figura 1: Cabeçote Desmontado em Bancada]
+      </div>
+      <p class="text-xs font-bold text-slate-800 text-left flex items-center gap-1.5">
+        <span class="px-1.5 py-0.5 rounded bg-blue-100 text-[#0B1E3D] text-[10px] font-bold">Figura 1</span>
+        <span>Cabeçote Desmontado em Bancada</span>
+      </p>
       <p class="text-xs text-slate-600 text-left">Vista superior do cabeçote do motor desmontado em bancada, evidenciando as sedes de válvulas e a câmara de combustão severamente avariadas pelo choque mecânico decorrente do dessincronismo do motor.</p>
     </div>
     <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
-      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 2: Correia Dentada Rompida]</div>
-      <p class="text-xs font-bold text-slate-800">Figura 2</p>
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2 relative">
+        <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#0B1E3D] text-white font-mono text-[10px] font-bold">Figura 2</span>
+        [Figura 2: Correia Dentada Rompida]
+      </div>
+      <p class="text-xs font-bold text-slate-800 text-left flex items-center gap-1.5">
+        <span class="px-1.5 py-0.5 rounded bg-blue-100 text-[#0B1E3D] text-[10px] font-bold">Figura 2</span>
+        <span>Correia Dentada Rompida</span>
+      </p>
       <p class="text-xs text-slate-600 text-left">Detalhe macroscópico da correia dentada de distribuição após a ruptura, exibindo o desfibramento total e a descontinuidade estrutural que provocaram a interrupção instantânea da transmissão de movimento do comando de válvulas.</p>
     </div>
     <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/70 space-y-2 text-center">
-      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2">[Figura 3: Odômetro do Veículo]</div>
-      <p class="text-xs font-bold text-slate-800">Figura 3</p>
+      <div class="h-44 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs italic border border-dashed border-slate-300 p-2 relative">
+        <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#0B1E3D] text-white font-mono text-[10px] font-bold">Figura 3</span>
+        [Figura 3: Odômetro do Veículo]
+      </div>
+      <p class="text-xs font-bold text-slate-800 text-left flex items-center gap-1.5">
+        <span class="px-1.5 py-0.5 rounded bg-blue-100 text-[#0B1E3D] text-[10px] font-bold">Figura 3</span>
+        <span>Odômetro do Veículo</span>
+      </p>
       <p class="text-xs text-slate-600 text-left">Registro visual do painel de instrumentos e odômetro do veículo, comprovando a quilometragem atual de 152.530 km no momento da constatação da avaria em agosto de 2026.</p>
     </div>
   </div>

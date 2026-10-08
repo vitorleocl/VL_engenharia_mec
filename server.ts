@@ -64,6 +64,10 @@ function getMonthlyAICalls(): number {
 }
 
 // Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", company: "VL Engenharia", timestamp: new Date().toISOString() });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", company: "VL Engenharia", timestamp: new Date().toISOString() });
 });
@@ -1256,7 +1260,7 @@ Retorne estritamente um objeto JSON com as 13 páginas contendo o texto HTML ric
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);
