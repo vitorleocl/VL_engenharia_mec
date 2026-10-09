@@ -191,6 +191,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [ativos, setAtivos] = useState<Ativo[]>(() => {
     let loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
     loaded = loaded.map(a => {
+      if (a.id === 'atv-pgx7098' || a.identificacao?.includes('9708') || a.placa === 'PGX-9708') {
+        return {
+          ...a,
+          proprietario: 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)',
+        };
+      }
       if (a.clienteNome?.includes('ADF Comércio')) {
         return {
           ...a,
@@ -516,7 +522,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [laudos, setLaudos] = useState<Laudo[]>(() => {
     const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
     const removidosSet = new Set(removidos);
-    const loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
+    let loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
+    let alterouStorage = false;
+
+    // Sanitiza seções de Dados do Veículo para garantir proprietário correto do veículo
+    loaded = loaded.map((l: Laudo) => {
+      let mod = false;
+      const novasSecoes = (l.secoes || []).map(sec => {
+        if (sec.conteudoHtml && /propriet[aá]rio/i.test(sec.conteudoHtml) && /adf\s*auto|adf\s*caruaru|adf\s*com[eé]rcio/i.test(sec.conteudoHtml)) {
+          const corrigido = sec.conteudoHtml.replace(
+            /(<td[^>]*>Propriet[aá]rio:?<\/td>\s*<td[^>]*>)([^<]*Adf[^<]*)(<\/td>)/gi,
+            '$1Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)$3'
+          );
+          if (corrigido !== sec.conteudoHtml) {
+            mod = true;
+            return { ...sec, conteudoHtml: corrigido };
+          }
+        }
+        return sec;
+      });
+
+      if (mod) {
+        alterouStorage = true;
+        return { ...l, secoes: novasSecoes };
+      }
+      return l;
+    });
+
+    if (alterouStorage) {
+      saveStorage('vl_laudos', loaded);
+    }
+
     return loaded.filter(l => !removidosSet.has(l.id));
   });
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));

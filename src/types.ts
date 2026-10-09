@@ -66,6 +66,7 @@ export interface Ativo {
   id: string;
   clienteId: string;
   clienteNome?: string;
+  proprietario?: string;
   tipo: string;
   identificacao: string; // Ex: Placa, Chassi, Tag, Prefixo
   fabricante: string;

@@ -313,7 +313,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
 
       // 2. Dados do Veículo: Remodela a tabela fielmente conforme o print oficial, sem renavam e com os campos solicitados
       if (t.includes('dados do veículo') || t.includes('dados do veiculo')) {
-        const proprietario = laudo.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)';
+        // O proprietário legal do veículo é o Ministério Público de Pernambuco (a ADF é o centro automotivo/oficina prestadora, não proprietária)
+        const proprietario = 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)';
         const marca = ativo?.fabricante || 'Renault';
         const modelo = 'Duster';
         const especie = 'Passageiro / Utilitário';

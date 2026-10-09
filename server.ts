@@ -371,6 +371,16 @@ app.post("/api/ai/gerar-laudo-causa-raiz", async (req, res) => {
           const parsed = JSON.parse(response.text.trim());
           if (parsed.secoes && Array.isArray(parsed.secoes) && parsed.secoes.length > 0) {
             resultadoJson = parsed;
+            // Garantir que o proprietário na tabela veicular seja o Ministério Público de Pernambuco
+            resultadoJson.secoes = resultadoJson.secoes.map((s: any) => {
+              if (s.conteudoHtml && /propriet[aá]rio/i.test(s.conteudoHtml) && /adf/i.test(s.conteudoHtml)) {
+                s.conteudoHtml = s.conteudoHtml.replace(
+                  /(<td[^>]*>Propriet[aá]rio:?<\/td>\s*<td[^>]*>)([^<]*Adf[^<]*)(<\/td>)/gi,
+                  '$1Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)$3'
+                );
+              }
+              return s;
+            });
             break;
           }
         }

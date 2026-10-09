@@ -110,6 +110,7 @@ export function construirPromptUsuarioCausaRaiz(dados: DadosEntradaCausaRaiz): s
 
 DADOS DO ATIVO:
 - Veículo: ${dados.ativo.marca || 'Marca'} ${dados.ativo.modelo || 'Modelo'} (${dados.ativo.anoModelo || 'Ano'})
+- Proprietário: Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)
 - Placa: ${dados.ativo.placa || 'Placa a designar'} | RENAVAM: ${dados.ativo.renavam || 'N/I'}
 - Chassi: ${dados.ativo.chassi || 'N/I'}
 - Quilometragem no Momento da Pane: ${kmAtualNum ? `${kmAtualNum.toLocaleString('pt-BR')} km` : 'Registrada na vistoria'}
@@ -286,7 +287,7 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
         <tbody>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Proprietário:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${dados.clienteNome || 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Marca:</td>
