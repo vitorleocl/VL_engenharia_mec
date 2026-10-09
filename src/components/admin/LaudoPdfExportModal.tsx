@@ -53,6 +53,10 @@ interface PaginaLaudoDef {
   render: () => React.ReactNode;
 }
 
+// Quantidade de figuras por página nos Registros Fotográficos
+const FIGURAS_PRIMEIRA_PAGINA = 2;
+const FIGURAS_PAGINAS_SEGUINTES = 4;
+
 export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
   laudo,
   cliente,
@@ -90,8 +94,6 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       return next;
     });
   };
-
-  if (!isOpen) return null;
 
   const dataFormatada = laudo.dataInspecao 
     ? new Date(laudo.dataInspecao).toLocaleDateString('pt-BR') 
@@ -158,6 +160,19 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
   const paginasLaudo: PaginaLaudoDef[] = useMemo(() => {
     const list: PaginaLaudoDef[] = [];
     let pageNum = 1;
+
+    // Divide um array em grupos: 1ª página com poucas figuras, demais com mais
+    function fatiarFiguras<T>(arr: T[]): T[][] {
+      const grupos: T[][] = [];
+      let i = 0;
+      let tamanho = FIGURAS_PRIMEIRA_PAGINA;
+      while (i < arr.length) {
+        grupos.push(arr.slice(i, i + tamanho));
+        i += tamanho;
+        tamanho = FIGURAS_PAGINAS_SEGUINTES;
+      }
+      return grupos;
+    }
 
     // -------------------------------------------------------------------------
     // PAGE 1: CAPA OFICIAL DO LAUDO
@@ -447,6 +462,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       html: string;
       fotos?: EvidenciaFoto[];
       itens?: LaudoItemChecklist[];
+      fotoOffset?: number; // quantidade de figuras já exibidas em páginas anteriores (numeração global)
     }
 
     const dividirSecaoEmPaginas = (secao: LaudoSecao): SubPaginaInfo[] => {
@@ -532,32 +548,30 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       }
 
       // 3. Seção: "Registros Fotográficos Principais"
+      //    Quebra de página automática: 2 figuras na 1ª página e 4 por página nas seguintes,
+      //    garantindo que nenhuma figura seja cortada pela margem no PDF.
       if (tLower.includes('registros fotográficos') || tLower.includes('registros fotograficos') || tLower.includes('registro fotográfico')) {
-        // Se houver fotos no array da seção
-        if (secao.fotos && secao.fotos.length > 2) {
-          return [
-            {
-              isContinuacao: false,
-              subIndex: 1,
-              totalSubs: 2,
+        // 3a. Fotos vindas do array da seção
+        if (secao.fotos && secao.fotos.length > FIGURAS_PRIMEIRA_PAGINA) {
+          const grupos = fatiarFiguras(secao.fotos);
+          let offset = 0;
+          return grupos.map((grupo, idx) => {
+            const info: SubPaginaInfo = {
+              isContinuacao: idx > 0,
+              subIndex: idx + 1,
+              totalSubs: grupos.length,
               tituloExibicao: secao.titulo,
-              html: limparTitulosIndesejados(rawHtml, false),
-              fotos: secao.fotos.slice(0, 2),
-              itens: secao.itens,
-            },
-            {
-              isContinuacao: true,
-              subIndex: 2,
-              totalSubs: 2,
-              tituloExibicao: secao.titulo,
-              html: `<div class="space-y-3"></div>`,
-              fotos: secao.fotos.slice(2),
-              itens: [],
-            }
-          ];
+              html: idx === 0 ? limparTitulosIndesejados(rawHtml, false) : `<div class="space-y-3"></div>`,
+              fotos: grupo,
+              itens: idx === 0 ? secao.itens : [],
+              fotoOffset: offset,
+            };
+            offset += grupo.length;
+            return info;
+          });
         }
 
-        // Se houver cards de figuras no HTML
+        // 3b. Cards de figuras já embutidos no HTML
         const cardParts = rawHtml.split(/(?=<div class="p-3 border border-slate-200)/i);
         if (cardParts.length > 2) {
           const cards: string[] = [];
@@ -571,49 +585,37 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
 
           if (cards.length >= 3) {
             const enhanceCard = (c: string, idx: number) => {
-              let res = c
-                .replace(/h-44/g, 'h-64 sm:h-72 min-h-[240px]')
-                .replace(/text-xs/g, 'text-[12.5px]');
-              // Normaliza a enumeração conforme a sequência global (Figura 1, Figura 2, Figura 3...)
               const seq = idx + 1;
+              let res = c
+                // Altura reduzida para caber 4 figuras (2x2) por página sem corte
+                .replace(/h-44/g, 'h-56')
+                .replace(/text-xs/g, 'text-[12.5px]')
+                // Remove o selo "Figura N" sobreposto à imagem (mantém apenas a legenda abaixo)
+                .replace(/<span[^>]*absolute[^>]*>\s*Figura\s+\d+\s*<\/span>/gi, '');
+              // Normaliza a enumeração conforme a sequência global (Figura 1, Figura 2, Figura 3...)
               res = res.replace(/Figura\s+\d+/gi, `Figura ${seq}`);
               return res;
             };
 
-            const part1Html = `<div class="space-y-3">
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
-    ${enhanceCard(cards[0], 0)}
-    ${enhanceCard(cards[1], 1)}
-  </div>
-</div>`;
+            const cardsAprimorados = cards.map((c, i) => enhanceCard(c, i));
+            const grupos = fatiarFiguras(cardsAprimorados);
 
-            const part2Cards = cards.slice(2).map((c, i) => enhanceCard(c, 2 + i)).join('\n');
-            const part2Html = `<div class="space-y-3">
+            return grupos.map((grupo, idx) => ({
+              isContinuacao: idx > 0,
+              subIndex: idx + 1,
+              totalSubs: grupos.length,
+              tituloExibicao: secao.titulo,
+              html: limparTitulosIndesejados(
+                `<div class="space-y-3">
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
-    ${part2Cards}
+    ${grupo.join('\n')}
   </div>
-</div>`;
-
-            return [
-              {
-                isContinuacao: false,
-                subIndex: 1,
-                totalSubs: 2,
-                tituloExibicao: secao.titulo,
-                html: limparTitulosIndesejados(part1Html, false),
-                fotos: secao.fotos,
-                itens: secao.itens,
-              },
-              {
-                isContinuacao: true,
-                subIndex: 2,
-                totalSubs: 2,
-                tituloExibicao: secao.titulo,
-                html: limparTitulosIndesejados(part2Html, true),
-                fotos: [],
-                itens: [],
-              }
-            ];
+</div>`,
+                idx > 0
+              ),
+              fotos: idx === 0 ? secao.fotos : [],
+              itens: idx === 0 ? secao.itens : [],
+            }));
           }
         }
       }
@@ -628,12 +630,14 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           html: limparTitulosIndesejados(rawHtml, false),
           fotos: secao.fotos,
           itens: secao.itens,
+          fotoOffset: 0,
         }
       ];
     };
 
     // Mapeamento dinâmico de páginas considerando as sub-páginas geradas
     const pageMap: Record<string, number> = {};
+    const pageEndMap: Record<string, number> = {};
     const subPaginasProcessadas: {
       id: string;
       secaoOriginalId: string;
@@ -646,6 +650,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       totalSubs: number;
       conteudoHtml: string;
       fotos?: EvidenciaFoto[];
+      fotoOffset: number;
       itens?: LaudoItemChecklist[];
       isSumario: boolean;
       isConclusao: boolean;
@@ -671,12 +676,16 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
           totalSubs: sub.totalSubs,
           conteudoHtml: sub.html,
           fotos: sub.fotos,
+          fotoOffset: sub.fotoOffset || 0,
           itens: sub.itens,
           isSumario: secao.titulo.toLowerCase().includes('sumário') || secao.titulo.toLowerCase().includes('sumario'),
           isConclusao: secao.id === secaoConclusao?.id,
           isObrigatoria: secao.isObrigatoria,
         });
       });
+
+      // Última página ocupada por esta seção (para exibir o intervalo no sumário)
+      pageEndMap[secao.id] = pageNum - 1;
     });
 
     const conclusaoPageIndex = secaoConclusao ? pageMap[secaoConclusao.id] : pageNum++;
@@ -684,8 +693,8 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
     const artPageIndex = temArtAnexo ? pageNum++ : 0;
     const totalEstimado = pageNum - 1;
 
-    // Itens dinâmicos para o Sumário Executivo com numeração exata de cada página
-    const itensSumario: { numero: number; titulo: string; pagina: number }[] = [];
+    // Itens dinâmicos para o Sumário Executivo com numeração exata de cada página (início e fim)
+    const itensSumario: { numero: number; titulo: string; pagina: number; paginaFim: number }[] = [];
     let itemCounter = 1;
 
     secoesFiltradas.forEach(s => {
@@ -694,6 +703,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         numero: itemCounter++,
         titulo: isConclusao ? 'Conclusão Técnica Pericial & Assinatura' : s.titulo,
         pagina: pageMap[s.id] || 0,
+        paginaFim: pageEndMap[s.id] || pageMap[s.id] || 0,
       });
     });
 
@@ -702,6 +712,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         numero: itemCounter++,
         titulo: 'Conclusão Técnica & Assinatura',
         pagina: conclusaoPageIndex,
+        paginaFim: conclusaoPageIndex,
       });
     }
 
@@ -710,6 +721,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         numero: itemCounter++,
         titulo: 'Anexo Oficial da ART CREA-PE',
         pagina: artPageIndex,
+        paginaFim: artPageIndex,
       });
     }
 
@@ -789,7 +801,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Lista de seções com paginação precisa e design técnico */}
+                  {/* Lista de seções com paginação precisa (início–fim) e design técnico */}
                   <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs divide-y divide-slate-100">
                     {itensSumario.map((item) => (
                       <div 
@@ -807,8 +819,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                         
                         <div className="flex items-center gap-2 shrink-0 ml-3">
                           <div className="w-12 sm:w-24 border-b border-dotted border-slate-300"></div>
-                          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10.5px] font-bold border border-slate-200">
-                            Pág. {String(item.pagina).padStart(2, '0')}
+                          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10.5px] font-bold border border-slate-200 whitespace-nowrap">
+                            {item.paginaFim > item.pagina
+                              ? `Pág. ${String(item.pagina).padStart(2, '0')}–${String(item.paginaFim).padStart(2, '0')}`
+                              : `Pág. ${String(item.pagina).padStart(2, '0')}`}
                           </span>
                         </div>
                       </div>
@@ -887,12 +901,18 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </>
               )}
 
-              {/* Evidências Fotográficas da Seção com dimensões ampliadas e alta legibilidade com enumeração sequencial */}
+              {/* Evidências Fotográficas da Seção — numeração sequencial global, uma única "Figura N" por imagem (na legenda) */}
               {subPag.fotos && subPag.fotos.length > 0 && (
                 <div className="my-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-[11.5px] font-bold text-[#0B1E3D] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                     <Camera className="w-4 h-4 text-[#1565D8]" />
-                    <span>Registros Fotográficos Principais ({subPag.fotos.length} {subPag.fotos.length === 1 ? 'imagem' : 'imagens'})</span>
+                    <span>
+                      Registros Fotográficos Principais (
+                      {subPag.fotos.length === 1
+                        ? `Figura ${subPag.fotoOffset + 1}`
+                        : `Figuras ${subPag.fotoOffset + 1}–${subPag.fotoOffset + subPag.fotos.length}`}
+                      )
+                    </span>
                   </h4>
                   <div className={`grid gap-4 ${
                     subPag.fotos.length === 1 
@@ -900,13 +920,10 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                       : 'grid-cols-1 sm:grid-cols-2'
                   }`}>
                     {subPag.fotos.map((foto, fIdx) => {
-                      const figNumero = (subPag.subIndex > 1 ? (subPag.subIndex - 1) * 2 : 0) + fIdx + 1;
+                      const figNumero = subPag.fotoOffset + fIdx + 1;
                       return (
                         <div key={foto.id} className="rounded-xl overflow-hidden border border-slate-300 bg-white shadow-xs flex flex-col">
-                          <div className="h-60 sm:h-72 w-full bg-slate-100 flex items-center justify-center p-2 overflow-hidden relative">
-                            <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded bg-[#0B1E3D] text-white text-[11px] font-bold font-mono shadow-sm">
-                              Figura {figNumero}
-                            </span>
+                          <div className={`${subPag.fotos && subPag.fotos.length === 1 ? 'h-72' : 'h-56'} w-full bg-slate-100 flex items-center justify-center p-2 overflow-hidden`}>
                             <img 
                               src={foto.url} 
                               alt={foto.descricao || `Figura ${figNumero}`} 
@@ -982,7 +999,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               )}
 
               {/* Indicador de Continuação se a seção continuar na página seguinte */}
-              {!subPag.isContinuacao && subPag.totalSubs > 1 && (
+              {subPag.subIndex < subPag.totalSubs && (
                 <div className="mt-auto pt-3 border-t border-slate-200 flex justify-between items-center text-[11.5px] text-blue-700 font-bold font-mono">
                   <span>{subPag.titulo}</span>
                   <span className="flex items-center gap-1">Continua na página seguinte ➔</span>
@@ -1302,6 +1319,9 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  // O retorno antecipado fica DEPOIS de todos os hooks (regras dos hooks do React)
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
