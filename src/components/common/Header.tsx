@@ -88,17 +88,26 @@ export const Header: React.FC = () => {
           </button>
         </nav>
 
-        {/* Action Button */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Action Buttons */}
+        <div className="hidden md:flex items-center gap-3">
           <a
             href="https://wa.me/5581984442592?text=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20um%20or%C3%A7amento%20com%20a%20VL%20Engenharia."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#1565D8] hover:bg-[#0d47a1] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-98"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#1565D8] hover:bg-[#0d47a1] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-98"
           >
             <Phone className="w-4 h-4" />
             <span>Solicitar Orçamento</span>
           </a>
+
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 hover:border-[#1565D8] text-slate-700 hover:text-[#1565D8] text-xs font-bold transition-all hover:bg-blue-50/50"
+            title="Acesso Restrito ao Painel Técnico"
+          >
+            <Shield className="w-3.5 h-3.5 text-[#1565D8]" />
+            <span>Acesso Restrito</span>
+          </Link>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -166,11 +175,11 @@ export const Header: React.FC = () => {
               Falar no WhatsApp (81) 98444-2592
             </a>
             <Link
-              to="/admin"
+              to="/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-lg border border-slate-200 text-slate-600 font-semibold text-xs flex items-center justify-center gap-1 hover:bg-slate-50"
+              className="w-full text-center py-2.5 rounded-lg border border-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50"
             >
-              <Shield className="w-3.5 h-3.5" />
+              <Shield className="w-3.5 h-3.5 text-[#1565D8]" />
               <span>Acesso ao Painel Restrito</span>
             </Link>
           </div>

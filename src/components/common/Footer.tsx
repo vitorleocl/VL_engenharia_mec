@@ -117,12 +117,12 @@ export const Footer: React.FC = () => {
 
             {/* Discreet restricted access link as requested in spec */}
             <Link
-              to="/admin"
-              className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors"
-              title="Área Administrativa do Responsável Técnico"
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors py-1 px-2 rounded-md hover:bg-slate-800/60"
+              title="Área Administrativa do Responsável Técnico — Login de Engenharia"
             >
-              <Lock className="w-3 h-3 text-slate-400" />
-              <span>Acesso Restrito</span>
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-semibold">Acesso Restrito</span>
             </Link>
           </div>
         </div>

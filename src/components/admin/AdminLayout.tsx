@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -39,10 +39,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // If no user is logged in, redirect to login page
+  // Redirecionamento limpo para o login caso não haja sessão ativa
   if (!currentUser) {
-    navigate('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   const isMaster = currentUser.role === 'master';

@@ -83,6 +83,8 @@ export default function App() {
               {/* Login Routes */}
               <Route path="/login" element={<LoginView />} />
               <Route path="/admin/login" element={<LoginView />} />
+              <Route path="/acesso-restrito" element={<LoginView />} />
+              <Route path="/restrito" element={<LoginView />} />
 
               {/* Admin Panel Routes */}
               <Route

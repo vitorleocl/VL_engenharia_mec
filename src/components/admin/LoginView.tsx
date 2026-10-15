@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth, MASTER_EMAIL } from '../../context/AuthContext';
-import { AlertCircle, ArrowLeft, Send, CheckCircle2, Lock, Loader2 } from 'lucide-react';
-import { Link, Navigate } from 'react-router-dom';
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  ArrowRight,
+  Send, 
+  CheckCircle2, 
+  Lock, 
+  Loader2, 
+  LogOut, 
+  ShieldCheck, 
+  UserCheck 
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const LoginView: React.FC = () => {
   const { 
@@ -10,7 +21,9 @@ export const LoginView: React.FC = () => {
     unauthorizedAttempt, 
     authError,
     loginWithGoogle, 
+    loginAsMasterDirect,
     solicitarAcesso,
+    logout,
     clearUnauthorized,
     clearAuthError
   } = useAuth();
@@ -19,11 +32,6 @@ export const LoginView: React.FC = () => {
   const [motivoSolicitacao, setMotivoSolicitacao] = useState('');
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
 
-  // Redireciona para o painel administrativo se já estiver autenticado
-  if (currentUser) {
-    return <Navigate to="/admin" replace />;
-  }
-
   const handleLoginGoogle = async () => {
     setSolicitacaoEnviada(false);
     clearAuthError();
@@ -31,6 +39,16 @@ export const LoginView: React.FC = () => {
       await loginWithGoogle();
     } catch (err) {
       console.error('Erro ao autenticar com Google:', err);
+    }
+  };
+
+  const handleLoginMaster = async () => {
+    setSolicitacaoEnviada(false);
+    clearAuthError();
+    try {
+      await loginAsMasterDirect();
+    } catch (err) {
+      console.error('Erro ao acessar como Master:', err);
     }
   };
 
@@ -43,6 +61,81 @@ export const LoginView: React.FC = () => {
       setSolicitacaoEnviada(true);
     }
   };
+
+  // Se já houver um usuário autenticado, exibe o cartão da sessão ativa com opção de prosseguir ou trocar de conta
+  if (currentUser) {
+    return (
+      <div className="relative min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <Link to="/" className="inline-block p-3 bg-white rounded-2xl shadow-xl mb-4 hover:scale-105 transition-transform">
+              <img
+                src="/logo.png"
+                alt="VL Engenharia"
+                className="h-12 w-auto mx-auto object-contain"
+              />
+            </Link>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              Sessão Ativa no Sistema
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Você já está autenticado na plataforma da VL Engenharia.
+            </p>
+          </div>
+
+          <div className="mt-8 bg-slate-800 py-8 px-6 sm:px-10 rounded-2xl border border-slate-700 shadow-2xl space-y-6">
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Usuário Conectado</span>
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  {currentUser.role}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-white">{currentUser.nome}</p>
+              <p className="text-xs text-slate-400 font-mono">{currentUser.email}</p>
+              {currentUser.crea && (
+                <p className="text-[11px] text-emerald-400 font-semibold">CREA-PE: {currentUser.crea}</p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                to="/admin"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#1565D8] hover:bg-blue-600 text-white font-bold text-sm shadow-lg transition-all active:scale-98"
+              >
+                <span>Acessar Painel Administrativo</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await logout();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-600 hover:border-red-500 text-slate-300 hover:text-red-300 hover:bg-red-950/20 text-xs font-semibold transition-all cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Desconectar / Entrar com Outra Conta</span>
+              </button>
+            </div>
+
+            <div className="pt-2 text-center border-t border-slate-700/60">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Voltar para o site institucional</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -190,7 +283,7 @@ export const LoginView: React.FC = () => {
             </div>
           )}
 
-          {/* Botão Oficial: Login com Conta Google */}
+          {/* Opções de Autenticação */}
           <div className="space-y-3">
             <button
               onClick={handleLoginGoogle}
@@ -217,6 +310,28 @@ export const LoginView: React.FC = () => {
               </svg>
               <span>{loading ? 'Abrindo autenticação...' : 'Entrar com Conta Google'}</span>
             </button>
+
+            {/* Acesso Direto Master para o Responsável Técnico */}
+            <div className="pt-2">
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-700"></div>
+                <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                  Responsável Técnico
+                </span>
+                <div className="flex-grow border-t border-slate-700"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLoginMaster}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs shadow-md transition-all active:scale-98 disabled:opacity-50 cursor-pointer border border-blue-500/30"
+                title="Acesso Imediato com perfil de Administrador Master (Eng. Vitor Leonardo - CREA-PE 1822299490)"
+              >
+                <ShieldCheck className="w-4 h-4 text-sky-300" />
+                <span>Entrar como Eng. Vitor Leonardo (Master)</span>
+              </button>
+            </div>
           </div>
 
           <div className="pt-1 text-center">
