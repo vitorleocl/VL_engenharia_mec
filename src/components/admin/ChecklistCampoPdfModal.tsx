@@ -110,7 +110,7 @@ Segue o resumo do Checklist de Campo realizado in loco pela equipe da VL Engenha
 
 Atenciosamente,
 VL Engenharia e Perícias Técnicas
-contato@vlengenharia.com.br
+atendimento@vlengenhariamecanica.com.br
 (81) 98843-0965`);
 
     window.location.href = `mailto:?subject=${subject}&body=${body}`;

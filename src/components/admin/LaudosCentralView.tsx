@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   FileText, 
   Plus, 
@@ -85,9 +85,11 @@ export const LaudosCentralView: React.FC = () => {
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as 'modulos' | 'catalogo' | 'laudos' | null;
 
   // Primary Tabs: Modules Table vs Taxonomy Catalog vs Active Reports List
-  const [abaAtiva, setAbaAtiva] = useState<'modulos' | 'catalogo' | 'laudos'>('modulos');
+  const [abaAtiva, setAbaAtiva] = useState<'modulos' | 'catalogo' | 'laudos'>(tabParam || 'laudos');
   const [buscaModulos, setBuscaModulos] = useState('');
 
   // Search and Filters for Taxonomy Catalog
@@ -805,8 +807,13 @@ export const LaudosCentralView: React.FC = () => {
                           {laudo.numero}
                         </span>
                         {laudo.artNumero && (
-                          <span className="text-[10px] text-[#1565D8] dark:text-blue-400 font-mono">
+                          <span className="text-[10px] text-[#1565D8] dark:text-blue-400 font-mono block">
                             ART: {laudo.artNumero}
+                          </span>
+                        )}
+                        {laudo.orcamentoNumero && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono block font-semibold">
+                            Orç: {laudo.orcamentoNumero}
                           </span>
                         )}
                       </td>

@@ -94,6 +94,7 @@ interface DataContextType {
   atualizarOrcamento: (id: string, dados: Partial<Orcamento>) => void;
   atualizarStatusOrcamento: (id: string, status: Orcamento['status']) => void;
   gerarLaudoFromOrcamento: (orcamentoId: string, ativoIdEscolhido?: string) => string;
+  associarOrcamentoAoLaudo: (orcamentoId: string, laudoId: string | null) => void;
   removerOrcamento: (id: string) => void;
 
   // Agenda Actions
@@ -361,7 +362,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isContato) {
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO') || s.conteudoHtml.includes('Recife & Polo Industrial de Suape')) {
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || s.conteudoHtml.includes('🤝') || !s.conteudoHtml.includes('HEADER HERO EXECUTIVO') || s.conteudoHtml.includes('Recife & Polo Industrial de Suape') || s.conteudoHtml.includes('vlengenhariamec@gmail.com')) {
               modificouOrc = true;
               return {
                 ...s,
@@ -488,7 +489,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isContato) {
-            if (!p.conteudoHtml || p.conteudoHtml.trim() === '' || p.conteudoHtml.includes('Recife & Polo Industrial de Suape')) {
+            if (!p.conteudoHtml || p.conteudoHtml.trim() === '' || p.conteudoHtml.includes('Recife & Polo Industrial de Suape') || p.conteudoHtml.includes('vlengenhariamec@gmail.com')) {
               modificouOrc = true;
               return {
                 ...p,
@@ -524,6 +525,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const removidosSet = new Set(removidos);
     let loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
     let alterouStorage = false;
+
+    // Garantir que todos os laudos padrão de LAUDOS_INICIAIS (especialmente LAU-2026/002 Duster) estejam presentes
+    for (const laudoPadrao of LAUDOS_INICIAIS) {
+      const idxExistente = loaded.findIndex((l: Laudo) => l.id === laudoPadrao.id || l.numero === laudoPadrao.numero);
+      if (idxExistente === -1 && !removidosSet.has(laudoPadrao.id)) {
+        loaded.unshift(laudoPadrao);
+        alterouStorage = true;
+      } else if (idxExistente >= 0) {
+        // Garantir que o laudo tenha o vínculo do orçamento sincronizado
+        const lAtual = loaded[idxExistente];
+        if (laudoPadrao.orcamentoOrigemId && (!lAtual.orcamentoOrigemId || lAtual.orcamentoOrigemId !== laudoPadrao.orcamentoOrigemId)) {
+          loaded[idxExistente] = {
+            ...lAtual,
+            orcamentoOrigemId: laudoPadrao.orcamentoOrigemId,
+            orcamentoNumero: laudoPadrao.orcamentoNumero || lAtual.orcamentoNumero || 'PROP-1790444416499',
+          };
+          alterouStorage = true;
+        }
+      }
+    }
 
     // Sanitiza seções de Dados do Veículo para garantir proprietário correto do veículo
     loaded = loaded.map((l: Laudo) => {
@@ -1459,6 +1480,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return novoLaudoId;
   };
 
+  // Associar ou Desassociar Orçamento ao Laudo
+  const associarOrcamentoAoLaudo = (orcamentoId: string, laudoId: string | null) => {
+    // 1. Atualizar Orçamentos
+    setOrcamentos(prev => {
+      const atualizados = prev.map(o => {
+        if (o.id === orcamentoId) {
+          return { ...o, laudoGeradoId: laudoId || undefined };
+        }
+        // Se outro orçamento apontava para este mesmo laudo, remove vínculo antigo
+        if (laudoId && o.laudoGeradoId === laudoId && o.id !== orcamentoId) {
+          return { ...o, laudoGeradoId: undefined };
+        }
+        return o;
+      });
+      saveStorage('vl_orcamentos', atualizados);
+      return atualizados;
+    });
+
+    // 2. Atualizar Laudos
+    setLaudos(prev => {
+      const orc = orcamentos.find(o => o.id === orcamentoId);
+      const orcNumero = orc?.codigoProposta || orc?.id || orcamentoId;
+
+      const atualizados = prev.map(l => {
+        if (laudoId && l.id === laudoId) {
+          return {
+            ...l,
+            orcamentoOrigemId: orcamentoId,
+            orcamentoNumero: orcNumero,
+            atualizadoEm: new Date().toISOString(),
+          };
+        }
+        if (!laudoId && l.orcamentoOrigemId === orcamentoId) {
+          const lCopy = { ...l };
+          delete lCopy.orcamentoOrigemId;
+          delete lCopy.orcamentoNumero;
+          return {
+            ...lCopy,
+            atualizadoEm: new Date().toISOString(),
+          };
+        }
+        return l;
+      });
+      saveStorage('vl_laudos', atualizados);
+      return atualizados;
+    });
+
+    registrarLog('orcamentos', orcamentoId, 'editar', 
+      laudoId ? `Orçamento ${orcamentoId} associado ao laudo ${laudoId}` : `Desvinculado laudo do orçamento ${orcamentoId}`
+    );
+  };
+
   // Agenda
   const adicionarVistoria = (dados: Omit<AgendaVistoria, 'id' | 'criadoEm'>): string => {
     const id = `ag-${Date.now()}`;
@@ -2122,6 +2195,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         atualizarOrcamento,
         atualizarStatusOrcamento,
         gerarLaudoFromOrcamento,
+        associarOrcamentoAoLaudo,
         removerOrcamento,
         adicionarVistoria,
         atualizarStatusVistoria,

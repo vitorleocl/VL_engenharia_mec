@@ -200,7 +200,7 @@ export const GestaoView: React.FC = () => {
   const handleConfirmarExclusao = () => {
     if (!usuarioParaExcluir) return;
 
-    if (usuarioParaExcluir.uid === 'master-vitor' || usuarioParaExcluir.email.toLowerCase() === 'vlengenhariamec@gmail.com' || usuarioParaExcluir.email.toLowerCase() === 'vitorleonardocl@gmail.com') {
+    if (usuarioParaExcluir.uid === 'master-vitor' || usuarioParaExcluir.email.toLowerCase() === 'vlengenhariamec@gmail.com' || usuarioParaExcluir.email.toLowerCase() === 'vitorleonardocl@gmail.com' || usuarioParaExcluir.email.toLowerCase() === 'atendimento@vlengenhariamecanica.com.br') {
       showFeedback('erro', 'A conta Master principal não pode ser excluída do sistema.');
       setUsuarioParaExcluir(null);
       return;
@@ -550,7 +550,7 @@ export const GestaoView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {usuarios.map((u) => {
-                    const isMasterPrincipal = u.uid === 'master-vitor' || u.email.toLowerCase() === 'vlengenhariamec@gmail.com' || u.email.toLowerCase() === 'vitorleonardocl@gmail.com';
+                    const isMasterPrincipal = u.uid === 'master-vitor' || u.email.toLowerCase() === 'vlengenhariamec@gmail.com' || u.email.toLowerCase() === 'vitorleonardocl@gmail.com' || u.email.toLowerCase() === 'atendimento@vlengenhariamecanica.com.br';
                     const isCurrentUser = u.uid === currentUser?.uid;
                     const clienteVinculadoObj = u.clienteId ? clientes.find(c => c.id === u.clienteId) : null;
                     const ativo = u.ativo !== false;

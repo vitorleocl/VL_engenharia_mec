@@ -405,7 +405,8 @@ export const ORCAMENTOS_INICIAIS: Orcamento[] = [
     incluiNotaFiscal: true,
     chavePix: '10287093409',
     chavePixTipo: 'cpf',
-    status: 'rascunho',
+    status: 'aprovado',
+    laudoGeradoId: 'lau-2026-002-duster',
     criadoEm: '2026-03-20T11:00:00Z',
   }
 ];
@@ -562,9 +563,11 @@ export const LAUDOS_INICIAIS: Laudo[] = [
     clienteCnpj: '24.417.065/0001-03',
     ativoId: 'atv-pgx7098',
     ativoIdentificacao: 'PGX-9708 (Renault Duster 2016/2016)',
-    status: 'em_andamento',
+    status: 'finalizado',
     artNumero: 'PE20261621255',
     dataInspecao: '2026-08-20',
+    orcamentoOrigemId: 'orc-1790444416499',
+    orcamentoNumero: 'PROP-1790444416499',
     responsavelNome: 'Vitor Leonardo Cordeiro Linhares',
     responsavelCrea: 'CREA-PE 1822299490',
     resumoExecutivo: 'Avaliação técnica pericial das avarias constatadas no conjunto propulsor do Renault Duster PGX-9708. Apuração de Causa Raiz: ruptura da correia dentada do sistema de distribuição por fadiga mecânica, gerando colapso de sincronismo e empenamento de válvulas. Análise temporal atesta que o prazo legal de garantia de 90 dias (CDC Art. 26, II) expirou (> 8 meses decorridos desde a revisão de dez/2025). Inexistem indícios de mau uso pelo condutor.',

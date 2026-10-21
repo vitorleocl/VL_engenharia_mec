@@ -467,6 +467,8 @@ export interface Laudo {
   iniciadoComIA?: boolean;
   modoCriacao?: 'em_branco' | 'sugestao_ia';
   checklistCampoOrigemId?: string;
+  orcamentoOrigemId?: string;
+  orcamentoNumero?: string;
   criadoEm: string;
   atualizadoEm: string;
 }

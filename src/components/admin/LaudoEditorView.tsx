@@ -40,7 +40,9 @@ import {
   Paperclip,
   FileCheck,
   ExternalLink,
-  ZoomIn
+  ZoomIn,
+  FileSpreadsheet,
+  Search
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -96,7 +98,7 @@ export const LaudoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { laudos, clientes, ativos, categoriasLaudo, atualizarLaudo, finalizarLaudo, registrarUsoIA, checklistsCampo } = useData();
+  const { laudos, clientes, ativos, orcamentos, associarOrcamentoAoLaudo, categoriasLaudo, atualizarLaudo, finalizarLaudo, registrarUsoIA, checklistsCampo } = useData();
   const { currentUser } = useAuth();
 
   const laudoOriginal = laudos.find(l => l.id === id);
@@ -136,6 +138,9 @@ export const LaudoEditorView: React.FC = () => {
   const [modalIaAberto, setModalIaAberto] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
   const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
+  const [modalAssociarOrcamentoAberto, setModalAssociarOrcamentoAberto] = useState(false);
+  const [buscaOrcamentoModal, setBuscaOrcamentoModal] = useState('');
+  const [filtroApenasMesmoCliente, setFiltroApenasMesmoCliente] = useState(true);
 
   // Form inputs for modals
   const [novaSecaoTitulo, setNovaSecaoTitulo] = useState('');
@@ -945,6 +950,20 @@ export const LaudoEditorView: React.FC = () => {
               <span>Importar Checklist</span>
             </button>
 
+            {/* Vincular / Visualizar Orçamento */}
+            <button
+              onClick={() => setModalAssociarOrcamentoAberto(true)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border cursor-pointer shadow-xs transition-all ${
+                laudoState.orcamentoOrigemId
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+              }`}
+              title="Associar ou consultar o orçamento / proposta comercial deste laudo"
+            >
+              <FileSpreadsheet className={`w-3.5 h-3.5 ${laudoState.orcamentoOrigemId ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#1565D8]'}`} />
+              <span>{laudoState.orcamentoNumero ? `Orçamento: ${laudoState.orcamentoNumero}` : (laudoState.orcamentoOrigemId ? 'Orçamento Vinculado' : 'Associar Orçamento')}</span>
+            </button>
+
             {/* Exportar PDF */}
             <button
               onClick={() => setModalPdfAberto(true)}
@@ -968,8 +987,8 @@ export const LaudoEditorView: React.FC = () => {
           </div>
         </div>
 
-        {/* Row 2: Client & Asset Quick Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
+        {/* Row 2: Client, Asset & Budget Quick Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-[#1565D8] shrink-0" />
             <div className="truncate">
@@ -987,6 +1006,24 @@ export const LaudoEditorView: React.FC = () => {
               <strong className="text-slate-900 dark:text-white font-semibold truncate block">
                 {laudoState.ativoIdentificacao}
               </strong>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div className="truncate">
+              <span className="text-slate-400 block text-[10px]">Orçamento Vinculado:</span>
+              <div className="flex items-center gap-1">
+                <strong className="text-slate-900 dark:text-white font-semibold truncate block">
+                  {laudoState.orcamentoNumero || (laudoState.orcamentoOrigemId ? 'Vinculado' : 'Não associado')}
+                </strong>
+                <button
+                  onClick={() => setModalAssociarOrcamentoAberto(true)}
+                  className="text-[10px] text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer hover:text-blue-800 ml-1"
+                >
+                  {laudoState.orcamentoOrigemId ? 'Gerenciar' : 'Associar'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2224,6 +2261,282 @@ export const LaudoEditorView: React.FC = () => {
           onClose={() => setModalImportarChecklistAberto(false)}
           onImportar={handleImportarChecklist}
         />
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ASSOCIAR / GERENCIAR ORÇAMENTO COMERCIAL VINCULADO                 */}
+      {/* ========================================================================= */}
+      {modalAssociarOrcamentoAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-6 max-h-[90vh] flex flex-col space-y-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Associar Orçamento ao Laudo {laudoState.numero}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Vincule a proposta comercial técnica finalizada para rastreabilidade financeira e contratual.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalAssociarOrcamentoAberto(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Currently Associated Proposal */}
+            {laudoState.orcamentoOrigemId ? (
+              (() => {
+                const orcAtual = orcamentos.find(o => o.id === laudoState.orcamentoOrigemId);
+                return (
+                  <div className="p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Orçamento Atualmente Vinculado</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                        {orcAtual?.status || 'Aprovado'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Código da Proposta:</span>
+                        <strong className="text-slate-900 dark:text-white font-mono text-sm">
+                          {orcAtual?.codigoProposta || laudoState.orcamentoNumero || orcAtual?.id}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Serviço / Objeto:</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-semibold truncate block">
+                          {orcAtual?.servico || 'Perícia Técnica Mecânica'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Cliente:</span>
+                        <span className="text-slate-700 dark:text-slate-300">
+                          {orcAtual?.clienteNome || laudoState.clienteNome}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Investimento:</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold font-mono">
+                          {orcAtual?.valorFormatado || (orcAtual?.valor ? `R$ ${orcAtual.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ 3.500,00')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 dark:border-emerald-800/60">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/admin/orcamentos')}
+                        className="text-xs text-[#1565D8] dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Ver no Módulo de Orçamentos</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Deseja desassociar este orçamento do laudo?')) {
+                            associarOrcamentoAoLaudo(laudoState.orcamentoOrigemId!, null);
+                            const updated = {
+                              ...laudoState,
+                              orcamentoOrigemId: undefined,
+                              orcamentoNumero: undefined,
+                            };
+                            agendarAutoSave(updated);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-semibold cursor-pointer"
+                      >
+                        Desvincular Orçamento
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>Nenhum orçamento está vinculado a este laudo no momento. Selecione uma das propostas abaixo para vincular.</span>
+              </div>
+            )}
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={buscaOrcamentoModal}
+                  onChange={(e) => setBuscaOrcamentoModal(e.target.value)}
+                  placeholder="Buscar por código, serviço ou cliente..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFiltroApenasMesmoCliente(!filtroApenasMesmoCliente)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                  filtroApenasMesmoCliente 
+                    ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-[#1565D8] dark:text-blue-300' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <span>{filtroApenasMesmoCliente ? 'Mesmo Cliente' : 'Todos Clientes'}</span>
+              </button>
+            </div>
+
+            {/* List of Proposals */}
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-60 pr-1">
+              {(() => {
+                const termo = buscaOrcamentoModal.trim().toLowerCase();
+                const listaFiltrada = orcamentos.filter(o => {
+                  if (filtroApenasMesmoCliente && o.clienteId !== laudoState.clienteId) return false;
+                  if (!termo) return true;
+                  return (
+                    (o.codigoProposta && o.codigoProposta.toLowerCase().includes(termo)) ||
+                    o.id.toLowerCase().includes(termo) ||
+                    o.servico.toLowerCase().includes(termo) ||
+                    (o.clienteNome && o.clienteNome.toLowerCase().includes(termo))
+                  );
+                });
+
+                if (listaFiltrada.length === 0) {
+                  return (
+                    <div className="py-8 text-center text-xs text-slate-400 space-y-2">
+                      <p>Nenhuma proposta comercial encontrada com os filtros atuais.</p>
+                      {filtroApenasMesmoCliente && (
+                        <button
+                          type="button"
+                          onClick={() => setFiltroApenasMesmoCliente(false)}
+                          className="text-xs text-[#1565D8] dark:text-blue-400 underline font-semibold"
+                        >
+                          Exibir propostas de todos os clientes
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return listaFiltrada.map(orc => {
+                  const isJaVinculadoAOutro = orc.laudoGeradoId && orc.laudoGeradoId !== laudoState.id;
+                  const isVinculadoAEste = orc.id === laudoState.orcamentoOrigemId || orc.laudoGeradoId === laudoState.id;
+
+                  return (
+                    <div
+                      key={orc.id}
+                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isVinculadoAEste
+                          ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
+                          : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
+                            {orc.codigoProposta || orc.id}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            orc.status === 'aprovado'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
+                              : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                          }`}>
+                            {orc.status}
+                          </span>
+                          {isVinculadoAEste && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">
+                              VINCULADO
+                            </span>
+                          )}
+                          {isJaVinculadoAOutro && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                              Vinculado a outro laudo
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {orc.servico}
+                        </p>
+
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                          <span>{orc.clienteNome}</span>
+                          <span>•</span>
+                          <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                            {orc.valorFormatado || `R$ ${orc.valor.toLocaleString('pt-BR')}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isVinculadoAEste ? (
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <Check className="w-4 h-4" />
+                            <span>Vinculado</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              associarOrcamentoAoLaudo(orc.id, laudoState.id);
+                              const updated = {
+                                ...laudoState,
+                                orcamentoOrigemId: orc.id,
+                                orcamentoNumero: orc.codigoProposta || orc.id,
+                              };
+                              agendarAutoSave(updated);
+                              setModalAssociarOrcamentoAberto(false);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            Vincular a Este Laudo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalAssociarOrcamentoAberto(false);
+                  navigate('/admin/orcamentos');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-semibold"
+              >
+                Ir para Todas as Propostas
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalAssociarOrcamentoAberto(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white cursor-pointer shadow-xs"
+              >
+                Concluir
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>

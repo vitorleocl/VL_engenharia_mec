@@ -863,16 +863,16 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                      E-mail Profissional
+                      E-mail para Orçamentos e Contato
                     </span>
                     <p className="text-base font-bold text-[#0B1E3D] mt-0.5 break-all">
-                      vlengenhariamec@gmail.com
+                      atendimento@vlengenhariamecanica.com.br
                     </p>
                     <a
-                      href="mailto:vlengenhariamec@gmail.com"
+                      href="mailto:atendimento@vlengenhariamecanica.com.br"
                       className="inline-flex items-center gap-1 text-xs font-bold text-[#1565D8] hover:underline mt-1"
                     >
-                      <span>Enviar mensagem de e-mail</span>
+                      <span>Solicitar orçamento via e-mail</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>

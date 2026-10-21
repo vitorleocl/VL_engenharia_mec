@@ -525,7 +525,7 @@ export function gerarHtmlContatoAgradecimento(): string {
           <span style="background: #eff6ff; color: #1d4ed8; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe;">E-MAIL</span>
         </div>
         <p style="color: #1d4ed8; font-size: 12.5px; font-weight: 900; font-family: monospace; margin: 0 0 2px 0;">
-          vlengenhariamec@gmail.com
+          atendimento@vlengenhariamecanica.com.br
         </p>
         <p style="color: #0f172a; font-size: 10.5px; font-weight: 700; margin: 0 0 6px 0;">
           Envio de Documentações, Contratos e Prontuários
@@ -765,7 +765,7 @@ export function gerarSecoesPadraoOrcamento(
                 <p><strong>Responsável Técnico:</strong> Eng. Vitor Leonardo C. Linhares</p>
                 <p><strong>CREA-PE:</strong> 182229949-0</p>
                 <p><strong>Sede Operacional:</strong> Recife / Paulista - PE</p>
-                <p><strong>E-mail:</strong> vlengenhariamec@gmail.com</p>
+                <p><strong>E-mail:</strong> atendimento@vlengenhariamecanica.com.br</p>
                 <p><strong>Telefone / WhatsApp:</strong> (81) 98444-2592</p>
               </td>
               <td class="p-2.5 border border-slate-300 align-top space-y-1">
@@ -950,7 +950,7 @@ export function converterPaginasParaSecoes(
       });
       titulo = 'Etapa 3 - Prazo, Pagamento & Investimento';
       subtitulo = 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS';
-    } else if (isContato && (!conteudo.includes('Agradecimento & Parceria') || conteudo.includes('vitorleonardocl@gmail.com'))) {
+    } else if (isContato && (!conteudo.includes('Agradecimento & Parceria') || conteudo.includes('vitorleonardocl@gmail.com') || conteudo.includes('vlengenhariamec@gmail.com'))) {
       conteudo = gerarHtmlContatoAgradecimento();
       titulo = 'Agradecimento & Contato';
       subtitulo = 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO';

@@ -18,7 +18,9 @@ import {
   Loader2,
   Eye,
   Trash2,
-  Edit3
+  Edit3,
+  Link as LinkIcon,
+  Check
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +34,8 @@ export const OrcamentosView: React.FC = () => {
     orcamentos, 
     clientes, 
     ativos, 
+    laudos,
+    associarOrcamentoAoLaudo,
     adicionarOrcamento, 
     atualizarOrcamento,
     atualizarStatusOrcamento, 
@@ -49,6 +53,8 @@ export const OrcamentosView: React.FC = () => {
   const [gerandoPropostaId, setGerandoPropostaId] = useState<string | null>(null);
   const [gerarIAAoCriar, setGerarIAAoCriar] = useState(true);
   const [salvandoNovo, setSalvandoNovo] = useState(false);
+  const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<Orcamento | null>(null);
+  const [buscaLaudoVincular, setBuscaLaudoVincular] = useState('');
 
   // Form State
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
@@ -388,39 +394,75 @@ export const OrcamentosView: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                {/* Convert to Report Button */}
-                {orc.status === 'aprovado' && !orc.laudoGeradoId && isColaborador && (
-                  <button
-                    onClick={() => handleGerarLaudo(orc)}
-                    className="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                    title="Gera o laudo pré-preenchido com cliente e ativo"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Gerar Laudo</span>
-                  </button>
-                )}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                {/* Status do Vínculo com Laudo */}
+                {orc.laudoGeradoId ? (
+                  (() => {
+                    const lVinculado = laudos.find(l => l.id === orc.laudoGeradoId);
+                    return (
+                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-bold text-emerald-900 truncate">
+                            {lVinculado ? lVinculado.numero : 'Laudo Vinculado'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => navigate(`/admin/laudos/${orc.laudoGeradoId}`)}
+                            className="px-2 py-1 rounded-md bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-[10px] flex items-center gap-1 cursor-pointer shadow-2xs"
+                          >
+                            <span>Ver Laudo</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => setOrcamentoParaVincular(orc)}
+                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-emerald-100/60 rounded cursor-pointer transition-colors"
+                            title="Alterar ou desvincular laudo"
+                          >
+                            <LinkIcon className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setOrcamentoParaVincular(orc)}
+                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200 cursor-pointer transition-colors"
+                      title="Associar este orçamento a um laudo técnico já emitido"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5 text-[#1565D8]" />
+                      <span>Associar a Laudo</span>
+                    </button>
 
-                {orc.laudoGeradoId && (
-                  <button
-                    onClick={() => navigate(`/admin/laudos/${orc.laudoGeradoId}`)}
-                    className="flex-1 py-1.5 rounded-lg bg-blue-50 text-[#1565D8] font-bold text-xs flex items-center justify-center gap-1.5 border border-blue-200 cursor-pointer"
-                  >
-                    <span>Ver Laudo Gerado</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                    {orc.status === 'aprovado' && isColaborador && (
+                      <button
+                        onClick={() => handleGerarLaudo(orc)}
+                        className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
+                        title="Gera um novo laudo a partir deste orçamento"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Gerar Novo</span>
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {isColaborador && (
-                  <button
-                    onClick={() => {
-                      if (confirm(`Remover o orçamento #${orc.id}?`)) removerOrcamento(orc.id);
-                    }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors ml-auto"
-                    title="Excluir Orçamento"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center justify-end pt-1">
+                    <button
+                      onClick={() => {
+                        if (confirm(`Remover o orçamento #${orc.id}?`)) removerOrcamento(orc.id);
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-colors text-xs flex items-center gap-1 cursor-pointer"
+                      title="Excluir Orçamento"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Excluir Orçamento</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -638,6 +680,183 @@ export const OrcamentosView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ASSOCIAR ORÇAMENTO A LAUDO TÉCNICO */}
+      {orcamentoParaVincular && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col space-y-4">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 text-[#1565D8]">
+                  <LinkIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Associar Orçamento ao Laudo
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Proposta {orcamentoParaVincular.codigoProposta || orcamentoParaVincular.id} • {orcamentoParaVincular.clienteNome}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOrcamentoParaVincular(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Currently Associated */}
+            {orcamentoParaVincular.laudoGeradoId && (
+              (() => {
+                const lAtual = laudos.find(l => l.id === orcamentoParaVincular.laudoGeradoId);
+                return (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-emerald-700 uppercase font-bold block">Laudo Vinculado:</span>
+                      <strong className="text-emerald-950 font-bold">
+                        {lAtual?.numero || orcamentoParaVincular.laudoGeradoId} — {lAtual?.tipo || 'Laudo Técnico'}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Deseja desassociar este orçamento do laudo?')) {
+                          associarOrcamentoAoLaudo(orcamentoParaVincular.id, null);
+                          setOrcamentoParaVincular(null);
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 text-xs font-semibold cursor-pointer"
+                    >
+                      Desvincular
+                    </button>
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={buscaLaudoVincular}
+                onChange={(e) => setBuscaLaudoVincular(e.target.value)}
+                placeholder="Buscar laudo por número, cliente ou título..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* List of Reports */}
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-72 pr-1">
+              {(() => {
+                const termo = buscaLaudoVincular.trim().toLowerCase();
+                const laudosFiltrados = laudos.filter(l => {
+                  if (!termo) return true;
+                  return (
+                    l.numero.toLowerCase().includes(termo) ||
+                    l.tipo.toLowerCase().includes(termo) ||
+                    (l.clienteNome && l.clienteNome.toLowerCase().includes(termo)) ||
+                    (l.ativoIdentificacao && l.ativoIdentificacao.toLowerCase().includes(termo))
+                  );
+                });
+
+                if (laudosFiltrados.length === 0) {
+                  return (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      Nenhum laudo encontrado com os termos de busca.
+                    </div>
+                  );
+                }
+
+                return laudosFiltrados.map(l => {
+                  const isJaVinculadoAEste = orcamentoParaVincular.laudoGeradoId === l.id;
+                  const isMesmoCliente = l.clienteId === orcamentoParaVincular.clienteId;
+
+                  return (
+                    <div
+                      key={l.id}
+                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                        isJaVinculadoAEste
+                          ? 'bg-emerald-50 border-emerald-300'
+                          : 'bg-white border-slate-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs text-slate-900">
+                            {l.numero}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            l.status === 'finalizado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {l.status}
+                          </span>
+                          {isMesmoCliente && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
+                              Mesmo Cliente
+                            </span>
+                          )}
+                          {isJaVinculadoAEste && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">
+                              VINCULADO
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-semibold text-slate-800 truncate">
+                          {l.tipo}
+                        </p>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                          <span>{l.clienteNome}</span>
+                          {l.ativoIdentificacao && (
+                            <>
+                              <span>•</span>
+                              <span>{l.ativoIdentificacao}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isJaVinculadoAEste ? (
+                          <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                            <Check className="w-4 h-4" />
+                            <span>Vinculado</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              associarOrcamentoAoLaudo(orcamentoParaVincular.id, l.id);
+                              setOrcamentoParaVincular(null);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            Vincular a Este Laudo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setOrcamentoParaVincular(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+
           </div>
         </div>
       )}

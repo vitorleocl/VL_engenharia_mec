@@ -67,12 +67,12 @@ export const Footer: React.FC = () => {
               <li className="flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-[#1565D8] shrink-0 mt-0.5" />
                 <div>
-                  <span className="block text-xs text-slate-500">E-mail Profissional</span>
+                  <span className="block text-xs text-slate-500">Solicitação de Orçamentos</span>
                   <a
-                    href="mailto:vlengenhariamec@gmail.com"
+                    href="mailto:atendimento@vlengenhariamecanica.com.br"
                     className="text-white hover:text-blue-300 transition-colors"
                   >
-                    vlengenhariamec@gmail.com
+                    atendimento@vlengenhariamecanica.com.br
                   </a>
                 </div>
               </li>
