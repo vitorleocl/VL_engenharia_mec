@@ -767,7 +767,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                     <p><strong>Eng. Responsável:</strong> Vitor Leonardo C. Linhares</p>
                     <p><strong>CREA-PE:</strong> 182229949-0</p>
                     <p><strong>Sede:</strong> Recife / Paulista - PE</p>
-                    <p><strong>E-mail:</strong> vlengenhariamec@gmail.com</p>
+                    <p><strong>E-mail:</strong> atendimento@vlengenhariamecanica.com.br</p>
                     <p><strong>Telefone / WhatsApp:</strong> (81) 98444-2592</p>
                   </td>
                   <td class="p-2.5 border border-slate-300 align-top space-y-1">
@@ -1104,7 +1104,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                   </div>
                 </div>
                 <p style="color: #1565d8; font-size: 11px; font-weight: 800; font-family: monospace; margin: 4px 0 2px 0; word-break: break-all;">
-                  vlengenhariamec@gmail.com
+                  atendimento@vlengenhariamecanica.com.br
                 </p>
                 <span style="color: #64748b; font-size: 10px;">Canal direto com o Engenheiro Mecânico Responsável.</span>
               </div>

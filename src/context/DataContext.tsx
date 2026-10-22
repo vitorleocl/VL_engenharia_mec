@@ -756,7 +756,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAndListenFirestore = async () => {
       try {
-        // Se a nuvem estiver vazia, faz o seed inicial dos dados canônicos
+        // Garantir que os laudos canônicos (especialmente LAU-2026/002 - Renault Duster) existam no Firestore
+        for (const l of laudos) {
+          if (!cancelado) {
+            try {
+              await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
+            } catch (errLaudo) {
+              console.warn('[Firestore] Aviso ao gravar laudo:', l.id, errLaudo);
+            }
+          }
+        }
+
+        // Garantir que os orçamentos canônicos existam no Firestore
+        for (const o of orcamentos) {
+          if (!cancelado) {
+            try {
+              await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
+            } catch (errOrc) {
+              console.warn('[Firestore] Aviso ao gravar orçamento:', o.id, errOrc);
+            }
+          }
+        }
+
+        // Se a nuvem estiver vazia, faz o seed inicial dos demais dados canônicos
         const clientesSnap = await getDocs(collection(db, 'clientes'));
         if (clientesSnap.empty && !cancelado) {
           console.log('[Firestore] Inicializando coleções na nuvem com dados canônicos...');
@@ -765,12 +787,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           for (const a of ativos) {
             await setDoc(doc(db, 'ativos', a.id), a, { merge: true });
-          }
-          for (const o of orcamentos) {
-            await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
-          }
-          for (const l of laudos) {
-            await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
           }
           for (const ck of checklistsCampo) {
             await setDoc(doc(db, 'checklistsCampo', ck.id), ck, { merge: true });
@@ -810,9 +826,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubOrcamentos = onSnapshot(collection(db, 'orcamentos'), (snapshot) => {
         if (!snapshot.empty) {
-          const docs = snapshot.docs.map(d => d.data() as Orcamento);
-          setOrcamentos(docs);
-          saveStorage('vl_orcamentos', docs);
+          const docs = snapshot.docs.map(d => d.data() as Orcamento).filter(o => o.id !== 'orc-adf-pgx7098');
+          const docIds = new Set(docs.map(d => d.id));
+          const docsMerged = [...docs];
+          for (const padrao of ORCAMENTOS_INICIAIS) {
+            if (!docIds.has(padrao.id)) {
+              docsMerged.push(padrao);
+            }
+          }
+          setOrcamentos(docsMerged);
+          saveStorage('vl_orcamentos', docsMerged);
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'orcamentos');
@@ -823,8 +846,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
           const removidosSet = new Set(laudosRemovidos);
           const docs = snapshot.docs.map(d => d.data() as Laudo).filter(d => !removidosSet.has(d.id));
-          setLaudos(docs);
-          saveStorage('vl_laudos', docs);
+
+          // Preserva sempre os laudos padrão canônicos (especialmente LAU-2026/002) se não estiverem no snapshot
+          const docIds = new Set(docs.map(d => d.id));
+          const docNums = new Set(docs.map(d => d.numero));
+          const docsMerged = [...docs];
+
+          for (const padrao of LAUDOS_INICIAIS) {
+            if (!removidosSet.has(padrao.id) && !docIds.has(padrao.id) && !docNums.has(padrao.numero)) {
+              docsMerged.unshift(padrao);
+            }
+          }
+
+          // Garantir que o laudo do Duster tenha o orçamento vinculado caso falte no snapshot
+          const dusterIdx = docsMerged.findIndex(l => l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002');
+          if (dusterIdx >= 0) {
+            const duster = docsMerged[dusterIdx];
+            if (!duster.orcamentoOrigemId) {
+              docsMerged[dusterIdx] = {
+                ...duster,
+                orcamentoOrigemId: 'orc-1790444416499',
+                orcamentoNumero: 'PROP-1790444416499'
+              };
+            }
+          }
+
+          setLaudos(docsMerged);
+          saveStorage('vl_laudos', docsMerged);
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'laudos');
@@ -967,15 +1015,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             const prevIds = new Set(limpos.map(l => l.id));
             const novos = data.laudos.filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id));
-            const merged = [...novos, ...atualizados];
+            let merged = [...novos, ...atualizados];
+            const mergedIds = new Set(merged.map(m => m.id));
+            const mergedNums = new Set(merged.map(m => m.numero));
+            for (const padrao of LAUDOS_INICIAIS) {
+              if (!removidosSet.has(padrao.id) && !mergedIds.has(padrao.id) && !mergedNums.has(padrao.numero)) {
+                merged.unshift(padrao);
+              }
+            }
             saveStorage('vl_laudos', merged);
             return merged;
           });
         } else {
           setLaudos(prev => {
             const limpos = prev.filter(l => !removidosSet.has(l.id));
-            saveStorage('vl_laudos', limpos);
-            return limpos;
+            const limposIds = new Set(limpos.map(l => l.id));
+            const limposNums = new Set(limpos.map(l => l.numero));
+            const merged = [...limpos];
+            for (const padrao of LAUDOS_INICIAIS) {
+              if (!removidosSet.has(padrao.id) && !limposIds.has(padrao.id) && !limposNums.has(padrao.numero)) {
+                merged.unshift(padrao);
+              }
+            }
+            saveStorage('vl_laudos', merged);
+            return merged;
           });
         }
 
@@ -1482,27 +1545,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Associar ou Desassociar Orçamento ao Laudo
   const associarOrcamentoAoLaudo = (orcamentoId: string, laudoId: string | null) => {
+    let proximaListaOrcamentos: Orcamento[] = [];
+    let proximaListaLaudos: Laudo[] = [];
+    const laudoVinculado = laudoId ? laudos.find(l => l.id === laudoId) : null;
+    const orcAtual = orcamentos.find(o => o.id === orcamentoId);
+    const orcNumero = orcAtual?.codigoProposta || orcAtual?.id || orcamentoId;
+
     // 1. Atualizar Orçamentos
     setOrcamentos(prev => {
       const atualizados = prev.map(o => {
         if (o.id === orcamentoId) {
-          return { ...o, laudoGeradoId: laudoId || undefined };
+          return { 
+            ...o, 
+            laudoGeradoId: laudoId || undefined,
+            laudoGeradoNumero: laudoVinculado?.numero || undefined,
+            status: laudoId ? ('aprovado' as const) : o.status
+          };
         }
         // Se outro orçamento apontava para este mesmo laudo, remove vínculo antigo
         if (laudoId && o.laudoGeradoId === laudoId && o.id !== orcamentoId) {
-          return { ...o, laudoGeradoId: undefined };
+          return { ...o, laudoGeradoId: undefined, laudoGeradoNumero: undefined };
         }
         return o;
       });
+      proximaListaOrcamentos = atualizados;
       saveStorage('vl_orcamentos', atualizados);
       return atualizados;
     });
 
     // 2. Atualizar Laudos
     setLaudos(prev => {
-      const orc = orcamentos.find(o => o.id === orcamentoId);
-      const orcNumero = orc?.codigoProposta || orc?.id || orcamentoId;
-
       const atualizados = prev.map(l => {
         if (laudoId && l.id === laudoId) {
           return {
@@ -1523,12 +1595,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         return l;
       });
+      proximaListaLaudos = atualizados;
       saveStorage('vl_laudos', atualizados);
       return atualizados;
     });
 
+    // 3. Salvar imediatamente no servidor Express (/api/app-data)
+    salvarServidorDireto({
+      orcamentos: proximaListaOrcamentos.length ? proximaListaOrcamentos : undefined,
+      laudos: proximaListaLaudos.length ? proximaListaLaudos : undefined,
+    });
+
+    // 4. Salvar no Firestore se houver usuário conectado
+    if (db && auth?.currentUser) {
+      if (orcamentoId) {
+        setDoc(doc(db, 'orcamentos', orcamentoId), {
+          laudoGeradoId: laudoId || null,
+          laudoGeradoNumero: laudoVinculado?.numero || null,
+          ...(laudoId ? { status: 'aprovado' } : {})
+        }, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${orcamentoId}`);
+        });
+      }
+
+      if (laudoId) {
+        setDoc(doc(db, 'laudos', laudoId), {
+          orcamentoOrigemId: orcamentoId,
+          orcamentoNumero: orcNumero,
+          atualizadoEm: new Date().toISOString()
+        }, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.UPDATE, `laudos/${laudoId}`);
+        });
+      }
+    }
+
     registrarLog('orcamentos', orcamentoId, 'editar', 
-      laudoId ? `Orçamento ${orcamentoId} associado ao laudo ${laudoId}` : `Desvinculado laudo do orçamento ${orcamentoId}`
+      laudoId ? `Orçamento ${orcNumero} associado ao laudo ${laudoVinculado?.numero || laudoId}` : `Desvinculado laudo do orçamento ${orcNumero}`
     );
   };
 
