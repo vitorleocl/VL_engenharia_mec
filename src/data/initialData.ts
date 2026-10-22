@@ -1,5 +1,6 @@
 import { ModuloLaudoCatalogo, Cliente, Ativo, Orcamento, AgendaVistoria, Laudo, LaudoTemplate, ChecklistCampo } from '../types';
 import { LAUDO_FALHA_MECANICA_DEF } from './laudoFalhaMecanicaDef';
+import { LAUDO_DUSTER_COMPLETO } from './laudoDusterCompleto';
 
 export const MODULOS_LAUDO_CATALOGO: ModuloLaudoCatalogo[] = [
   {
@@ -551,48 +552,7 @@ export const LAUDOS_INICIAIS: Laudo[] = [
     criadoEm: '2026-02-20T08:00:00Z',
     atualizadoEm: '2026-02-20T18:00:00Z',
   },
-  {
-    id: 'lau-2026-002-duster',
-    numero: 'LAU-2026/002',
-    tipo: 'Laudo de Perícia Técnica Veicular – Análise de Falha Mecânica e Apuração de Causa Raiz',
-    tipoLaudoId: 'laudo-falha-mecanica-causa-raiz',
-    categoriaId: 'cat-4',
-    subcategoriaId: 'sub-4-2',
-    clienteId: 'cli-adf',
-    clienteNome: 'ADF Caruaru / Ministério Público de Pernambuco',
-    clienteCnpj: '24.417.065/0001-03',
-    ativoId: 'atv-pgx7098',
-    ativoIdentificacao: 'PGX-9708 (Renault Duster 2016/2016)',
-    status: 'finalizado',
-    artNumero: 'PE20261621255',
-    dataInspecao: '2026-08-20',
-    orcamentoOrigemId: 'orc-1790444416499',
-    orcamentoNumero: 'PROP-1790444416499',
-    responsavelNome: 'Vitor Leonardo Cordeiro Linhares',
-    responsavelCrea: 'CREA-PE 1822299490',
-    resumoExecutivo: 'Avaliação técnica pericial das avarias constatadas no conjunto propulsor do Renault Duster PGX-9708. Apuração de Causa Raiz: ruptura da correia dentada do sistema de distribuição por fadiga mecânica, gerando colapso de sincronismo e empenamento de válvulas. Análise temporal atesta que o prazo legal de garantia de 90 dias (CDC Art. 26, II) expirou (> 8 meses decorridos desde a revisão de dez/2025). Inexistem indícios de mau uso pelo condutor.',
-    conclusao: 'Conclui-se de forma peremptória que a pane no motor do veículo decorreu da ruptura da correia dentada, gerando danos severos ao cabeçote e válvulas que demandam retífica. O evento ocorreu ultrapassando o prazo legal de garantia de 90 dias da intervenção passada. Inexistem indícios materiais de mau uso pelo condutor.',
-    checklist: (LAUDO_FALHA_MECANICA_DEF.checklistPadrao || []).map(item => ({ ...item })),
-    secoes: (LAUDO_FALHA_MECANICA_DEF.secoesPadrao || []).map(s => ({
-      id: s.id,
-      titulo: s.titulo,
-      ordem: s.ordem,
-      conteudoHtml: s.conteudoHtml,
-      itens: [],
-      fotos: []
-    })),
-    assinaturaDigital: {
-      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
-      responsavelCrea: 'CREA-PE 1822299490',
-      dataHora: '2026-10-02T10:00:00Z',
-      hashAutenticidade: 'AUT-VL-FALHA-DUSTER-2026-9708'
-    },
-    usoIA: { chamadas: 1 },
-    modoCriacao: 'sugestao_ia',
-    iniciadoComIA: true,
-    criadoEm: '2026-10-01T10:00:00Z',
-    atualizadoEm: '2026-10-02T14:30:00Z',
-  }
+  LAUDO_DUSTER_COMPLETO
 ];
 
 export const TEMPLATES_INICIAIS: LaudoTemplate[] = [

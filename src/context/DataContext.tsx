@@ -26,6 +26,7 @@ import {
   CHECKLISTS_CAMPO_INICIAIS,
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
+import { LAUDO_DUSTER_COMPLETO } from '../data/laudoDusterCompleto';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
@@ -533,13 +534,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loaded.unshift(laudoPadrao);
         alterouStorage = true;
       } else if (idxExistente >= 0) {
-        // Garantir que o laudo tenha o vínculo do orçamento sincronizado
         const lAtual = loaded[idxExistente];
+        if (laudoPadrao.id === 'lau-2026-002-duster') {
+          // Garante a versão completa restaurada com capa, registros fotográficos reais (7 fotos), diagrama e ART
+          if (!lAtual.capaFotoUrl || !lAtual.artArquivoUrl || (lAtual.anexosFotos?.length || 0) < 7 || (lAtual.secoes?.[7]?.fotos?.length || 0) < 7 || (lAtual.secoes?.length || 0) < 12) {
+            loaded[idxExistente] = {
+              ...LAUDO_DUSTER_COMPLETO,
+              orcamentoOrigemId: lAtual.orcamentoOrigemId || 'orc-1790444416499',
+              orcamentoNumero: lAtual.orcamentoNumero || 'PROP-1790444416499',
+            };
+            alterouStorage = true;
+          }
+        }
         if (laudoPadrao.orcamentoOrigemId && (!lAtual.orcamentoOrigemId || lAtual.orcamentoOrigemId !== laudoPadrao.orcamentoOrigemId)) {
           loaded[idxExistente] = {
-            ...lAtual,
+            ...loaded[idxExistente],
             orcamentoOrigemId: laudoPadrao.orcamentoOrigemId,
-            orcamentoNumero: laudoPadrao.orcamentoNumero || lAtual.orcamentoNumero || 'PROP-1790444416499',
+            orcamentoNumero: laudoPadrao.orcamentoNumero || loaded[idxExistente].orcamentoNumero || 'PROP-1790444416499',
           };
           alterouStorage = true;
         }
@@ -858,11 +869,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
 
-          // Garantir que o laudo do Duster tenha o orçamento vinculado caso falte no snapshot
+          // Garantir que o laudo do Duster tenha o orçamento vinculado e a versão canônica completa com fotos e ART
           const dusterIdx = docsMerged.findIndex(l => l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002');
           if (dusterIdx >= 0) {
             const duster = docsMerged[dusterIdx];
-            if (!duster.orcamentoOrigemId) {
+            if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12) {
+              const dusterCompleto: Laudo = {
+                ...LAUDO_DUSTER_COMPLETO,
+                orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',
+                orcamentoNumero: duster.orcamentoNumero || 'PROP-1790444416499'
+              };
+              docsMerged[dusterIdx] = dusterCompleto;
+              if (db && auth?.currentUser) {
+                setDoc(doc(db, 'laudos', 'lau-2026-002-duster'), dusterCompleto, { merge: true }).catch(err => {
+                  console.warn('Erro ao sincronizar laudo duster completo no Firestore:', err);
+                });
+              }
+            } else if (!duster.orcamentoOrigemId) {
               docsMerged[dusterIdx] = {
                 ...duster,
                 orcamentoOrigemId: 'orc-1790444416499',
@@ -1007,6 +1030,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const limpos = prev.filter(l => !removidosSet.has(l.id));
             const serverMap = new Map<string, Laudo>(data.laudos.filter((l: Laudo) => !removidosSet.has(l.id)).map((l: Laudo) => [l.id, l]));
             const atualizados = limpos.map(l => {
+              if (l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002') {
+                const fromServer = serverMap.get(l.id);
+                return {
+                  ...LAUDO_DUSTER_COMPLETO,
+                  orcamentoOrigemId: l.orcamentoOrigemId || fromServer?.orcamentoOrigemId || 'orc-1790444416499',
+                  orcamentoNumero: l.orcamentoNumero || fromServer?.orcamentoNumero || 'PROP-1790444416499',
+                };
+              }
               const fromServer = serverMap.get(l.id);
               if (fromServer) {
                 return { ...fromServer, ...l };
@@ -1035,6 +1066,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             for (const padrao of LAUDOS_INICIAIS) {
               if (!removidosSet.has(padrao.id) && !limposIds.has(padrao.id) && !limposNums.has(padrao.numero)) {
                 merged.unshift(padrao);
+              }
+            }
+            for (let i = 0; i < merged.length; i++) {
+              if (merged[i].id === 'lau-2026-002-duster' || merged[i].numero === 'LAU-2026/002') {
+                if (!merged[i].capaFotoUrl || (merged[i].anexosFotos?.length || 0) < 7 || (merged[i].secoes?.length || 0) < 12) {
+                  merged[i] = {
+                    ...LAUDO_DUSTER_COMPLETO,
+                    orcamentoOrigemId: merged[i].orcamentoOrigemId || 'orc-1790444416499',
+                    orcamentoNumero: merged[i].orcamentoNumero || 'PROP-1790444416499',
+                  };
+                }
               }
             }
             saveStorage('vl_laudos', merged);
@@ -2126,7 +2168,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveStorage('vl_orcamentos', docs);
       }
       if (!snapLau.empty) {
-        const docs = snapLau.docs.map(d => d.data() as Laudo);
+        let docs = snapLau.docs.map(d => d.data() as Laudo);
+        const dusterIdx = docs.findIndex(l => l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002');
+        if (dusterIdx >= 0) {
+          const duster = docs[dusterIdx];
+          if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12) {
+            docs[dusterIdx] = {
+              ...LAUDO_DUSTER_COMPLETO,
+              orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',
+              orcamentoNumero: duster.orcamentoNumero || 'PROP-1790444416499'
+            };
+          }
+        }
         setLaudos(docs);
         saveStorage('vl_laudos', docs);
       }
