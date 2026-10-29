@@ -58,6 +58,14 @@ export const LaudosCentralView: React.FC = () => {
     if (searchParams.get('novo') === '1') {
       setModalNovoAberto(true);
     }
+    const st = searchParams.get('status');
+    if (st === 'ART' || st === 'finalizado') {
+      setStatusFiltro('ART');
+    } else if (st === 'Em' || st === 'em_andamento') {
+      setStatusFiltro('Em');
+    } else if (st === 'Aguard' || st === 'rascunho') {
+      setStatusFiltro('Aguard');
+    }
   }, [searchParams]);
 
   const showToast = (msg: string) => {

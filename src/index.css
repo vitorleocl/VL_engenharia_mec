@@ -21,6 +21,17 @@
   --lg-t: #0B2447;
   --d: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --b: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --adm-bg: #f1f5fb;
+  --adm-top: #ffffff;
+  --adm-side: #ffffff;
+  --adm-card: #ffffff;
+  --adm-line: rgba(10, 22, 40, 0.12);
+  --adm-text: #0a1628;
+  --adm-mut: #52627a;
+  --adm-blue: #2160db;
+  --adm-blue-soft: #2160db;
+  --adm-ok: #047857;
+  --adm-warn: #92600a;
   box-sizing: border-box;
   color-scheme: light;
 }
@@ -64,6 +75,17 @@
   --lg-g1: #8AA2BF;
   --lg-g2: #4B6586;
   --lg-t: #C5D3E4;
+  --adm-bg: #0b1a30;
+  --adm-top: #0a1628;
+  --adm-side: #0e2347;
+  --adm-card: #0f2038;
+  --adm-line: rgba(159, 176, 200, 0.16);
+  --adm-text: #f4f7fc;
+  --adm-mut: #a9b8cf;
+  --adm-blue: #2160db;
+  --adm-blue-soft: #6ea1ff;
+  --adm-ok: #34d399;
+  --adm-warn: #fbbf24;
   color-scheme: dark;
 }
 

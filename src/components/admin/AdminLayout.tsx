@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
-  PlusCircle, 
   ClipboardCheck, 
   Users, 
   Cpu, 
@@ -11,7 +10,6 @@ import {
   ShieldCheck, 
   LogOut, 
   ExternalLink,
-  Sparkles,
   Sun,
   Moon
 } from 'lucide-react';
@@ -25,7 +23,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { currentUser, logout } = useAuth();
-  const { laudos, clientes, ativos, orcamentos, usoIA } = useData();
+  const { laudos, clientes, ativos, orcamentos } = useData();
   const { theme, toggleTheme } = useAdminTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -50,6 +48,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const isMaster = currentUser.role === 'master';
   const isColaborador = currentUser.role === 'colaborador' || isMaster;
 
+  // Menu lateral ajustado conforme requisitos (removido o item redundante 'Novo laudo')
   const navItems = [
     {
       id: 'visao-geral',
@@ -65,14 +64,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/laudos',
       icon: FileText,
       badge: String(laudos.length),
-      visible: true
-    },
-    {
-      id: 'novo-laudo',
-      label: 'Novo laudo',
-      path: '/admin/laudos?novo=1',
-      icon: PlusCircle,
-      badge: '',
       visible: true
     },
     {
@@ -117,73 +108,73 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   ];
 
+  const handleLogout = () => {
+    if (window.confirm('Deseja sair do painel?')) {
+      logout();
+      navigate('/');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col">
-      {/* Top Mobile / Global Quick Bar */}
-      <header className="sticky top-0 z-40 bg-[var(--card)] border-b border-[var(--line)] px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2 text-decoration-none group">
-            <svg width="28" height="28" viewBox="0 0 38 38" aria-hidden="true">
-              <rect width="38" height="38" rx="8" fill="#1E5BD8" />
-              <path
-                d="M8 10l7 18 4-10 4 10 7-18"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="3.2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="font-[family-name:var(--d)] font-extrabold text-[16px] text-[var(--ink)]">
-              VL Engenharia
-            </span>
+    <div className="min-h-screen bg-[var(--adm-bg,#0b1a30)] text-[var(--adm-text,#f4f7fc)] font-['Poppins',system-ui,sans-serif] flex flex-col antialiased">
+      
+      {/* 1. Header do Painel com Logo Oficial e Ações Rápidas */}
+      <header className="sticky top-0 z-40 bg-[var(--adm-top,#0a1628)] border-b border-[var(--adm-line,rgba(159,176,200,0.16))] px-4 sm:px-7 h-[68px] flex items-center justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link 
+            to="/admin" 
+            className="flex items-center text-decoration-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 rounded-sm"
+            aria-label="VL Engenharia, início do painel"
+          >
+            <img 
+              src={theme === 'dark' ? '/vl-logo-compacto-escuro.svg' : '/vl-logo-compacto.svg'} 
+              alt="VL Engenharia" 
+              className="h-[38px] w-auto block select-none" 
+            />
           </Link>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--navy)] text-[#E7EEF7] font-semibold hidden sm:inline-block">
-            Painel Técnico
+          <span className="text-[0.78rem] font-medium py-1 px-3 rounded-full border border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-mut,#a9b8cf)] hidden sm:inline-block">
+            Painel técnico
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <Link
             to="/"
-            className="btn-tech sm text-xs px-2.5 py-1.5 flex items-center gap-1.5"
-            title="Ver o site público"
+            className="h-10 px-3.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] text-[0.88rem] font-medium inline-flex items-center gap-2 hover:border-[#6ea1ff] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
+            title="Ver o site institucional"
           >
             <span>Ver site</span>
-            <ExternalLink className="w-3 h-3 opacity-60" />
+            <ExternalLink className="w-4 h-4 opacity-75" />
           </Link>
 
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)] cursor-pointer"
-            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            aria-label="Alternar tema claro/escuro"
+            className="w-10 h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] flex items-center justify-center hover:border-[#6ea1ff] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
+            aria-label="Alternar tema"
+            title="Alternar tema"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun className="w-[18px] h-[18px] text-[#fbbf24]" /> : <Moon className="w-[18px] h-[18px] text-[var(--adm-text)]" />}
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              logout();
-              navigate('/');
-            }}
-            className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--bad)] hover:bg-[var(--paper)] cursor-pointer"
-            title="Sair do painel"
+            onClick={handleLogout}
+            className="w-10 h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] hover:text-[#ff8a8a] hover:border-[#ff8a8a] flex items-center justify-center transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#ff8a8a] focus-visible:outline-offset-2"
             aria-label="Sair"
+            title="Sair"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-[18px] h-[18px]" />
           </button>
         </div>
       </header>
 
-      {/* Main Container with Sidebar + Content */}
-      <div className="flex-1 flex flex-col md:flex-row">
+      {/* 2. Container Principal com Barra Lateral e Conteúdo */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0">
         
-        {/* Navy Sidebar */}
+        {/* Barra Lateral (Navy Sidebar) */}
         <aside 
-          className="w-full md:w-[250px] bg-[#0B2447] text-[#E7EEF7] p-3 flex md:flex-col gap-1 md:sticky md:top-14 md:self-start md:h-[calc(100vh-56px)] overflow-x-auto md:overflow-y-auto flex-none z-30"
+          className="w-full md:w-[280px] bg-[var(--adm-side,#0e2347)] border-r border-[var(--adm-line,rgba(159,176,200,0.16))] p-4 flex md:flex-col gap-1 md:sticky md:top-[68px] md:self-start md:h-[calc(100vh-68px)] overflow-x-auto md:overflow-y-auto flex-none z-30"
           aria-label="Menu do painel"
         >
           <nav className="flex md:flex-col gap-1 flex-1 min-w-0" aria-label="Navegação interna">
@@ -199,19 +190,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   <Link
                     key={item.id}
                     to={item.path}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14.5px] font-[family-name:var(--b)] font-semibold whitespace-nowrap transition-colors ${
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex items-center justify-between px-3.5 py-3 rounded-lg text-[0.92rem] font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 ${
                       isActive
-                        ? 'bg-[#1E5BD8] text-white shadow-xs'
-                        : 'text-[#B5C5DA] hover:text-white hover:bg-[#163660]'
+                        ? 'bg-[var(--adm-blue,#2160db)] text-white shadow-xs'
+                        : 'text-[var(--adm-text,#f4f7fc)] hover:bg-[rgba(110,161,255,0.1)]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <item.icon className="w-4 h-4 flex-none opacity-80" />
+                    <div className="flex items-center gap-3">
+                      <item.icon className="w-[18px] h-[18px] flex-none opacity-85" />
                       <span>{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className={`text-[11px] px-1.5 py-0.2 rounded font-normal ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-[#1D3A63] text-[#B5C5DA]'
+                      <span className={`text-[0.72rem] min-w-[22px] text-center px-1.5 py-0.5 rounded font-medium ${
+                        isActive ? 'bg-white/25 text-white' : 'bg-[rgba(110,161,255,0.18)] text-[var(--adm-text)]'
                       }`}>
                         {item.badge}
                       </span>
@@ -221,47 +213,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               })}
           </nav>
 
-          {/* User profile & discrete Gemini Quota Footer */}
-          <div className="hidden md:flex flex-col gap-3 pt-3 border-t border-[#1D3A63] mt-auto">
-            {/* User info with Vitor Photo */}
-            <div className="flex items-center gap-2.5 text-[13.5px] text-[#B5C5DA]">
-              <div 
-                className="w-9 h-9 rounded-full bg-[#1E5BD8] bg-cover bg-center flex items-center justify-center font-bold text-white flex-none overflow-hidden border border-white/20"
-                style={vitorPhoto ? { backgroundImage: `url(${vitorPhoto})` } : undefined}
-              >
-                {!vitorPhoto && (currentUser?.nome ? currentUser.nome.charAt(0).toUpperCase() : 'V')}
-              </div>
-              <div className="min-w-0 leading-tight">
-                <span className="block font-bold text-white truncate text-[14px]">
-                  {currentUser?.nome || 'Vitor Leonardo'}
-                </span>
-                <span className="text-[12px] text-[#92A5BC]">
-                  {currentUser?.role === 'master' ? 'Perfil Master' : 'Técnico de Campo'}
-                </span>
-              </div>
+          {/* 3. Rodapé da Lateral com Perfil do Usuário (Gemini Removido) */}
+          <div className="hidden md:flex items-center gap-3 pt-4 pb-1 border-t border-[var(--adm-line,rgba(159,176,200,0.16))] mt-auto">
+            <div 
+              className="w-11 h-11 rounded-full bg-[var(--adm-blue,#2160db)] bg-cover bg-center flex items-center justify-center font-semibold text-white flex-none overflow-hidden text-[0.9rem]"
+              style={vitorPhoto ? { backgroundImage: `url(${vitorPhoto})` } : undefined}
+              aria-hidden="true"
+            >
+              {!vitorPhoto && (currentUser?.nome ? currentUser.nome.charAt(0).toUpperCase() : 'V')}
             </div>
-
-            {/* Discrete Gemini Quota indicator */}
-            <div className="p-2 rounded-md bg-[#081B36] border border-[#163660] text-[11.5px] text-[#92A5BC] space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 font-semibold text-[#B5C5DA]">
-                  <Sparkles className="w-3 h-3 text-[#6BA2FA]" />
-                  <span>IA Gemini</span>
-                </span>
-                <span>{usoIA?.totalChamadas || 0} / {usoIA?.limiteMensal || 150}</span>
-              </div>
-              <div className="h-1 bg-[#163660] rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[#1E5BD8] rounded-full"
-                  style={{ width: `${Math.min(100, Math.round(((usoIA?.totalChamadas || 0) / (usoIA?.limiteMensal || 150)) * 100))}%` }}
-                />
-              </div>
+            <div className="min-w-0 leading-tight">
+              <b className="block font-semibold text-[var(--adm-text,#f4f7fc)] truncate text-[0.92rem]">
+                {currentUser?.nome || 'Vitor Leonardo'}
+              </b>
+              <span className="text-[0.8rem] text-[var(--adm-mut,#a9b8cf)]">
+                {isMaster ? 'Perfil Master' : 'Técnico Homologado'}
+              </span>
             </div>
           </div>
         </aside>
 
-        {/* View Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+        {/* Conteúdo da Visão Atual */}
+        <main className="flex-1 p-5 sm:p-9 lg:p-10 min-w-0 overflow-x-hidden">
           {children}
         </main>
 

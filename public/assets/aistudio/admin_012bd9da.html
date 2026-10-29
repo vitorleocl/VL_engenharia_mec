@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Técnico | VL Engenharia</title>
+<link rel="icon" href="vl-icone-app.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1a30;--top:#0a1628;--side:#0e2347;--card:#0f2038;--line:rgba(159,176,200,.16);--text:#f4f7fc;--mut:#a9b8cf;--blue:#2160db;--blue-soft:#6ea1ff;--ok:#34d399;--warn:#fbbf24;--font:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+[data-theme=light]{--bg:#f1f5fb;--top:#fff;--side:#fff;--card:#fff;--line:rgba(10,22,40,.12);--text:#0a1628;--mut:#52627a;--blue-soft:#2160db;--ok:#047857;--warn:#92600a}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:grid;grid-template-rows:68px 1fr;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:3px solid var(--blue-soft);outline-offset:2px}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:var(--top);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:16px}
+.brand .logo svg{height:38px;width:auto;display:block}
+.on-light{display:none}[data-theme=light] .on-light{display:block}[data-theme=light] .on-dark{display:none}
+.tag{font-size:.78rem;font-weight:500;padding:4px 12px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.tools{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text);font:500 .88rem var(--font);text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--blue-soft)}
+.btn.sq{width:40px;padding:0;justify-content:center}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;height:46px;padding:0 22px}
+.btn.primary:hover{filter:brightness(1.1)}
+.shell{display:grid;grid-template-columns:280px 1fr;min-height:0}
+aside{background:var(--side);border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:4px}
+nav{display:flex;flex-direction:column;gap:4px}
+nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;color:var(--text);font-size:.92rem;font-weight:500;text-decoration:none}
+nav a:hover{background:rgba(110,161,255,.1)}
+nav a[aria-current=page]{background:var(--blue);color:#fff}
+nav .n{margin-left:auto;font-size:.72rem;min-width:22px;text-align:center;padding:2px 6px;border-radius:5px;background:rgba(110,161,255,.18)}
+.user{margin-top:auto;display:flex;align-items:center;gap:12px;padding:16px 6px 4px;border-top:1px solid var(--line)}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-weight:600;font-size:.9rem}
+.user b{display:block;font-size:.92rem;font-weight:600}.user span{font-size:.8rem;color:var(--mut)}
+main{padding:36px 40px;display:flex;flex-direction:column;gap:28px;min-width:0}
+.hello{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+h1{font-size:2rem;font-weight:600;letter-spacing:-.015em}.hello p{color:var(--mut);margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.stats a{padding:22px 24px;color:inherit;text-decoration:none;border-left:1px solid var(--line)}
+.stats a:first-child{border-left:0}.stats a:hover{background:rgba(110,161,255,.07)}
+.stats b{display:block;font-size:2rem;font-weight:600;line-height:1.1}.stats span{color:var(--mut);font-size:.9rem}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:28px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px}
+.col{display:flex;flex-direction:column;gap:28px}
+.card h2{font-size:1.2rem;font-weight:600}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.head a{color:var(--blue-soft);font-size:.85rem;font-weight:500;text-decoration:none}.head a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{text-align:left;color:var(--mut);font-weight:500;font-size:.84rem;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:16px 12px;vertical-align:top}td small{display:block;color:var(--mut);font-size:.8rem;margin-top:2px}
+.pill{display:inline-block;padding:3px 12px;border-radius:99px;font-size:.8rem;font-weight:500;color:var(--ok);border:1px solid currentColor;white-space:nowrap}
+.agenda{list-style:none;padding:0;display:flex;flex-direction:column;gap:18px;margin-top:18px}
+.agenda li{display:grid;grid-template-columns:64px 1fr;gap:12px}
+.agenda time{color:var(--blue-soft);font-weight:600}.agenda b{font-weight:500}.agenda small{display:block;color:var(--mut);font-size:.82rem}
+.alert{border-left:3px solid var(--warn)}
+.alert h2{display:flex;align-items:center;gap:10px}.alert h2 svg{color:var(--warn)}
+.alert p{margin:10px 0 18px;color:var(--mut);line-height:1.7;font-size:.92rem}
+@media (max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.stats a:nth-child(4){border-left:0}.grid{grid-template-columns:1fr}}
+@media (max-width:800px){.shell{grid-template-columns:1fr}aside{flex-direction:row;overflow-x:auto;padding:10px}nav{flex-direction:row}nav a{white-space:nowrap}.user{display:none}main{padding:24px 18px}.stats{grid-template-columns:repeat(2,1fr)}.tag{display:none}header{padding:0 16px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><a class="logo" href="/admin" aria-label="VL Engenharia, início do painel"><span class="on-dark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 529 100" role="img" aria-label="VL Engenharia, inspeções, laudos técnicos, engenharia mecânica"><g transform="translate(6 0)"><defs><linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8AA2BF"/><stop offset="1" stop-color="#4B6586"/></linearGradient></defs><path d="M72.1 21.6A36 36 0 1 0 72.1 78.3" fill="none" stroke="url(#d)" stroke-width="5" stroke-linecap="round"/><path d="M34.6 11.9A41 41 0 0 0 35.9 88.5" fill="none" stroke="url(#d)" stroke-width="9" pathLength="100" stroke-dasharray="6.4 5.4"/><path d="M72.5 11.0A45 45 0 0 0 42.1 5.6" fill="none" stroke="#E7EEF7" stroke-width="2.6" stroke-linecap="round"/><path d="M20 30H35L44 54L55 30H70L51 72H37Z" fill="#E7EEF7"/><path d="M76 30H90L76.4 60H97L92 72H57Z" fill="#6BA2FA"/></g><path d="M118 8V92" stroke="#C5D3E4" stroke-width="1" opacity=".5"/><path d="M184.4 23.8 167.0 73.0H152.0L134.6 23.8H147.3L159.5 60.9L171.8 23.8ZM200.4 63.7H216.0V73.0H188.4V23.8H200.4Z" fill="#E7EEF7"/><path d="M236.2 49.2V55.2H245.8V60.7H236.2V67.2H247.1V73.0H229.0V43.5H247.1V49.2ZM280.1 73.0H273.0L260.9 54.8V73.0H253.8V43.5H260.9L273.0 61.7V43.5H280.1ZM306.9 52.8Q306.1 51.3 304.6 50.5Q303.1 49.8 301.1 49.8Q297.6 49.8 295.5 52.1Q293.4 54.3 293.4 58.2Q293.4 62.2 295.6 64.5Q297.9 66.8 301.7 66.8Q304.4 66.8 306.2 65.5Q308.0 64.1 308.9 61.6H299.7V56.3H315.4V63.0Q314.6 65.7 312.7 68.0Q310.7 70.3 307.8 71.7Q304.9 73.2 301.2 73.2Q296.8 73.2 293.4 71.2Q290.0 69.3 288.0 65.9Q286.1 62.5 286.1 58.2Q286.1 53.8 288.0 50.4Q290.0 47.0 293.4 45.0Q296.8 43.1 301.1 43.1Q306.4 43.1 310.1 45.7Q313.7 48.3 314.9 52.8ZM328.5 49.2V55.2H338.2V60.7H328.5V67.2H339.4V73.0H321.4V43.5H339.4V49.2ZM372.5 73.0H365.3L353.3 54.8V73.0H346.1V43.5H353.3L365.3 61.7V43.5H372.5ZM405.2 43.5V73.0H398.0V60.8H386.8V73.0H379.7V43.5H386.8V55.0H398.0V43.5ZM430.7 67.7H419.7L417.9 73.0H410.4L421.1 43.5H429.4L440.1 73.0H432.5ZM428.9 62.2 425.2 51.4 421.6 62.2ZM460.4 73.0 454.2 61.8H452.5V73.0H445.3V43.5H457.4Q460.9 43.5 463.3 44.7Q465.8 45.9 467.0 48.0Q468.2 50.1 468.2 52.7Q468.2 55.7 466.5 58.0Q464.9 60.3 461.7 61.3L468.5 73.0ZM452.5 56.7H457.0Q458.9 56.7 459.9 55.8Q460.9 54.8 460.9 53.0Q460.9 51.4 459.9 50.4Q458.9 49.4 457.0 49.4H452.5ZM481.9 43.5V73.0H474.7V43.5ZM507.4 67.7H496.4L494.7 73.0H487.2L497.8 43.5H506.1L516.8 73.0H509.2ZM505.6 62.2 501.9 51.4 498.3 62.2Z" fill="#6BA2FA"/></svg></span><span class="on-light"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 529 100" role="img" aria-label="VL Engenharia, inspeções, laudos técnicos, engenharia mecânica"><g transform="translate(6 0)"><defs><linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7C3D2"/><stop offset="1" stop-color="#6F86A3"/></linearGradient></defs><path d="M72.1 21.6A36 36 0 1 0 72.1 78.3" fill="none" stroke="url(#c)" stroke-width="5" stroke-linecap="round"/><path d="M34.6 11.9A41 41 0 0 0 35.9 88.5" fill="none" stroke="url(#c)" stroke-width="9" pathLength="100" stroke-dasharray="6.4 5.4"/><path d="M72.5 11.0A45 45 0 0 0 42.1 5.6" fill="none" stroke="#0B2447" stroke-width="2.6" stroke-linecap="round"/><path d="M20 30H35L44 54L55 30H70L51 72H37Z" fill="#0B2447"/><path d="M76 30H90L76.4 60H97L92 72H57Z" fill="#1E5BD8"/></g><path d="M118 8V92" stroke="#0B2447" stroke-width="1" opacity=".5"/><path d="M184.4 23.8 167.0 73.0H152.0L134.6 23.8H147.3L159.5 60.9L171.8 23.8ZM200.4 63.7H216.0V73.0H188.4V23.8H200.4Z" fill="#0B2447"/><path d="M236.2 49.2V55.2H245.8V60.7H236.2V67.2H247.1V73.0H229.0V43.5H247.1V49.2ZM280.1 73.0H273.0L260.9 54.8V73.0H253.8V43.5H260.9L273.0 61.7V43.5H280.1ZM306.9 52.8Q306.1 51.3 304.6 50.5Q303.1 49.8 301.1 49.8Q297.6 49.8 295.5 52.1Q293.4 54.3 293.4 58.2Q293.4 62.2 295.6 64.5Q297.9 66.8 301.7 66.8Q304.4 66.8 306.2 65.5Q308.0 64.1 308.9 61.6H299.7V56.3H315.4V63.0Q314.6 65.7 312.7 68.0Q310.7 70.3 307.8 71.7Q304.9 73.2 301.2 73.2Q296.8 73.2 293.4 71.2Q290.0 69.3 288.0 65.9Q286.1 62.5 286.1 58.2Q286.1 53.8 288.0 50.4Q290.0 47.0 293.4 45.0Q296.8 43.1 301.1 43.1Q306.4 43.1 310.1 45.7Q313.7 48.3 314.9 52.8ZM328.5 49.2V55.2H338.2V60.7H328.5V67.2H339.4V73.0H321.4V43.5H339.4V49.2ZM372.5 73.0H365.3L353.3 54.8V73.0H346.1V43.5H353.3L365.3 61.7V43.5H372.5ZM405.2 43.5V73.0H398.0V60.8H386.8V73.0H379.7V43.5H386.8V55.0H398.0V43.5ZM430.7 67.7H419.7L417.9 73.0H410.4L421.1 43.5H429.4L440.1 73.0H432.5ZM428.9 62.2 425.2 51.4 421.6 62.2ZM460.4 73.0 454.2 61.8H452.5V73.0H445.3V43.5H457.4Q460.9 43.5 463.3 44.7Q465.8 45.9 467.0 48.0Q468.2 50.1 468.2 52.7Q468.2 55.7 466.5 58.0Q464.9 60.3 461.7 61.3L468.5 73.0ZM452.5 56.7H457.0Q458.9 56.7 459.9 55.8Q460.9 54.8 460.9 53.0Q460.9 51.4 459.9 50.4Q458.9 49.4 457.0 49.4H452.5ZM481.9 43.5V73.0H474.7V43.5ZM507.4 67.7H496.4L494.7 73.0H487.2L497.8 43.5H506.1L516.8 73.0H509.2ZM505.6 62.2 501.9 51.4 498.3 62.2Z" fill="#1E5BD8"/></svg></span></a><span class="tag">Painel técnico</span></div>
+  <div class="tools">
+    <a class="btn" href="/">Ver site <svg class="i" data-i="ext"></svg></a>
+    <button class="btn sq" id="theme" type="button" aria-label="Alternar tema claro e escuro" title="Alternar tema"><svg class="i" data-i="sun"></svg></button>
+    <button class="btn sq" type="button" aria-label="Sair" title="Sair"><svg class="i" data-i="out"></svg></button>
+  </div>
+</header>
+<div class="shell">
+  <aside>
+    <nav aria-label="Principal">
+      <a href="#" aria-current="page"><svg class="i" data-i="grid"></svg>Visão geral</a>
+      <a href="#"><svg class="i" data-i="doc"></svg>Central de laudos<span class="n">1</span></a>
+      <a href="#"><svg class="i" data-i="check"></svg>Checklist de campo</a>
+      <a href="#"><svg class="i" data-i="users"></svg>Clientes<span class="n">2</span></a>
+      <a href="#"><svg class="i" data-i="chip"></svg>Equipamentos<span class="n">2</span></a>
+      <a href="#"><svg class="i" data-i="money"></svg>Orçamentos<span class="n">4</span></a>
+      <a href="#"><svg class="i" data-i="shield"></svg>Auditoria e acessos<span class="n">Master</span></a>
+    </nav>
+    <div class="user"><div class="av" aria-hidden="true">VL</div><div><b>Vitor Leonardo</b><span>Perfil Master</span></div></div>
+  </aside>
+  <main>
+    <section class="hello">
+      <div><h1 id="saudacao">Bom dia, Vitor</h1><p>Você tem 2 vistorias agendadas hoje e 1 orçamento aguardando resposta.</p></div>
+      <a class="btn primary" href="#"><svg class="i" data-i="plus"></svg>Novo laudo</a>
+    </section>
+    <section class="stats" aria-label="Resumo">
+      <a href="#"><b>0</b><span>Em elaboração</span></a>
+      <a href="#"><b>1</b><span>Com ART</span></a>
+      <a href="#"><b>2</b><span>Clientes ativos</span></a>
+      <a href="#"><b>2</b><span>Equipamentos</span></a>
+      <a href="#"><b>1</b><span>Orçamentos abertos</span></a>
+    </section>
+    <div class="grid">
+      <section class="card">
+        <div class="head"><h2>Laudos recentes</h2><a href="#">Ver todos (1)</a></div>
+        <table>
+          <thead><tr><th>Laudo</th><th>Cliente</th><th>Data</th><th>Status</th></tr></thead>
+          <tbody><tr>
+            <td><b>LAU-2026/002</b><small>Laudo de Perícia Técnica Veicular</small></td>
+            <td>ADF Caruaru / Ministério Público de Pernambuco</td>
+            <td>01/10/2026</td>
+            <td><span class="pill">ART emitida</span></td>
+          </tr></tbody>
+        </table>
+      </section>
+      <div class="col">
+        <section class="card">
+          <h2>Agenda de hoje</h2>
+          <ul class="agenda">
+            <li><time>09:00</time><div><b>Vistoria de Munck 12 t</b><small>Jaboatão · Obra Marina</small></div></li>
+            <li><time>14:30</time><div><b>Playground condominial</b><small>Piedade · Cond. Mar Azul</small></div></li>
+          </ul>
+        </section>
+        <section class="card alert">
+          <h2><svg class="i" data-i="warn"></svg>Vencem em 30 dias</h2>
+          <p>Munck 12 t da Obra Boa Viagem vence em 12/11. Renove a inspeção periódica com emissão de ART.</p>
+          <a class="btn" href="#">Ver equipamentos <svg class="i" data-i="arrow"></svg></a>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const P={ext:'M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',sun:'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',doc:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8',check:'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9',users:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',chip:'M6 6h12v12H6zM9 9h6v6H9zM9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4',money:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 11v7M15 13h-4.5a1.5 1.5 0 0 0 0 3h3a1.5 1.5 0 0 1 0 3H9',shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',plus:'M12 5v14M5 12h14',warn:'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',arrow:'M5 12h14M12 5l7 7-7 7'};
+document.querySelectorAll('svg[data-i]').forEach(s=>{s.setAttribute('viewBox','0 0 24 24');s.setAttribute('aria-hidden','true');s.innerHTML='<path d="'+P[s.dataset.i]+'"/>'});
+const h=new Date().getHours();document.getElementById('saudacao').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', Vitor';
+document.getElementById('theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
+</script>
+</body>
+</html>
