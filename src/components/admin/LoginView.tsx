@@ -1,18 +1,6 @@
 import React, { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth, MASTER_EMAIL } from '../../context/AuthContext';
-import { 
-  AlertCircle, 
-  ArrowLeft, 
-  ArrowRight,
-  Send, 
-  CheckCircle2, 
-  Lock, 
-  Loader2, 
-  LogOut, 
-  ShieldCheck, 
-  UserCheck 
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export const LoginView: React.FC = () => {
   const { 
@@ -30,9 +18,16 @@ export const LoginView: React.FC = () => {
   const [solicitacaoEnviada, setSolicitacaoEnviada] = useState(false);
   const [motivoSolicitacao, setMotivoSolicitacao] = useState('');
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
+  const [mostrarFormSolicitacao, setMostrarFormSolicitacao] = useState(false);
+
+  // Redireciona automaticamente para o painel se já estiver autenticado
+  if (currentUser) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const handleLoginGoogle = async () => {
     setSolicitacaoEnviada(false);
+    setMostrarFormSolicitacao(false);
     clearAuthError();
     try {
       await loginWithGoogle();
@@ -43,6 +38,7 @@ export const LoginView: React.FC = () => {
 
   const handleEnviarSolicitacao = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!motivoSolicitacao.trim()) return;
     setEnviandoSolicitacao(true);
     const ok = await solicitarAcesso(motivoSolicitacao.trim());
     setEnviandoSolicitacao(false);
@@ -51,239 +47,147 @@ export const LoginView: React.FC = () => {
     }
   };
 
+  // Determina mensagem de erro priorizando o aviso de conta não autorizada
+  let mensagemErro = '';
+  if (unauthorizedAttempt) {
+    mensagemErro = 'Não foi possível entrar. Verifique se essa conta Google está autorizada.';
+  } else if (authError) {
+    mensagemErro = authError;
+  }
+
   return (
-    <div className="relative min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      {/* TELA DE CARREGAMENTO ESTÉTICA VL ENGENHARIA AO LOGAR */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md px-4 transition-all">
-          <div className="relative flex flex-col items-center max-w-sm w-full text-center">
-            {/* Efeito de halo suave */}
-            <div className="absolute -top-14 w-60 h-60 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-
-            {/* Cartão da Logo Oficial com borda brilhante */}
-            <div className="relative mb-6">
-              <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-blue-600 via-sky-400 to-indigo-500 opacity-75 blur-md animate-pulse"></div>
-              <div className="relative bg-white p-5 rounded-2xl shadow-2xl border border-white/20">
-                <img
-                  src="/logo.png"
-                  alt="VL Engenharia"
-                  className="h-16 w-auto object-contain drop-shadow-sm"
-                />
-              </div>
-            </div>
-
-            {/* Nome da Empresa */}
-            <h3 className="text-xl font-black text-white tracking-wider uppercase mb-1">
-              VL ENGENHARIA
-            </h3>
-            <p className="text-xs font-semibold text-blue-400 tracking-wide mb-6">
-              Área Técnica e Administrativa
-            </p>
-
-            {/* Barra de Progresso e Indicador de Autenticação */}
-            <div className="w-full max-w-xs space-y-3">
-              <div className="relative w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full w-full bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-500 rounded-full animate-pulse"></div>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-xs text-slate-300">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                <span>Autenticando sessão com o Google...</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-[#0a1628] text-[#f4f7fc] font-['Poppins',system-ui,sans-serif] flex items-center justify-center p-6 antialiased selection:bg-[#5b93f5] selection:text-white">
+      <main className="w-full max-w-[340px] text-center">
         
-        <div className="text-center">
-          <Link to="/" className="inline-block p-3 bg-white rounded-2xl shadow-xl mb-4 hover:scale-105 transition-transform">
-            <img
-              src="/logo.png"
-              alt="VL Engenharia"
-              className="h-12 w-auto mx-auto object-contain"
-            />
-          </Link>
-          <h2 className="text-2xl font-black text-white tracking-tight">
-            Área Técnica e Administrativa
-          </h2>
-          <p className="mt-1 text-xs text-slate-400">
-            Acesso restrito com Conta Google autorizada.
-          </p>
+        {/* 1. Logo horizontal da VL Engenharia para fundo escuro */}
+        <div className="w-full max-w-[300px] mx-auto mb-[56px]">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 529 116" 
+            role="img" 
+            aria-label="VL Engenharia, inspeções, laudos técnicos, engenharia mecânica"
+            className="w-full h-auto block"
+          >
+            <g transform="translate(6 6)">
+              <defs>
+                <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#8AA2BF"/>
+                  <stop offset="1" stopColor="#4B6586"/>
+                </linearGradient>
+              </defs>
+              <path d="M72.1 21.6A36 36 0 1 0 72.1 78.3" fill="none" stroke="url(#b)" strokeWidth="5" strokeLinecap="round"/>
+              <path d="M34.6 11.9A41 41 0 0 0 35.9 88.5" fill="none" stroke="url(#b)" strokeWidth="9" pathLength="100" strokeDasharray="6.4 5.4"/>
+              <path d="M72.5 11.0A45 45 0 0 0 42.1 5.6" fill="none" stroke="#E7EEF7" strokeWidth="2.6" strokeLinecap="round"/>
+              <path d="M20 30H35L44 54L55 30H70L51 72H37Z" fill="#E7EEF7"/>
+              <path d="M76 30H90L76.4 60H97L92 72H57Z" fill="#6BA2FA"/>
+            </g>
+            <path d="M118 18V98" stroke="#C5D3E4" strokeWidth="1" opacity=".5"/>
+            <path d="M184.4 16.8 167.0 66.0H152.0L134.6 16.8H147.3L159.5 53.9L171.8 16.8ZM200.4 56.7H216.0V66.0H188.4V16.8H200.4Z" fill="#E7EEF7"/>
+            <path d="M236.2 42.2V48.2H245.8V53.7H236.2V60.2H247.1V66.0H229.0V36.5H247.1V42.2ZM280.1 66.0H273.0L260.9 47.8V66.0H253.8V36.5H260.9L273.0 54.7V36.5H280.1ZM306.9 45.8Q306.1 44.3 304.6 43.5Q303.1 42.8 301.1 42.8Q297.6 42.8 295.5 45.1Q293.4 47.3 293.4 51.2Q293.4 55.2 295.6 57.5Q297.9 59.8 301.7 59.8Q304.4 59.8 306.2 58.5Q308.0 57.1 308.9 54.6H299.7V49.3H315.4V56.0Q314.6 58.7 312.7 61.0Q310.7 63.3 307.8 64.7Q304.9 66.2 301.2 66.2Q296.8 66.2 293.4 64.2Q290.0 62.3 288.0 58.9Q286.1 55.5 286.1 51.2Q286.1 46.8 288.0 43.4Q290.0 40.0 293.4 38.0Q296.8 36.1 301.1 36.1Q306.4 36.1 310.1 38.7Q313.7 41.3 314.9 45.8ZM328.5 42.2V48.2H338.2V53.7H328.5V60.2H339.4V66.0H321.4V36.5H339.4V42.2ZM372.5 66.0H365.3L353.3 47.8V66.0H346.1V36.5H353.3L365.3 54.7V36.5H372.5ZM405.2 36.5V66.0H398.0V53.8H386.8V66.0H379.7V36.5H386.8V48.0H398.0V36.5ZM430.7 60.7H419.7L417.9 66.0H410.4L421.1 36.5H429.4L440.1 66.0H432.5ZM428.9 55.2 425.2 44.4 421.6 55.2ZM460.4 66.0 454.2 54.8H452.5V66.0H445.3V36.5H457.4Q460.9 36.5 463.3 37.7Q465.8 38.9 467.0 41.0Q468.2 43.1 468.2 45.7Q468.2 48.7 466.5 51.0Q464.9 53.3 461.7 54.3L468.5 66.0ZM452.5 49.7H457.0Q458.9 49.7 459.9 48.8Q460.9 47.8 460.9 46.0Q460.9 44.4 459.9 43.4Q458.9 42.4 457.0 42.4H452.5ZM481.9 36.5V66.0H474.7V36.5ZM507.4 60.7H496.4L494.7 66.0H487.2L497.8 36.5H506.1L516.8 66.0H509.2ZM505.6 55.2 501.9 44.4 498.3 55.2Z" fill="#6BA2FA"/>
+            <path d="M134 80H517.5" stroke="#C5D3E4" strokeWidth="1" opacity=".5"/>
+            <path d="M136.0 93.4V101.0H134.8V93.4ZM145.1 101.0H143.8L140.1 95.3V101.0H138.8V93.4H140.1L143.8 99.0V93.4H145.1ZM147.7 98.9H149.1Q149.1 99.3 149.4 99.7Q149.8 100.0 150.4 100.0Q151.1 100.0 151.4 99.7Q151.8 99.4 151.8 98.9Q151.8 98.5 151.5 98.2Q151.3 98.0 151.0 97.9Q150.7 97.7 150.1 97.6Q149.3 97.4 148.9 97.2Q148.4 97.0 148.1 96.6Q147.7 96.1 147.7 95.4Q147.7 94.8 148.1 94.3Q148.4 93.8 149.0 93.5Q149.6 93.3 150.4 93.3Q151.5 93.3 152.2 93.8Q152.9 94.4 152.9 95.3H151.6Q151.5 94.9 151.2 94.6Q150.8 94.3 150.2 94.3Q149.7 94.3 149.4 94.6Q149.0 94.9 149.0 95.4Q149.0 95.7 149.2 96.0Q149.4 96.2 149.8 96.3Q150.1 96.4 150.7 96.6Q151.4 96.8 151.9 97.0Q152.4 97.2 152.7 97.7Q153.0 98.1 153.0 98.8Q153.0 99.4 152.7 99.9Q152.4 100.4 151.8 100.7Q151.2 101.0 150.4 101.0Q149.6 101.0 149.0 100.8Q148.4 100.5 148.1 100.0Q147.7 99.5 147.7 98.9ZM158.3 97.9H156.9V101.0H155.7V93.4H158.3Q159.2 93.4 159.8 93.7Q160.4 94.0 160.7 94.5Q161.0 95.0 161.0 95.6Q161.0 96.2 160.7 96.7Q160.5 97.2 159.9 97.6Q159.3 97.9 158.3 97.9ZM159.7 95.6Q159.7 94.4 158.3 94.4H156.9V96.9H158.3Q159.0 96.9 159.4 96.5Q159.7 96.2 159.7 95.6ZM164.6 94.4V96.6H167.2V97.6H164.6V99.9H167.6V101.0H163.4V93.4H167.6V94.4ZM175.8 98.7H177.3Q176.9 99.8 176.1 100.3Q175.2 100.9 174.1 101.0V101.5Q174.8 101.5 175.2 101.8Q175.6 102.1 175.6 102.6Q175.6 103.2 175.2 103.5Q174.8 103.8 174.2 103.8H172.7V103.0H173.9Q174.2 103.0 174.4 102.9Q174.5 102.8 174.5 102.6Q174.5 102.4 174.4 102.3Q174.2 102.2 173.9 102.2H173.3V101.0Q172.4 100.9 171.6 100.4Q170.8 99.9 170.3 99.0Q169.9 98.2 169.9 97.1Q169.9 96.0 170.4 95.1Q170.9 94.3 171.8 93.8Q172.7 93.3 173.8 93.3Q175.0 93.3 175.9 93.9Q176.9 94.5 177.3 95.6H175.8Q175.5 95.0 175.0 94.7Q174.4 94.4 173.8 94.4Q173.0 94.4 172.4 94.7Q171.8 95.0 171.5 95.7Q171.2 96.3 171.2 97.1Q171.2 98.0 171.5 98.6Q171.8 99.2 172.4 99.6Q173.0 99.9 173.8 99.9Q174.4 99.9 175.0 99.6Q175.5 99.3 175.8 98.7ZM179.5 97.1Q179.5 96.0 180.0 95.1Q180.6 94.3 181.4 93.8Q182.3 93.3 183.4 93.3Q184.5 93.3 185.3 93.8Q186.2 94.3 186.7 95.1Q187.3 96.0 187.3 97.1Q187.3 98.3 186.7 99.1Q186.2 100.0 185.3 100.5Q184.5 101.0 183.4 101.0Q182.3 101.0 181.4 100.5Q180.6 100.0 180.0 99.1Q179.5 98.3 179.5 97.1ZM186.0 97.1Q186.0 96.3 185.7 95.7Q185.3 95.0 184.7 94.7Q184.1 94.4 183.4 94.4Q182.6 94.4 182.0 94.7Q181.5 95.0 181.1 95.7Q180.8 96.3 180.8 97.1Q180.8 98.0 181.1 98.6Q181.5 99.3 182.0 99.6Q182.6 99.9 183.4 99.9Q184.1 99.9 184.7 99.6Q185.3 99.3 185.7 98.6Q186.0 98.0 186.0 97.1ZM182.8 91.5Q183.1 91.5 183.2 91.5Q183.4 91.6 183.6 91.7Q183.7 91.8 183.9 91.9Q184.0 91.9 184.1 91.9Q184.3 91.9 184.4 91.8Q184.5 91.7 184.6 91.5H185.3Q185.2 92.1 184.9 92.4Q184.5 92.8 184.0 92.8Q183.8 92.8 183.7 92.7Q183.5 92.6 183.3 92.5Q183.1 92.4 183.0 92.3Q182.9 92.3 182.8 92.3Q182.6 92.3 182.5 92.4Q182.3 92.5 182.3 92.7H181.6Q181.7 92.1 182.0 91.8Q182.4 91.5 182.8 91.5ZM190.9 94.4V96.6H193.5V97.6H190.9V99.9H193.9V101.0H189.7V93.4H193.9V94.4ZM196.4 98.9H197.7Q197.8 99.3 198.1 99.7Q198.5 100.0 199.1 100.0Q199.7 100.0 200.1 99.7Q200.5 99.4 200.5 98.9Q200.5 98.5 200.2 98.2Q200.0 98.0 199.7 97.9Q199.3 97.7 198.8 97.6Q198.0 97.4 197.6 97.2Q197.1 97.0 196.8 96.6Q196.4 96.1 196.4 95.4Q196.4 94.8 196.8 94.3Q197.1 93.8 197.7 93.5Q198.3 93.3 199.0 93.3Q200.1 93.3 200.8 93.8Q201.5 94.4 201.6 95.3H200.3Q200.2 94.9 199.9 94.6Q199.5 94.3 198.9 94.3Q198.4 94.3 198.0 94.6Q197.7 94.9 197.7 95.4Q197.7 95.7 197.9 96.0Q198.1 96.2 198.5 96.3Q198.8 96.4 199.3 96.6Q200.1 96.8 200.6 97.0Q201.0 97.2 201.4 97.7Q201.7 98.1 201.7 98.8Q201.7 99.4 201.4 99.9Q201.1 100.4 200.5 100.7Q199.9 101.0 199.1 101.0Q198.3 101.0 197.7 100.8Q197.1 100.5 196.8 100.0Q196.4 99.5 196.4 98.9ZM212.7 97.3Q212.7 96.7 213.1 96.3Q213.6 95.9 214.1 95.9Q214.8 95.9 215.2 96.3Q215.6 96.7 215.6 97.3Q215.6 97.9 215.2 98.3Q214.8 98.7 214.1 98.7Q213.8 98.7 213.4 98.5Q213.1 98.4 212.9 98.0Q212.7 97.7 212.7 97.3ZM228.0 99.9H230.6V101.0H226.8V93.4H228.0ZM237.4 99.4H234.2L233.7 101.0H232.4L235.1 93.4H236.5L239.2 101.0H237.9ZM237.0 98.4 235.8 94.9 234.6 98.4ZM242.8 93.4V98.2Q242.8 99.1 243.3 99.5Q243.7 99.9 244.6 99.9Q245.4 99.9 245.8 99.5Q246.3 99.1 246.3 98.2V93.4H247.5V98.2Q247.5 99.1 247.1 99.8Q246.7 100.4 246.0 100.7Q245.4 101.0 244.5 101.0Q243.7 101.0 243.1 100.7Q242.4 100.4 242.0 99.8Q241.6 99.1 241.6 98.2V93.4ZM256.8 97.2Q256.8 98.3 256.3 99.2Q255.8 100.0 254.9 100.5Q254.0 101.0 252.8 101.0H250.3V93.4H252.8Q254.0 93.4 254.9 93.8Q255.8 94.3 256.3 95.2Q256.8 96.0 256.8 97.2ZM255.6 97.2Q255.6 95.9 254.9 95.1Q254.1 94.4 252.8 94.4H251.6V99.9H252.8Q254.1 99.9 254.9 99.2Q255.6 98.5 255.6 97.2ZM258.9 97.1Q258.9 96.0 259.4 95.1Q259.9 94.3 260.8 93.8Q261.7 93.3 262.7 93.3Q263.8 93.3 264.7 93.8Q265.6 94.3 266.1 95.1Q266.6 96.0 266.6 97.1Q266.6 98.3 266.1 99.1Q265.6 100.0 264.7 100.5Q263.8 101.0 262.7 101.0Q261.7 101.0 260.8 100.5Q259.9 100.0 259.4 99.1Q258.9 98.3 258.9 97.1ZM265.3 97.1Q265.3 96.3 265.0 95.7Q264.7 95.0 264.1 94.7Q263.5 94.4 262.7 94.4Q262.0 94.4 261.4 94.7Q260.8 95.0 260.5 95.7Q260.1 96.3 260.1 97.1Q260.1 98.0 260.5 98.6Q260.8 99.3 261.4 99.6Q262.0 99.9 262.7 99.9Q263.5 99.9 264.1 99.6Q264.7 99.3 265.0 98.6Q265.3 98.0 265.3 97.1ZM268.8 98.9H270.2Q270.2 99.3 270.6 99.7Q270.9 100.0 271.5 100.0Q272.2 100.0 272.5 99.7Q272.9 99.4 272.9 98.9Q272.9 98.5 272.7 98.2Q272.4 98.0 272.1 97.9Q271.8 97.7 271.2 97.6Q270.4 97.4 270.0 97.2Q269.5 97.0 269.2 96.6Q268.9 96.1 268.9 95.4Q268.9 94.8 269.2 94.3Q269.5 93.8 270.1 93.5Q270.7 93.3 271.5 93.3Q272.6 93.3 273.3 93.8Q274.0 94.4 274.0 95.3H272.7Q272.6 94.9 272.3 94.6Q271.9 94.3 271.3 94.3Q270.8 94.3 270.5 94.6Q270.1 94.9 270.1 95.4Q270.1 95.7 270.3 96.0Q270.5 96.2 270.9 96.3Q271.2 96.4 271.8 96.6Q272.5 96.8 273.0 97.0Q273.5 97.2 273.8 97.7Q274.1 98.1 274.1 98.8Q274.1 99.4 273.8 99.9Q273.5 100.4 272.9 100.7Q272.3 101.0 271.5 101.0Q270.8 101.0 270.1 100.8Q269.5 100.5 269.2 100.0Q268.8 99.5 268.8 98.9ZM285.7 93.4V94.4H283.7V101.0H282.5V94.4H280.4V93.4ZM289.4 94.4V96.6H292.1V97.6H289.4V99.9H292.4V101.0H288.2V93.4H292.4V94.4ZM291.4 91.7 288.9 92.9V92.0L291.4 90.7ZM298.6 93.3Q299.8 93.3 300.7 93.9Q301.7 94.5 302.1 95.6H300.6Q300.3 95.0 299.8 94.7Q299.3 94.4 298.6 94.4Q297.8 94.4 297.2 94.7Q296.6 95.0 296.3 95.7Q296.0 96.3 296.0 97.1Q296.0 98.0 296.3 98.6Q296.6 99.2 297.2 99.6Q297.8 99.9 298.6 99.9Q299.3 99.9 299.8 99.6Q300.3 99.3 300.6 98.7H302.1Q301.7 99.8 300.7 100.4Q299.8 101.0 298.6 101.0Q297.5 101.0 296.6 100.5Q295.7 100.0 295.2 99.1Q294.7 98.3 294.7 97.1Q294.7 96.0 295.2 95.1Q295.7 94.3 296.6 93.8Q297.5 93.3 298.6 93.3ZM311.0 101.0H309.7L306.0 95.3V101.0H304.7V93.4H306.0L309.7 99.0V93.4H311.0ZM315.0 93.4V101.0H313.8V93.4ZM321.3 93.3Q322.5 93.3 323.5 93.9Q324.4 94.5 324.9 95.6H323.4Q323.1 95.0 322.5 94.7Q322.0 94.4 321.3 94.4Q320.6 94.4 320.0 94.7Q319.4 95.0 319.1 95.7Q318.7 96.3 318.7 97.1Q318.7 98.0 319.1 98.6Q319.4 99.2 320.0 99.6Q320.6 99.9 321.3 99.9Q322.0 99.9 322.5 99.6Q323.1 99.3 323.4 98.7H324.9Q324.4 99.8 323.5 100.4Q322.5 101.0 321.3 101.0Q320.3 101.0 319.4 100.5Q318.5 100.0 318.0 99.1Q317.5 98.3 317.5 97.1Q317.5 96.0 318.0 95.1Q318.5 94.3 319.4 93.8Q320.3 93.3 321.3 93.3ZM327.1 97.1Q327.1 96.0 327.6 95.1Q328.1 94.3 329.0 93.8Q329.9 93.3 331.0 93.3Q332.0 93.3 332.9 93.8Q333.8 94.3 334.3 95.1Q334.8 96.0 334.8 97.1Q334.8 98.3 334.3 99.1Q333.8 100.0 332.9 100.5Q332.0 101.0 331.0 101.0Q329.9 101.0 329.0 100.5Q328.1 100.0 327.6 99.1Q327.1 98.3 327.1 97.1ZM333.6 97.1Q333.6 96.3 333.2 95.7Q332.9 95.0 332.3 94.7Q331.7 94.4 331.0 94.4Q330.2 94.4 329.6 94.7Q329.0 95.0 328.7 95.7Q328.4 96.3 328.4 97.1Q328.4 98.0 328.7 98.6Q329.0 99.3 329.6 99.6Q330.2 99.9 331.0 99.9Q331.7 99.9 332.3 99.6Q332.9 99.3 333.2 98.6Q333.6 98.0 333.6 97.1ZM337.1 98.9H338.4Q338.5 99.3 338.8 99.7Q339.1 100.0 339.8 100.0Q340.4 100.0 340.8 99.7Q341.1 99.4 341.1 98.9Q341.1 98.5 340.9 98.2Q340.7 98.0 340.3 97.9Q340.0 97.7 339.4 97.6Q338.7 97.4 338.2 97.2Q337.8 97.0 337.4 96.6Q337.1 96.1 337.1 95.4Q337.1 94.8 337.4 94.3Q337.8 93.8 338.3 93.5Q338.9 93.3 339.7 93.3Q340.8 93.3 341.5 93.8Q342.2 94.4 342.3 95.3H340.9Q340.9 94.9 340.5 94.6Q340.2 94.3 339.6 94.3Q339.0 94.3 338.7 94.6Q338.4 94.9 338.4 95.4Q338.4 95.7 338.6 96.0Q338.8 96.2 339.1 96.3Q339.4 96.4 340.0 96.6Q340.8 96.8 341.2 97.0Q341.7 97.2 342.0 97.7Q342.4 98.1 342.4 98.8Q342.4 99.4 342.1 99.9Q341.8 100.4 341.2 100.7Q340.6 101.0 339.8 101.0Q339.0 101.0 338.4 100.8Q337.8 100.5 337.4 100.0Q337.1 99.5 337.1 98.9ZM353.4 97.3Q353.4 96.7 353.8 96.3Q354.2 95.9 354.8 95.9Q355.4 95.9 355.8 96.3Q356.3 96.7 356.3 97.3Q356.3 97.9 355.8 98.3Q355.4 98.7 354.8 98.7Q354.4 98.7 354.1 98.5Q353.8 98.4 353.6 98.0Q353.4 97.7 353.4 97.3ZM368.7 94.4V96.6H371.3V97.6H368.7V99.9H371.6V101.0H367.4V93.4H371.6V94.4ZM380.6 101.0H379.3L375.6 95.3V101.0H374.3V93.4H375.6L379.3 99.0V93.4H380.6ZM388.9 95.6Q388.6 95.0 388.1 94.7Q387.6 94.4 386.9 94.4Q386.1 94.4 385.5 94.7Q384.9 95.1 384.6 95.7Q384.3 96.3 384.3 97.1Q384.3 98.0 384.6 98.6Q384.9 99.2 385.5 99.6Q386.1 99.9 386.9 99.9Q387.9 99.9 388.5 99.3Q389.1 98.8 389.3 97.8H386.4V96.8H390.6V97.8Q390.5 98.6 390.0 99.4Q389.5 100.1 388.7 100.6Q387.9 101.0 386.9 101.0Q385.8 101.0 384.9 100.5Q384.0 100.0 383.5 99.1Q383.0 98.3 383.0 97.1Q383.0 96.0 383.5 95.1Q384.0 94.3 384.9 93.8Q385.8 93.3 386.9 93.3Q388.1 93.3 389.0 93.9Q390.0 94.5 390.4 95.6ZM394.3 94.4V96.6H396.9V97.6H394.3V99.9H397.2V101.0H393.0V93.4H397.2V94.4ZM406.2 101.0H404.9L401.2 95.3V101.0H400.0V93.4H401.2L404.9 99.0V93.4H406.2ZM415.1 93.4V101.0H413.8V97.6H410.3V101.0H409.0V93.4H410.3V96.6H413.8V93.4ZM422.5 99.4H419.3L418.8 101.0H417.5L420.2 93.4H421.6L424.3 101.0H423.0ZM422.1 98.4 420.9 94.9 419.7 98.4ZM430.6 101.0 428.9 97.9H428.0V101.0H426.7V93.4H429.3Q430.2 93.4 430.8 93.7Q431.4 94.0 431.7 94.5Q432.0 95.0 432.0 95.6Q432.0 96.4 431.6 97.0Q431.1 97.6 430.3 97.8L432.1 101.0ZM428.0 96.9H429.3Q430.0 96.9 430.4 96.6Q430.7 96.2 430.7 95.6Q430.7 95.0 430.4 94.7Q430.0 94.4 429.3 94.4H428.0ZM436.0 93.4V101.0H434.8V93.4ZM443.4 99.4H440.3L439.7 101.0H438.4L441.1 93.4H442.6L445.3 101.0H444.0ZM443.1 98.4 441.9 94.9 440.6 98.4ZM459.7 93.4V101.0H458.5V95.8L456.1 101.0H455.3L453.0 95.8V101.0H451.7V93.4H453.1L455.7 99.3L458.4 93.4ZM463.8 94.4V96.6H466.4V97.6H463.8V99.9H466.7V101.0H462.5V93.4H466.7V94.4ZM472.9 93.3Q474.1 93.3 475.1 93.9Q476.0 94.5 476.4 95.6H474.9Q474.6 95.0 474.1 94.7Q473.6 94.4 472.9 94.4Q472.2 94.4 471.6 94.7Q471.0 95.0 470.6 95.7Q470.3 96.3 470.3 97.1Q470.3 98.0 470.6 98.6Q471.0 99.2 471.6 99.6Q472.2 99.9 472.9 99.9Q473.6 99.9 474.1 99.6Q474.6 99.3 474.9 98.7H476.4Q476.0 99.8 475.1 100.4Q474.1 101.0 472.9 101.0Q471.8 101.0 471.0 100.5Q470.1 100.0 469.6 99.1Q469.0 98.3 469.0 97.1Q469.0 96.0 469.6 95.1Q470.1 94.3 471.0 93.8Q471.9 93.3 472.9 93.3ZM483.7 99.4H480.5L479.9 101.0H478.6L481.4 93.4H482.8L485.5 101.0H484.2ZM483.3 98.4 482.1 94.9 480.8 98.4ZM482.1 92.0 480.5 92.9V92.0L482.1 91.1L483.6 92.0V92.9ZM494.1 101.0H492.9L489.1 95.3V101.0H487.9V93.4H489.1L492.9 99.0V93.4H494.1ZM498.2 93.4V101.0H496.9V93.4ZM504.5 93.3Q505.7 93.3 506.6 93.9Q507.6 94.5 508.0 95.6H506.5Q506.2 95.0 505.7 94.7Q505.2 94.4 504.5 94.4Q503.7 94.4 503.1 94.7Q502.6 95.0 502.2 95.7Q501.9 96.3 501.9 97.1Q501.9 98.0 502.2 98.6Q502.6 99.2 503.1 99.6Q503.7 99.9 504.5 99.9Q505.2 99.9 505.7 99.6Q506.2 99.3 506.5 98.7H508.0Q507.6 99.8 506.6 100.4Q505.7 101.0 504.5 101.0Q503.4 101.0 502.5 100.5Q501.6 100.0 501.1 99.1Q500.6 98.3 500.6 97.1Q500.6 96.0 501.1 95.1Q501.6 94.3 502.5 93.8Q503.4 93.3 504.5 93.3ZM515.2 99.4H512.1L511.5 101.0H510.2L512.9 93.4H514.4L517.1 101.0H515.8ZM514.9 98.4 513.6 94.9 512.4 98.4Z" fill="#C5D3E4"/>
+          </svg>
         </div>
 
-        <div className="mt-8 bg-slate-800 py-8 px-6 sm:px-10 rounded-2xl border border-slate-700 shadow-2xl space-y-6">
-          
-          {/* Alerta de erro de autenticação */}
-          {authError && (
-            <div className="p-4 rounded-xl bg-amber-950/80 border border-amber-600 text-amber-200 text-xs space-y-2">
-              <div className="flex items-center gap-2 font-bold text-amber-300">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Aviso de Conexão</span>
-              </div>
-              <p className="leading-relaxed">{authError}</p>
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  onClick={clearAuthError}
-                  className="text-[11px] text-amber-400 underline font-semibold cursor-pointer"
-                >
-                  Fechar aviso
-                </button>
-              </div>
-            </div>
+        {/* 2. Título */}
+        <h1 className="text-[1.25rem] font-medium tracking-[-0.005em] text-[#f4f7fc] leading-snug">
+          Área técnica e administrativa
+        </h1>
+
+        {/* 3. Linha de apoio */}
+        <p className="mt-2 text-[#9fb0c8] text-[0.9rem] leading-relaxed font-normal">
+          Acesso exclusivo para engenheiros e responsáveis técnicos homologados.
+        </p>
+
+        {/* 4. Botão "Entrar com Google" */}
+        <button
+          id="btn-google"
+          type="button"
+          onClick={handleLoginGoogle}
+          disabled={loading}
+          aria-busy={loading}
+          className="mt-8 w-full min-h-[52px] flex items-center justify-center gap-3 border border-transparent rounded-[8px] bg-[#f4f7fc] text-[#0a1628] font-medium text-[0.95rem] cursor-pointer transition-all duration-150 hover:shadow-[0_0_0_4px_rgba(91,147,245,0.3)] hover:border-[#5b93f5] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#5b93f5] focus-visible:outline-offset-[3px] disabled:opacity-85 disabled:cursor-progress"
+        >
+          <svg className="w-5 h-5 flex-none" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.4-4.8 7.1l7.6 5.9c4.4-4.1 7-10.1 7-17.5z"/>
+            <path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/>
+            <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/>
+          </svg>
+          <span>{loading ? 'Conectando…' : 'Entrar com Google'}</span>
+        </button>
+
+        {/* 5. Área de mensagem de erro */}
+        <div className="min-h-[1.4em] mt-3.5" role="alert" aria-live="polite">
+          {mensagemErro && (
+            <p className="text-[#ff8a8a] text-[0.85rem] leading-normal font-normal">
+              {mensagemErro}
+            </p>
           )}
 
-          {/* Notificação de tentativa de acesso não autorizada */}
-          {unauthorizedAttempt && (
-            <div className="p-4 rounded-xl bg-red-950/90 border border-red-700 text-red-200 text-xs space-y-3">
-              <div className="flex items-center gap-2 font-bold text-red-400">
-                <Lock className="w-4 h-4 text-red-400 shrink-0" />
-                <span>Acesso Bloqueado • Liberação Pendente</span>
-              </div>
-              <p className="leading-relaxed">
-                A Conta Google <strong className="text-white underline">{unauthorizedAttempt}</strong> não está na lista de usuários autorizados da VL Engenharia.
-              </p>
-              <p className="text-[11px] text-red-300">
-                O acesso à plataforma é restrito ao e-mail master (<strong>{MASTER_EMAIL}</strong>) e aos colaboradores previamente homologados pelo responsável técnico.
-              </p>
-
-              {!solicitacaoEnviada ? (
-                <form onSubmit={handleEnviarSolicitacao} className="pt-2 border-t border-red-900/60 space-y-2">
-                  <label className="block text-[11px] font-semibold text-red-200">
-                    Solicitar autorização de acesso ao Eng. Vitor Leonardo:
-                  </label>
+          {/* Fluxo opcional e discreto para solicitar autorização caso a conta Google não esteja na lista */}
+          {unauthorizedAttempt && !solicitacaoEnviada && (
+            <div className="mt-2">
+              {!mostrarFormSolicitacao ? (
+                <button
+                  type="button"
+                  onClick={() => setMostrarFormSolicitacao(true)}
+                  className="text-[0.8rem] text-[#9fb0c8] hover:text-[#f4f7fc] underline underline-offset-2 cursor-pointer transition-colors"
+                >
+                  Solicitar homologação desta conta
+                </button>
+              ) : (
+                <form onSubmit={handleEnviarSolicitacao} className="mt-3 text-left space-y-2">
                   <input
                     type="text"
                     value={motivoSolicitacao}
                     onChange={(e) => setMotivoSolicitacao(e.target.value)}
-                    placeholder="Seu nome, empresa ou cargo (ex: Inspetor João)"
-                    className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-red-800 text-white placeholder-slate-500 text-xs focus:outline-hidden focus:ring-1 focus:ring-red-500"
+                    placeholder="Seu nome, empresa ou cargo"
+                    required
+                    className="w-full px-3 py-2 rounded-md bg-[#050e1c] border border-[#22385a] text-[#f4f7fc] placeholder-[#9fb0c8]/60 text-[0.82rem] focus:outline-none focus:border-[#5b93f5]"
                   />
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex gap-2">
                     <button
                       type="submit"
                       disabled={enviandoSolicitacao}
-                      className="flex-1 py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      className="flex-1 py-1.5 px-3 rounded-md bg-[#1e5bd8] hover:bg-[#1848ad] text-white text-[0.8rem] font-medium transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{enviandoSolicitacao ? 'Enviando...' : 'Enviar Pedido ao Master'}</span>
+                      {enviandoSolicitacao ? 'Enviando…' : 'Enviar pedido'}
                     </button>
                     <button
                       type="button"
-                      onClick={clearUnauthorized}
-                      className="py-2 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs cursor-pointer"
+                      onClick={() => {
+                        setMostrarFormSolicitacao(false);
+                        clearUnauthorized();
+                      }}
+                      className="py-1.5 px-3 rounded-md bg-transparent border border-[#22385a] text-[#9fb0c8] hover:text-white text-[0.8rem] cursor-pointer"
                     >
-                      Voltar
+                      Cancelar
                     </button>
                   </div>
                 </form>
-              ) : (
-                <div className="p-3 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-200 text-xs space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Pedido de Acesso Enviado!</span>
-                  </div>
-                  <p className="text-[11px]">
-                    Sua solicitação foi enviada ao Engenheiro Vitor Leonardo ({MASTER_EMAIL}). Assim que ele liberar na gestão de usuários, você poderá entrar com esta mesma conta.
-                  </p>
-                  <button
-                    onClick={clearUnauthorized}
-                    className="mt-2 text-[11px] underline font-semibold text-emerald-400 cursor-pointer block"
-                  >
-                    Tentar com outra conta
-                  </button>
-                </div>
               )}
             </div>
           )}
 
-          {/* Sessão Ativa (caso já esteja autenticado) */}
-          {currentUser && (
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Sessão Conectada</span>
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  {currentUser.role}
-                </span>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">{currentUser.nome}</p>
-                <p className="text-xs text-slate-400 font-mono">{currentUser.email}</p>
-                {currentUser.crea && (
-                  <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">CREA-PE: {currentUser.crea}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <Link
-                  to="/admin"
-                  className="flex-1 py-2 px-3 rounded-lg bg-[#1565D8] hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                >
-                  <span>Ir para o Painel</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await logout();
-                  }}
-                  className="py-2 px-3 rounded-lg border border-slate-600 hover:border-red-500 text-slate-300 hover:text-red-300 text-xs font-semibold cursor-pointer"
-                  title="Desconectar sessão atual"
-                >
-                  <LogOut className="w-3.5 h-3.5 inline mr-1" />
-                  <span>Sair</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Opções de Autenticação */}
-          <div className="space-y-3">
-            <button
-              onClick={handleLoginGoogle}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border border-slate-600 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-md transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
-            >
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>{loading ? 'Abrindo autenticação...' : (currentUser ? 'Entrar com Outra Conta Google' : 'Entrar com Conta Google')}</span>
-            </button>
-            <p className="text-[11px] text-center text-slate-400">
-              Acesso exclusivo para Engenheiros e Responsáveis Técnicos homologados ({MASTER_EMAIL}).
+          {unauthorizedAttempt && solicitacaoEnviada && (
+            <p className="text-[#3dd27a] text-[0.8rem] mt-2">
+              Pedido de autorização enviado ao responsável técnico com sucesso.
             </p>
-          </div>
-
-          <div className="pt-1 text-center">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Voltar para o site institucional</span>
-            </Link>
-          </div>
-
+          )}
         </div>
 
-      </div>
+        {/* 6. Link discreto "Voltar ao site institucional" */}
+        <div>
+          <Link
+            to="/"
+            className="inline-block mt-5 text-[#9fb0c8] text-[0.85rem] rounded-[6px] no-underline hover:text-[#f4f7fc] hover:underline underline-offset-4 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#5b93f5] focus-visible:outline-offset-[3px] transition-colors"
+          >
+            Voltar ao site institucional
+          </Link>
+        </div>
+
+      </main>
     </div>
   );
 };

@@ -29,8 +29,13 @@ import { GestaoView } from './components/admin/GestaoView';
 
 function FloatingContactHelper() {
   const location = useLocation();
-  // Don't show WhatsApp floating badge inside the operations admin panel
-  if (location.pathname.startsWith('/admin')) {
+  // Don't show WhatsApp floating badge inside operations admin panel or login routes
+  if (
+    location.pathname.startsWith('/admin') ||
+    location.pathname === '/login' ||
+    location.pathname === '/acesso-restrito' ||
+    location.pathname === '/restrito'
+  ) {
     return null;
   }
   return <WhatsAppButton />;
