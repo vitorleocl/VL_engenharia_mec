@@ -42,7 +42,7 @@ export default function App() {
       <AuthProvider>
         <DataProvider>
           <ThemeProvider>
-            <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-[#1565D8] selection:text-white relative">
+            <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] selection:bg-[#1E5BD8] selection:text-white relative">
             
             {/* Engineering Mechanical Blueprint Theme across the whole site */}
             <EngineeringBackgroundTheme />

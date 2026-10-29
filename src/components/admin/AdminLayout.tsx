@@ -1,27 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
-  ClipboardCheck,
+  PlusCircle, 
+  ClipboardCheck, 
   Users, 
   Cpu, 
   FileSpreadsheet, 
   ShieldCheck, 
-  UserCheck, 
   LogOut, 
-  Menu, 
-  X, 
-  Sparkles, 
-  Wifi, 
-  WifiOff, 
-  Home, 
-  Bell, 
-  ChevronRight, 
-  Shield, 
-  Sun, 
-  Moon,
-  Cog 
+  ExternalLink,
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -32,385 +24,248 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { currentUser, logout, isOnline } = useAuth();
-  const { usoIA, contatos } = useData();
-  const { theme, isDark, toggleTheme, setTheme } = useAdminTheme();
+  const { currentUser, logout } = useAuth();
+  const { laudos, clientes, ativos, orcamentos, usoIA } = useData();
+  const { theme, toggleTheme } = useAdminTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Redirecionamento limpo para o login caso não haja sessão ativa
+  const VITOR_PHOTO_DEFAULT = 'https://www.vlengenhariamecanica.com.br/assets/image-Ca17hHDt.png';
+  const [vitorPhoto, setVitorPhoto] = useState<string>(VITOR_PHOTO_DEFAULT);
+
+  useEffect(() => {
+    try {
+      const p = localStorage.getItem('vl-p');
+      if (p) setVitorPhoto(p);
+      else setVitorPhoto(VITOR_PHOTO_DEFAULT);
+    } catch {
+      setVitorPhoto(VITOR_PHOTO_DEFAULT);
+    }
+  }, []);
+
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
   const isMaster = currentUser.role === 'master';
   const isColaborador = currentUser.role === 'colaborador' || isMaster;
-  const isCliente = currentUser.role === 'cliente';
 
-  const menuItems = [
+  const navItems = [
     {
-      label: 'Visão Geral',
+      id: 'visao-geral',
+      label: 'Visão geral',
       path: '/admin',
       icon: LayoutDashboard,
-      visible: true,
+      badge: '',
+      visible: true
     },
     {
-      label: 'Central de Laudos',
+      id: 'central-laudos',
+      label: 'Central de laudos',
       path: '/admin/laudos',
       icon: FileText,
-      visible: true,
-      badge: '14 Módulos',
+      badge: String(laudos.length),
+      visible: true
     },
     {
-      label: 'Checklist de Campo',
+      id: 'novo-laudo',
+      label: 'Novo laudo',
+      path: '/admin/laudos?novo=1',
+      icon: PlusCircle,
+      badge: '',
+      visible: true
+    },
+    {
+      id: 'checklist',
+      label: 'Checklist de campo',
       path: '/admin/checklists-campo',
       icon: ClipboardCheck,
-      visible: true,
-      badge: 'In Loco',
+      badge: '',
+      visible: true
     },
     {
+      id: 'clientes',
       label: 'Clientes',
       path: '/admin/clientes',
       icon: Users,
-      visible: isColaborador,
+      badge: String(clientes.length),
+      visible: isColaborador
     },
     {
-      label: 'Ativos / Equipamentos',
+      id: 'equipamentos',
+      label: 'Equipamentos',
       path: '/admin/ativos',
       icon: Cpu,
-      visible: true,
+      badge: String(ativos.length),
+      visible: true
     },
     {
+      id: 'orcamentos',
       label: 'Orçamentos',
       path: '/admin/orcamentos',
       icon: FileSpreadsheet,
-      visible: isColaborador,
+      badge: String(orcamentos.length),
+      visible: isColaborador
     },
     {
-      label: 'Logs de Auditoria',
+      id: 'auditoria',
+      label: 'Auditoria e acessos',
       path: '/admin/auditoria',
       icon: ShieldCheck,
-      visible: isMaster, // Strict Master-only
       badge: 'Master',
-    },
-    {
-      label: 'Gestão de Acessos',
-      path: '/admin/usuarios',
-      icon: UserCheck,
-      visible: isMaster, // Strict Master-only
-    },
-  ].filter(i => i.visible);
-
-  const contatosNovos = contatos.filter(c => !c.respondido).length;
-  const percIA = Math.min(100, Math.round((usoIA.totalChamadas / usoIA.limiteMensal) * 100));
+      visible: isMaster
+    }
+  ];
 
   return (
-    <div className={`min-h-screen ${isDark ? 'dark bg-[#070E1A] text-slate-100' : 'bg-slate-100 text-slate-800'} flex flex-col md:flex-row transition-colors duration-200`}>
-      
-      {/* Mobile Top Header */}
-      <div className={`md:hidden ${isDark ? 'bg-[#060D18] border-b border-slate-800' : 'bg-[#0B1E3D]'} text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40`}>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800"
-            aria-label="Menu Lateral"
-          >
-            {mobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-sm tracking-tight text-white">
-              VL <span className="text-[#1565D8]">ENGENHARIA</span>
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col">
+      {/* Top Mobile / Global Quick Bar */}
+      <header className="sticky top-0 z-40 bg-[var(--card)] border-b border-[var(--line)] px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2 text-decoration-none group">
+            <svg width="28" height="28" viewBox="0 0 38 38" aria-hidden="true">
+              <rect width="38" height="38" rx="8" fill="#1E5BD8" />
+              <path
+                d="M8 10l7 18 4-10 4 10 7-18"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="3.2"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="font-[family-name:var(--d)] font-extrabold text-[16px] text-[var(--ink)]">
+              VL Engenharia
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900 text-blue-200 font-mono">
-              PAINEL
-            </span>
-          </div>
+          </Link>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--navy)] text-[#E7EEF7] font-semibold hidden sm:inline-block">
+            Painel Técnico
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mobile Theme Switcher */}
+          <Link
+            to="/"
+            className="btn-tech sm text-xs px-2.5 py-1.5 flex items-center gap-1.5"
+            title="Ver o site público"
+          >
+            <span>Ver site</span>
+            <ExternalLink className="w-3 h-3 opacity-60" />
+          </Link>
+
           <button
+            type="button"
             onClick={toggleTheme}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-            title={isDark ? 'Alternar para Tema Claro' : 'Alternar para Tema Industrial Escuro'}
-            aria-label="Alternar tema"
+            className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)] cursor-pointer"
+            title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            aria-label="Alternar tema claro/escuro"
           >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-300" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {isOnline ? (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
-              <Wifi className="w-3 h-3" />
-              <span>Online</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800 animate-pulse">
-              <WifiOff className="w-3 h-3" />
-              <span>Offline</span>
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate('/');
+            }}
+            className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--bad)] hover:bg-[var(--paper)] cursor-pointer"
+            title="Sair do painel"
+            aria-label="Sair"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-      </div>
+      </header>
 
-      {/* Sidebar Desktop */}
-      <aside className={`
-        ${mobileSidebarOpen ? 'block' : 'hidden'} md:block
-        fixed md:sticky top-0 left-0 z-30
-        w-64 h-screen ${isDark ? 'bg-[#060D1A] border-r border-slate-800/90' : 'bg-[#0B1E3D] border-r border-slate-800'} text-slate-300
-        flex flex-col justify-between shrink-0
-        shadow-xl md:shadow-none
-      `}>
+      {/* Main Container with Sidebar + Content */}
+      <div className="flex-1 flex flex-col md:flex-row">
         
-        {/* Brand Header */}
-        <div>
-          <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="p-1.5 bg-white rounded-lg shadow-sm relative overflow-hidden">
-                <img src="/logo.png" alt="VL" className="h-6 w-auto object-contain" />
+        {/* Navy Sidebar */}
+        <aside 
+          className="w-full md:w-[250px] bg-[#0B2447] text-[#E7EEF7] p-3 flex md:flex-col gap-1 md:sticky md:top-14 md:self-start md:h-[calc(100vh-56px)] overflow-x-auto md:overflow-y-auto flex-none z-30"
+          aria-label="Menu do painel"
+        >
+          <nav className="flex md:flex-col gap-1 flex-1 min-w-0" aria-label="Navegação interna">
+            {navItems
+              .filter(item => item.visible)
+              .map((item) => {
+                const isActive = 
+                  item.path === '/admin'
+                    ? location.pathname === '/admin'
+                    : location.pathname.startsWith(item.path.split('?')[0]);
+
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.path}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14.5px] font-[family-name:var(--b)] font-semibold whitespace-nowrap transition-colors ${
+                      isActive
+                        ? 'bg-[#1E5BD8] text-white shadow-xs'
+                        : 'text-[#B5C5DA] hover:text-white hover:bg-[#163660]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <item.icon className="w-4 h-4 flex-none opacity-80" />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span className={`text-[11px] px-1.5 py-0.2 rounded font-normal ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-[#1D3A63] text-[#B5C5DA]'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+          </nav>
+
+          {/* User profile & discrete Gemini Quota Footer */}
+          <div className="hidden md:flex flex-col gap-3 pt-3 border-t border-[#1D3A63] mt-auto">
+            {/* User info with Vitor Photo */}
+            <div className="flex items-center gap-2.5 text-[13.5px] text-[#B5C5DA]">
+              <div 
+                className="w-9 h-9 rounded-full bg-[#1E5BD8] bg-cover bg-center flex items-center justify-center font-bold text-white flex-none overflow-hidden border border-white/20"
+                style={vitorPhoto ? { backgroundImage: `url(${vitorPhoto})` } : undefined}
+              >
+                {!vitorPhoto && (currentUser?.nome ? currentUser.nome.charAt(0).toUpperCase() : 'V')}
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-white tracking-tight block leading-tight">
-                    VL ENGENHARIA
-                  </span>
-                  <Cog className="w-3.5 h-3.5 text-blue-400 animate-gear-slow group-hover:text-amber-400 transition-colors" />
-                </div>
-                <span className="text-[10px] text-slate-400 block font-mono">
-                  CREA-PE 182229949-0
+              <div className="min-w-0 leading-tight">
+                <span className="block font-bold text-white truncate text-[14px]">
+                  {currentUser?.nome || 'Vitor Leonardo'}
+                </span>
+                <span className="text-[12px] text-[#92A5BC]">
+                  {currentUser?.role === 'master' ? 'Perfil Master' : 'Técnico de Campo'}
                 </span>
               </div>
-            </Link>
-            <button
-              onClick={() => setMobileSidebarOpen(false)}
-              className="md:hidden text-slate-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+            </div>
 
-          {/* User Profile Pill */}
-          <div className="p-4 mx-3 my-3 rounded-xl bg-slate-900/90 border border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm">
-                {currentUser.nome.charAt(0)}
+            {/* Discrete Gemini Quota indicator */}
+            <div className="p-2 rounded-md bg-[#081B36] border border-[#163660] text-[11.5px] text-[#92A5BC] space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 font-semibold text-[#B5C5DA]">
+                  <Sparkles className="w-3 h-3 text-[#6BA2FA]" />
+                  <span>IA Gemini</span>
+                </span>
+                <span>{usoIA?.totalChamadas || 0} / {usoIA?.limiteMensal || 150}</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate">
-                  {currentUser.nome}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded ${
-                    isMaster 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-600/40' 
-                      : isColaborador 
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-600/40' 
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-600/40'
-                  }`}>
-                    {currentUser.role.toUpperCase()}
-                  </span>
-                  <span className="text-[10px] text-slate-500 truncate">
-                    {currentUser.email}
-                  </span>
-                </div>
+              <div className="h-1 bg-[#163660] rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-[#1E5BD8] rounded-full"
+                  style={{ width: `${Math.min(100, Math.round(((usoIA?.totalChamadas || 0) / (usoIA?.limiteMensal || 150)) * 100))}%` }}
+                />
               </div>
             </div>
           </div>
+        </aside>
 
-          {/* Navigation Links */}
-          <nav className="px-3 space-y-1 mt-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className={`
-                    flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all
-                    ${active 
-                      ? 'bg-[#1565D8] text-white shadow-md' 
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    }
-                  `}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                      active ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Footer Area with AI Quota and Exit */}
-        <div className="p-3 border-t border-slate-800 space-y-3">
-          
-          {/* AI Usage Tracker Widget */}
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-bold text-slate-300 text-[11px]">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>IA Diagnósticos</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {usoIA.totalChamadas} / {usoIA.limiteMensal}
-              </span>
-            </div>
-            
-            <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
-              <div
-                className={`h-full transition-all ${
-                  percIA > 90 ? 'bg-red-500' : percIA > 70 ? 'bg-amber-500' : 'bg-[#1565D8]'
-                }`}
-                style={{ width: `${percIA}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-slate-500 leading-tight">
-              Análise técnica automatizada de fotos e conformidade legal.
-            </p>
-          </div>
-
-          {/* Sidebar Theme Switcher */}
-          <div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-slate-900/70 border border-slate-800 text-xs">
-            <span className="text-[11px] text-slate-300 flex items-center gap-1.5 font-medium">
-              {isDark ? <Moon className="w-3.5 h-3.5 text-cyan-300" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
-              <span>{isDark ? 'Tema Industrial' : 'Tema Claro'}</span>
-            </span>
-            <button
-              onClick={toggleTheme}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                isDark 
-                  ? 'bg-blue-600/30 text-blue-200 hover:bg-blue-600/50' 
-                  : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-              }`}
-            >
-              {isDark ? 'Mudar p/ Claro' : 'Mudar p/ Escuro'}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-              title="Ir para o site público"
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>Site Público</span>
-            </Link>
-
-            <button
-              onClick={() => logout()}
-              className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
-              title="Encerrar Sessão"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sair</span>
-            </button>
-          </div>
-
-        </div>
-
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
-        {/* Desktop Top Status Bar */}
-        <header className={`hidden md:flex items-center justify-between px-8 py-4 ${
-          isDark 
-            ? 'bg-[#0A1324] border-b border-slate-800 text-slate-100' 
-            : 'bg-white border-b border-slate-200 text-slate-800'
-        } transition-colors`}>
-          <div>
-            <h1 className={`text-lg font-extrabold ${isDark ? 'text-white' : 'text-[#0B1E3D]'}`}>
-              VL Engenharia — Gestão Técnica Operacional
-            </h1>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Ambiente de laudos, ensaios de campo, apreciação HRN e emissão de ART CREA-PE
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            
-            {/* Theme Selector (Claro / Escuro Industrial) */}
-            <div className={`flex items-center p-0.5 rounded-xl border ${
-              isDark ? 'bg-slate-900/90 border-slate-700/80' : 'bg-slate-100 border-slate-200'
-            }`}>
-              <button
-                onClick={() => setTheme('light')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  !isDark 
-                    ? 'bg-white text-[#0B1E3D] shadow-xs' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                title="Ativar Modo Claro"
-              >
-                <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : 'text-slate-400'}`} />
-                <span>Claro</span>
-              </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  isDark 
-                    ? 'bg-[#1565D8] text-white shadow-xs' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Ativar Modo Escuro Industrial (Cinza Escuro e Azul Marinho)"
-              >
-                <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-cyan-200' : 'text-slate-500'}`} />
-                <span>Industrial</span>
-              </button>
-            </div>
-
-            {/* Online/Offline status */}
-            <div className="flex items-center gap-2">
-              {isOnline ? (
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                  isDark 
-                    ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800' 
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                }`}>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Conectado</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold animate-pulse">
-                  <WifiOff className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Modo Offline</span>
-                </div>
-              )}
-            </div>
-
-            {/* Quick user role selector for test/demo mode */}
-            <div className={`text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg border ${
-              isDark 
-                ? 'bg-slate-900 text-slate-300 border-slate-800' 
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-            }`}>
-              <span className={isDark ? 'text-slate-400' : 'text-slate-400'}>Perfil:</span>
-              <strong className={`capitalize ${isDark ? 'text-white' : 'text-[#0B1E3D]'}`}>{currentUser.role}</strong>
-            </div>
-
-          </div>
-        </header>
-
-        {/* View Body */}
-        <div className="p-4 sm:p-6 lg:p-8 flex-1">
+        {/* View Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
           {children}
-        </div>
+        </main>
 
-      </main>
-
+      </div>
     </div>
   );
 };

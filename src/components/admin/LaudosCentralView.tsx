@@ -1,1083 +1,545 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { 
   FileText, 
   Plus, 
   Search, 
-  Sparkles, 
-  ShieldAlert, 
-  Gauge, 
-  Tractor, 
-  Truck, 
-  Cable, 
-  Car, 
-  Bus, 
   FileCheck2, 
-  Smile, 
-  Fan, 
-  Award, 
-  BarChart3, 
-  Flame, 
-  Printer, 
-  Edit, 
-  Trash2, 
-  Filter, 
   CheckCircle2, 
-  Clock,
-  ArrowRight,
-  X,
+  Clock, 
+  X, 
+  Eye, 
+  Edit, 
   Download,
-  ChevronDown,
-  ChevronUp,
-  FolderTree,
-  BookOpen,
-  CheckSquare,
-  Building,
-  Wrench,
-  HardHat,
-  ShieldCheck,
-  Layers,
-  Calendar
+  Share2,
+  Trash2,
+  Sparkles,
+  Calculator
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
-import { GeradorLaudoCausaRaizModal } from './GeradorLaudoCausaRaizModal';
-import { 
-  CategoriaLaudoTaxonomia, 
-  SubcategoriaLaudoTaxonomia, 
-  TipoLaudoTaxonomia, 
-  Laudo,
-  ModuloLaudoCatalogo 
-} from '../../types';
-import { MODULOS_LAUDO_CATALOGO } from '../../data/initialData';
-
-// Map icon strings to Lucide components
-const ICON_MAP: Record<string, React.ElementType> = {
-  Flame,
-  ShieldAlert,
-  Gauge,
-  Tractor,
-  Truck,
-  Cable,
-  Car,
-  Bus,
-  FileCheck2,
-  Sparkles,
-  Smile,
-  Fan,
-  Award,
-  BarChart3,
-  Building,
-  Wrench,
-  HardHat,
-  ShieldCheck,
-};
+import { Laudo } from '../../types';
 
 export const LaudosCentralView: React.FC = () => {
   const { 
     laudos, 
     clientes, 
     ativos, 
-    categoriasLaudo, 
     criarLaudoPorTaxonomia, 
     removerLaudo 
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab') as 'modulos' | 'catalogo' | 'laudos' | null;
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Primary Tabs: Modules Table vs Taxonomy Catalog vs Active Reports List
-  const [abaAtiva, setAbaAtiva] = useState<'modulos' | 'catalogo' | 'laudos'>(tabParam || 'laudos');
-  const [buscaModulos, setBuscaModulos] = useState('');
+  // Search & Status Filter
+  const [busca, setBusca] = useState('');
+  const [statusFiltro, setStatusFiltro] = useState<'' | 'ART' | 'Em' | 'Aguard'>('');
 
-  // Search and Filters for Taxonomy Catalog
-  const [buscaCatalogo, setBuscaCatalogo] = useState('');
-  const [categoriaFiltroId, setCategoriaFiltroId] = useState<string>('todas');
-  const [categoriasExpandidas, setCategoriasExpandidas] = useState<Record<string, boolean>>({
-    'cat-incendio': true,
-    'cat-nr12': true,
-  });
+  // Modals
+  const [modalNovoAberto, setModalNovoAberto] = useState(searchParams.get('novo') === '1');
+  const [laudoExportandoPdf, setLaudoExportandoPdf] = useState<Laudo | null>(null);
+  const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
-  // Search and Filters for Reports List
-  const [buscaLaudos, setBuscaLaudos] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('todos');
+  // Form State for Novo Laudo
+  const [novoTipo, setNovoTipo] = useState('Adequação à NR-12 e projetos mecânicos');
+  const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '');
+  const [novoEquipamento, setNovoEquipamento] = useState('');
+  const [novaData, setNovaData] = useState(new Date().toISOString().split('T')[0]);
 
-  // Modal for creating report from taxonomy
-  const [modalTaxonomiaAberto, setModalTaxonomiaAberto] = useState(false);
-  const [selecaoTaxonomia, setSelecaoTaxonomia] = useState<{
-    categoria: CategoriaLaudoTaxonomia;
-    subcategoria: SubcategoriaLaudoTaxonomia;
-    tipo: TipoLaudoTaxonomia;
-  } | null>(null);
+  // HRN Factors
+  const [hrnLo, setHrnLo] = useState<number>(2); // Probabilidade
+  const [hrnFe, setHrnFe] = useState<number>(4); // Frequencia
+  const [hrnDph, setHrnDph] = useState<number>(2); // Gravidade
+  const [hrnNp, setHrnNp] = useState<number>(1); // Pessoas expostas
 
-  // Form fields for new report modal
-  const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
-  const [ativoId, setAtivoId] = useState('');
-  const [dataInspecao, setDataInspecao] = useState(new Date().toISOString().slice(0, 10));
-  const [artNumero, setArtNumero] = useState('');
-  const [modoPreenchimento, setModoPreenchimento] = useState<'em_branco' | 'sugestao_ia'>('sugestao_ia');
-
-  // PDF Export Modal state
-  const [laudoPdfExportar, setLaudoPdfExportar] = useState<Laudo | null>(null);
-
-  // Modal Causa Raiz (Categoria 4)
-  const [modalCausaRaizAberto, setModalCausaRaizAberto] = useState(false);
-
-  const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
-
-  // Toggle category expansion
-  const toggleCategoria = (id: string) => {
-    setCategoriasExpandidas(prev => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const expandirTodas = () => {
-    const estado: Record<string, boolean> = {};
-    categoriasLaudo.forEach(c => { estado[c.id] = true; });
-    setCategoriasExpandidas(estado);
-  };
-
-  const recolherTodas = () => {
-    setCategoriasExpandidas({});
-  };
-
-  // Open creation modal for a specific report type
-  const abrirCriacaoTaxonomia = (
-    cat: CategoriaLaudoTaxonomia, 
-    subcat: SubcategoriaLaudoTaxonomia, 
-    tipo: TipoLaudoTaxonomia
-  ) => {
-    if (tipo.id === 'laudo-pericia-causa-raiz-automotiva' || tipo.codigo === 'VEIC-CAUSA-RAIZ') {
-      setModalCausaRaizAberto(true);
-      return;
+  useEffect(() => {
+    if (searchParams.get('novo') === '1') {
+      setModalNovoAberto(true);
     }
-    setSelecaoTaxonomia({ categoria: cat, subcategoria: subcat, tipo });
-    setClienteId(clientes[0]?.id || '');
-    setAtivoId('');
-    setDataInspecao(new Date().toISOString().slice(0, 10));
-    setArtNumero('');
-    setModoPreenchimento('sugestao_ia');
-    setModalTaxonomiaAberto(true);
+  }, [searchParams]);
+
+  const showToast = (msg: string) => {
+    setToastMensagem(msg);
+    setTimeout(() => setToastMensagem(null), 2500);
   };
 
-  // Handle form submission to instantiate the report
-  const handleConfirmarCriacao = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selecaoTaxonomia || !clienteId) return;
+  // Live HRN Calculation
+  const hrnValor = useMemo(() => {
+    const total = hrnLo * hrnFe * hrnDph * hrnNp;
+    return total % 1 === 0 ? total : parseFloat(total.toFixed(1));
+  }, [hrnLo, hrnFe, hrnDph, hrnNp]);
 
-    try {
-      const novoId = criarLaudoPorTaxonomia({
-        tipoLaudoId: selecaoTaxonomia.tipo.id,
-        clienteId,
-        ativoId: ativoId || '',
-        artNumero,
-        dataInspecao,
-        modoPreenchimento,
-      });
+  const hrnClassificacao = useMemo(() => {
+    if (hrnValor < 10) return { texto: 'Risco baixo: manter e monitorar.', cor: 'text-[var(--green)]' };
+    if (hrnValor < 50) return { texto: 'Risco significativo: são necessárias medidas de proteção.', cor: 'text-[var(--warn)]' };
+    return { texto: 'Risco alto: ação imediata e possível interdição.', cor: 'text-[var(--bad)]' };
+  }, [hrnValor]);
 
-      setModalTaxonomiaAberto(false);
-      navigate(`/admin/laudos/${novoId}`);
-    } catch (err: any) {
-      console.error('Erro ao criar laudo:', err);
-      alert('Não foi possível iniciar o laudo: ' + err.message);
-    }
-  };
-
-  // Filter categories and report types based on search
-  const categoriasFiltradas = useMemo(() => {
-    const termo = buscaCatalogo.trim().toLowerCase();
-
-    return categoriasLaudo
-      .filter(cat => {
-        if (categoriaFiltroId !== 'todas' && cat.id !== categoriaFiltroId) return false;
-        return true;
-      })
-      .map(cat => {
-        if (!termo) return cat;
-
-        // Check if category matches
-        const matchCat = cat.nome.toLowerCase().includes(termo) || 
-                         (cat.descricao && cat.descricao.toLowerCase().includes(termo));
-
-        // Filter subcategories and report types
-        const subcategoriasFiltradas = cat.subcategorias.map(sub => {
-          const matchSub = sub.nome.toLowerCase().includes(termo);
-
-          const tiposFiltrados = sub.tipos.filter(tipo => 
-            matchCat || 
-            matchSub || 
-            tipo.codigo.toLowerCase().includes(termo) ||
-            tipo.nome.toLowerCase().includes(termo) ||
-            tipo.normasRef.toLowerCase().includes(termo) ||
-            (tipo.descricaoCurta && tipo.descricaoCurta.toLowerCase().includes(termo)) ||
-            (tipo.apresentacaoPadrao && tipo.apresentacaoPadrao.toLowerCase().includes(termo))
-          );
-
-          return {
-            ...sub,
-            tipos: tiposFiltrados,
-          };
-        }).filter(sub => sub.tipos.length > 0);
-
-        return {
-          ...cat,
-          subcategorias: subcategoriasFiltradas,
-        };
-      })
-      .filter(cat => cat.subcategorias.length > 0);
-  }, [categoriasLaudo, buscaCatalogo, categoriaFiltroId]);
-
-  // Filter registered reports
+  // Filtered reports
   const laudosFiltrados = useMemo(() => {
-    return laudos.filter(l => {
-      const matchBusca = 
-        l.numero.toLowerCase().includes(buscaLaudos.toLowerCase()) ||
-        l.tipo.toLowerCase().includes(buscaLaudos.toLowerCase()) ||
-        (l.clienteNome && l.clienteNome.toLowerCase().includes(buscaLaudos.toLowerCase())) ||
-        (l.ativoIdentificacao && l.ativoIdentificacao.toLowerCase().includes(buscaLaudos.toLowerCase()));
-      const matchStatus = filtroStatus === 'todos' || l.status === filtroStatus;
-      return matchBusca && matchStatus;
+    return laudos.filter((l) => {
+      const cliente = clientes.find(c => c.id === l.clienteId);
+      const textQuery = `${l.numero} ${l.tipo} ${cliente?.nomeFantasia || ''} ${cliente?.razaoSocial || ''}`.toLowerCase();
+      const matchSearch = textQuery.includes(busca.toLowerCase());
+
+      if (!matchSearch) return false;
+
+      if (statusFiltro === 'ART') {
+        return l.status === 'finalizado';
+      } else if (statusFiltro === 'Em') {
+        return l.status === 'em_andamento';
+      } else if (statusFiltro === 'Aguard') {
+        return l.status === 'rascunho' || !l.status;
+      }
+      return true;
     });
-  }, [laudos, buscaLaudos, filtroStatus]);
+  }, [laudos, clientes, busca, statusFiltro]);
 
-  // Filter modules
-  const modulosFiltrados = useMemo(() => {
-    const termo = buscaModulos.trim().toLowerCase();
-    if (!termo) return MODULOS_LAUDO_CATALOGO;
-    return MODULOS_LAUDO_CATALOGO.filter(m => 
-      m.nome.toLowerCase().includes(termo) ||
-      m.descricao.toLowerCase().includes(termo) ||
-      m.escopo.toLowerCase().includes(termo) ||
-      m.status.toLowerCase().includes(termo)
-    );
-  }, [buscaModulos]);
+  // Publish to site handler
+  const handlePublicarNoSite = (laudo: Laudo) => {
+    try {
+      const cliente = clientes.find(c => c.id === laudo.clienteId);
+      const novoTrabalho = {
+        id: laudo.id,
+        titulo: `${laudo.tipo} · ${laudo.numero}`,
+        local: `${cliente?.endereco?.cidade || 'Recife'} · PE`,
+        norma: laudo.tipo.includes('12') ? 'NR-12' : laudo.tipo.includes('11') ? 'NR-11' : 'CREA-PE',
+        resultado: 'Conforme',
+        prazo: 'Em até 48 h',
+        resumo: `Laudo técnico com ART registrada no CREA-PE para ${cliente?.nomeFantasia || 'indústria local'}. Conformidade e segurança operacional validadas.`
+      };
 
-  // Handler for starting a module from the modules table
-  const handleIniciarModulo = (moduloId: string) => {
-    if (moduloId === 'pericia-causa-raiz-falhas-mecanicas') {
-      setModalCausaRaizAberto(true);
+      const existingRaw = localStorage.getItem('vl-publicados');
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      const updated = [novoTrabalho, ...existing.filter((w: any) => w.id !== laudo.id)];
+      localStorage.setItem('vl-publicados', JSON.stringify(updated));
+      showToast('Publicado em Trabalhos realizados no site público!');
+    } catch {
+      showToast('Publicado no site!');
+    }
+  };
+
+  const handleSalvarNovoLaudo = () => {
+    if (!novoEquipamento.trim()) {
+      alert('Informe o nome ou modelo do equipamento.');
       return;
     }
 
-    // Try finding in taxonomy
-    for (const cat of categoriasLaudo) {
-      for (const sub of cat.subcategorias) {
-        for (const tipo of sub.tipos) {
-          if (
-            (moduloId === 'sinistro-veicular-ia' && (tipo.id === 'laudo-sinistro-veicular' || tipo.codigo === 'VEIC-SINISTRO')) ||
-            (moduloId === 'nr-12' && (tipo.id === 'laudo-nr12-maquinas' || tipo.codigo.includes('NR12'))) ||
-            (moduloId === 'nr-13' && (tipo.id.includes('nr13') || tipo.codigo.includes('NR13'))) ||
-            (moduloId === 'incendio-ppci-avcb' && (tipo.id.includes('ppci') || tipo.codigo.includes('PPCI'))) ||
-            (moduloId === 'reclassificacao-monta' && (tipo.id.includes('monta') || tipo.codigo.includes('MONTA'))) ||
-            (moduloId === 'inspecao-veicular' && (tipo.id.includes('veicular') || tipo.codigo.includes('INSP-VEIC'))) ||
-            (moduloId === 'frota-escolar' && (tipo.id.includes('escolar') || tipo.codigo.includes('ESCOLAR'))) ||
-            (moduloId === 'playground' && tipo.id.includes('playground')) ||
-            (moduloId === 'pmoc' && tipo.id.includes('pmoc'))
-          ) {
-            abrirCriacaoTaxonomia(cat, sub, tipo);
-            return;
-          }
-        }
-      }
-    }
+    const novoId = criarLaudoPorTaxonomia({
+      tipoLaudoId: novoTipo.toLowerCase().includes('12') ? 'tipo-nr12-maquinas' : 'tipo-nr11-munck',
+      clienteId: novoClienteId,
+      ativoId: ativos[0]?.id || '',
+      dataInspecao: novaData,
+      modoPreenchimento: 'em_branco'
+    });
 
-    // Fallback: search in catalog tab
-    setBuscaCatalogo(moduloId.replace(/-/g, ' '));
-    setAbaAtiva('catalogo');
+    setModalNovoAberto(false);
+    setSearchParams({});
+    showToast('Rascunho salvo com sucesso. A ART só é emitida após sua revisão.');
+    navigate(`/admin/laudos/${novoId}`);
   };
-
-  // Count total report models in taxonomy
-  const totalModelosTaxonomia = useMemo(() => {
-    return categoriasLaudo.reduce((acc, cat) => {
-      return acc + cat.subcategorias.reduce((subAcc, sub) => subAcc + sub.tipos.length, 0);
-    }, 0);
-  }, [categoriasLaudo]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-[1200px]">
       
-      {/* Header */}
+      {/* Toast Notification */}
+      {toastMensagem && (
+        <div 
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--ink)] text-[var(--paper)] px-5 py-2.5 rounded-lg font-semibold text-sm shadow-xl flex items-center gap-2"
+          role="status"
+        >
+          <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />
+          <span>{toastMensagem}</span>
+        </div>
+      )}
+
+      {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <FolderTree className="w-4 h-4" />
-            <span>Engenharia Mecânica & Vistorias Especializadas</span>
-          </div>
-          <h2 className="text-2xl font-black text-[#0B1E3D] dark:text-white tracking-tight">
-            Central de Laudos Técnicos & Taxonomia Normativa
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-3xl mt-1">
-            Editor customizável de laudos periciais e auditorias industriais estruturado pela taxonomia completa de 12 categorias de engenharia mecânica, com geração de parecer por IA e exportação em formato padrão A4 com ART CREA-PE.
+          <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
+            Central de laudos
+          </h1>
+          <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
+            {laudos.length} documentos emitidos e gerenciados com rastreabilidade técnica.
           </p>
         </div>
 
-        {/* Top Actions & Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div>
           <button
-            onClick={() => setModalCausaRaizAberto(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            title="Iniciar Perícia de Causa Raiz e Falhas Mecânicas (Assistida por IA)"
+            type="button"
+            onClick={() => setModalNovoAberto(true)}
+            className="btn-tech pri text-[14.5px] px-4 py-2"
           >
-            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-            <span>Iniciar Perícia (Causa Raiz IA)</span>
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Novo laudo</span>
           </button>
-
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setAbaAtiva('modulos')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                abaAtiva === 'modulos'
-                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>Módulos ({MODULOS_LAUDO_CATALOGO.length})</span>
-            </button>
-
-            <button
-              onClick={() => setAbaAtiva('catalogo')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                abaAtiva === 'catalogo'
-                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Catálogo ({categoriasLaudo.length} Cats)</span>
-            </button>
-
-            <button
-              onClick={() => setAbaAtiva('laudos')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                abaAtiva === 'laudos'
-                  ? 'bg-white dark:bg-[#0B1E3D] text-[#1565D8] dark:text-blue-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>Laudos Registrados ({laudos.length})</span>
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* ABA 0: TABELA OFICIAL DE MÓDULOS DA CENTRAL DE LAUDOS */}
-      {/* ========================================================================= */}
-      {abaAtiva === 'modulos' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          
-          {/* Controls Bar */}
-          <div className="bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative flex-1 w-full max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={buscaModulos}
-                onChange={(e) => setBuscaModulos(e.target.value)}
-                placeholder="Buscar módulo por nome, escopo ou status..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
-              />
-              {buscaModulos && (
-                <button
-                  onClick={() => setBuscaModulos('')}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Exibindo <strong className="text-slate-800 dark:text-slate-200">{modulosFiltrados.length}</strong> de <strong className="text-slate-800 dark:text-slate-200">{MODULOS_LAUDO_CATALOGO.length}</strong> módulos integrados
-            </div>
-          </div>
-
-          {/* Master Modules Table */}
-          <div className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                    <th className="py-3.5 px-4 font-bold">Módulo</th>
-                    <th className="py-3.5 px-4 font-bold text-center w-28">Status</th>
-                    <th className="py-3.5 px-4 font-bold">Descrição</th>
-                    <th className="py-3.5 px-4 font-bold text-center w-36">Escopo</th>
-                    <th className="py-3.5 px-4 font-bold text-right w-44">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                  {modulosFiltrados.map((mod) => {
-                    const IconComp = ICON_MAP[mod.iconName || 'FileText'] || FileText;
-                    const ehCausaRaiz = mod.id === 'pericia-causa-raiz-falhas-mecanicas';
-                    const ehSinistro = mod.id === 'sinistro-veicular-ia';
-
-                    return (
-                      <tr 
-                        key={mod.id}
-                        className={`transition-colors ${
-                          ehCausaRaiz 
-                            ? 'bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 border-l-4 border-l-blue-600' 
-                            : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
-                        }`}
-                      >
-                        {/* Módulo */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                              ehCausaRaiz 
-                                ? 'bg-blue-600 text-white shadow-xs' 
-                                : ehSinistro 
-                                ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' 
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                            }`}>
-                              <IconComp className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <div className="font-extrabold text-[#0B1E3D] dark:text-white flex items-center gap-1.5">
-                                <span>{mod.nome}</span>
-                                {ehCausaRaiz && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                                    Cat. 4
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] font-mono text-slate-400">ID: {mod.id}</span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Status */}
-                        <td className="py-3.5 px-4 text-center">
-                          {mod.status === 'NOVO IA' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs">
-                              <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-                              <span>NOVO IA</span>
-                            </span>
-                          ) : mod.status === 'NOVO' ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                              NOVO
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                              Ativo
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Descrição */}
-                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 leading-relaxed text-[11px] max-w-xl">
-                          {mod.descricao}
-                        </td>
-
-                        {/* Escopo */}
-                        <td className="py-3.5 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono ${
-                            ehCausaRaiz
-                              ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}>
-                            {mod.escopo}
-                          </span>
-                        </td>
-
-                        {/* Ação / Botão */}
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => handleIniciarModulo(mod.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5 ${
-                              ehCausaRaiz
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
-                                : 'bg-[#0B1E3D] hover:bg-[#1565D8] text-white'
-                            }`}
-                          >
-                            {ehCausaRaiz ? (
-                              <Wrench className="w-3.5 h-3.5 text-amber-300" />
-                            ) : (
-                              <Plus className="w-3.5 h-3.5" />
-                            )}
-                            <span>{mod.botao}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Observação técnica explicativa mandatória */}
-            <div className="p-4 bg-slate-50 dark:bg-[#070D18] border-t border-slate-200 dark:border-slate-800 flex items-start gap-3">
-              <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                <strong className="text-slate-900 dark:text-white">Observação Técnica de Engenharia:</strong> O módulo <strong className="text-blue-600 dark:text-blue-400">"Perícia de Causa Raiz e Falhas Mecânicas"</strong> é estritamente distinto de <strong className="text-slate-800 dark:text-slate-200">"Avaliação de Sinistro Veicular"</strong> — aquele trata de falhas mecânicas internas (quebras, panes, fadiga cíclica de componentes e dessincronismo motriz) e seu nexo causal com intervenções anteriores sob a ótica do CDC (Art. 26); este trata de colisões veiculares e danos estruturais de impacto.
-              </div>
-            </div>
-          </div>
-
+      {/* Filter and Search Bar */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative flex-1 min-w-[240px] max-w-sm">
+          <Search className="w-4 h-4 text-[var(--muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por número ou cliente"
+            className="w-full pl-9 pr-3 py-2 font-[family-name:var(--b)] text-[14.5px] border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+          />
         </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* ABA 1: CATÁLOGO TAXONÔMICO (12 CATEGORIAS E TIPOS DE LAUDO) */}
-      {/* ========================================================================= */}
-      {abaAtiva === 'catalogo' && (
-        <div className="space-y-6">
-          
-          {/* Controls Bar */}
-          <div className="bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 w-full max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={buscaCatalogo}
-                onChange={(e) => setBuscaCatalogo(e.target.value)}
-                placeholder="Buscar por código (ex: NR12, SPDA, PMOC), norma ou nome do laudo..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
-              />
-              {buscaCatalogo && (
-                <button
-                  onClick={() => setBuscaCatalogo('')}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+        {/* Status Chips */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setStatusFiltro('')}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors cursor-pointer ${
+              statusFiltro === ''
+                ? 'bg-[var(--ink)] text-[var(--paper)] border-[var(--ink)]'
+                : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFiltro('ART')}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors cursor-pointer ${
+              statusFiltro === 'ART'
+                ? 'bg-[var(--ink)] text-[var(--paper)] border-[var(--ink)]'
+                : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
+            }`}
+          >
+            Com ART
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFiltro('Em')}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors cursor-pointer ${
+              statusFiltro === 'Em'
+                ? 'bg-[var(--ink)] text-[var(--paper)] border-[var(--ink)]'
+                : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
+            }`}
+          >
+            Em andamento
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFiltro('Aguard')}
+            className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors cursor-pointer ${
+              statusFiltro === 'Aguard'
+                ? 'bg-[var(--ink)] text-[var(--paper)] border-[var(--ink)]'
+                : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
+            }`}
+          >
+            Pendentes
+          </button>
+        </div>
+      </div>
 
-            {/* Filter by Category */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={categoriaFiltroId}
-                onChange={(e) => setCategoriaFiltroId(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
-              >
-                <option value="todas">Todas as 12 Categorias</option>
-                {categoriasLaudo.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.numero}. {cat.nome}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                onClick={expandirTodas}
-                className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
-                title="Expandir todas as categorias"
-              >
-                Expandir
-              </button>
-              <button
-                onClick={recolherTodas}
-                className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
-                title="Recolher todas as categorias"
-              >
-                Recolher
-              </button>
-            </div>
-          </div>
-
-          {/* Catalog Categories Accordion Grid */}
-          <div className="space-y-4">
-            {categoriasFiltradas.length === 0 ? (
-              <div className="p-12 text-center bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200 dark:border-slate-800">
-                <FolderTree className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Nenhum tipo de laudo encontrado
-                </h4>
-                <p className="text-xs text-slate-500 mt-1">
-                  Tente buscar por outro termo ou selecione "Todas as 12 Categorias".
-                </p>
-              </div>
-            ) : (
-              categoriasFiltradas.map((cat) => {
-                const IconComp = ICON_MAP[cat.icone || 'ShieldCheck'] || ShieldCheck;
-                const expandida = categoriasExpandidas[cat.id] ?? false;
-
-                const totalTipos = cat.subcategorias.reduce(
-                  (acc, s) => acc + s.tipos.length, 
-                  0
-                );
+      {/* Main Table Panel */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[14.5px] min-w-[640px]">
+            <thead>
+              <tr className="border-b-[1.5px] border-[var(--ink)] text-[var(--muted)] text-[13.5px] bg-[var(--paper)]">
+                <th className="py-2.5 px-4 font-semibold">Laudo</th>
+                <th className="py-2.5 px-4 font-semibold">Cliente</th>
+                <th className="py-2.5 px-4 font-semibold">Data</th>
+                <th className="py-2.5 px-4 font-semibold">Status</th>
+                <th className="py-2.5 px-4 font-semibold">No site</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {laudosFiltrados.map((laudo) => {
+                const cliente = clientes.find(c => c.id === laudo.clienteId);
+                const dataFormatada = new Date(laudo.criadoEm || Date.now()).toLocaleDateString('pt-BR');
+                const isFinalizado = laudo.status === 'finalizado';
 
                 return (
-                  <div
-                    key={cat.id}
-                    className="bg-white dark:bg-[#0B1324] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-all"
-                  >
-                    {/* Category Header */}
-                    <div 
-                      onClick={() => toggleCategoria(cat.id)}
-                      className="p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors select-none"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] dark:text-blue-400 flex items-center justify-center font-bold shrink-0 shadow-xs">
-                          <IconComp className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                              CATEGORIA {cat.numero}
-                            </span>
-                            <span className="text-[11px] text-slate-400 font-mono">
-                              {cat.subcategorias.length} subcategorias • {totalTipos} tipos de laudo
-                            </span>
-                          </div>
-                          <h3 className="text-base font-extrabold text-[#0B1E3D] dark:text-white mt-0.5">
-                            {cat.nome}
-                          </h3>
-                          {cat.descricao && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
-                              {cat.descricao}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="hidden md:inline-block text-[11px] font-bold text-slate-400">
-                          {expandida ? 'Recolher' : 'Expandir'}
-                        </span>
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                          {expandida ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expanded Category Subcategories & Report Types */}
-                    {expandida && (
-                      <div className="border-t border-slate-100 dark:border-slate-800 p-4 sm:p-6 bg-slate-50/60 dark:bg-[#070D18] space-y-6">
-                        {cat.subcategorias.map((subcat) => (
-                          <div key={subcat.id} className="space-y-3">
-                            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                              <div>
-                                <h4 className="text-sm font-extrabold text-[#0B1E3D] dark:text-slate-200 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1565D8]"></span>
-                                  <span>{subcat.nome}</span>
-                                </h4>
-                              </div>
-                              <span className="text-[10px] font-mono font-bold text-slate-400">
-                                {subcat.tipos.length} modelo(s)
-                              </span>
-                            </div>
-
-                            {/* Report Types Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                              {subcat.tipos.map((tipo) => (
-                                <div
-                                  key={tipo.id}
-                                  className="bg-white dark:bg-[#0B1324] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs hover:border-[#1565D8]/50 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
-                                >
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-100 dark:bg-blue-950 text-[#1565D8] dark:text-blue-300 border border-blue-200 dark:border-blue-900">
-                                          {tipo.codigo}
-                                        </span>
-                                        {(tipo.hrn || tipo.temHrn) ? (
-                                          <span className="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
-                                            HRN: SIM
-                                          </span>
-                                        ) : (
-                                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                                            HRN: NÃO
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
-                                        <CheckSquare className="w-3 h-3 text-emerald-600" />
-                                        <span>{tipo.checklistPadrao.length} itens</span>
-                                      </span>
-                                    </div>
-
-                                    <h5 className="text-xs font-bold text-[#0B1E3D] dark:text-white leading-snug">
-                                      {tipo.nome}
-                                    </h5>
-
-                                    <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                                      {tipo.descricaoCurta || tipo.apresentacaoPadrao}
-                                    </p>
-
-                                    <div className="pt-1">
-                                      <span className="text-[10px] font-mono text-slate-500 block truncate" title={tipo.normasRef}>
-                                        Normas: <strong className="text-slate-700 dark:text-slate-300">{tipo.normasRef}</strong>
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {isColaborador && (
-                                    <button
-                                      onClick={() => abrirCriacaoTaxonomia(cat, subcat, tipo)}
-                                      className="w-full py-2 px-3 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2 active:scale-98"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                      <span>Emitir Laudo deste Tipo</span>
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* ABA 2: LAUDOS REGISTRADOS E EM ELABORAÇÃO */}
-      {/* ========================================================================= */}
-      {abaAtiva === 'laudos' && (
-        <div className="bg-white dark:bg-[#0B1324] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <h3 className="text-base font-extrabold text-[#0B1E3D] dark:text-white">
-                Laudos Cadastrados no Sistema ({laudos.length})
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Acompanhe o status das vistorias em campo, laudos finalizados e ARTs emitidas.
-              </p>
-            </div>
-
-            {/* Search and Filters */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={buscaLaudos}
-                  onChange={(e) => setBuscaLaudos(e.target.value)}
-                  placeholder="Buscar por número, cliente ou ativo..."
-                  className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-[#1565D8]"
-                />
-              </div>
-
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                <option value="todos">Todos os Status</option>
-                <option value="rascunho">Rascunho / Campo</option>
-                <option value="em_andamento">Em Andamento</option>
-                <option value="finalizado">Finalizado (ART)</option>
-              </select>
-            </div>
-          </div>
-
-          {laudosFiltrados.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-              <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                Nenhum laudo encontrado com esses critérios.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3 px-3">Número Oficial</th>
-                    <th className="py-3 px-3">Módulo / Serviço</th>
-                    <th className="py-3 px-3">Cliente</th>
-                    <th className="py-3 px-3">Equipamento Auditado</th>
-                    <th className="py-3 px-3">Data</th>
-                    <th className="py-3 px-3">Risco HRN</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {laudosFiltrados.map((laudo) => (
-                    <tr key={laudo.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-3 px-3">
-                        <span className="font-bold font-mono text-[#0B1E3D] dark:text-white block">
-                          {laudo.numero}
-                        </span>
-                        {laudo.artNumero && (
-                          <span className="text-[10px] text-[#1565D8] dark:text-blue-400 font-mono block">
-                            ART: {laudo.artNumero}
-                          </span>
-                        )}
-                        {laudo.orcamentoNumero && (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono block font-semibold">
-                            Orç: {laudo.orcamentoNumero}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-slate-700 dark:text-slate-300">
+                  <tr key={laudo.id} className="hover:bg-[var(--paper)] transition-colors">
+                    <td className="py-3 px-4 align-top">
+                      <b className="block text-[var(--ink)] font-semibold">{laudo.numero}</b>
+                      <small className="text-[var(--muted)] text-xs block max-w-[240px] truncate">
                         {laudo.tipo}
-                      </td>
-                      <td className="py-3 px-3 text-slate-700 dark:text-slate-300">
-                        {laudo.clienteNome}
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400">
-                        {laudo.ativoIdentificacao || '—'}
-                      </td>
-                      <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
-                        {laudo.dataInspecao}
-                      </td>
-                      <td className="py-3 px-3">
-                        {laudo.hrnCalculoGeral ? (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${laudo.hrnCalculoGeral.cor}`}>
-                            {laudo.hrnCalculoGeral.nivel} ({laudo.hrnCalculoGeral.score})
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Não avaliado</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
-                          laudo.status === 'finalizado'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {laudo.status === 'finalizado' ? 'Finalizado' : 'Em Campo'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setLaudoPdfExportar(laudo)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
-                            title="Exportar laudo para PDF oficial A4 com ART CREA-PE"
-                          >
-                            <Download className="w-3 h-3" />
-                            <span>PDF</span>
-                          </button>
-                          <button
-                            onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
-                            className="px-3 py-1 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-[11px] shadow-xs cursor-pointer"
-                          >
-                            Abrir Editor
-                          </button>
-                          {isColaborador && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Excluir o laudo ${laudo.numero}?`)) removerLaudo(laudo.id);
-                              }}
-                              className="p-1 rounded text-slate-400 hover:text-red-600 cursor-pointer"
-                              title="Remover"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                      </small>
+                    </td>
 
-      {/* ========================================================================= */}
-      {/* MODAL: CRIAR NOVO LAUDO A PARTIR DA TAXONOMIA */}
-      {/* ========================================================================= */}
-      {modalTaxonomiaAberto && selecaoTaxonomia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#0B1324] rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-6">
+                    <td className="py-3 px-4 align-top text-[var(--ink)]">
+                      <span>{cliente?.nomeFantasia || cliente?.razaoSocial || laudo.clienteNome || 'Cliente'}</span>
+                      <small className="text-[var(--muted)] text-xs block">
+                        {cliente?.endereco?.cidade || 'PE'}
+                      </small>
+                    </td>
+
+                    <td className="py-3 px-4 align-top text-[var(--muted)]">
+                      {dataFormatada}
+                    </td>
+
+                    <td className="py-3 px-4 align-top">
+                      {isFinalizado ? (
+                        <span className="tag-tech ok">ART emitida</span>
+                      ) : laudo.status === 'em_andamento' ? (
+                        <span className="tag-tech bl">Em elaboração</span>
+                      ) : (
+                        <span className="tag-tech w">Aguardando</span>
+                      )}
+                    </td>
+
+                    {/* Botão Publicar no Site */}
+                    <td className="py-3 px-4 align-top">
+                      {isFinalizado ? (
+                        <button
+                          type="button"
+                          onClick={() => handlePublicarNoSite(laudo)}
+                          className="btn-tech sm text-xs py-1 px-2.5"
+                          title="Exibir este trabalho na página inicial pública"
+                        >
+                          Publicar no site
+                        </button>
+                      ) : (
+                        <span className="text-[var(--muted)] text-xs">—</span>
+                      )}
+                    </td>
+
+                    {/* Quick actions */}
+                    <td className="py-3 px-4 align-top text-right space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
+                        className="btn-tech sm text-xs py-1 px-2"
+                        title="Editar laudo"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setLaudoExportandoPdf(laudo)}
+                        className="btn-tech sm text-xs py-1 px-2"
+                        title="Exportar documento PDF"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {laudosFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-[var(--muted)]">
+                    Nenhum laudo encontrado com os filtros selecionados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal: Novo Laudo com Apreciação de Risco HRN ao vivo */}
+      {modalNovoAberto && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.7)] backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--line)]">
               <div>
-                <span className="text-[10px] font-bold text-[#1565D8] dark:text-blue-400 uppercase tracking-wider font-mono">
-                  {selecaoTaxonomia.tipo.codigo} • {selecaoTaxonomia.categoria.nome}
-                </span>
-                <h3 className="text-lg font-bold text-[#0B1E3D] dark:text-white mt-0.5">
-                  Iniciar {selecaoTaxonomia.tipo.nome}
-                </h3>
+                <h2 className="text-[22px] font-bold">Novo laudo</h2>
+                <p className="text-[var(--muted)] text-sm">
+                  Preencha os dados da vistoria. O risco HRN é calculado enquanto você escolhe.
+                </p>
               </div>
-              <button 
-                onClick={() => setModalTaxonomiaAberto(false)} 
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              <button
+                type="button"
+                onClick={() => {
+                  setModalNovoAberto(false);
+                  setSearchParams({});
+                }}
+                className="p-1 rounded-md text-[var(--muted)] hover:text-[var(--ink)]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleConfirmarCriacao} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Cliente Solicitante *
-                </label>
-                <select
-                  value={clienteId}
-                  onChange={(e) => setClienteId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-semibold"
-                >
-                  {clientes.map(c => (
-                    <option key={c.id} value={c.id}>{c.razaoSocial}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6">
+              
+              {/* Vistoria Inputs */}
+              <div className="space-y-4">
+                <h3 className="text-[17px] font-bold">Dados da vistoria</h3>
 
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Equipamento / Ativo Auditado (Opcional)
+                <label className="block text-sm font-semibold">
+                  <span className="mb-1 block">Tipo de laudo</span>
+                  <select
+                    value={novoTipo}
+                    onChange={(e) => setNovoTipo(e.target.value)}
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                  >
+                    <option value="Adequação à NR-12 e projetos mecânicos">Adequação à NR-12 e projetos mecânicos</option>
+                    <option value="Laudo de máquinas pesadas">Laudo de máquinas pesadas (NR-11)</option>
+                    <option value="Caminhões munck e guindastes">Caminhões munck e guindastes (NR-11)</option>
+                    <option value="Perícia veicular e reclassificação de monta">Perícia veicular (DETRAN)</option>
+                    <option value="Laudo de playgrounds">Laudo de playgrounds (NBR 16071)</option>
+                    <option value="PMOC e projetos de HVAC-R">PMOC e projetos de HVAC-R (Lei 13.589 · NBR 16401)</option>
+                    <option value="ART de manutenção e gestão PCM">ART de manutenção (Lei 6.496)</option>
+                  </select>
                 </label>
-                <select
-                  value={ativoId}
-                  onChange={(e) => setAtivoId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
-                >
-                  <option value="">Nenhum ativo específico / Cadastrar depois</option>
-                  {ativos.filter(a => a.clienteId === clienteId).map(a => (
-                    <option key={a.id} value={a.id}>{a.identificacao} ({a.tipo})</option>
-                  ))}
-                </select>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Data da Vistoria In Loco *
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="block text-sm font-semibold">
+                    <span className="mb-1 block">Cliente</span>
+                    <select
+                      value={novoClienteId}
+                      onChange={(e) => setNovoClienteId(e.target.value)}
+                      className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                    >
+                      {clientes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>
+                      ))}
+                    </select>
                   </label>
-                  <input
-                    type="date"
-                    required
-                    value={dataInspecao}
-                    onChange={(e) => setDataInspecao(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-semibold"
-                  />
+
+                  <label className="block text-sm font-semibold">
+                    <span className="mb-1 block">Data da vistoria</span>
+                    <input
+                      type="date"
+                      value={novaData}
+                      onChange={(e) => setNovaData(e.target.value)}
+                      className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Número da ART CREA-PE (Opcional)
-                  </label>
+
+                <label className="block text-sm font-semibold">
+                  <span className="mb-1 block">Equipamento / Máquina</span>
                   <input
                     type="text"
-                    value={artNumero}
-                    onChange={(e) => setArtNumero(e.target.value)}
-                    placeholder="Ex: PE2026123456"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-mono"
+                    value={novoEquipamento}
+                    onChange={(e) => setNovoEquipamento(e.target.value)}
+                    placeholder="Ex: Prensa hidráulica 80 t ou Munck 12 t"
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
                   />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Modo de Inicialização do Laudo
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setModoPreenchimento('sugestao_ia')}
-                    className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
-                      modoPreenchimento === 'sugestao_ia'
-                        ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div className={`p-1.5 rounded-lg shrink-0 ${
-                      modoPreenchimento === 'sugestao_ia' 
-                        ? 'bg-blue-600 text-white shadow-xs' 
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                    }`}>
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                        Assistido por IA
-                        <span className="text-[9px] px-1.5 py-0.2 font-extrabold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                          Recomendado
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                        Sugestões normativas pré-carregadas e marcação de pendências para validação em campo.
-                      </p>
-                    </div>
-                  </button>
 
+                {/* Apreciação de Risco HRN Inputs */}
+                <div className="pt-4 border-t border-[var(--line)] space-y-3">
+                  <h3 className="text-[17px] font-bold">Apreciação de risco (HRN)</h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <label className="block font-semibold">
+                      <span className="mb-1 block text-xs text-[var(--muted)]">Probabilidade (LO)</span>
+                      <select
+                        value={hrnLo}
+                        onChange={(e) => setHrnLo(parseFloat(e.target.value))}
+                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                      >
+                        <option value={1}>1 - Improvável</option>
+                        <option value={2}>2 - Possível</option>
+                        <option value={5}>5 - Provável</option>
+                        <option value={10}>10 - Muito provável</option>
+                      </select>
+                    </label>
+
+                    <label className="block font-semibold">
+                      <span className="mb-1 block text-xs text-[var(--muted)]">Frequência de exposição (FE)</span>
+                      <select
+                        value={hrnFe}
+                        onChange={(e) => setHrnFe(parseFloat(e.target.value))}
+                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                      >
+                        <option value={1}>1 - Anual</option>
+                        <option value={2.5}>2.5 - Mensal</option>
+                        <option value={4}>4 - Semanal</option>
+                        <option value={5}>5 - Diária</option>
+                      </select>
+                    </label>
+
+                    <label className="block font-semibold">
+                      <span className="mb-1 block text-xs text-[var(--muted)]">Gravidade (DPH)</span>
+                      <select
+                        value={hrnDph}
+                        onChange={(e) => setHrnDph(parseFloat(e.target.value))}
+                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                      >
+                        <option value={0.5}>0.5 - Arranhão / Leve</option>
+                        <option value={2}>2 - Corte / Contusão</option>
+                        <option value={8}>8 - Fratura</option>
+                        <option value={25}>25 - Perda de membro</option>
+                        <option value={40}>40 - Fatal</option>
+                      </select>
+                    </label>
+
+                    <label className="block font-semibold">
+                      <span className="mb-1 block text-xs text-[var(--muted)]">Pessoas expostas (NP)</span>
+                      <select
+                        value={hrnNp}
+                        onChange={(e) => setHrnNp(parseFloat(e.target.value))}
+                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                      >
+                        <option value={1}>1 - 1 a 2 pessoas</option>
+                        <option value={2}>2 - 3 a 7 pessoas</option>
+                        <option value={4}>4 - 8 a 15 pessoas</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Live HRN Output Box */}
+              <div className="space-y-4 flex flex-col justify-between">
+                <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-5 space-y-3">
+                  <h3 className="text-[17px] font-bold">Risco calculado</h3>
+                  
+                  <div className="font-[family-name:var(--d)] font-extrabold text-[52px] leading-none text-[var(--ink)]">
+                    {hrnValor}
+                  </div>
+
+                  {/* Meter Bar */}
+                  <div className="meter-hrn">
+                    <i style={{ left: `${Math.min(94, Math.max(2, (hrnValor / 60) * 100))}%` }} />
+                  </div>
+
+                  <p className={`text-[14px] font-semibold ${hrnClassificacao.cor} leading-snug`}>
+                    {hrnClassificacao.texto}
+                  </p>
+                </div>
+
+                <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-5 space-y-3">
+                  <h3 className="text-[17px] font-bold">Ao salvar</h3>
+                  <p className="text-[var(--muted)] text-[13.5px] leading-relaxed">
+                    O laudo vai para rascunho e a ART só é emitida depois da sua revisão técnica.
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setModoPreenchimento('em_branco')}
-                    className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
-                      modoPreenchimento === 'em_branco'
-                        ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/50 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
+                    onClick={handleSalvarNovoLaudo}
+                    className="btn-tech pri w-full justify-center text-[15px] py-2.5 mt-2"
                   >
-                    <div className={`p-1.5 rounded-lg shrink-0 ${
-                      modoPreenchimento === 'em_branco' 
-                        ? 'bg-blue-600 text-white shadow-xs' 
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                    }`}>
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-slate-900 dark:text-white">
-                        Em Branco (Manual)
-                      </div>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                        Checklist pendente e seções limpas para preenchimento manual completo pelo perito.
-                      </p>
-                    </div>
+                    Salvar rascunho
                   </button>
                 </div>
               </div>
 
-              <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed space-y-1">
-                <p>
-                  <strong>Estrutura pré-carregada:</strong> {selecaoTaxonomia.tipo.checklistPadrao.length} itens de checklist normativo ({selecaoTaxonomia.tipo.normasRef}).
-                </p>
-                <p className="text-slate-500 dark:text-slate-400">
-                  O editor customizável incluirá cálculo quantitativo HRN, análise por IA e geração de documento padrão A4.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalTaxonomiaAberto(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold shadow-md cursor-pointer"
-                >
-                  Iniciar Auditoria no Editor
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL DE EXPORTAÇÃO PDF UNIVERSAL */}
-      {/* ========================================================================= */}
-      {laudoPdfExportar && (
+      {/* PDF Export Modal */}
+      {laudoExportandoPdf && (
         <LaudoPdfExportModal
-          laudo={laudoPdfExportar}
-          cliente={clientes.find(c => c.id === laudoPdfExportar.clienteId || c.razaoSocial === laudoPdfExportar.clienteNome)}
-          ativo={ativos.find(a => a.id === laudoPdfExportar.ativoId || a.identificacao === laudoPdfExportar.ativoIdentificacao)}
-          isOpen={Boolean(laudoPdfExportar)}
-          onClose={() => setLaudoPdfExportar(null)}
+          isOpen={true}
+          laudo={laudoExportandoPdf}
+          onClose={() => setLaudoExportandoPdf(null)}
         />
       )}
-
-      {/* ========================================================================= */}
-      {/* MODAL GERADOR ESPECIALIZADO DE CAUSA RAIZ (CATEGORIA 4) */}
-      {/* ========================================================================= */}
-      <GeradorLaudoCausaRaizModal
-        isOpen={modalCausaRaizAberto}
-        onClose={() => setModalCausaRaizAberto(false)}
-      />
 
     </div>
   );

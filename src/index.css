@@ -1,9 +1,466 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
 
-/* Smooth continuous rotation animations for mechanical gears */
-@keyframes spin-gear-clockwise {
+:root {
+  --paper: #F6F8FB;
+  --card: #FFFFFF;
+  --ink: #0B1F3A;
+  --muted: #55677D;
+  --line: #D5DDE7;
+  --blue: #1E5BD8;
+  --navy: #0B2447;
+  --green: #16A34A;
+  --onblue: #FFFFFF;
+  --warn: #C2610C;
+  --bad: #C62F2F;
+  --lg-v: #0B2447;
+  --lg-l: #1E5BD8;
+  --lg-g1: #B7C3D2;
+  --lg-g2: #6F86A3;
+  --lg-t: #0B2447;
+  --d: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --b: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  box-sizing: border-box;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #09162A;
+    --card: #102039;
+    --ink: #E7EEF7;
+    --muted: #92A5BC;
+    --line: #22385A;
+    --blue: #6BA2FA;
+    --navy: #050E1C;
+    --green: #3DD27A;
+    --onblue: #07152B;
+    --warn: #F2A64E;
+    --bad: #FF7B7B;
+    --lg-v: #E7EEF7;
+    --lg-l: #6BA2FA;
+    --lg-g1: #8AA2BF;
+    --lg-g2: #4B6586;
+    --lg-t: #C5D3E4;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #09162A;
+  --card: #102039;
+  --ink: #E7EEF7;
+  --muted: #92A5BC;
+  --line: #22385A;
+  --blue: #6BA2FA;
+  --navy: #050E1C;
+  --green: #3DD27A;
+  --onblue: #07152B;
+  --warn: #F2A64E;
+  --bad: #FF7B7B;
+  --lg-v: #E7EEF7;
+  --lg-l: #6BA2FA;
+  --lg-g1: #8AA2BF;
+  --lg-g2: #4B6586;
+  --lg-t: #C5D3E4;
+  color-scheme: dark;
+}
+
+html {
+  scroll-padding-top: calc(74px + env(safe-area-inset-top, 0px));
+  scroll-behavior: smooth;
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--b);
+  line-height: 1.55;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--d);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Header & Logo tokens */
+.lgf svg {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+
+.lgi {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .lgf { display: none; }
+  .lgi { display: block; }
+}
+
+/* Custom engineering stamp animation */
+@keyframes st {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.85);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+.stamp {
+  position: absolute;
+  right: 12px;
+  bottom: 70px;
+  border: 3px solid #16A34A;
+  color: #16A34A;
+  font-family: var(--d);
+  font-weight: 800;
+  font-size: 14px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transform: rotate(-8deg);
+  background: rgba(255, 255, 255, 0.92);
+  animation: st 0.5s 0.3s both cubic-bezier(0.3, 1.6, 0.5, 1);
+  letter-spacing: 0.05em;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Engineering buttons */
+.btn-tech {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--b);
+  font-weight: 600;
+  font-size: 15.5px;
+  padding: 11px 20px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--card);
+  color: var(--ink);
+  transition: all 0.15s ease;
+}
+
+.btn-tech:hover {
+  border-color: var(--blue);
+}
+
+.btn-tech.pri {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--onblue);
+}
+
+.btn-tech.pri:hover {
+  filter: brightness(1.08);
+}
+
+.btn-tech.wa {
+  background: var(--green);
+  border-color: var(--green);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-tech.wa {
+  color: #04210F;
+}
+
+.btn-tech.sm {
+  padding: 6px 14px;
+  font-size: 14.5px;
+}
+
+/* Tag & Chip styles */
+.tag-tech {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.tag-tech.ok { color: var(--green); }
+.tag-tech.w { color: var(--warn); }
+.tag-tech.bl { color: var(--blue); }
+.tag-tech.bad { color: var(--bad); }
+
+/* HRN Risk Meter */
+.meter-hrn {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--green) 0% 25%, #E8A317 25% 60%, var(--bad) 60%);
+  position: relative;
+  margin: 10px 0;
+}
+
+.meter-hrn i {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 20px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: left 0.3s;
+}
+
+/* WhatsApp Floating Action Button & Popup Panel */
+.wa-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--green);
+  color: #ffffff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+  transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.wa-fab:hover {
+  transform: scale(1.06);
+}
+
+.wa-fab:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.wpn {
+  position: fixed;
+  right: 20px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(11, 31, 58, 0.16);
+  animation: popin 0.2s ease-out;
+}
+
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Google Reviews Grid */
+.gg {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.gg .big {
+  font-family: var(--d);
+  font-weight: 800;
+  font-size: 72px;
+  line-height: 1;
+}
+
+.stars {
+  display: flex;
+  gap: 3px;
+  margin: 10px 0 6px;
+  color: #F5A623;
+}
+
+.stars svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rv {
+  border-top: 2px solid var(--ink);
+}
+
+.rv blockquote {
+  margin: 0;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rv q {
+  display: block;
+  font-size: 17.5px;
+  quotes: none;
+  font-family: var(--b);
+  line-height: 1.5;
+}
+
+.rv small {
+  color: var(--muted);
+  font-size: 14px;
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .gg {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* Carousel Track & Cards */
+.track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 6px max(24px, calc((100vw - 1120px) / 2 + 24px)) 18px;
+  scroll-padding-inline: max(24px, calc((100vw - 1120px) / 2 + 24px));
+  scrollbar-width: thin;
+}
+
+.wk {
+  flex: 0 0 min(300px, 78vw);
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: border-color 0.15s ease;
+}
+
+.wk:hover {
+  border-color: var(--blue);
+}
+
+.wph {
+  aspect-ratio: 4/3;
+  background: linear-gradient(150deg, var(--navy), #16407E) center/cover;
+  display: grid;
+  place-items: center;
+  color: #C9D8EE;
+  font-size: 14px;
+}
+
+.wk .tx {
+  padding: 14px 16px 16px;
+  flex: 1;
+}
+
+.wk h3 {
+  font-family: var(--d);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.wk p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.nv {
+  display: flex;
+  gap: 8px;
+}
+
+/* Accessible Work Dialog */
+dialog.wk-dialog {
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 0;
+  width: min(560px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+dialog.wk-dialog::backdrop {
+  background: rgba(5, 14, 28, 0.65);
+  backdrop-filter: blur(2px);
+}
+
+dialog.wk-dialog .wph {
+  aspect-ratio: 16/9;
+}
+
+dialog.wk-dialog .tx {
+  padding: 20px 22px 22px;
+}
+
+dialog.wk-dialog h3 {
+  font-family: var(--d);
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+
+dialog.wk-dialog dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 14px 0;
+}
+
+dialog.wk-dialog dt {
+  color: var(--muted);
+}
+
+dialog.wk-dialog dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Engineering Rotating Gears Animation */
+@keyframes gear-spin-cw {
   from {
     transform: rotate(0deg);
   }
@@ -12,43 +469,36 @@
   }
 }
 
-@keyframes spin-gear-counter {
+@keyframes gear-spin-ccw {
   from {
-    transform: rotate(360deg);
+    transform: rotate(0deg);
   }
   to {
-    transform: rotate(0deg);
+    transform: rotate(-360deg);
   }
 }
 
 .animate-gear-slow {
-  animation: spin-gear-clockwise 32s linear infinite;
+  animation: gear-spin-cw 55s linear infinite;
   transform-origin: center center;
-  will-change: transform;
 }
 
-.animate-gear-slow-reverse {
-  animation: spin-gear-counter 28s linear infinite;
+.animate-gear-reverse {
+  animation: gear-spin-ccw 40s linear infinite;
   transform-origin: center center;
-  will-change: transform;
 }
 
 .animate-gear-medium {
-  animation: spin-gear-clockwise 20s linear infinite;
+  animation: gear-spin-cw 32s linear infinite;
   transform-origin: center center;
-  will-change: transform;
 }
 
-.animate-gear-medium-reverse {
-  animation: spin-gear-counter 16s linear infinite;
-  transform-origin: center center;
-  will-change: transform;
-}
-
-.animate-gear-fast {
-  animation: spin-gear-clockwise 10s linear infinite;
-  transform-origin: center center;
-  will-change: transform;
+@media (prefers-reduced-motion: reduce) {
+  .animate-gear-slow,
+  .animate-gear-reverse,
+  .animate-gear-medium {
+    animation: none;
+  }
 }
 
 /* Print and Official PDF Export Stylesheet */
@@ -71,25 +521,12 @@
   nav,
   .no-print,
   button,
+  .wa-fab,
+  .wpn,
   .hide-on-print {
     display: none !important;
   }
 
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  body {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Force printable container to occupy full A4 height with flexbox to pin footer to bottom */
   .printable-document {
     display: flex !important;
     flex-direction: column !important;
@@ -124,40 +561,11 @@
   }
 }
 
-/* Ensure document sheet remains clean white in preview and exports even in dark theme */
 html.dark .printable-document {
   background-color: #ffffff !important;
   color: #0f172a !important;
 }
 
-html.dark .printable-document .bg-slate-50,
-html.dark .printable-document .bg-slate-100 {
-  background-color: #f8fafc !important;
-}
-
-html.dark .printable-document .text-slate-900,
-html.dark .printable-document .text-slate-800,
-html.dark .printable-document [class*="text-[#0B1E3D]"] {
-  color: #0b1e3d !important;
-}
-
-html.dark .printable-document .text-slate-700 {
-  color: #334155 !important;
-}
-
-html.dark .printable-document .text-slate-600 {
-  color: #475569 !important;
-}
-
-html.dark .printable-document .text-slate-500 {
-  color: #64748b !important;
-}
-
-html.dark .printable-document .border-slate-200 {
-  border-color: #e2e8f0 !important;
-}
-
-/* Formatação preservada das tabelas técnicas no documento impresso/PDF */
 .printable-document .tiptap-table,
 .printable-document table {
   border-collapse: collapse !important;
@@ -183,4 +591,3 @@ html.dark .printable-document .border-slate-200 {
   font-weight: 700 !important;
   color: #0f172a !important;
 }
-

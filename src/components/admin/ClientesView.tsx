@@ -3,17 +3,16 @@ import {
   Users, 
   Plus, 
   Search, 
-  Edit, 
-  Trash2, 
   Building, 
-  MapPin, 
   Phone, 
   Mail, 
   FileText, 
   Cpu, 
-  X, 
-  Check, 
-  AlertCircle 
+  Edit, 
+  Trash2, 
+  CheckCircle2,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -26,467 +25,301 @@ export const ClientesView: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
-  const [alertaSucesso, setAlertaSucesso] = useState('');
-  const [erroFormulario, setErroFormulario] = useState('');
 
   // Form states
-  const [razaoSocial, setRazaoSocial] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
+  const [razaoSocial, setRazaoSocial] = useState('');
   const [cpfCnpj, setCpfCnpj] = useState('');
-  const [contatoNome, setContatoNome] = useState('');
-  const [contatoCargo, setContatoCargo] = useState('');
   const [contatoTelefone, setContatoTelefone] = useState('');
   const [contatoEmail, setContatoEmail] = useState('');
-  const [logradouro, setLogradouro] = useState('');
-  const [numero, setNumero] = useState('');
-  const [bairro, setBairro] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [estado, setEstado] = useState('PE');
-  const [cep, setCep] = useState('');
+  const [cidade, setCidade] = useState('Recife');
 
-  const isColaborador = currentUser?.role === 'master' || currentUser?.role === 'colaborador';
+  const clientesFiltrados = clientes.filter(c => 
+    `${c.nomeFantasia || ''} ${c.razaoSocial || ''} ${c.cpfCnpj || ''} ${c.endereco?.cidade || ''}`.toLowerCase().includes(busca.toLowerCase())
+  );
 
   const abrirNovo = () => {
     setClienteEditando(null);
-    setErroFormulario('');
-    setRazaoSocial('');
     setNomeFantasia('');
+    setRazaoSocial('');
     setCpfCnpj('');
-    setContatoNome('');
-    setContatoCargo('');
-    setContatoTelefone('');
+    setContatoTelefone('(81) 98444-2592');
     setContatoEmail('');
-    setLogradouro('');
-    setNumero('');
-    setBairro('');
     setCidade('Recife');
-    setEstado('PE');
-    setCep('');
     setModalAberto(true);
   };
 
-  const abrirEditar = (c: Cliente) => {
+  const abrirEdicao = (c: Cliente) => {
     setClienteEditando(c);
-    setErroFormulario('');
-    setRazaoSocial(c.razaoSocial || '');
     setNomeFantasia(c.nomeFantasia || '');
-    setCpfCnpj(c.cpfCnpj || c.cnpj || '');
-    const primContato = c.contatos?.[0];
-    setContatoNome(primContato?.nome || '');
-    setContatoCargo(primContato?.cargo || '');
-    setContatoTelefone(primContato?.telefone || '');
-    setContatoEmail(primContato?.email || '');
-    setLogradouro(c.endereco?.logradouro || '');
-    setNumero(c.endereco?.numero || '');
-    setBairro(c.endereco?.bairro || '');
+    setRazaoSocial(c.razaoSocial || '');
+    setCpfCnpj(c.cpfCnpj || '');
+    setContatoTelefone(c.contatos?.[0]?.telefone || '');
+    setContatoEmail(c.contatos?.[0]?.email || '');
     setCidade(c.endereco?.cidade || 'Recife');
-    setEstado(c.endereco?.estado || 'PE');
-    setCep(c.endereco?.cep || '');
     setModalAberto(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSalvar = (e: React.FormEvent) => {
     e.preventDefault();
-    setErroFormulario('');
-
-    if (!razaoSocial.trim()) {
-      setErroFormulario('Por favor, informe a Razão Social.');
-      return;
-    }
-    if (!cpfCnpj.trim()) {
-      setErroFormulario('Por favor, informe o CNPJ ou CPF.');
-      return;
-    }
-
-    const temContatoPreenchido = Boolean(
-      contatoNome.trim() || contatoTelefone.trim() || contatoEmail.trim() || contatoCargo.trim()
-    );
-    const outrosContatos = (clienteEditando?.contatos || []).slice(1);
-    const contatos = temContatoPreenchido ? [{
-      nome: contatoNome.trim() || (clienteEditando?.contatos?.[0]?.nome || 'Responsável'),
-      cargo: contatoCargo.trim() || (clienteEditando?.contatos?.[0]?.cargo || 'Contato Principal'),
-      telefone: contatoTelefone.trim(),
-      email: contatoEmail.trim(),
-    }, ...outrosContatos] : (clienteEditando?.contatos && clienteEditando.contatos.length > 0 ? clienteEditando.contatos : []);
-
-    const endereco = {
-      logradouro: logradouro.trim(),
-      numero: numero.trim(),
-      bairro: bairro.trim(),
-      cidade: cidade.trim() || 'Recife',
-      estado: estado.trim() || 'PE',
-      cep: cep.trim(),
-    };
+    if (!nomeFantasia.trim()) return;
 
     if (clienteEditando) {
       atualizarCliente(clienteEditando.id, {
-        razaoSocial: razaoSocial.trim(),
-        nomeFantasia: nomeFantasia.trim(),
-        cpfCnpj: cpfCnpj.trim(),
-        cnpj: cpfCnpj.trim(),
-        contatos,
-        endereco,
+        nomeFantasia,
+        razaoSocial: razaoSocial || nomeFantasia,
+        cpfCnpj,
+        contatos: [
+          {
+            nome: 'Contato Principal',
+            telefone: contatoTelefone,
+            email: contatoEmail
+          }
+        ],
+        endereco: {
+          ...clienteEditando.endereco,
+          cidade,
+          estado: 'PE'
+        }
       });
-      setAlertaSucesso(`Dados do cliente "${razaoSocial.trim()}" atualizados e salvos com sucesso!`);
     } else {
       adicionarCliente({
-        razaoSocial: razaoSocial.trim(),
-        nomeFantasia: nomeFantasia.trim(),
-        cpfCnpj: cpfCnpj.trim(),
-        cnpj: cpfCnpj.trim(),
-        contatos,
-        endereco,
+        nomeFantasia,
+        razaoSocial: razaoSocial || nomeFantasia,
+        cpfCnpj,
+        contatos: [
+          {
+            nome: 'Contato Principal',
+            telefone: contatoTelefone,
+            email: contatoEmail
+          }
+        ],
+        endereco: {
+          logradouro: '',
+          numero: '',
+          bairro: '',
+          cidade,
+          estado: 'PE',
+          cep: ''
+        }
       });
-      setAlertaSucesso(`Cliente "${razaoSocial.trim()}" cadastrado com sucesso!`);
     }
 
-    setTimeout(() => setAlertaSucesso(''), 5000);
     setModalAberto(false);
   };
 
-  const filtrados = clientes.filter(c => 
-    (c.razaoSocial || '').toLowerCase().includes(busca.toLowerCase()) ||
-    (c.cpfCnpj || c.cnpj || '').includes(busca) ||
-    (c.nomeFantasia && c.nomeFantasia.toLowerCase().includes(busca.toLowerCase()))
-  );
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1200px]">
       
-      {/* Success Alert */}
-      {alertaSucesso && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{alertaSucesso}</span>
-          </div>
-          <button
-            onClick={() => setAlertaSucesso('')}
-            className="text-emerald-600 hover:text-emerald-900 p-1 cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Header and Action */}
+      {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-[#0B1E3D] flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#1565D8]" />
-            <span>Gestão de Clientes e Empresas Contratantes</span>
-          </h2>
-          <p className="text-xs text-slate-500">
-            Cadastre indústrias, construtoras e frotas para vinculação imediata em laudos e orçamentos com ART.
+          <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
+            Clientes
+          </h1>
+          <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
+            Empresas, indústrias e condomínios atendidos pela VL Engenharia.
           </p>
         </div>
 
-        {isColaborador && (
+        <div>
           <button
+            type="button"
             onClick={abrirNovo}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-xs shadow-md transition-all active:scale-98 cursor-pointer"
+            className="btn-tech pri text-[14.5px] px-4 py-2"
           >
-            <Plus className="w-4 h-4" />
-            <span>Cadastrar Novo Cliente</span>
+            <Plus className="w-4 h-4 mr-1.5" />
+            <span>Novo cliente</span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Search Input */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+      <div className="relative max-w-sm">
+        <Search className="w-4 h-4 text-[var(--muted)] absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por Razão Social, CNPJ ou Nome Fantasia..."
-          className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
+          placeholder="Buscar por nome, CNPJ ou cidade"
+          className="w-full pl-9 pr-3 py-2 font-[family-name:var(--b)] text-[14.5px] border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
         />
       </div>
 
-      {/* Clients Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtrados.map((cliente) => {
-          const ativosCliente = ativos.filter(a => a.clienteId === cliente.id);
-          const laudosCliente = laudos.filter(l => l.clienteId === cliente.id);
+      {/* Technical Table */}
+      <div className="bg-[var(--card)] border border-[var(--line)] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[14.5px] min-w-[620px]">
+            <thead>
+              <tr className="border-b-[1.5px] border-[var(--ink)] text-[var(--muted)] text-[13.5px] bg-[var(--paper)]">
+                <th className="py-2.5 px-4 font-semibold">Cliente</th>
+                <th className="py-2.5 px-4 font-semibold">Contato</th>
+                <th className="py-2.5 px-4 font-semibold">Equipamentos</th>
+                <th className="py-2.5 px-4 font-semibold">Último laudo</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)]">
+              {clientesFiltrados.map((cliente) => {
+                const equipamentosCount = ativos.filter(a => a.clienteId === cliente.id).length;
+                const laudosCliente = laudos.filter(l => l.clienteId === cliente.id);
+                const ultimoLaudo = laudosCliente[laudosCliente.length - 1];
+                const contato = cliente.contatos?.[0];
 
-          return (
-            <div
-              key={cliente.id}
-              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] font-mono text-slate-400 block uppercase">
-                      CNPJ: {cliente.cpfCnpj || cliente.cnpj || 'Não informado'}
-                    </span>
-                    <h3 className="text-base font-bold text-[#0B1E3D] leading-snug">
-                      {cliente.razaoSocial}
-                    </h3>
-                    {cliente.nomeFantasia && (
-                      <p className="text-xs text-[#1565D8] font-semibold">
-                        {cliente.nomeFantasia}
-                      </p>
-                    )}
-                  </div>
-                  {isColaborador && (
-                    <div className="flex items-center gap-1 shrink-0">
+                return (
+                  <tr key={cliente.id} className="hover:bg-[var(--paper)] transition-colors">
+                    <td className="py-3.5 px-4 align-top">
+                      <b className="block text-[var(--ink)] font-semibold">{cliente.nomeFantasia || cliente.razaoSocial}</b>
+                      <small className="text-[var(--muted)] text-xs block">
+                        {cliente.razaoSocial} · {cliente.endereco?.cidade || 'PE'}
+                      </small>
+                    </td>
+
+                    <td className="py-3.5 px-4 align-top text-[var(--ink)]">
+                      <span>{contato?.telefone || '(81) 98444-2592'}</span>
+                      {contato?.email && (
+                        <small className="text-[var(--muted)] text-xs block truncate max-w-[200px]">
+                          {contato.email}
+                        </small>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4 align-top text-[var(--ink)] font-semibold">
+                      {equipamentosCount}
+                    </td>
+
+                    <td className="py-3.5 px-4 align-top">
+                      {ultimoLaudo ? (
+                        <div>
+                          <b className="text-[var(--ink)] font-semibold">{ultimoLaudo.numero}</b>
+                          <small className="text-[var(--muted)] text-xs block">
+                            {new Date(ultimoLaudo.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
+                          </small>
+                        </div>
+                      ) : (
+                        <span className="text-[var(--muted)] text-xs">—</span>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4 align-top text-right space-x-1">
                       <button
-                        onClick={() => abrirEditar(cliente)}
-                        className="p-1.5 rounded text-slate-400 hover:text-[#1565D8] hover:bg-slate-50 cursor-pointer"
-                        title="Editar"
+                        type="button"
+                        onClick={() => abrirEdicao(cliente)}
+                        className="btn-tech sm text-xs py-1 px-2"
+                        title="Editar cliente"
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Excluir o cliente ${cliente.razaoSocial}?`)) {
-                            removerCliente(cliente.id);
-                          }
-                        }}
-                        className="p-1.5 rounded text-slate-400 hover:text-red-600 hover:bg-slate-50 cursor-pointer"
-                        title="Remover"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
-                {/* Address */}
-                {cliente.endereco && (cliente.endereco.logradouro || cliente.endereco.cidade) && (
-                  <div className="flex items-start gap-1.5 text-xs text-slate-500">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    <span>
-                      {cliente.endereco.logradouro
-                        ? `${cliente.endereco.logradouro}${cliente.endereco.numero ? `, ${cliente.endereco.numero}` : ''}${cliente.endereco.bairro ? ` - ${cliente.endereco.bairro}` : ''}, ${cliente.endereco.cidade || 'Recife'}/${cliente.endereco.estado || 'PE'}`
-                        : `${cliente.endereco.cidade || 'Recife'}/${cliente.endereco.estado || 'PE'}`}
-                      {cliente.endereco.cep ? ` • CEP: ${cliente.endereco.cep}` : ''}
-                    </span>
-                  </div>
-                )}
-
-                {/* Primary Contact */}
-                {cliente.contatos?.[0] && (
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1">
-                    <p className="font-semibold text-slate-700">
-                      {cliente.contatos[0].nome} <span className="text-slate-400 font-normal">({cliente.contatos[0].cargo || 'Responsável'})</span>
-                    </p>
-                    <div className="flex flex-wrap gap-x-3 text-[11px] text-slate-500">
-                      {cliente.contatos[0].telefone && <span>Tel: {cliente.contatos[0].telefone}</span>}
-                      {cliente.contatos[0].email && <span>{cliente.contatos[0].email}</span>}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Badges of linked assets & reports */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1 font-semibold">
-                  <Cpu className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{ativosCliente.length} Ativos</span>
-                </span>
-                <span className="flex items-center gap-1 font-semibold">
-                  <FileText className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{laudosCliente.length} Laudos</span>
-                </span>
-              </div>
-            </div>
-          );
-        })}
+              {clientesFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-[var(--muted)]">
+                    Nenhum cliente encontrado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal Form */}
+      {/* Modal Cadastro/Edição de Cliente */}
       {modalAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-              <h3 className="text-lg font-bold text-[#0B1E3D]">
-                {clienteEditando ? 'Editar Dados do Cliente' : 'Cadastrar Novo Cliente'}
-              </h3>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.7)] backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+              <h2 className="text-[20px] font-bold">
+                {clienteEditando ? 'Editar cliente' : 'Novo cliente'}
+              </h2>
               <button
+                type="button"
                 onClick={() => setModalAberto(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                className="p-1 rounded text-[var(--muted)] hover:text-[var(--ink)]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {erroFormulario && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                <span>{erroFormulario}</span>
-              </div>
-            )}
+            <form onSubmit={handleSalvar} className="space-y-3.5">
+              <label className="block text-sm font-semibold">
+                <span className="mb-1 block">Nome Fantasia</span>
+                <input
+                  type="text"
+                  value={nomeFantasia}
+                  onChange={(e) => setNomeFantasia(e.target.value)}
+                  required
+                  placeholder="Ex: ADF Caruaru"
+                  className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                />
+              </label>
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              <label className="block text-sm font-semibold">
+                <span className="mb-1 block">Razão Social</span>
+                <input
+                  type="text"
+                  value={razaoSocial}
+                  onChange={(e) => setRazaoSocial(e.target.value)}
+                  placeholder="Ex: ADF Serviços e Engenharia LTDA"
+                  className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                />
+              </label>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Razão Social *</label>
+                <label className="block text-sm font-semibold">
+                  <span className="mb-1 block">Telefone / WhatsApp</span>
                   <input
                     type="text"
-                    required
-                    value={razaoSocial}
-                    onChange={(e) => setRazaoSocial(e.target.value)}
-                    placeholder="Ex: Construtora Suape S.A."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-[#1565D8]"
+                    value={contatoTelefone}
+                    onChange={(e) => setContatoTelefone(e.target.value)}
+                    placeholder="(81) 98444-2592"
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
                   />
-                </div>
+                </label>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nome Fantasia</label>
+                <label className="block text-sm font-semibold">
+                  <span className="mb-1 block">Cidade (PE)</span>
                   <input
                     type="text"
-                    value={nomeFantasia}
-                    onChange={(e) => setNomeFantasia(e.target.value)}
-                    placeholder="Ex: Suape Engenharia"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-[#1565D8]"
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
+                    placeholder="Recife"
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
                   />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">CNPJ ou CPF *</label>
-                  <input
-                    type="text"
-                    required
-                    value={cpfCnpj}
-                    onChange={(e) => setCpfCnpj(e.target.value)}
-                    placeholder="00.000.000/0001-00"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-[#1565D8]"
-                  />
-                </div>
+                </label>
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
-                <span className="font-bold text-slate-700 uppercase tracking-wider block mb-2 text-[10px]">
-                  Contato Principal
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Nome do Contato</label>
-                    <input
-                      type="text"
-                      value={contatoNome}
-                      onChange={(e) => setContatoNome(e.target.value)}
-                      placeholder="Ex: Carlos Eduardo"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Cargo / Função</label>
-                    <input
-                      type="text"
-                      value={contatoCargo}
-                      onChange={(e) => setContatoCargo(e.target.value)}
-                      placeholder="Ex: Gerente de Manutenção"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Telefone / WhatsApp</label>
-                    <input
-                      type="text"
-                      value={contatoTelefone}
-                      onChange={(e) => setContatoTelefone(e.target.value)}
-                      placeholder="(81) 90000-0000"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">E-mail</label>
-                    <input
-                      type="email"
-                      value={contatoEmail}
-                      onChange={(e) => setContatoEmail(e.target.value)}
-                      placeholder="carlos@empresa.com"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                </div>
-              </div>
+              <label className="block text-sm font-semibold">
+                <span className="mb-1 block">E-mail</span>
+                <input
+                  type="email"
+                  value={contatoEmail}
+                  onChange={(e) => setContatoEmail(e.target.value)}
+                  placeholder="contato@empresa.com.br"
+                  className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                />
+              </label>
 
-              <div className="pt-2 border-t border-slate-100">
-                <span className="font-bold text-slate-700 uppercase tracking-wider block mb-2 text-[10px]">
-                  Endereço da Empresa / Instalação
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block font-medium text-slate-600 mb-1">Logradouro / Rodovia</label>
-                    <input
-                      type="text"
-                      value={logradouro}
-                      onChange={(e) => setLogradouro(e.target.value)}
-                      placeholder="Av. Portuária ou Rodovia BR-101"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Número / Km</label>
-                    <input
-                      type="text"
-                      value={numero}
-                      onChange={(e) => setNumero(e.target.value)}
-                      placeholder="1200 ou Km 78"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Bairro</label>
-                    <input
-                      type="text"
-                      value={bairro}
-                      onChange={(e) => setBairro(e.target.value)}
-                      placeholder="Bairro ou Distrito Industrial"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Cidade</label>
-                    <input
-                      type="text"
-                      value={cidade}
-                      onChange={(e) => setCidade(e.target.value)}
-                      placeholder="Recife, Ipojuca, etc."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">Estado</label>
-                    <input
-                      type="text"
-                      value={estado}
-                      onChange={(e) => setEstado(e.target.value)}
-                      placeholder="PE"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium text-slate-600 mb-1">CEP</label>
-                    <input
-                      type="text"
-                      value={cep}
-                      onChange={(e) => setCep(e.target.value)}
-                      placeholder="50000-000"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-800"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold"
+                  className="btn-tech text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold shadow-md"
+                  className="btn-tech pri text-sm px-5"
                 >
-                  {clienteEditando ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+                  Salvar cliente
                 </button>
               </div>
             </form>

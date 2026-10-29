@@ -1,1178 +1,1137 @@
-import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Wrench, 
-  Truck, 
-  Car, 
-  Smile, 
-  Wind, 
-  FileCheck2, 
-  Gauge, 
-  Phone, 
-  CheckCircle2, 
-  Clock, 
-  FileText, 
-  Send, 
-  AlertTriangle, 
-  X, 
-  ChevronRight, 
-  ArrowUpRight,
-  ExternalLink,
-  MapPin,
-  Mail,
-  Instagram,
-  UserCheck,
-  Cog,
-  DraftingCompass,
-  Tractor,
-  Sparkles,
-  Layers,
-  Filter
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { useData } from '../../context/DataContext';
-import engineerPhoto from '../../assets/images/image.png';
-import engBlueprintBg from '../../assets/images/eng_blueprint_bg_1788996890188.jpg';
-import { HeroServicesSlider } from './HeroServicesSlider';
-import { FaqNormativo } from './FaqNormativo';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import reviewsDataJson from '../../data/googleReviews.json';
+import { DraftingCompass, Cog } from 'lucide-react';
 
-interface ServicoItem {
-  id: string;
-  numero: string;
-  categoria: 'projetos' | 'maquinas' | 'pericias' | 'pmoc' | 'gestao';
-  tagEspecialidade: string;
-  titulo: string;
-  descricaoCurta: string;
-  normas: string;
-  destaquesVisuais: string[];
-  detalhesCompletos: string[];
-  entregaveis: string[];
-  icon: React.ElementType;
-  corTema: {
-    iconBg: string;
-    iconText: string;
-    badgeBg: string;
-    badgeText: string;
-    borderHover: string;
-    dotColor: string;
-  };
+// Service slides images & AI generated engineering assets
+import imgNr12 from '../../assets/images/slide_nr12_projetos_1788998249591.jpg';
+import imgMunck from '../../assets/images/slide_munck_guindaste_1788998260570.jpg';
+import imgMaquinas from '../../assets/images/slide_maquinas_pesadas_1788998270208.jpg';
+import imgPmoc from '../../assets/images/slide_pmoc_hvac_1788998279644.jpg';
+import imgPlayground from '../../assets/images/slide_playground_laudo_1788998292265.jpg';
+import imgPericia from '../../assets/images/pericia_veicular_detran_male_1793129813207.jpg';
+import imgManutencao from '../../assets/images/art_manutencao_pcm_male_1793129813030.jpg';
+import imgBlueprintBg from '../../assets/images/eng_blueprint_bg_1788996890188.jpg';
+import imgVitorFallback from '../../assets/images/image.png';
+
+import { BackgroundRotatingGears } from '../common/BackgroundRotatingGears';
+
+interface ReviewItem {
+  id?: string;
+  text: string;
+  author_name?: string;
+  author?: string;
+  relative_time_description?: string;
+  relativeTime?: string;
+  rating?: number;
 }
 
-const CATEGORIAS_SERVICOS = [
-  { id: 'todos', label: 'Todas as Especialidades', count: 8 },
-  { id: 'projetos', label: 'Projetos & NR-12', count: 1 },
-  { id: 'maquinas', label: 'Máquinas & Içamento', count: 2 },
-  { id: 'pericias', label: 'Laudos & Perícias', count: 2 },
-  { id: 'pmoc', label: 'PMOC Climatização', count: 1 },
-  { id: 'gestao', label: 'ART & Gestão PCM', count: 2 },
+interface GoogleReviewsData {
+  rating: string;
+  user_ratings_total?: number;
+  totalReviews?: string;
+  google_maps_url?: string;
+  googleMapsUrl?: string;
+  reviews?: ReviewItem[];
+}
+
+const reviewsData = reviewsDataJson as unknown as GoogleReviewsData;
+
+interface TrabalhoRealizado {
+  id: string;
+  titulo: string;
+  badge: string;
+  norma: string;
+  escopo: string;
+  prazo: string;
+  resumo: string;
+  foto: string;
+  whatsappMsg?: string;
+}
+
+const TRABALHOS_INICIAIS: TrabalhoRealizado[] = [
+  {
+    id: 'w1',
+    titulo: 'Máquinas Pesadas & Terraplanagem',
+    badge: 'Linha Amarela',
+    norma: 'NR-11 · NR-12 · NR-18',
+    escopo: 'Laudos de conformidade e segurança para frotas pesadas',
+    prazo: '2 a 3 dias úteis',
+    resumo: 'Inspeção técnica em escavadeiras, pás carregadeiras e tratores com atestação de proteções ROPS/FOPS e cálculo de risco HRN.',
+    foto: imgMaquinas,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para laudo técnico de Máquinas Pesadas & Terraplanagem.'
+  },
+  {
+    id: 'w2',
+    titulo: 'Caminhões Munck & Guindastes',
+    badge: 'Içamento & Carga',
+    norma: 'NR-11 · NBR 14768 · NBR 8400',
+    escopo: 'Ensaio de carga, teste hidrostático e calibração',
+    prazo: '2 dias úteis',
+    resumo: 'Inspeção estrutural minuciosa, ensaio de estanqueidade e teste de carga estático/dinâmico com tabela de carga atualizada.',
+    foto: imgMunck,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Preciso de um orçamento para laudo técnico e inspeção de Caminhão Munck ou Guindaste.'
+  },
+  {
+    id: 'w3',
+    titulo: 'Projetos Mecânicos 2D/3D & NR-12',
+    badge: 'Projetos & NR-12',
+    norma: 'NR-12 · NBR ISO 12100 · NBR ISO 13849',
+    escopo: 'Apreciação de risco HRN e proteções mecânicas em CAD',
+    prazo: 'Conforme escopo do projeto',
+    resumo: 'Elaboração de projetos executivos em CAD, especificação de enclausuramento e intertravamento de máquinas, cálculo de risco e validação técnica.',
+    foto: imgNr12,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para Projetos Mecânicos 2D/3D e Adequação à NR-12.'
+  },
+  {
+    id: 'w4',
+    titulo: 'PMOC & Climatização Industrial (HVAC-R)',
+    badge: 'Climatização Legal',
+    norma: 'Lei Federal 13.589/2018 · NBR 16401 · ANVISA',
+    escopo: 'Elaboração e acompanhamento contínuo de PMOC',
+    prazo: '3 dias úteis',
+    resumo: 'Plano de Manutenção, Operação e Controle para sistemas de ar-condicionado e chillers, assegurando qualidade do ar interior e conformidade sanitária.',
+    foto: imgPmoc,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Preciso de orçamento para elaboração de PMOC e laudo de climatização.'
+  },
+  {
+    id: 'w5',
+    titulo: 'Laudos de Playground & Áreas de Lazer',
+    badge: 'Segurança Infantil',
+    norma: 'NBR 16071 (Partes 1 a 7)',
+    escopo: 'Vistoria mecânica e avaliação de impacto em brinquedos',
+    prazo: '1 a 2 dias úteis',
+    resumo: 'Inspeção mecânica detalhada em brinquedos, ancoragens, correntes, escorregadores e pisos amortecedores para condomínios, escolas e clubes.',
+    foto: imgPlayground,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para Laudo Técnico de Playground sob a NBR 16071.'
+  },
+  {
+    id: 'w6',
+    titulo: 'Perícia Veicular & Reclassificação de Monta',
+    badge: 'Perícia Automotiva',
+    norma: 'Resoluções CONTRAN · Normas DETRAN',
+    escopo: 'Perícia técnica forense e desbloqueio de veículo sinistrado',
+    prazo: '3 dias úteis',
+    resumo: 'Avaliação de danos estruturais, componentes mecânicos e sistemas de segurança com laudo pericial conclusivo para regularização junto ao DETRAN.',
+    foto: imgPericia,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Preciso de parecer técnico e perícia veicular para regularização junto ao DETRAN.'
+  },
+  {
+    id: 'w7',
+    titulo: 'ART de Manutenção & Gestão PCM',
+    badge: 'Gestão PCM',
+    norma: 'Lei Federal 6.496 · Resoluções CONFEA',
+    escopo: 'Responsabilidade técnica formal e rotinas preventivas/preditivas',
+    prazo: 'Contrato técnico contínuo',
+    resumo: 'Acompanhamento de rotinas de manutenção industrial e predial, controle de indicadores MTBF/MTTR e emissão de ART de responsabilidade técnica.',
+    foto: imgManutencao,
+    whatsappMsg: 'Olá, Eng. Vitor Leonardo! Gostaria de conversar sobre ART de Manutenção e Gestão PCM para nossa empresa.'
+  }
 ];
 
-const SERVICOS_LISTA: ServicoItem[] = [
+export interface SubtipoServico {
+  nome: string;
+  normaRef: string;
+  detalhe: string;
+}
+
+export interface ServicoItem {
+  nome: string;
+  norma: string;
+  descricao: string;
+  subtipos: SubtipoServico[];
+}
+
+export const SERVICOS_LISTA: ServicoItem[] = [
   {
-    id: 'nr12',
-    numero: '01',
-    categoria: 'projetos',
-    tagEspecialidade: 'Projetos & Turnkey CAD',
-    titulo: 'Adequação à NR-12 & Projetos Mecânicos',
-    descricaoCurta: 'Apreciação de riscos (HRN), elaboração de projetos executivos 2D/3D em CAD, fabricação, montagem de proteções e ART.',
-    normas: 'NR-12 • NBR 14153 • NBR ISO 12100 • NBR ISO 13849',
-    destaquesVisuais: [
-      'Projetos Executivos 2D/3D em CAD',
-      'Fabricação física e proteções mecânicas',
-      'Apreciação HRN com ART no CREA-PE'
-    ],
-    detalhesCompletos: [
-      'Inventário completo de máquinas e mapeamento minucioso de perigos mecânicos, elétricos e térmicos.',
-      'Apreciação de Riscos quantitativa e qualitativa pela metodologia oficial HRN (Hazard Rating Number).',
-      'Elaboração de projetos mecânicos executivos com detalhamento técnico 2D e modelagem 3D em CAD.',
-      'Entrega e execução completa (turnkey): fabricação de proteções fixas e móveis, enclausuramentos e estruturas.',
-      'Instalação in loco, montagem mecânica e integração de dispositivos de segurança com intertravamento.',
-      'Validação funcional dos sistemas de segurança, emissão de memorial descritivo e ART de projeto e execução.'
-    ],
-    entregaveis: [
-      'Laudo de Apreciação de Riscos (HRN)',
-      'Projetos Mecânicos Executivos (2D / 3D CAD)',
-      'Fabricação e Execução de Proteções Físicas',
-      'Memorial Descritivo e Validação de Conformidade',
-      'ART de Projeto e Execução Registrada no CREA-PE'
-    ],
-    icon: DraftingCompass,
-    corTema: {
-      iconBg: 'bg-blue-50',
-      iconText: 'text-[#1565D8]',
-      badgeBg: 'bg-blue-50',
-      badgeText: 'text-[#1565D8]',
-      borderHover: 'group-hover:border-[#1565D8]',
-      dotColor: 'bg-[#1565D8]'
-    }
+    nome: 'Adequação à NR-12 e projetos mecânicos',
+    norma: 'NR-12 · NBR ISO 12100',
+    descricao: 'Apreciação de risco, projeto de proteções mecânicas, enclausuramento e documentação técnica oficial.',
+    subtipos: [
+      {
+        nome: 'Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)',
+        normaRef: 'NR-12 item 12.38 · ISO 12100',
+        detalhe: 'Identificação de perigos mecânicos, estimativa de risco quantitativa (HRN) e definição de Categoria de Segurança requerida (PLr).'
+      },
+      {
+        nome: 'Laudo de Adequação de Proteções Físicas e Intertravamentos',
+        normaRef: 'NR-12 Anexos e NBR ISO 13849',
+        detalhe: 'Dimensionamento de proteções em policarbonato/chapa, distâncias de segurança e chaves de intertravamento codificadas com bloqueio.'
+      },
+      {
+        nome: 'Laudo de Validação / Retrofit de Segurança em Máquinas',
+        normaRef: 'NR-12 · ABNT NBR 14153',
+        detalhe: 'Atestação e validação técnica das alterações mecânicas e elétricas implementadas com liberação formal para operação segura.'
+      },
+      {
+        nome: 'Projetos Mecânicos Executivos 2D/3D em CAD com ART',
+        normaRef: 'CREA-PE · ABNT',
+        detalhe: 'Modelagem 3D, detalhamento para caldeiraria e usinagem, memoriais descritivos de cálculo estrutural e ART de projeto e execução.'
+      }
+    ]
   },
   {
-    id: 'maquinas-pesadas',
-    numero: '02',
-    categoria: 'maquinas',
-    tagEspecialidade: 'Linha Amarela & Frotas',
-    titulo: 'Laudos para Máquinas Pesadas',
-    descricaoCurta: 'Avaliação técnica qualificada, inspeção mecânica de frotas e emissão de laudos de estabilidade com ART.',
-    normas: 'NR-11 • NR-12 • NR-18 • Normas ABNT de Máquinas Móveis',
-    destaquesVisuais: [
-      'Inspeção de estruturas ROPS/FOPS',
-      'Teste de freios, direção e hidráulica',
-      'Laudo técnico com ART para obras'
-    ],
-    detalhesCompletos: [
-      'Inspeção em retroescavadeiras, pás carregadeiras, motoniveladoras e tratores de esteira.',
-      'Avaliação das estruturas de proteção contra capotamento (ROPS) e queda de objetos (FOPS).',
-      'Verificação de sistemas de freios de serviço, estacionamento e redundâncias de segurança.',
-      'Teste de estabilidade operacional e estanqueidade de sistemas hidráulicos.'
-    ],
-    entregaveis: ['Relatório Fotográfico Pormenorizado', 'Laudo Técnico de Estabilidade', 'ART Registrada no CREA-PE'],
-    icon: Tractor,
-    corTema: {
-      iconBg: 'bg-amber-50',
-      iconText: 'text-amber-600',
-      badgeBg: 'bg-amber-50',
-      badgeText: 'text-amber-700',
-      borderHover: 'group-hover:border-amber-500',
-      dotColor: 'bg-amber-500'
-    }
+    nome: 'Laudo de máquinas pesadas',
+    norma: 'NR-11 · NR-12 · NR-18',
+    descricao: 'Inspeção de conformidade operacional, segurança de tráfego e estruturas de proteção (ROPS/FOPS).',
+    subtipos: [
+      {
+        nome: 'Laudo de Integridade Estrutural e Segurança Operacional (NR-12 / NR-18)',
+        normaRef: 'NR-12 Anexo XI · NR-18',
+        detalhe: 'Vistoria minuciosa de escavadeiras hidráulicas, retroescavadeiras e pás carregadeiras (chassi, freios, direção, pinos e cilindros).'
+      },
+      {
+        nome: 'Laudo de Conformidade de Estruturas de Proteção (ROPS / FOPS)',
+        normaRef: 'ABNT NBR ISO 3471 (ROPS) e ISO 3449 (FOPS)',
+        detalhe: 'Atestação da integridade estrutural das cabines de proteção contra capotamento (ROPS) e queda de materiais pesados (FOPS).'
+      },
+      {
+        nome: 'Laudo de Inspeção Periódica de Manutenção e Segurança',
+        normaRef: 'NR-11 · NR-18',
+        detalhe: 'Avaliação técnica de motoniveladoras, rolos compactadores e tratores de esteira com emissão de plano de ação corretivo e ART.'
+      }
+    ]
   },
   {
-    id: 'munck-guindastes',
-    numero: '03',
-    categoria: 'maquinas',
-    tagEspecialidade: 'Içamento & Rigging',
-    titulo: 'Inspeções em Caminhões Munck e Guindastes',
-    descricaoCurta: 'Inspeções periódicas preventivas, avaliação estrutural, testes de carga hidráulicos e laudos de içamento.',
-    normas: 'NR-11 • NR-12 • NBR 14768 • NBR 8400',
-    destaquesVisuais: [
-      'Ensaio de estanqueidade e sobrechassi',
-      'Teste de carga com calibração LMI',
-      'Tabela de carga, rigging e ART'
-    ],
-    detalhesCompletos: [
-      'Inspeção estrutural de sobrechassi, grampos de fixação na longarina e braços telescópicos.',
-      'Ensaio de estanqueidade e integridade dos cilindros e válvulas de retenção das sapatas.',
-      'Inspeção com líquido penetrante em pontos críticos de solda sujeitos à fadiga cíclica.',
-      'Aferição das tabelas de carga e teste de funcionamento do limitador de momento (LMI).'
-    ],
-    entregaveis: ['Certificado de Inspeção Periódica', 'Plano de Rigging e Tabela de Capacidade', 'ART de Içamento'],
-    icon: Truck,
-    corTema: {
-      iconBg: 'bg-indigo-50',
-      iconText: 'text-indigo-600',
-      badgeBg: 'bg-indigo-50',
-      badgeText: 'text-indigo-700',
-      borderHover: 'group-hover:border-indigo-500',
-      dotColor: 'bg-indigo-500'
-    }
+    nome: 'Caminhões munck e guindastes',
+    norma: 'NR-11 · NBR 14768',
+    descricao: 'Ensaio de carga com célula calibrada, estanqueidade hidráulica, tabela de carga e rigging.',
+    subtipos: [
+      {
+        nome: 'Laudo de Teste de Carga (Load Test) Estático e Dinâmico',
+        normaRef: 'ABNT NBR 14768 · NR-11',
+        detalhe: 'Ensaio de içamento com peso padrão aferido, medição de deflexão da lança telescópica e estanqueidade de válvulas de sustentação.'
+      },
+      {
+        nome: 'Laudo de Liberação e Conformidade NR-11 / NR-12',
+        normaRef: 'NR-11 · NBR 8400',
+        detalhe: 'Inspeção de sapatas estabilizadoras, grampos, cabos de aço, ganchos, moitões e comandos hidráulicos.'
+      },
+      {
+        nome: 'Laudo de Aferição do Limitador de Momento de Carga (LMI) e Rigging',
+        normaRef: 'ABNT NBR 16463',
+        detalhe: 'Calibração de sensores de ângulo e momento de carga, emissão de tabela de carga oficial e validação de plano de içamento.'
+      }
+    ]
   },
   {
-    id: 'inspecao-veicular',
-    numero: '04',
-    categoria: 'pericias',
-    tagEspecialidade: 'Perícia & DETRAN',
-    titulo: 'Inspeção Veicular e Reclassificação de Monta',
-    descricaoCurta: 'Avaliação pericial para regularização estrutural, reclassificação de sinistros no DETRAN e desbloqueios.',
-    normas: 'Resoluções CONTRAN nº 810/2020 e 811/2020 • CTB',
-    destaquesVisuais: [
-      'Avaliação dos 31 itens do CONTRAN',
-      'Reclassificação média para pequena monta',
-      'Parecer técnico para desbloqueio'
-    ],
-    detalhesCompletos: [
-      'Perícia técnica em veículos envolvidos em acidentes com danos estruturais ou mecânicos.',
-      'Avaliação dos 31 itens obrigatórios estabelecidos pelo CONTRAN para enquadramento de monta.',
-      'Elaboração de laudo de reclassificação de grande/média monta para pequena monta com ART.',
-      'Emissão de parecer conclusivo para desbloqueio do registro do veículo junto ao DETRAN.'
-    ],
-    entregaveis: ['Termo de Constatação Técnica', 'Álbum Fotográfico Normativo', 'ART de Responsabilidade Pericial'],
-    icon: Car,
-    corTema: {
-      iconBg: 'bg-slate-100',
-      iconText: 'text-slate-700',
-      badgeBg: 'bg-slate-100',
-      badgeText: 'text-slate-700',
-      borderHover: 'group-hover:border-slate-500',
-      dotColor: 'bg-slate-600'
-    }
+    nome: 'Perícia veicular e reclassificação de monta',
+    norma: 'DETRAN · CONTRAN',
+    descricao: 'Parecer técnico para desbloqueio de veículo sinistrado, análise estrutural e perícia forense.',
+    subtipos: [
+      {
+        nome: 'Laudo Pericial de Reclassificação de Monta Veicular',
+        normaRef: 'Resolução CONTRAN 810/2020 · DETRAN-PE',
+        detalhe: 'Inspeção e parecer técnico circunstanciado para reclassificação de Grande ou Média Monta para Pequena Monta junto ao DETRAN.'
+      },
+      {
+        nome: 'Laudo de Avaliação de Sinistro Veicular e Danos Estruturais',
+        normaRef: 'ABNT NBR 14653-5',
+        detalhe: 'Medição milimétrica de alinhamento de longarinas, monobloco, integridade de soldas de fábrica e colunas estruturais A/B/C.'
+      },
+      {
+        nome: 'Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)',
+        normaRef: 'Engenharia Forense · CREA-PE',
+        detalhe: 'Investigação pericial de quebra de componentes mecânicos (fadiga, falha de freio, eixos ou direção) para processos judiciais e seguradoras.'
+      }
+    ]
   },
   {
-    id: 'playgrounds',
-    numero: '05',
-    categoria: 'pericias',
-    tagEspecialidade: 'Segurança Infantil',
-    titulo: 'Laudos para Playgrounds & Áreas Infantis',
-    descricaoCurta: 'Avaliação minuciosa de conformidade técnica com a ABNT NBR 16071 para condomínios, escolas e praças.',
-    normas: 'ABNT NBR 16071 (Partes 1 a 7) • Lei da Recreação Segura',
-    destaquesVisuais: [
-      'Gabaritos contra aprisionamento de corpo',
-      'Inspeção de soldas, mancais e balanços',
-      'Teste de pisos amortecedores de impacto'
-    ],
-    detalhesCompletos: [
-      'Inspeção de equipamentos de recreação infantil em condomínios, clubes, escolas e praças.',
-      'Verificação de aprisionamento de cabeça, pescoço, dedos e roupas com gabaritos normatizados.',
-      'Avaliação de desgaste mecânico em correntes, mancais, soldas e ancoragens ao solo.',
-      'Análise do piso amortecedor de impacto (grama, borracha, areia) e alturas de queda livre.'
-    ],
-    entregaveis: ['Relatório de Não Conformidades por Prioridade', 'Checklist de Manutenção Preventiva', 'ART CREA-PE'],
-    icon: Smile,
-    corTema: {
-      iconBg: 'bg-emerald-50',
-      iconText: 'text-emerald-600',
-      badgeBg: 'bg-emerald-50',
-      badgeText: 'text-emerald-700',
-      borderHover: 'group-hover:border-emerald-500',
-      dotColor: 'bg-emerald-500'
-    }
+    nome: 'Laudo de playgrounds',
+    norma: 'NBR 16071',
+    descricao: 'Inspeção de brinquedos, pisos amortecedores, riscos de aprisionamento e fixações.',
+    subtipos: [
+      {
+        nome: 'Laudo Técnico de Inspeção de Playground (ABNT NBR 16071)',
+        normaRef: 'ABNT NBR 16071 Partes 1 a 7',
+        detalhe: 'Inspeção de balanços, escorregadores, gangorras, tirolesas e casinhas em condomínios, escolas e clubes.'
+      },
+      {
+        nome: 'Laudo de Análise de Risco de Aprisionamento e Queda',
+        normaRef: 'NBR 16071-2 · NBR 16071-3',
+        detalhe: 'Medição de aberturas com sondas normatizadas para prevenção de aprisionamento de cabeça, pescoço, dedos e roupas.'
+      },
+      {
+        nome: 'Laudo de Piso Amortecedor e Ancoragens Estruturais',
+        normaRef: 'NBR 16071-3 · NBR 16071-4',
+        detalhe: 'Verificação da área de circulação, espessura e atenuação de impacto do piso (areia, borracha ou grama sintética) e ancoragens.'
+      }
+    ]
   },
   {
-    id: 'pmoc',
-    numero: '06',
-    categoria: 'pmoc',
-    tagEspecialidade: 'Qualidade do Ar & HVAC',
-    titulo: 'Plano de Manutenção, Operação e Controle (PMOC)',
-    descricaoCurta: 'Elaboração e acompanhamento de PMOC para climatizadores industriais e corporativos sob a legislação sanitária.',
-    normas: 'Lei Federal 13.589/2018 • Portaria MS 3.523/1998 • Resolução ANVISA RE nº 9',
-    destaquesVisuais: [
-      'Caderno oficial de rotinas em 52 semanas',
-      'Adequação à ANVISA e prevenção de multas',
-      'Cronograma técnico e ART de Manutenção'
-    ],
-    detalhesCompletos: [
-      'Inventário completo de sistemas de ar condicionado central, split e VRF.',
-      'Definição de rotinas mensais, trimestrais e semestrais de limpeza, higienização e troca de filtros.',
-      'Acompanhamento técnico da qualidade do ar interior para proteção da saúde dos ocupantes.',
-      'Cumprimento rigoroso das obrigações legais para evitar penalidades e multas sanitárias.'
-    ],
-    entregaveis: ['Caderno Oficial do PMOC', 'Cronograma Técnico de Execução', 'ART de Manutenção Climatização'],
-    icon: Wind,
-    corTema: {
-      iconBg: 'bg-sky-50',
-      iconText: 'text-sky-600',
-      badgeBg: 'bg-sky-50',
-      badgeText: 'text-sky-700',
-      borderHover: 'group-hover:border-sky-500',
-      dotColor: 'bg-sky-500'
-    }
+    nome: 'PMOC e projetos de HVAC-R',
+    norma: 'Lei 13.589 · NBR 16401',
+    descricao: 'Elaboração de PMOC, projetos de climatização e refrigeração, laudos de qualidade do ar e acompanhamento de manutenção.',
+    subtipos: [
+      {
+        nome: 'Laudo e Plano de PMOC (Lei 13.589/2018 e Portaria 3.523/MS)',
+        normaRef: 'Lei 13.589/2018 · RE 09/ANVISA',
+        detalhe: 'Inventário completo de condicionadores de ar e chillers, definição de periodicidades de limpeza e rotinas de manutenção preventiva.'
+      },
+      {
+        nome: 'Laudo de Inspeção Técnico-Sanitária e Qualidade do Ar Interior',
+        normaRef: 'Resolução RE 09 ANVISA · NBR 16401',
+        detalhe: 'Inspeção de filtros, bandejas de condensado, serpentinas e atestação da taxa de renovação de ar exterior com ART técnica.'
+      },
+      {
+        nome: 'Projetos de Climatização e Refrigeração (HVAC-R)',
+        normaRef: 'ABNT NBR 16401 Partes 1, 2 e 3',
+        detalhe: 'Cálculo de carga térmica psicrométrica, dimensionamento de dutos, grelhas e eficiência energética para indústrias e edifícios.'
+      }
+    ]
   },
   {
-    id: 'art-manutencao',
-    numero: '07',
-    categoria: 'gestao',
-    tagEspecialidade: 'Responsabilidade Legal',
-    titulo: 'ART para Serviços de Manutenção',
-    descricaoCurta: 'Assunção de Responsabilidade Técnica formal para manutenção mecânica predial, fabril e corporativa.',
-    normas: 'Lei Federal 6.496/1977 • Resoluções CONFEA / CREA',
-    destaquesVisuais: [
-      'Emissão para licitações e contratos formais',
-      'Supervisão técnica de geradores e bombas',
-      'Respaldo jurídico para diretores e síndicos'
-    ],
-    detalhesCompletos: [
-      'Assunção de responsabilidade técnica para empresas de manutenção mecânica e facilities.',
-      'Emissão de ART para licitações públicas, contratos corporativos e auditorias industriais.',
-      'Supervisão técnica de manutenções de geradores, bombas, pontes rolantes e compressores.',
-      'Segurança jurídica e respaldo formal para gestores de condomínios e diretores industriais.'
-    ],
-    entregaveis: ['ART de Cargo/Função ou Obra/Serviço', 'Atestado de Capacidade Técnica', 'Termo de Vistoria'],
-    icon: FileCheck2,
-    corTema: {
-      iconBg: 'bg-violet-50',
-      iconText: 'text-violet-600',
-      badgeBg: 'bg-violet-50',
-      badgeText: 'text-violet-700',
-      borderHover: 'group-hover:border-violet-500',
-      dotColor: 'bg-violet-500'
-    }
+    nome: 'ART de manutenção e gestão PCM',
+    norma: 'Lei 6.496 · CONFEA',
+    descricao: 'Responsabilidade técnica formal, rotinas preditivas/preventivas e indicadores MTBF/MTTR.',
+    subtipos: [
+      {
+        nome: 'Laudo com ART de Manutenção e Liberação de Operação',
+        normaRef: 'Lei 6.496/77 · Resolução CONFEA',
+        detalhe: 'Emissão de ART formal de cargo e função para empresas, indústrias, construtoras e frotas perante órgãos e clientes.'
+      },
+      {
+        nome: 'Laudo de Diagnóstico de Maturidade em Gestão de Ativos (PCM / ISO 55001)',
+        normaRef: 'ABNT NBR ISO 55001',
+        detalhe: 'Estruturação de cronogramas PCM, mapeamento de criticidade de máquinas e controle de indicadores de confiabilidade MTBF e MTTR.'
+      },
+      {
+        nome: 'Laudo de Conformidade de Grupos Geradores e Utilidades Industriais',
+        normaRef: 'NR-10 · NR-12 · ABNT',
+        detalhe: 'Vistoria mecânica em geradores diesel de emergência, compressores de ar e sistemas de bombeamento industrial.'
+      }
+    ]
+  }
+];
+
+const FAQ_ITENS = [
+  {
+    pergunta: 'Qual o prazo para emitir a ART no CREA-PE?',
+    resposta: 'Até 48 horas úteis após a vistoria técnica. Em casos de notificação fiscalizatória ou embargo de obra, emitimos em regime de urgência prioritária.'
   },
   {
-    id: 'consultoria-pcm',
-    numero: '08',
-    categoria: 'gestao',
-    tagEspecialidade: 'PCM & Confiabilidade',
-    titulo: 'Consultoria em Gestão da Manutenção (PCM)',
-    descricaoCurta: 'Otimização com foco em Planejamento e Controle, KPIs (MTBF, MTTR), disponibilidade e confiabilidade de ativos.',
-    normas: 'ISO 55001 • RCM (Manutenção Centrada em Confiabilidade) • FMEA',
-    destaquesVisuais: [
-      'Plano Mestre de Manutenção Preventiva (PMP)',
-      'Gestão de indicadores MTBF, MTTR e custo',
-      'Aumento da disponibilidade física de ativos'
-    ],
-    detalhesCompletos: [
-      'Diagnóstico de maturidade dos processos de manutenção e gestão de ativos da empresa.',
-      'Implantação de Plano Mestre de Manutenção Preventiva (PMP) estruturado em 52 semanas.',
-      'Estruturação de indicadores chave de desempenho: MTBF (tempo médio entre falhas) e MTTR.',
-      'Redução de paradas emergenciais de produção e aumento da disponibilidade física dos ativos.'
-    ],
-    entregaveis: ['Matriz de Criticidade e FMEA', 'Dashboard de KPIs Operacionais', 'Manual de Procedimentos PCM'],
-    icon: Gauge,
-    corTema: {
-      iconBg: 'bg-teal-50',
-      iconText: 'text-teal-600',
-      badgeBg: 'bg-teal-50',
-      badgeText: 'text-teal-700',
-      borderHover: 'group-hover:border-teal-500',
-      dotColor: 'bg-teal-500'
-    }
+    pergunta: 'Qual a validade do laudo de munck ou guindaste?',
+    resposta: 'Em regra a validade é anual, ou após qualquer reparo estrutural relevante, substituição de cabo de aço ou intervenção no sistema hidráulico.'
   },
+  {
+    pergunta: 'Todo condomínio ou empresa precisa de PMOC?',
+    resposta: 'Sim, a Lei Federal 13.589/2018 exige o Plano de Manutenção, Operação e Controle em edifícios de uso público e coletivo climatizados, sob pena de autuação sanitária.'
+  },
+  {
+    pergunta: 'O laudo vale para seguradoras, auditorias e fiscalização?',
+    resposta: 'Sim, com validade jurídica plena. Todo laudo acompanha ART registrada no CREA-PE e QR Code oficial para validação instantânea por auditores e fiscais.'
+  }
 ];
 
 export const LandingPage: React.FC = () => {
-  const { enviarContatoPublico } = useData();
+  // Official Vitor Photo URL from user request
+  const VITOR_PHOTO_URL = 'https://www.vlengenhariamecanica.com.br/assets/image-Ca17hHDt.png';
 
-  // Contact Form State
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [servicoInteresse, setServicoInteresse] = useState(SERVICOS_LISTA[0].titulo);
-  const [mensagem, setMensagem] = useState('');
-  const [statusEnvio, setStatusEnvio] = useState<'idle' | 'enviando' | 'sucesso' | 'erro'>('idle');
-  const [mensagemErro, setMensagemErro] = useState('');
+  // Works state
+  const [trabalhos] = useState<TrabalhoRealizado[]>(TRABALHOS_INICIAIS);
+  const [modalTrabalho, setModalTrabalho] = useState<{ item: TrabalhoRealizado; index: number } | null>(null);
 
-  // Service Detail Modal
-  const [modalServico, setModalServico] = useState<ServicoItem | null>(null);
+  // Expandable services sub-panels state
+  const [expandedServicos, setExpandedServicos] = useState<Record<number, boolean>>({});
 
-  // Service Category Filter State
-  const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
-
-  const servicosFiltrados = filtroCategoria === 'todos'
-    ? SERVICOS_LISTA
-    : SERVICOS_LISTA.filter(s => s.categoria === filtroCategoria);
-
-  const handleSubmitContato = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nome.trim() || !email.trim() || !mensagem.trim()) {
-      setStatusEnvio('erro');
-      setMensagemErro('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    setStatusEnvio('enviando');
-    setMensagemErro('');
-
-    try {
-      await enviarContatoPublico({
-        nome: nome.trim(),
-        email: email.trim(),
-        telefone: telefone.trim(),
-        servicoInteresse,
-        mensagem: mensagem.trim(),
-      });
-      setStatusEnvio('sucesso');
-      setNome('');
-      setEmail('');
-      setTelefone('');
-      setMensagem('');
-    } catch (err: any) {
-      console.error(err);
-      setStatusEnvio('erro');
-      setMensagemErro('Não foi possível registrar o contato no momento. Entre em contato direto pelo nosso WhatsApp.');
-    }
+  const toggleExpandServico = (index: number) => {
+    setExpandedServicos(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
+  // Expandable FAQ state with smooth slide
+  const [faqAberto, setFaqAberto] = useState<Record<number, boolean>>({ 0: true });
+
+  const toggleFaq = (idx: number) => {
+    setFaqAberto(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Carousel continuous animation states
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const posRef = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
+  const manualUntilRef = useRef<number>(0);
+  const touchHoldTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Contact form state
+  const [formNome, setFormNome] = useState('');
+  const [formServico, setFormServico] = useState(SERVICOS_LISTA[0].nome);
+  const [formMensagem, setFormMensagem] = useState('');
+
+  // Continuous infinite lateral carousel loop (~44 px/s)
+  useEffect(() => {
+    let rafId: number;
+
+    const loop = (t: number) => {
+      if (!lastTimeRef.current) lastTimeRef.current = t;
+      const dt = Math.min(0.1, (t - lastTimeRef.current) / 1000);
+      lastTimeRef.current = t;
+
+      const trk = trackRef.current;
+      if (trk) {
+        const half = trk.scrollWidth / 2;
+        const isModalOpen = modalTrabalho !== null;
+        if (!paused && !isHovered && !isModalOpen && t > manualUntilRef.current && half > 0) {
+          posRef.current += 44 * dt;
+          if (posRef.current >= half) {
+            posRef.current -= half;
+          }
+          trk.scrollLeft = posRef.current;
+        } else {
+          if (half > 0 && trk.scrollLeft >= half) {
+            trk.scrollLeft -= half;
+          }
+          posRef.current = trk.scrollLeft;
+        }
+      }
+
+      rafId = requestAnimationFrame(loop);
+    };
+
+    rafId = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
+    };
+  }, [paused, isHovered, modalTrabalho]);
+
+  const manualStep = useCallback((direction: number) => {
+    manualUntilRef.current = performance.now() + 3500;
+    if (trackRef.current) {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      trackRef.current.scrollBy({
+        left: direction * 320,
+        behavior: prefersReduced ? 'auto' : 'smooth'
+      });
+    }
+  }, []);
+
+  const handleTouchStart = () => {
+    setIsHovered(true);
+    if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
+    touchHoldTimerRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 2500);
+  };
+
+  const handleSendContact = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = `Olá, sou ${formNome || 'Cliente'}. Quero orçar: ${formServico}. ${formMensagem}`;
+    const url = `https://wa.me/5581984442592?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modalTrabalho) {
+        setModalTrabalho(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalTrabalho]);
+
   return (
-    <div className="bg-white">
-      {/* 1. HERO SECTION */}
-      <section id="inicio" className="relative pt-10 pb-16 md:pt-16 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50">
-        {/* Subtle CAD Drafting Grid Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0B1E3D06_1px,transparent_1px),linear-gradient(to_bottom,#0B1E3D06_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+    <div className="bg-[var(--paper)] text-[var(--ink)] relative">
+      {/* Engineering Rotating Gears in Background (Low Visibility) */}
+      <BackgroundRotatingGears />
+      
+      {/* 2. Hero Section */}
+      <section className="py-12 md:py-20 relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-10 md:gap-14 items-center">
             
-            {/* Left Column: Headlines, Value Proposition & CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-7 space-y-6"
-            >
-              
-              {/* Tag normativo */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-xs">
-                <ShieldCheck className="w-4 h-4 text-[#1565D8]" />
-                <span>Engenharia Mecânica & Segurança Legal com ART</span>
+            {/* Vitor Portrait 4:5 with Engineering Blueprint Background */}
+            <div className="relative group max-w-[340px] md:max-w-none mx-auto w-full">
+              <div 
+                className="relative block aspect-[4/5] rounded-[16px] border-[1.5px] border-[var(--line)] bg-[#0d2242] overflow-hidden text-[#C9D8EE] shadow-[10px_10px_0_var(--blue)] select-none"
+                aria-label="Vitor Leonardo, Engenheiro Mecânico CREA-PE 1822299490"
+              >
+                {/* Engineering Blueprint CAD Background (Lighter technical background as requested) */}
+                <img 
+                  src={imgBlueprintBg} 
+                  alt="" 
+                  className="absolute inset-0 w-full h-full object-cover opacity-85 brightness-110 contrast-110"
+                  aria-hidden="true"
+                />
+                
+                {/* Technical Blueprint Gradient Overlay */}
+                <div className="absolute inset-0 bg-[#0B2447]/30 mix-blend-multiply pointer-events-none" />
+
+                {/* Top Left Badge: CAD SCHEMATIC • CREA-PE 1822299490 */}
+                <div className="absolute top-3.5 left-3.5 z-20 bg-[rgba(5,14,28,0.88)] text-[#6BA2FA] backdrop-blur-xs text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#1E5BD8]/40 flex items-center gap-1.5 shadow-sm">
+                  <DraftingCompass className="w-3.5 h-3.5 text-[#1E5BD8]" />
+                  <span>CAD SCHEMATIC · CREA-PE 1822299490</span>
+                </div>
+
+                {/* Top Right Rotating Blue Gear Accent */}
+                <div className="absolute top-2 right-2 w-16 h-16 pointer-events-none opacity-50 z-20 animate-gear-slow text-[#1E5BD8]">
+                  <Cog className="w-full h-full" />
+                </div>
+
+                {/* Vitor portrait */}
+                <img 
+                  src={VITOR_PHOTO_URL} 
+                  alt="Vitor Leonardo, Engenheiro Mecânico CREA-PE 1822299490" 
+                  onError={(e) => {
+                    e.currentTarget.src = imgVitorFallback;
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover z-10 drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)]"
+                />
+
+                {/* Caption overlay with CREA-PE badge */}
+                <div className="absolute left-0 right-0 bottom-0 p-3.5 sm:p-4 bg-gradient-to-t from-[rgba(5,14,28,0.96)] via-[rgba(5,14,28,0.75)] to-transparent text-white text-[13.5px] z-20 flex items-end justify-between gap-2 border-t border-white/10">
+                  <div>
+                    <b className="block font-[family-name:var(--d)] text-[18px] text-white leading-tight">Vitor Leonardo</b>
+                    <span className="text-[#C9D8EE] text-[13px] block">Fundador & Responsável Técnico</span>
+                  </div>
+                  <span className="bg-[#1E5BD8]/35 text-[#93C5FD] border border-[#1E5BD8]/55 text-[11px] font-bold px-2.5 py-1 rounded tracking-wide shadow-xs">
+                    CREA-PE
+                  </span>
+                </div>
               </div>
+            </div>
 
-              {/* Impact Headline */}
-              <h1 className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-black text-[#0B1E3D] tracking-tight leading-[1.12]">
-                Engenharia Mecânica com{' '}
-                <span className="text-[#1565D8] underline decoration-[#B0B4BA]/40 decoration-wavy decoration-2">
-                  Segurança, Conformidade
-                </span>{' '}
-                e Precisão.
+            {/* Hero Copy */}
+            <div>
+              <h1 className="text-[34px] sm:text-[44px] lg:text-[54px] font-extrabold leading-[1.08] tracking-tight">
+                Engenharia mecânica com <em className="not-italic text-[var(--blue)]">segurança</em>, conformidade e precisão.
               </h1>
-
-              {/* Subtitle */}
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-                Soluções completas para Adequação à NR-12 com Projetos Mecânicos e Execução, PMOC, Laudos de Playground, Máquinas Pesadas, Caminhões Munck e Inspeções Veiculares em Recife, Região Metropolitana e todo o estado de Pernambuco.
+              
+              <p className="text-[18px] sm:text-[19px] text-[var(--muted)] max-w-[52ch] my-5 sm:my-7 leading-relaxed font-[family-name:var(--b)]">
+                Laudos, ART e adequação à NR-12 para máquinas pesadas, caminhões munck, guindastes e playgrounds em Pernambuco. Quem vistoria é quem assina.
               </p>
 
-              {/* CTAs */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div className="flex flex-wrap gap-3">
                 <a
-                  href="https://wa.me/5581984442592?text=Ol%C3%A1%20Engenheiro%20Vitor%2C%20gostaria%20de%20solicitar%20uma%20avalia%C3%A7%C3%A3o%20t%C3%A9cnica%20para%20minha%20empresa."
+                  href="https://wa.me/5581984442592?text=Ol%C3%A1%2C%20quero%20um%20or%C3%A7amento."
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all active:scale-98"
+                  className="btn-tech wa text-[16px] px-6 py-3"
                 >
-                  <Phone className="w-5 h-5" />
-                  <span>Solicitar Orçamento via WhatsApp</span>
+                  Solicitar orçamento via WhatsApp
                 </a>
-
                 <a
                   href="#servicos"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#1565D8] text-slate-800 hover:text-[#1565D8] font-bold text-base transition-colors"
+                  className="btn-tech text-[16px] px-6 py-3"
                 >
-                  <span>Ver Nossos Serviços</span>
-                  <ChevronRight className="w-4 h-4" />
+                  Ver serviços
                 </a>
               </div>
 
-              {/* Trust highlights */}
-              <div className="pt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-slate-200">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>CREA-PE 1822299490</span>
+              {/* 3 Proof items */}
+              <div className="flex flex-wrap gap-7 sm:gap-10 mt-8 pt-6 border-t border-[var(--line)] text-[15px] text-[var(--muted)] font-[family-name:var(--b)]">
+                <div>
+                  <b className="block text-[var(--ink)] font-bold text-[16px]">ART em até 48 h úteis</b>
+                  <span>após a vistoria técnica</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>ART em 100% dos Laudos</span>
+                <div>
+                  <b className="block text-[var(--ink)] font-bold text-[16px]">Recife e todo o estado</b>
+                  <span>visita técnica no local</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Projetos & Execução NR-12</span>
-                </div>
+                <a href="#avaliacoes" className="hover:text-[var(--blue)] transition-colors block">
+                  <b className="block text-[var(--ink)] font-bold text-[16px]">★ 5,0 no Google</b>
+                  <span>ver avaliações</span>
+                </a>
               </div>
-
-            </motion.div>
-
-            {/* Right Column: Hero Visual Services Slider */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-5 relative flex justify-center"
-            >
-              <HeroServicesSlider />
-            </motion.div>
+            </div>
 
           </div>
         </div>
       </section>
 
-      {/* 2. SOBRE MIM SECTION */}
-      <section id="sobre" className="py-20 bg-white border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Photo / Visual Card */}
-            <motion.div
-              initial={{ opacity: 0, x: -28 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-5 flex justify-center"
-            >
-              <div className="relative w-full max-w-md">
-                {/* Decorative border box */}
-                <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#0B1E3D] to-[#1565D8] opacity-10 blur-sm"></div>
-                
-                <div className="relative bg-white rounded-2xl p-3 shadow-xl border border-slate-200 overflow-hidden">
-                  <div className="aspect-4/5 rounded-xl bg-slate-900 flex flex-col items-center justify-end relative overflow-hidden group">
-                    {/* Engineering Blueprint / CAD Theme Background */}
-                    <img
-                      src={engBlueprintBg}
-                      alt="Engineering CAD Schematic Blueprint"
-                      className="absolute inset-0 w-full h-full object-cover opacity-45 transition-transform duration-700 group-hover:scale-105 pointer-events-none"
-                    />
-                    
-                    {/* Technical CAD Blueprint Grid & Measurement Lines */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#38bdf812_1px,transparent_1px),linear-gradient(to_bottom,#38bdf812_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
-                    
-                    {/* Animated blueprint mechanical gear watermark */}
-                    <div className="absolute top-4 right-4 w-20 h-20 text-sky-400/30 pointer-events-none animate-gear-slow">
-                      <Cog className="w-full h-full" />
-                    </div>
-
-                    {/* CAD Technical Annotation Badge */}
-                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-slate-950/80 backdrop-blur-xs border border-sky-500/30 text-sky-300 text-[9px] font-mono tracking-wider pointer-events-none flex items-center gap-1.5 shadow-sm">
-                      <DraftingCompass className="w-3 h-3 text-sky-400" />
-                      <span>CAD SCHEMATIC • CREA-PE 1822299490</span>
-                    </div>
-
-                    {/* Gradient highlight from bottom */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/40 pointer-events-none z-10"></div>
-
-                    {/* Engineer photo with high resolution */}
-                    <img
-                      src={engineerPhoto}
-                      alt="Vitor Leonardo - Engenheiro Mecânico CREA-PE"
-                      className="w-full h-full object-contain object-bottom pt-2 transition-transform duration-300 group-hover:scale-102 filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] relative z-20"
-                      loading="eager"
-                      decoding="async"
-                      onError={(e) => {
-                        // Fallback to /image.png then placeholder badge
-                        if (e.currentTarget.src !== window.location.origin + '/image.png') {
-                          e.currentTarget.src = '/image.png';
-                          return;
-                        }
-                        e.currentTarget.style.display = 'none';
-                        const fallbackEl = document.getElementById('photo-fallback');
-                        if (fallbackEl) fallbackEl.style.display = 'flex';
-                      }}
-                    />
-
-                    {/* Placeholder fallback if image missing */}
-                    <div id="photo-fallback" className="hidden absolute inset-0 flex-col items-center justify-center p-6 text-center bg-slate-100 z-20">
-                      <div className="w-20 h-20 rounded-full bg-[#0B1E3D] text-white flex items-center justify-center mb-4 shadow-md">
-                        <UserCheck className="w-10 h-10 text-white" />
-                      </div>
-                      <h4 className="font-bold text-[#0B1E3D] text-lg">Vitor Leonardo</h4>
-                      <p className="text-xs text-slate-500 font-mono mt-1">CREA-PE 1822299490</p>
-                      <p className="text-xs text-slate-600 mt-2">Engenheiro Mecânico & Perito Técnico</p>
-                    </div>
-
-                    {/* Bottom floating badge */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700/80 shadow-xl z-30">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold text-white">Vitor Leonardo</p>
-                          <p className="text-[11px] text-slate-300">Fundador & Responsável Técnico</p>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-blue-600/30 border border-blue-400/40 text-blue-300 font-bold text-[10px]">
-                          CREA-PE
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Biography & Text Summary */}
-            <motion.div
-              initial={{ opacity: 0, x: 28 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-7 space-y-6"
-            >
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-[#1565D8] text-xs font-bold uppercase tracking-wider mb-2">
-                  <Cog className="w-3.5 h-3.5 text-[#1565D8] animate-gear-medium" />
-                  <span>Responsabilidade Técnica e Credibilidade</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1E3D] mt-1 tracking-tight">
-                  Sobre o Responsável Técnico
-                </h2>
-              </div>
-
-              {/* Exact Text provided in user prompt specification */}
-              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200/80">
-                <blockquote className="text-base sm:text-lg text-slate-700 leading-relaxed italic">
-                  "Sou <strong className="text-[#0B1E3D] not-italic font-bold">Vitor</strong>, Engenheiro Mecânico (<strong className="text-[#1565D8] not-italic font-mono">CREA-PE 1822299490</strong>) e fundador da <strong className="text-[#0B1E3D] not-italic font-bold">VL Engenharia</strong>. Atuo com inspeção técnica, engenharia de segurança e projetos mecânicos, oferecendo laudos, análises de risco e soluções de manutenção com foco em conformidade normativa, confiabilidade de ativos e segurança legal para empresas de Pernambuco e região."
-                </blockquote>
-              </div>
-
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Nosso compromisso é desmistificar as exigências de órgãos fiscalizadores (Ministério do Trabalho, Corpo de Bombeiros e DETRAN), transformando normas técnicas em planos de ação claros, viáveis e economicamente equilibrados para indústrias, construtoras, frotistas e condomínios.
+      {/* 3. Trabalhos e Especialidades - Continuous Lateral Carousel */}
+      <section id="trabalhos" className="pt-0 pb-12 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6 mb-6 pt-10">
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-[28px] sm:text-[38px] font-extrabold tracking-tight">
+                Trabalhos realizados
+              </h2>
+              <p className="text-[var(--muted)] text-[15.5px] mt-1 max-w-[54ch]">
+                Conheça os serviços técnicos, normas de engenharia aplicáveis e laudos de conformidade.
               </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 rounded-lg bg-white border border-slate-200">
-                  <div className="font-bold text-[#0B1E3D] text-sm flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#1565D8]" />
-                    <span>Segurança Jurídica</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Laudos minuciosos que resguardam administradores e empresas contra passivos e autos de infração.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-lg bg-white border border-slate-200">
-                  <div className="font-bold text-[#0B1E3D] text-sm flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#1565D8]" />
-                    <span>Agilidade em Campo</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Vistorias in loco com emissão célere de relatórios preliminares e protocolo imediato de ART.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <a
-                  href="#contato"
-                  className="inline-flex items-center gap-2 text-sm font-bold text-[#1565D8] hover:text-[#0b4fb8] transition-colors"
-                >
-                  <span>Entre em contato diretamente comigo</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 3. NOSSOS SERVIÇOS DE ENGENHARIA SECTION */}
-      <section id="servicos" className="py-20 bg-slate-50/80 relative">
-        {/* Subtle CAD dot pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(#0B1E3D08_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="text-center max-w-3xl mx-auto mb-10 space-y-3"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-[#1565D8] text-xs font-bold uppercase tracking-wider shadow-2xs">
-              <Cog className="w-3.5 h-3.5 text-[#1565D8] animate-gear-medium" />
-              <span>Especialidades & Conformidade Legal</span>
             </div>
-
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1E3D] tracking-tight">
-              Nossos Serviços de Engenharia
-            </h2>
-
-            <p className="text-slate-600 text-base leading-relaxed max-w-2xl mx-auto">
-              Atuação técnica especializada orientada à segurança legal, aumento de disponibilidade, 
-              conformidade normativa e alta confiabilidade mecânica.
-            </p>
-          </motion.div>
-
-          {/* Interactive Category Filter Tabs */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex items-center justify-start sm:justify-center overflow-x-auto pb-4 sm:pb-0 mb-10 gap-2 no-scrollbar"
-          >
-            <div className="inline-flex items-center p-1.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-              {CATEGORIAS_SERVICOS.map((cat) => {
-                const isActive = filtroCategoria === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setFiltroCategoria(cat.id)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                      isActive
-                        ? 'bg-[#1565D8] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-[#0B1E3D] hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-semibold ${
-                        isActive
-                          ? 'bg-white/25 text-white'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {cat.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          {/* Interactive Engineering Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <AnimatePresence mode="popLayout">
-              {servicosFiltrados.map((servico, index) => {
-                const IconComp = servico.icon;
-                return (
-                  <motion.div
-                    key={servico.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ duration: 0.4, delay: (index % 4) * 0.05 }}
-                    whileHover={{ y: -5 }}
-                    className={`bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between group cursor-pointer relative overflow-hidden ${servico.corTema.borderHover}`}
-                    onClick={() => setModalServico(servico)}
-                  >
-                    {/* Top color indicator line */}
-                    <div className={`absolute top-0 left-0 right-0 h-1.5 ${servico.corTema.dotColor} opacity-90`} />
-
-                    <div className="space-y-4">
-                      {/* Card Header: Custom Icon + Specialty Tag + Module Number */}
-                      <div className="flex items-start justify-between gap-2 pt-1">
-                        <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${servico.corTema.iconBg} ${servico.corTema.iconText} transition-all duration-300 group-hover:scale-105 shadow-2xs border border-slate-100`}
-                        >
-                          <IconComp className="w-6 h-6" />
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[11px] font-mono font-bold text-slate-400">
-                            #{servico.numero}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase ${servico.corTema.badgeBg} ${servico.corTema.badgeText}`}
-                          >
-                            {servico.tagEspecialidade}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Title & Normative Standard */}
-                      <div className="space-y-1.5">
-                        <h3 className="text-base font-bold text-[#0B1E3D] group-hover:text-[#1565D8] transition-colors leading-snug line-clamp-2">
-                          {servico.titulo}
-                        </h3>
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 border border-slate-200/70 text-[11px] font-mono font-semibold text-slate-600">
-                          <ShieldCheck className="w-3 h-3 text-[#1565D8] shrink-0" />
-                          <span className="truncate max-w-[210px]">{servico.normas.split('•')[0]}</span>
-                        </div>
-                      </div>
-
-                      {/* Brief description */}
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                        {servico.descricaoCurta}
-                      </p>
-
-                      {/* Scannable Key Highlights Checklist */}
-                      <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Principais Entregáveis:
-                        </p>
-                        {servico.destaquesVisuais.map((destaque, dIdx) => (
-                          <div
-                            key={dIdx}
-                            className="flex items-start gap-1.5 text-xs text-slate-700 font-medium"
-                          >
-                            <CheckCircle2
-                              className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${servico.corTema.iconText}`}
-                            />
-                            <span className="line-clamp-1">{destaque}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Card Footer: Interactive Actions */}
-                    <div
-                      className="pt-4 border-t border-slate-100 mt-5 flex items-center justify-between gap-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setModalServico(servico)}
-                        className="text-xs font-bold text-[#1565D8] hover:text-[#0b4fb8] flex items-center gap-1 group/btn cursor-pointer transition-colors"
-                      >
-                        <span>Especificação</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                      </button>
-
-                      <a
-                        href={`https://wa.me/5581984442592?text=Ol%C3%A1%2C%20Eng.%20Vitor%20Leonardo!%20Gostaria%20de%20um%20or%C3%A7amento%20para%20${encodeURIComponent(servico.titulo)}.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200/80 hover:border-emerald-600 text-xs font-bold transition-all shadow-2xs"
-                        title={`Orçar ${servico.titulo} no WhatsApp`}
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span>Orçar WhatsApp</span>
-                      </a>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-
-          <div className="mt-12 text-center max-w-xl mx-auto p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-            <p className="text-xs text-slate-600">
-              <strong className="text-[#0B1E3D]">Precisa de um laudo customizado ou de uma norma específica?</strong>
-              <br />
-              Elaboramos ensaios técnicos, vistorias e perícias de engenharia mecânica sob demanda para indústrias, condomínios e órgãos reguladores.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. PERGUNTAS FREQUENTES (FAQ NORMATIVO & JURÍDICO) */}
-      <FaqNormativo />
-
-      {/* 5. CONTATO / MEUS DADOS SECTION */}
-      <section id="contato" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            
-            {/* Left Column: Official Contact Info */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-5 space-y-8"
-            >
-              <div>
-                <span className="text-xs font-bold text-[#1565D8] uppercase tracking-wider">
-                  Atendimento & Plantão Técnico
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1E3D] tracking-tight mt-1">
-                  Fale com a VL Engenharia
-                </h2>
-                <p className="text-slate-600 text-sm mt-2 leading-relaxed">
-                  Solicite um orçamento formal, tire dúvidas técnicas ou acione nosso plantão para vistorias de urgência regulatória.
-                </p>
-              </div>
-
-              {/* Direct Info List */}
-              <div className="space-y-4 text-sm">
-                
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-blue-100/60 text-[#1565D8] shrink-0 mt-0.5">
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                      Plantão Técnico / WhatsApp
-                    </span>
-                    <p className="text-base font-bold text-[#0B1E3D] mt-0.5">
-                      (81) 98444-2592
-                    </p>
-                    <a
-                      href="https://wa.me/5581984442592"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#1565D8] hover:underline mt-1"
-                    >
-                      <span>Abrir conversa no WhatsApp</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-blue-100/60 text-[#1565D8] shrink-0 mt-0.5">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                      E-mail para Orçamentos e Contato
-                    </span>
-                    <p className="text-base font-bold text-[#0B1E3D] mt-0.5 break-all">
-                      atendimento@vlengenhariamecanica.com.br
-                    </p>
-                    <a
-                      href="mailto:atendimento@vlengenhariamecanica.com.br"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#1565D8] hover:underline mt-1"
-                    >
-                      <span>Solicitar orçamento via e-mail</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-blue-100/60 text-[#1565D8] shrink-0 mt-0.5">
-                    <Instagram className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                      Instagram Profissional
-                    </span>
-                    <p className="text-base font-bold text-[#0B1E3D] mt-0.5">
-                      @vlengenharia.mec
-                    </p>
-                    <a
-                      href="https://www.instagram.com/vlengenharia.mec"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#1565D8] hover:underline mt-1"
-                    >
-                      <span>Acessar perfil no Instagram</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-blue-100/60 text-[#1565D8] shrink-0 mt-0.5">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-                      Sede Operacional & Área de Atuação
-                    </span>
-                    <p className="text-sm font-semibold text-[#0B1E3D] mt-0.5">
-                      Recife, Região Metropolitana (RMR) e interior de Pernambuco.
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Deslocamento técnico para atendimento in loco em canteiros, indústrias e galpões.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-            </motion.div>
-
-            {/* Right Column: Interactive Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.65, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:col-span-7"
-            >
-              <div className="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-                
-                <h3 className="text-xl font-bold text-[#0B1E3D]">
-                  Envie sua Solicitação de Orçamento
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 mb-6">
-                  Preencha os dados abaixo. Retornaremos em horário comercial com uma proposta técnica detalhada.
-                </p>
-
-                {statusEnvio === 'sucesso' ? (
-                  <div className="p-6 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                      <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-base font-bold">Solicitação Recebida com Sucesso!</h4>
-                    <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed">
-                      Obrigado pelo contato. Os dados foram salvos no nosso sistema e o Eng. Vitor Leonardo entrará em contato em breve através do e-mail ou WhatsApp informado.
-                    </p>
-                    <button
-                      onClick={() => setStatusEnvio('idle')}
-                      className="px-4 py-2 rounded-lg bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-colors mt-2"
-                    >
-                      Enviar Outra Mensagem
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmitContato} className="space-y-4">
-                    {statusEnvio === 'erro' && mensagemErro && (
-                      <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                        <span>{mensagemErro}</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Nome Completo *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={nome}
-                          onChange={(e) => setNome(e.target.value)}
-                          placeholder="Ex: João da Silva"
-                          className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8] focus:border-transparent transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          E-mail Profissional *
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="nome@empresa.com.br"
-                          className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8] focus:border-transparent transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Telefone / WhatsApp
-                        </label>
-                        <input
-                          type="tel"
-                          value={telefone}
-                          onChange={(e) => setTelefone(e.target.value)}
-                          placeholder="(81) 90000-0000"
-                          className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8] focus:border-transparent transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Serviço de Interesse *
-                        </label>
-                        <select
-                          value={servicoInteresse}
-                          onChange={(e) => setServicoInteresse(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1565D8] focus:border-transparent transition-all"
-                        >
-                          {SERVICOS_LISTA.map((s) => (
-                            <option key={s.id} value={s.titulo}>
-                              {s.titulo}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Descrição da Demanda / Mensagem *
-                      </label>
-                      <textarea
-                        required
-                        rows={4}
-                        value={mensagem}
-                        onChange={(e) => setMensagem(e.target.value)}
-                        placeholder="Informe detalhes sobre o equipamento, localização em PE, prazos ou exigências normativas..."
-                        className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1565D8] focus:border-transparent transition-all"
-                      />
-                    </div>
-
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Ao enviar, você concorda com o tratamento dos dados conforme nossa Política de Privacidade & LGPD.
-                    </p>
-
-                    <button
-                      type="submit"
-                      disabled={statusEnvio === 'enviando'}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {statusEnvio === 'enviando' ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Enviando mensagem...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Enviar Solicitação de Orçamento</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-                )}
-
-              </div>
-            </motion.div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 5. SERVICE MODAL DETAILS */}
-      {modalServico && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={() => setModalServico(null)}
-              className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label="Fechar"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Modal Header with Custom Service Icon */}
-            <div className="flex items-start gap-4 mb-4">
-              <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${modalServico.corTema.iconBg} ${modalServico.corTema.iconText} border border-slate-200/80 shadow-xs`}
+            <div className="nv">
+              <button
+                type="button"
+                onClick={() => setPaused(!paused)}
+                aria-pressed={paused}
+                aria-label={paused ? 'Continuar carrossel' : 'Pausar carrossel'}
+                className="btn-tech sm text-[14px]"
               >
-                <modalServico.icon className="w-6 h-6" />
-              </div>
+                {paused ? 'Continuar' : 'Pausar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => manualStep(-1)}
+                className="btn-tech sm w-10 h-10 p-0 text-lg flex items-center justify-center cursor-pointer"
+                aria-label="Trabalhos anteriores"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => manualStep(1)}
+                className="btn-tech sm w-10 h-10 p-0 text-lg flex items-center justify-center cursor-pointer"
+                aria-label="Próximos trabalhos"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
 
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                    Módulo {modalServico.numero}
+        {/* Continuous Track with duplicated cards for seamless infinite cycle */}
+        <div 
+          ref={trackRef}
+          tabIndex={0}
+          aria-label="Trabalhos e especialidades, role para o lado"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onFocus={() => setIsHovered(true)}
+          onBlur={() => setIsHovered(false)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="track focus:outline-none"
+        >
+          {/* First original set */}
+          {trabalhos.map((work, idx) => (
+            <button
+              key={`orig-${work.id || idx}`}
+              type="button"
+              onClick={() => setModalTrabalho({ item: work, index: idx })}
+              className="wk group"
+            >
+              <div className="wph relative overflow-hidden">
+                <img 
+                  src={work.foto} 
+                  alt={work.titulo} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                {work.badge && (
+                  <span className="absolute top-2.5 left-2.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
+                    {work.badge}
                   </span>
-                  <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded ${modalServico.corTema.badgeBg} ${modalServico.corTema.badgeText}`}
-                  >
-                    {modalServico.tagEspecialidade}
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-[#1565D8]">
-                  {modalServico.normas}
-                </span>
+                )}
               </div>
+              <div className="tx flex flex-col justify-between">
+                <div>
+                  <h3>{work.titulo}</h3>
+                  <p className="text-[var(--blue)] font-semibold text-[13.5px] mb-2">{work.norma}</p>
+                  <p className="text-[var(--muted)] text-[14px] line-clamp-2 leading-snug">{work.resumo}</p>
+                </div>
+                <div className="pt-3 mt-2 border-t border-[var(--line)] flex items-center justify-between text-[13px] text-[var(--muted)] font-medium">
+                  <span>Ver escopo detalhado</span>
+                  <span className="text-[var(--blue)] font-bold">→</span>
+                </div>
+              </div>
+            </button>
+          ))}
+
+          {/* Second duplicate set for infinite seamless loop (accessible hiding) */}
+          {trabalhos.map((work, idx) => (
+            <button
+              key={`dup-${work.id || idx}`}
+              type="button"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={() => setModalTrabalho({ item: work, index: idx })}
+              className="wk group"
+            >
+              <div className="wph relative overflow-hidden">
+                <img 
+                  src={work.foto} 
+                  alt={work.titulo} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                {work.badge && (
+                  <span className="absolute top-2.5 left-2.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
+                    {work.badge}
+                  </span>
+                )}
+              </div>
+              <div className="tx flex flex-col justify-between">
+                <div>
+                  <h3>{work.titulo}</h3>
+                  <p className="text-[var(--blue)] font-semibold text-[13.5px] mb-2">{work.norma}</p>
+                  <p className="text-[var(--muted)] text-[14px] line-clamp-2 leading-snug">{work.resumo}</p>
+                </div>
+                <div className="pt-3 mt-2 border-t border-[var(--line)] flex items-center justify-between text-[13px] text-[var(--muted)] font-medium">
+                  <span>Ver escopo detalhado</span>
+                  <span className="text-[var(--blue)] font-bold">→</span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Accessible Modal Dialog for Work Detail */}
+      {modalTrabalho && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.65)] backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dialog-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalTrabalho(null);
+          }}
+        >
+          <div className="wk-dialog bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-[580px] max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Photo */}
+            <div className="wph aspect-video relative overflow-hidden">
+              <img 
+                src={modalTrabalho.item.foto} 
+                alt={modalTrabalho.item.titulo} 
+                className="w-full h-full object-cover"
+              />
+              {modalTrabalho.item.badge && (
+                <span className="absolute top-3.5 left-3.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[12px] font-bold px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
+                  {modalTrabalho.item.badge}
+                </span>
+              )}
             </div>
 
-            <h3 className="text-2xl font-bold text-[#0B1E3D] mb-3">
-              {modalServico.titulo}
-            </h3>
-
-            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-              {modalServico.descricaoCurta}
-            </p>
-
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider mb-2">
-                  Escopo e Atividades Técnicas Inclusas:
-                </h4>
-                <ul className="space-y-2">
-                  {modalServico.detalhesCompletos.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-slate-700">
-                      <CheckCircle2 className="w-4 h-4 text-[#1565D8] shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="tx p-6">
+              <div className="flex items-start justify-between gap-4">
+                <h3 id="dialog-title" className="text-[22px] font-extrabold leading-snug">
+                  {modalTrabalho.item.titulo}
+                </h3>
               </div>
 
-              <div>
-                <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider mb-2">
-                  Entregáveis Oficiais do Laudo:
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {modalServico.entregaveis.map((ent, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 text-[#0B1E3D] text-xs font-semibold border border-slate-200"
-                    >
-                      {ent}
-                    </span>
-                  ))}
-                </div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-[14.5px] my-5 border-y border-[var(--line)] py-4">
+                <dt className="text-[var(--muted)] font-medium">Normas aplicáveis</dt>
+                <dd className="font-semibold text-[var(--ink)]">{modalTrabalho.item.norma}</dd>
+                <dt className="text-[var(--muted)] font-medium">Escopo técnico</dt>
+                <dd className="font-semibold text-[var(--ink)]">{modalTrabalho.item.escopo}</dd>
+                <dt className="text-[var(--muted)] font-medium">Prazo estimado</dt>
+                <dd className="font-semibold text-[var(--ink)]">{modalTrabalho.item.prazo}</dd>
+              </dl>
+
+              <div className="mb-6">
+                <h4 className="text-xs uppercase tracking-wider font-bold text-[var(--muted)] mb-2">Resumo do serviço</h4>
+                <p className="text-[var(--muted)] text-[15px] leading-relaxed">
+                  {modalTrabalho.item.resumo}
+                </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-wrap gap-2.5 pt-2">
                 <a
-                  href={`https://wa.me/5581984442592?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento%20para%20${encodeURIComponent(modalServico.titulo)}.`}
+                  href={`https://wa.me/5581984442592?text=${encodeURIComponent(
+                    modalTrabalho.item.whatsappMsg || 'Quero orçar o serviço de: ' + modalTrabalho.item.titulo
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 text-center py-3 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2"
+                  className="btn-tech wa text-[14.5px]"
                 >
-                  <Phone className="w-4 h-4" />
-                  <span>Solicitar Proposta no WhatsApp</span>
+                  Orçar este serviço via WhatsApp
                 </a>
+
                 <button
-                  onClick={() => {
-                    setServicoInteresse(modalServico.titulo);
-                    setModalServico(null);
-                    const el = document.getElementById('contato');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-5 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                  type="button"
+                  onClick={() => setModalTrabalho(null)}
+                  className="btn-tech text-[14.5px] ml-auto"
                 >
-                  Preencher Formulário
+                  Fechar
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* 4. Avaliações no Google (#avaliacoes) */}
+      <section id="avaliacoes" className="pt-2 pb-14 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="gg">
+            <div>
+              <div className="big">{reviewsData.rating}</div>
+              <div className="stars" role="img" aria-label={`Nota ${reviewsData.rating} de 5 no Google`}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <svg key={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2.5l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17.4 6.1 20.7l1.3-6.6L2.5 9.5l6.6-.8z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-[var(--muted)] text-[16px] font-[family-name:var(--b)]">
+                <b className="text-[var(--ink)] font-bold">{reviewsData.user_ratings_total || reviewsData.totalReviews || '12'} avaliações</b> no Google
+              </p>
+
+              <div className="cta flex gap-3 flex-wrap mt-5">
+                <a 
+                  className="btn-tech text-[15px]" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  href={reviewsData.google_maps_url || reviewsData.googleMapsUrl || 'https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife'}
+                >
+                  Ver no Google
+                </a>
+                <a 
+                  className="btn-tech pri text-[15px]" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  href={reviewsData.google_maps_url || reviewsData.googleMapsUrl || 'https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife'}
+                >
+                  Avaliar a VL
+                </a>
+              </div>
+
+              <span className="ex mt-4 inline-block">
+                Dados de exemplo: trocar pela nota e avaliações reais
+              </span>
+            </div>
+
+            {/* Reviews Quotes */}
+            <div className="rv">
+              {reviewsData.reviews && reviewsData.reviews.length > 0 ? (
+                reviewsData.reviews.slice(0, 3).map((rev, i) => (
+                  <blockquote key={rev.id || i} className="py-4 border-b border-[var(--line)]">
+                    <q className="text-[17px] font-[family-name:var(--b)] leading-relaxed">
+                      “{rev.text}”
+                    </q>
+                    <small className="block text-[var(--muted)] text-[13.5px] mt-2">
+                      {rev.author_name || rev.author || 'Cliente Google'} · {rev.relative_time_description || rev.relativeTime || 'recente'}
+                    </small>
+                  </blockquote>
+                ))
+              ) : (
+                <div className="py-8 text-[var(--muted)] text-[15px]">
+                  Nenhum comentário público no momento.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Serviços (O que a VL inspeciona e certifica) com subtipos expansíveis */}
+      <section id="servicos" className="pt-2 pb-14 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-[28px] sm:text-[38px] font-extrabold tracking-tight">
+                O que a VL inspeciona e certifica
+              </h2>
+              <p className="text-[var(--muted)] text-[16px] mt-1 max-w-[54ch]">
+                Clique no botão de cada especialidade para ver detalhadamente os laudos, escopos e normas atendidas.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t-2 border-[var(--ink)]">
+            {SERVICOS_LISTA.map((serv, index) => {
+              const isExpanded = !!expandedServicos[index];
+              return (
+                <div 
+                  key={index}
+                  className="border-b border-[var(--line)] py-5 px-2 hover:bg-[var(--card)]/40 transition-colors"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.5fr_1.5fr_auto] gap-3 md:gap-5 items-center">
+                    <h3 className="font-[family-name:var(--d)] text-[18.5px] font-bold text-[var(--ink)]">
+                      {serv.nome}
+                    </h3>
+                    
+                    <div>
+                      <span className="font-[family-name:var(--b)] font-semibold text-[13px] bg-[var(--card)] border border-[var(--line)] rounded px-2.5 py-0.5 inline-block text-[var(--muted)]">
+                        {serv.norma}
+                      </span>
+                    </div>
+
+                    <p className="text-[var(--muted)] text-[15px] m-0 leading-relaxed">
+                      {serv.descricao}
+                    </p>
+
+                    <div className="flex items-center gap-2.5 md:justify-self-end mt-2 md:mt-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandServico(index)}
+                        aria-expanded={isExpanded}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--blue)] hover:bg-[var(--card)] transition-colors cursor-pointer select-none"
+                        title={isExpanded ? 'Ocultar subtipos' : 'Expandir subtipos'}
+                        aria-label={isExpanded ? 'Ocultar subtipos' : 'Expandir subtipos'}
+                      >
+                        <span 
+                          className={`text-[24px] font-semibold leading-none transition-transform duration-300 inline-block select-none ${
+                            isExpanded ? 'rotate-45' : 'rotate-0'
+                          }`}
+                        >
+                          +
+                        </span>
+                      </button>
+
+                      <a
+                        href={`https://wa.me/5581984442592?text=${encodeURIComponent('Quero orçar: ' + serv.nome)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-tech wa sm text-[13.5px]"
+                      >
+                        Orçar
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Smooth Minimalist Expandable Subtypes */}
+                  <div 
+                    className="grid transition-all duration-300 ease-in-out"
+                    style={{
+                      gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                      opacity: isExpanded ? 1 : 0
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="pt-3 pb-1 pl-3 sm:pl-5 border-l-2 border-[var(--blue)]/35 my-2 space-y-3">
+                        {serv.subtipos.map((sub, sIdx) => (
+                          <div 
+                            key={sIdx}
+                            className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-4 py-1.5 border-b border-[var(--line)]/40 last:border-0"
+                          >
+                            <div className="space-y-0.5 max-w-[76ch]">
+                              <div className="flex flex-wrap items-baseline gap-2">
+                                <span className="font-semibold text-[14.5px] text-[var(--ink)]">
+                                  {sub.nome}
+                                </span>
+                                <span className="text-[12px] text-[var(--muted)] font-mono">
+                                  · {sub.normaRef}
+                                </span>
+                              </div>
+                              <p className="text-[13.5px] text-[var(--muted)] m-0 leading-relaxed font-[family-name:var(--b)]">
+                                {sub.detalhe}
+                              </p>
+                            </div>
+
+                            <a
+                              href={`https://wa.me/5581984442592?text=${encodeURIComponent(
+                                'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para: ' + sub.nome + ' (' + sub.normaRef + ')'
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[13px] font-semibold text-[var(--blue)] hover:underline whitespace-nowrap self-start sm:self-auto flex items-center gap-1 transition-colors"
+                            >
+                              <span>Orçar</span>
+                              <span aria-hidden="true">→</span>
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Como Funciona (3 Passos) */}
+      <section id="processo" className="py-16 border-t border-[var(--line)] bg-[var(--card)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="mb-10">
+            <h2 className="text-[28px] sm:text-[38px] font-extrabold tracking-tight">
+              Da primeira mensagem ao laudo em mãos
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-3">
+              <div className="w-[34px] h-[34px] rounded-full bg-[var(--blue)] text-[var(--onblue)] font-[family-name:var(--d)] font-bold text-[16px] flex items-center justify-center">
+                1
+              </div>
+              <h3 className="text-[20px] font-bold">Você descreve o equipamento</h3>
+              <p className="text-[var(--muted)] text-[15.5px] leading-relaxed">
+                Pelo WhatsApp ou formulário. Respondemos com escopo e valor no mesmo dia útil.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="w-[34px] h-[34px] rounded-full bg-[var(--blue)] text-[var(--onblue)] font-[family-name:var(--d)] font-bold text-[16px] flex items-center justify-center">
+                2
+              </div>
+              <h3 className="text-[20px] font-bold">Vistoria no local</h3>
+              <p className="text-[var(--muted)] text-[15.5px] leading-relaxed">
+                O engenheiro vai até a obra, fábrica ou condomínio, mede, testa e fotografa.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="w-[34px] h-[34px] rounded-full bg-[var(--blue)] text-[var(--onblue)] font-[family-name:var(--d)] font-bold text-[16px] flex items-center justify-center">
+                3
+              </div>
+              <h3 className="text-[20px] font-bold">Laudo e ART digitais</h3>
+              <p className="text-[var(--muted)] text-[15.5px] leading-relaxed">
+                Documento assinado, com QR Code de autenticação, em até 48 horas úteis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Dúvidas Frequentes */}
+      <section id="faq" className="py-14 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6">
+          <div className="mb-8">
+            <h2 className="text-[28px] sm:text-[38px] font-extrabold tracking-tight">
+              Dúvidas frequentes
+            </h2>
+          </div>
+
+          <div className="space-y-0">
+            {FAQ_ITENS.map((item, idx) => {
+              const isOpen = !!faqAberto[idx];
+              return (
+                <div 
+                  key={idx}
+                  className="border-b border-[var(--line)] first:border-t-2 first:border-[var(--ink)] py-4 transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(idx)}
+                    aria-expanded={isOpen}
+                    className="w-full text-left font-[family-name:var(--d)] font-bold text-[17px] sm:text-[18px] flex items-center justify-between gap-4 select-none cursor-pointer group"
+                  >
+                    <span className="text-[var(--ink)] group-hover:text-[var(--blue)] transition-colors leading-snug">
+                      {item.pergunta}
+                    </span>
+                    <span 
+                      className={`text-[var(--blue)] text-[24px] font-semibold leading-none transition-transform duration-300 inline-block select-none flex-none ${
+                        isOpen ? 'rotate-45' : 'rotate-0'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      +
+                    </span>
+                  </button>
+
+                  <div 
+                    className="grid transition-all duration-300 ease-in-out"
+                    style={{
+                      gridTemplateRows: isOpen ? '1fr' : '0fr',
+                      opacity: isOpen ? 1 : 0
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="mt-3 text-[var(--muted)] text-[15px] sm:text-[15.5px] max-w-[68ch] leading-relaxed">
+                        {item.resposta}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Contato & Formulário */}
+      <section id="contato" className="py-14 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
+        <div className="max-w-[1120px] mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+          
+          <div>
+            <h2 className="text-[28px] sm:text-[38px] font-extrabold tracking-tight mb-3">
+              Conte o que precisa inspecionar
+            </h2>
+            <p className="text-[var(--muted)] text-[16.5px] max-w-[42ch] leading-relaxed">
+              Informe o equipamento e a cidade. A proposta volta em horário comercial.
+            </p>
+
+            <div className="mt-7 space-y-3 font-semibold text-[15.5px]">
+              <div>
+                <a
+                  href="https://wa.me/5581984442592"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[var(--blue)] flex items-center gap-2"
+                >
+                  WhatsApp: (81) 98444-2592
+                </a>
+              </div>
+              <div>
+                <a
+                  href="mailto:atendimento@vlengenhariamecanica.com.br"
+                  className="hover:text-[var(--blue)] flex items-center gap-2"
+                >
+                  atendimento@vlengenhariamecanica.com.br
+                </a>
+              </div>
+              <div>
+                <a
+                  href="https://instagram.com/vlengenhariamec"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[var(--blue)] flex items-center gap-2"
+                >
+                  @vlengenhariamec
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Form */}
+          <form 
+            onSubmit={handleSendContact}
+            className="bg-[var(--card)] border-[1.5px] border-[var(--line)] rounded-xl p-6 sm:p-7 space-y-4"
+          >
+            <label className="block text-[14.5px] font-semibold">
+              <span className="mb-1 block">Seu nome</span>
+              <input
+                type="text"
+                value={formNome}
+                onChange={(e) => setFormNome(e.target.value)}
+                required
+                placeholder="João da Silva"
+                className="w-full font-[family-name:var(--b)] text-[15.5px] p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+              />
+            </label>
+
+            <label className="block text-[14.5px] font-semibold">
+              <span className="mb-1 block">Serviço</span>
+              <select
+                value={formServico}
+                onChange={(e) => setFormServico(e.target.value)}
+                className="w-full font-[family-name:var(--b)] text-[15.5px] p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+              >
+                {SERVICOS_LISTA.map((s, idx) => (
+                  <option key={idx} value={s.nome}>{s.nome}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-[14.5px] font-semibold">
+              <span className="mb-1 block">Equipamento e cidade</span>
+              <textarea
+                value={formMensagem}
+                onChange={(e) => setFormMensagem(e.target.value)}
+                rows={3}
+                required
+                placeholder="Ex: Munck 12 t, Jaboatão dos Guararapes"
+                className="w-full font-[family-name:var(--b)] text-[15.5px] p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="btn-tech wa w-full justify-center text-[15.5px] py-3 mt-2"
+            >
+              Enviar pelo WhatsApp
+            </button>
+          </form>
+
+        </div>
+      </section>
+
     </div>
   );
 };

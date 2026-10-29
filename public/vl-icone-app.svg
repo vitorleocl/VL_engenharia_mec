@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="VL Engenharia">
+  <rect width="100" height="100" rx="20" fill="#0B2447"/>
+  <g transform="translate(11 11) scale(.78)">
+    <defs>
+      <linearGradient id="j" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#DCE6F5"/>
+        <stop offset="1" stop-color="#9DB3D1"/>
+      </linearGradient>
+    </defs>
+    <path d="M72.1 21.6A36 36 0 1 0 72.1 78.3" fill="none" stroke="url(#j)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M34.6 11.9A41 41 0 0 0 35.9 88.5" fill="none" stroke="url(#j)" stroke-width="9" pathLength="100" stroke-dasharray="6.4 5.4"/>
+    <path d="M72.5 11.0A45 45 0 0 0 42.1 5.6" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M20 30H35L44 54L55 30H70L51 72H37Z" fill="#FFFFFF"/>
+    <path d="M76 30H90L76.4 60H97L92 72H57Z" fill="#8DB6FF"/>
+  </g>
+</svg>

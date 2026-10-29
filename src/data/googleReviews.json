@@ -1,0 +1,37 @@
+{
+  "rating": "5,0",
+  "ratingNumber": 5.0,
+  "user_ratings_total": 12,
+  "totalReviews": "12",
+  "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife",
+  "reviewUrl": "https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife",
+  "reviews": [
+    {
+      "id": "rev-1",
+      "text": "Laudo entregue no prazo, com ART registrada. Atendimento muito profissional.",
+      "author_name": "Cliente (exemplo)",
+      "author": "Cliente (exemplo)",
+      "relative_time_description": "há 2 meses",
+      "relativeTime": "há 2 meses",
+      "rating": 5
+    },
+    {
+      "id": "rev-2",
+      "text": "Fizeram o ensaio de carga do nosso munck sem parar a obra. Recomendo.",
+      "author_name": "Cliente (exemplo)",
+      "author": "Cliente (exemplo)",
+      "relative_time_description": "há 4 meses",
+      "relativeTime": "há 4 meses",
+      "rating": 5
+    },
+    {
+      "id": "rev-3",
+      "text": "Explicaram cada item da NR-12 de forma clara e objetiva.",
+      "author_name": "Cliente (exemplo)",
+      "author": "Cliente (exemplo)",
+      "relative_time_description": "há 6 meses",
+      "relativeTime": "há 6 meses",
+      "rating": 5
+    }
+  ]
+}
