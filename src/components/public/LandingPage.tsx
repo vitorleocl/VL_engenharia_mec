@@ -128,180 +128,9 @@ const TRABALHOS_INICIAIS: TrabalhoRealizado[] = [
   }
 ];
 
-export interface SubtipoServico {
-  nome: string;
-  normaRef: string;
-  detalhe: string;
-}
-
-export interface ServicoItem {
-  nome: string;
-  norma: string;
-  descricao: string;
-  subtipos: SubtipoServico[];
-}
-
-export const SERVICOS_LISTA: ServicoItem[] = [
-  {
-    nome: 'Adequação à NR-12 e projetos mecânicos',
-    norma: 'NR-12 · NBR ISO 12100',
-    descricao: 'Apreciação de risco, projeto de proteções mecânicas, enclausuramento e documentação técnica oficial.',
-    subtipos: [
-      {
-        nome: 'Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)',
-        normaRef: 'NR-12 item 12.38 · ISO 12100',
-        detalhe: 'Identificação de perigos mecânicos, estimativa de risco quantitativa (HRN) e definição de Categoria de Segurança requerida (PLr).'
-      },
-      {
-        nome: 'Laudo de Adequação de Proteções Físicas e Intertravamentos',
-        normaRef: 'NR-12 Anexos e NBR ISO 13849',
-        detalhe: 'Dimensionamento de proteções em policarbonato/chapa, distâncias de segurança e chaves de intertravamento codificadas com bloqueio.'
-      },
-      {
-        nome: 'Laudo de Validação / Retrofit de Segurança em Máquinas',
-        normaRef: 'NR-12 · ABNT NBR 14153',
-        detalhe: 'Atestação e validação técnica das alterações mecânicas e elétricas implementadas com liberação formal para operação segura.'
-      },
-      {
-        nome: 'Projetos Mecânicos Executivos 2D/3D em CAD com ART',
-        normaRef: 'CREA-PE · ABNT',
-        detalhe: 'Modelagem 3D, detalhamento para caldeiraria e usinagem, memoriais descritivos de cálculo estrutural e ART de projeto e execução.'
-      }
-    ]
-  },
-  {
-    nome: 'Laudo de máquinas pesadas',
-    norma: 'NR-11 · NR-12 · NR-18',
-    descricao: 'Inspeção de conformidade operacional, segurança de tráfego e estruturas de proteção (ROPS/FOPS).',
-    subtipos: [
-      {
-        nome: 'Laudo de Integridade Estrutural e Segurança Operacional (NR-12 / NR-18)',
-        normaRef: 'NR-12 Anexo XI · NR-18',
-        detalhe: 'Vistoria minuciosa de escavadeiras hidráulicas, retroescavadeiras e pás carregadeiras (chassi, freios, direção, pinos e cilindros).'
-      },
-      {
-        nome: 'Laudo de Conformidade de Estruturas de Proteção (ROPS / FOPS)',
-        normaRef: 'ABNT NBR ISO 3471 (ROPS) e ISO 3449 (FOPS)',
-        detalhe: 'Atestação da integridade estrutural das cabines de proteção contra capotamento (ROPS) e queda de materiais pesados (FOPS).'
-      },
-      {
-        nome: 'Laudo de Inspeção Periódica de Manutenção e Segurança',
-        normaRef: 'NR-11 · NR-18',
-        detalhe: 'Avaliação técnica de motoniveladoras, rolos compactadores e tratores de esteira com emissão de plano de ação corretivo e ART.'
-      }
-    ]
-  },
-  {
-    nome: 'Caminhões munck e guindastes',
-    norma: 'NR-11 · NBR 14768',
-    descricao: 'Ensaio de carga com célula calibrada, estanqueidade hidráulica, tabela de carga e rigging.',
-    subtipos: [
-      {
-        nome: 'Laudo de Teste de Carga (Load Test) Estático e Dinâmico',
-        normaRef: 'ABNT NBR 14768 · NR-11',
-        detalhe: 'Ensaio de içamento com peso padrão aferido, medição de deflexão da lança telescópica e estanqueidade de válvulas de sustentação.'
-      },
-      {
-        nome: 'Laudo de Liberação e Conformidade NR-11 / NR-12',
-        normaRef: 'NR-11 · NBR 8400',
-        detalhe: 'Inspeção de sapatas estabilizadoras, grampos, cabos de aço, ganchos, moitões e comandos hidráulicos.'
-      },
-      {
-        nome: 'Laudo de Aferição do Limitador de Momento de Carga (LMI) e Rigging',
-        normaRef: 'ABNT NBR 16463',
-        detalhe: 'Calibração de sensores de ângulo e momento de carga, emissão de tabela de carga oficial e validação de plano de içamento.'
-      }
-    ]
-  },
-  {
-    nome: 'Perícia veicular e reclassificação de monta',
-    norma: 'DETRAN · CONTRAN',
-    descricao: 'Parecer técnico para desbloqueio de veículo sinistrado, análise estrutural e perícia forense.',
-    subtipos: [
-      {
-        nome: 'Laudo Pericial de Reclassificação de Monta Veicular',
-        normaRef: 'Resolução CONTRAN 810/2020 · DETRAN-PE',
-        detalhe: 'Inspeção e parecer técnico circunstanciado para reclassificação de Grande ou Média Monta para Pequena Monta junto ao DETRAN.'
-      },
-      {
-        nome: 'Laudo de Avaliação de Sinistro Veicular e Danos Estruturais',
-        normaRef: 'ABNT NBR 14653-5',
-        detalhe: 'Medição milimétrica de alinhamento de longarinas, monobloco, integridade de soldas de fábrica e colunas estruturais A/B/C.'
-      },
-      {
-        nome: 'Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)',
-        normaRef: 'Engenharia Forense · CREA-PE',
-        detalhe: 'Investigação pericial de quebra de componentes mecânicos (fadiga, falha de freio, eixos ou direção) para processos judiciais e seguradoras.'
-      }
-    ]
-  },
-  {
-    nome: 'Laudo de playgrounds',
-    norma: 'NBR 16071',
-    descricao: 'Inspeção de brinquedos, pisos amortecedores, riscos de aprisionamento e fixações.',
-    subtipos: [
-      {
-        nome: 'Laudo Técnico de Inspeção de Playground (ABNT NBR 16071)',
-        normaRef: 'ABNT NBR 16071 Partes 1 a 7',
-        detalhe: 'Inspeção de balanços, escorregadores, gangorras, tirolesas e casinhas em condomínios, escolas e clubes.'
-      },
-      {
-        nome: 'Laudo de Análise de Risco de Aprisionamento e Queda',
-        normaRef: 'NBR 16071-2 · NBR 16071-3',
-        detalhe: 'Medição de aberturas com sondas normatizadas para prevenção de aprisionamento de cabeça, pescoço, dedos e roupas.'
-      },
-      {
-        nome: 'Laudo de Piso Amortecedor e Ancoragens Estruturais',
-        normaRef: 'NBR 16071-3 · NBR 16071-4',
-        detalhe: 'Verificação da área de circulação, espessura e atenuação de impacto do piso (areia, borracha ou grama sintética) e ancoragens.'
-      }
-    ]
-  },
-  {
-    nome: 'PMOC e projetos de HVAC-R',
-    norma: 'Lei 13.589 · NBR 16401',
-    descricao: 'Elaboração de PMOC, projetos de climatização e refrigeração, laudos de qualidade do ar e acompanhamento de manutenção.',
-    subtipos: [
-      {
-        nome: 'Laudo e Plano de PMOC (Lei 13.589/2018 e Portaria 3.523/MS)',
-        normaRef: 'Lei 13.589/2018 · RE 09/ANVISA',
-        detalhe: 'Inventário completo de condicionadores de ar e chillers, definição de periodicidades de limpeza e rotinas de manutenção preventiva.'
-      },
-      {
-        nome: 'Laudo de Inspeção Técnico-Sanitária e Qualidade do Ar Interior',
-        normaRef: 'Resolução RE 09 ANVISA · NBR 16401',
-        detalhe: 'Inspeção de filtros, bandejas de condensado, serpentinas e atestação da taxa de renovação de ar exterior com ART técnica.'
-      },
-      {
-        nome: 'Projetos de Climatização e Refrigeração (HVAC-R)',
-        normaRef: 'ABNT NBR 16401 Partes 1, 2 e 3',
-        detalhe: 'Cálculo de carga térmica psicrométrica, dimensionamento de dutos, grelhas e eficiência energética para indústrias e edifícios.'
-      }
-    ]
-  },
-  {
-    nome: 'ART de manutenção e gestão PCM',
-    norma: 'Lei 6.496 · CONFEA',
-    descricao: 'Responsabilidade técnica formal, rotinas preditivas/preventivas e indicadores MTBF/MTTR.',
-    subtipos: [
-      {
-        nome: 'Laudo com ART de Manutenção e Liberação de Operação',
-        normaRef: 'Lei 6.496/77 · Resolução CONFEA',
-        detalhe: 'Emissão de ART formal de cargo e função para empresas, indústrias, construtoras e frotas perante órgãos e clientes.'
-      },
-      {
-        nome: 'Laudo de Diagnóstico de Maturidade em Gestão de Ativos (PCM / ISO 55001)',
-        normaRef: 'ABNT NBR ISO 55001',
-        detalhe: 'Estruturação de cronogramas PCM, mapeamento de criticidade de máquinas e controle de indicadores de confiabilidade MTBF e MTTR.'
-      },
-      {
-        nome: 'Laudo de Conformidade de Grupos Geradores e Utilidades Industriais',
-        normaRef: 'NR-10 · NR-12 · ABNT',
-        detalhe: 'Vistoria mecânica em geradores diesel de emergência, compressores de ar e sistemas de bombeamento industrial.'
-      }
-    ]
-  }
-];
+import { SERVICOS_LISTA, ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
+export { SERVICOS_LISTA };
+export type { ServicoItem, SubtipoServico };
 
 const FAQ_ITENS = [
   {
@@ -467,17 +296,6 @@ export const LandingPage: React.FC = () => {
                 
                 {/* Technical Blueprint Gradient Overlay */}
                 <div className="absolute inset-0 bg-[#0B2447]/30 mix-blend-multiply pointer-events-none" />
-
-                {/* Top Left Badge: CAD SCHEMATIC • CREA-PE 1822299490 */}
-                <div className="absolute top-3.5 left-3.5 z-20 bg-[rgba(5,14,28,0.88)] text-[#6BA2FA] backdrop-blur-xs text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#1E5BD8]/40 flex items-center gap-1.5 shadow-sm">
-                  <DraftingCompass className="w-3.5 h-3.5 text-[#1E5BD8]" />
-                  <span>CAD SCHEMATIC · CREA-PE 1822299490</span>
-                </div>
-
-                {/* Top Right Rotating Blue Gear Accent */}
-                <div className="absolute top-2 right-2 w-16 h-16 pointer-events-none opacity-50 z-20 animate-gear-slow text-[#1E5BD8]">
-                  <Cog className="w-full h-full" />
-                </div>
 
                 {/* Vitor portrait */}
                 <img 
@@ -771,28 +589,6 @@ export const LandingPage: React.FC = () => {
                 <b className="text-[var(--ink)] font-bold">{reviewsData.user_ratings_total || reviewsData.totalReviews || '12'} avaliações</b> no Google
               </p>
 
-              <div className="cta flex gap-3 flex-wrap mt-5">
-                <a 
-                  className="btn-tech text-[15px]" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  href={reviewsData.google_maps_url || reviewsData.googleMapsUrl || 'https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife'}
-                >
-                  Ver no Google
-                </a>
-                <a 
-                  className="btn-tech pri text-[15px]" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  href={reviewsData.google_maps_url || reviewsData.googleMapsUrl || 'https://www.google.com/maps/search/?api=1&query=VL+Engenharia+Mec%C3%A2nica+Recife'}
-                >
-                  Avaliar a VL
-                </a>
-              </div>
-
-              <span className="ex mt-4 inline-block">
-                Dados de exemplo: trocar pela nota e avaliações reais
-              </span>
             </div>
 
             {/* Reviews Quotes */}

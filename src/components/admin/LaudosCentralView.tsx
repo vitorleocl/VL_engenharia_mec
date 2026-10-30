@@ -20,12 +20,14 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { Laudo } from '../../types';
+import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
 
 export const LaudosCentralView: React.FC = () => {
   const { 
     laudos, 
     clientes, 
     ativos, 
+    criarNovoLaudo,
     criarLaudoPorTaxonomia, 
     removerLaudo 
   } = useData();
@@ -42,8 +44,10 @@ export const LaudosCentralView: React.FC = () => {
   const [laudoExportandoPdf, setLaudoExportandoPdf] = useState<Laudo | null>(null);
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
-  // Form State for Novo Laudo
-  const [novoTipo, setNovoTipo] = useState('Adequação à NR-12 e projetos mecânicos');
+  // Template & Form State for Novo Laudo
+  const [modoPreenchimento, setModoPreenchimento] = useState<'pre_preenchido' | 'em_branco'>('pre_preenchido');
+  const [categoriaIndex, setCategoriaIndex] = useState(0);
+  const [subtipoIndex, setSubtipoIndex] = useState(0);
   const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '');
   const [novoEquipamento, setNovoEquipamento] = useState('');
   const [novaData, setNovaData] = useState(new Date().toISOString().split('T')[0]);
@@ -130,22 +134,79 @@ export const LaudosCentralView: React.FC = () => {
   };
 
   const handleSalvarNovoLaudo = () => {
-    if (!novoEquipamento.trim()) {
-      alert('Informe o nome ou modelo do equipamento.');
-      return;
-    }
+    const activeCategory = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
+    const activeSubtipo = activeCategory.subtipos[subtipoIndex] || activeCategory.subtipos[0];
+    const equip = novoEquipamento.trim() || activeSubtipo.nome;
 
-    const novoId = criarLaudoPorTaxonomia({
-      tipoLaudoId: novoTipo.toLowerCase().includes('12') ? 'tipo-nr12-maquinas' : 'tipo-nr11-munck',
-      clienteId: novoClienteId,
-      ativoId: ativos[0]?.id || '',
+    const clienteSelecionado = clientes.find(c => c.id === novoClienteId) || clientes[0];
+    const ativoCorrespondente = ativos.find(a => a.clienteId === novoClienteId) || ativos[0];
+
+    const ehPrePreenchido = modoPreenchimento === 'pre_preenchido';
+
+    // Gerar seções técnicas a partir do modelo pré-pronto
+    const secoesModelo = ehPrePreenchido && activeSubtipo.secoesSugeridas
+      ? activeSubtipo.secoesSugeridas.map((titulo, idx) => ({
+          id: `sec-${idx + 1}`,
+          titulo: titulo,
+          ordem: idx + 1,
+          conteudoHtml: `<p class="leading-relaxed">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>${activeSubtipo.normaRef}</strong>. Inspeção efetuada no ativo <strong>${equip}</strong> para o cliente <strong>${clienteSelecionado?.razaoSocial || clienteSelecionado?.nomeFantasia || 'Contratante'}</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>`,
+          itens: [],
+          fotos: []
+        }))
+      : [
+          {
+            id: 'sec-1',
+            titulo: '1. Identificação do Ativo e Escopo da Vistoria',
+            ordem: 1,
+            conteudoHtml: '',
+            itens: [],
+            fotos: []
+          },
+          {
+            id: 'sec-2',
+            titulo: '2. Avaliação de Conformidade e Normas Aplicáveis',
+            ordem: 2,
+            conteudoHtml: '',
+            itens: [],
+            fotos: []
+          }
+        ];
+
+    // Gerar checklist a partir do modelo pré-pronto
+    const checklistModelo = ehPrePreenchido && activeSubtipo.checklistSugerido
+      ? activeSubtipo.checklistSugerido.map((itemDesc, idx) => ({
+          id: `ck-${idx + 1}`,
+          descricao: itemDesc,
+          status: 'conforme' as const,
+          observacao: 'Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.'
+        }))
+      : [];
+
+    const novoId = criarNovoLaudo({
+      tipo: activeSubtipo.nome,
+      clienteId: novoClienteId || clientes[0]?.id || '',
+      ativoId: ativoCorrespondente?.id || '',
+      ativoIdentificacao: equip,
       dataInspecao: novaData,
-      modoPreenchimento: 'em_branco'
+      normasReferencia: activeSubtipo.normaRef,
+      resumoExecutivo: `Laudo técnico de ${activeSubtipo.nome} referente ao equipamento ${equip}. Normas de referência: ${activeSubtipo.normaRef}. Escopo: ${activeSubtipo.detalhe}`,
+      apresentacao: `O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de ${equip}, em estrita conformidade com as diretrizes de ${activeSubtipo.normaRef}.`,
+      metodologia: `A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.`,
+      conclusao: `Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma ${activeSubtipo.normaRef}, estando apto para operação regular sob acompanhamento das rotinas de manutenção.`,
+      secoes: secoesModelo,
+      checklist: checklistModelo,
+      modoCriacao: ehPrePreenchido ? 'sugestao_ia' : 'em_branco',
+      hrnCalculoGeral: {
+        score: hrnValor,
+        nivel: hrnValor < 10 ? 'Baixo' : hrnValor < 50 ? 'Médio' : 'Alto',
+        cor: hrnClassificacao.cor,
+        recomendacao: hrnClassificacao.texto
+      }
     });
 
     setModalNovoAberto(false);
     setSearchParams({});
-    showToast('Rascunho salvo com sucesso. A ART só é emitida após sua revisão.');
+    showToast(ehPrePreenchido ? 'Laudo criado a partir do modelo pré-pronto com sucesso!' : 'Rascunho de laudo criado com sucesso!');
     navigate(`/admin/laudos/${novoId}`);
   };
 
@@ -170,15 +231,29 @@ export const LaudosCentralView: React.FC = () => {
             Central de laudos
           </h1>
           <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
-            {laudos.length} documentos emitidos e gerenciados com rastreabilidade técnica.
+            {laudos.length} documentos emitidos · Modelos pré-prontos das 7 especialidades da VL Engenharia.
           </p>
         </div>
 
-        <div>
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
-            onClick={() => setModalNovoAberto(true)}
+            onClick={() => {
+              setModoPreenchimento('pre_preenchido');
+              setModalNovoAberto(true);
+            }}
             className="btn-tech pri text-[14.5px] px-4 py-2"
+          >
+            <Sparkles className="w-4 h-4 mr-1.5" />
+            <span>Usar modelo pré-pronto</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setModoPreenchimento('em_branco');
+              setModalNovoAberto(true);
+            }}
+            className="btn-tech text-[14.5px] px-3.5 py-2"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             <span>Novo laudo</span>
@@ -377,28 +452,106 @@ export const LaudosCentralView: React.FC = () => {
               </button>
             </div>
 
+            {/* Mode Switcher: Pré-Pronto vs Em branco */}
+            <div className="flex items-center gap-2 p-1 bg-[var(--paper)] rounded-xl border border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => setModoPreenchimento('pre_preenchido')}
+                className={`flex-1 py-2 px-3 rounded-lg text-[13.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  modoPreenchimento === 'pre_preenchido'
+                    ? 'bg-[var(--blue)] text-[var(--onblue)] shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Modelo Pré-Pronto (Recomendado)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoPreenchimento('em_branco')}
+                className={`flex-1 py-2 px-3 rounded-lg text-[13.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  modoPreenchimento === 'em_branco'
+                    ? 'bg-[var(--blue)] text-[var(--onblue)] shadow-sm'
+                    : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Em branco</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6">
               
               {/* Vistoria Inputs */}
               <div className="space-y-4">
-                <h3 className="text-[17px] font-bold">Dados da vistoria</h3>
+                <h3 className="text-[17px] font-bold">
+                  {modoPreenchimento === 'pre_preenchido' ? 'Escolha a Especialidade e o Modelo' : 'Dados do Laudo'}
+                </h3>
 
+                {/* 1. Especialidade (7 core services) */}
                 <label className="block text-sm font-semibold">
-                  <span className="mb-1 block">Tipo de laudo</span>
+                  <span className="mb-1 block">Especialidade (O que a VL inspeciona)</span>
                   <select
-                    value={novoTipo}
-                    onChange={(e) => setNovoTipo(e.target.value)}
-                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                    value={categoriaIndex}
+                    onChange={(e) => {
+                      const idx = parseInt(e.target.value, 10);
+                      setCategoriaIndex(idx);
+                      setSubtipoIndex(0);
+                    }}
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-medium"
                   >
-                    <option value="Adequação à NR-12 e projetos mecânicos">Adequação à NR-12 e projetos mecânicos</option>
-                    <option value="Laudo de máquinas pesadas">Laudo de máquinas pesadas (NR-11)</option>
-                    <option value="Caminhões munck e guindastes">Caminhões munck e guindastes (NR-11)</option>
-                    <option value="Perícia veicular e reclassificação de monta">Perícia veicular (DETRAN)</option>
-                    <option value="Laudo de playgrounds">Laudo de playgrounds (NBR 16071)</option>
-                    <option value="PMOC e projetos de HVAC-R">PMOC e projetos de HVAC-R (Lei 13.589 · NBR 16401)</option>
-                    <option value="ART de manutenção e gestão PCM">ART de manutenção (Lei 6.496)</option>
+                    {SERVICOS_LISTA.map((serv, idx) => (
+                      <option key={serv.id || idx} value={idx}>
+                        {serv.nome} ({serv.norma})
+                      </option>
+                    ))}
                   </select>
                 </label>
+
+                {/* 2. Subtipo / Modelo Pré-Pronto */}
+                <label className="block text-sm font-semibold">
+                  <span className="mb-1 block">Modelo de laudo / Subtipo técnico</span>
+                  <select
+                    value={subtipoIndex}
+                    onChange={(e) => setSubtipoIndex(parseInt(e.target.value, 10))}
+                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-medium"
+                  >
+                    {SERVICOS_LISTA[categoriaIndex]?.subtipos.map((sub, sIdx) => (
+                      <option key={sub.id || sIdx} value={sIdx}>
+                        {sub.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Template Info Card */}
+                {(() => {
+                  const activeCat = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
+                  const activeSub = activeCat?.subtipos[subtipoIndex] || activeCat?.subtipos[0];
+                  if (!activeSub) return null;
+                  return (
+                    <div className="p-3.5 rounded-lg border border-[var(--blue)]/30 bg-[var(--blue)]/5 space-y-1.5 text-xs sm:text-sm">
+                      <div className="flex items-center justify-between font-semibold text-[var(--blue)]">
+                        <span>Norma: {activeSub.normaRef}</span>
+                        {modoPreenchimento === 'pre_preenchido' && (
+                          <span className="text-[11px] bg-[var(--blue)] text-[var(--onblue)] px-2 py-0.5 rounded-full font-bold">
+                            Checklist e seções prontas
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[var(--muted)] text-[12.5px] leading-relaxed">
+                        {activeSub.detalhe}
+                      </p>
+                      {modoPreenchimento === 'pre_preenchido' && (
+                        <div className="pt-2 border-t border-[var(--blue)]/20 flex flex-wrap gap-3 text-xs text-[var(--muted)]">
+                          <span>✓ {activeSub.checklistSugerido?.length || 5} itens de checklist</span>
+                          <span>✓ {activeSub.secoesSugeridas?.length || 4} seções técnicas</span>
+                          <span>✓ Metodologia oficial</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="block text-sm font-semibold">
@@ -426,12 +579,12 @@ export const LaudosCentralView: React.FC = () => {
                 </div>
 
                 <label className="block text-sm font-semibold">
-                  <span className="mb-1 block">Equipamento / Máquina</span>
+                  <span className="mb-1 block">Equipamento / Ativo periciado</span>
                   <input
                     type="text"
                     value={novoEquipamento}
                     onChange={(e) => setNovoEquipamento(e.target.value)}
-                    placeholder="Ex: Prensa hidráulica 80 t ou Munck 12 t"
+                    placeholder="Ex: Escavadeira CAT 320, Munck Madal 15 t, Prensa Excêntrica 60 t..."
                     className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
                   />
                 </label>

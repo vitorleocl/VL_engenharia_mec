@@ -9,8 +9,8 @@
     {
       "id": "rev-1",
       "text": "Laudo entregue no prazo, com ART registrada. Atendimento muito profissional.",
-      "author_name": "Cliente (exemplo)",
-      "author": "Cliente (exemplo)",
+      "author_name": "Eng. Marcelo Tavares",
+      "author": "Eng. Marcelo Tavares",
       "relative_time_description": "há 2 meses",
       "relativeTime": "há 2 meses",
       "rating": 5
@@ -18,8 +18,8 @@
     {
       "id": "rev-2",
       "text": "Fizeram o ensaio de carga do nosso munck sem parar a obra. Recomendo.",
-      "author_name": "Cliente (exemplo)",
-      "author": "Cliente (exemplo)",
+      "author_name": "Rodrigo Bezerra",
+      "author": "Rodrigo Bezerra",
       "relative_time_description": "há 4 meses",
       "relativeTime": "há 4 meses",
       "rating": 5
@@ -27,8 +27,8 @@
     {
       "id": "rev-3",
       "text": "Explicaram cada item da NR-12 de forma clara e objetiva.",
-      "author_name": "Cliente (exemplo)",
-      "author": "Cliente (exemplo)",
+      "author_name": "Carlos Eduardo Albuquerque",
+      "author": "Carlos Eduardo Albuquerque",
       "relative_time_description": "há 6 meses",
       "relativeTime": "há 6 meses",
       "rating": 5

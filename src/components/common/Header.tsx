@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { Menu, X, ArrowUpRight, Sun, Moon } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { theme, setTheme } = useAdminTheme();
@@ -127,35 +127,20 @@ export const Header: React.FC = () => {
           </button>
         </nav>
 
-        {/* Theme Switcher Segmented Control */}
-        <div className="seg flex items-center border border-[var(--line)] rounded-lg overflow-hidden bg-[var(--paper)]" role="group" aria-label="Tema">
-          <button
-            type="button"
-            data-t="light"
-            onClick={() => setTheme('light')}
-            className={`px-3 py-1.5 font-[family-name:var(--b)] text-[14px] font-semibold border-0 cursor-pointer transition-colors ${
-              theme === 'light'
-                ? 'bg-[var(--blue)] text-[var(--onblue)]'
-                : 'text-[var(--muted)] hover:text-[var(--ink)] bg-transparent'
-            }`}
-            aria-pressed={theme === 'light'}
-          >
-            Claro
-          </button>
-          <button
-            type="button"
-            data-t="dark"
-            onClick={() => setTheme('dark')}
-            className={`px-3 py-1.5 font-[family-name:var(--b)] text-[14px] font-semibold border-0 cursor-pointer transition-colors ${
-              theme === 'dark'
-                ? 'bg-[var(--blue)] text-[var(--onblue)]'
-                : 'text-[var(--muted)] hover:text-[var(--ink)] bg-transparent'
-            }`}
-            aria-pressed={theme === 'dark'}
-          >
-            Escuro
-          </button>
-        </div>
+        {/* Theme Switcher Icon Button */}
+        <button
+          type="button"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-10 h-10 rounded-lg border border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] flex items-center justify-center hover:border-[var(--blue)] hover:text-[var(--blue)] transition-colors cursor-pointer"
+          aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-5 h-5 text-amber-400" />
+          ) : (
+            <Moon className="w-5 h-5 text-slate-700" />
+          )}
+        </button>
 
         {/* Orçamento & Painel CTAs */}
         <div className="hidden sm:flex items-center gap-2">
