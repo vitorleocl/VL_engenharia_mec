@@ -25,7 +25,16 @@ app.get("/api/app-data", (req, res) => {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, "utf-8");
-      return res.json(JSON.parse(content));
+      const data = JSON.parse(content);
+      const orcRemovidos = new Set(data.orcamentosRemovidosIds || []);
+      const lauRemovidos = new Set(data.laudosRemovidosIds || []);
+      if (Array.isArray(data.orcamentos)) {
+        data.orcamentos = data.orcamentos.filter((o: any) => !orcRemovidos.has(o.id) && o.id !== 'orc-adf-pgx7098');
+      }
+      if (Array.isArray(data.laudos)) {
+        data.laudos = data.laudos.filter((l: any) => !lauRemovidos.has(l.id));
+      }
+      return res.json(data);
     }
   } catch (err) {
     console.warn("Aviso ao ler app_storage.json:", err);
@@ -40,11 +49,68 @@ app.post("/api/app-data", (req, res) => {
       fs.mkdirSync(dir, { recursive: true });
     }
     const currentData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")) : {};
-    const merged = { ...currentData, ...req.body, updatedAt: new Date().toISOString() };
+    
+    // Combine removed IDs lists
+    const orcamentosRemovidosIds = Array.from(new Set([
+      ...(currentData.orcamentosRemovidosIds || []),
+      ...(req.body.orcamentosRemovidosIds || [])
+    ]));
+    const laudosRemovidosIds = Array.from(new Set([
+      ...(currentData.laudosRemovidosIds || []),
+      ...(req.body.laudosRemovidosIds || [])
+    ]));
+
+    const merged = { 
+      ...currentData, 
+      ...req.body, 
+      orcamentosRemovidosIds,
+      laudosRemovidosIds,
+      updatedAt: new Date().toISOString() 
+    };
+
+    const orcRemovidos = new Set(orcamentosRemovidosIds);
+    if (Array.isArray(merged.orcamentos)) {
+      merged.orcamentos = merged.orcamentos.filter((o: any) => !orcRemovidos.has(o.id) && o.id !== 'orc-adf-pgx7098');
+    }
+    if (Array.isArray(merged.laudos)) {
+      const lauRemovidos = new Set(laudosRemovidosIds);
+      merged.laudos = merged.laudos.filter((l: any) => !lauRemovidos.has(l.id));
+    }
+
     fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2), "utf-8");
     return res.json({ success: true, savedAt: merged.updatedAt });
   } catch (err: any) {
     console.error("Erro ao salvar app_storage.json:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/orcamentos/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!fs.existsSync(DATA_FILE)) {
+      return res.json({ success: true });
+    }
+    const currentData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    const orcamentosRemovidosIds = Array.from(new Set([
+      ...(currentData.orcamentosRemovidosIds || []),
+      id
+    ]));
+    const orcRemovidos = new Set(orcamentosRemovidosIds);
+    const orcamentos = Array.isArray(currentData.orcamentos)
+      ? currentData.orcamentos.filter((o: any) => !orcRemovidos.has(o.id))
+      : [];
+
+    const updated = {
+      ...currentData,
+      orcamentos,
+      orcamentosRemovidosIds,
+      updatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(updated, null, 2), "utf-8");
+    return res.json({ success: true, removedId: id });
+  } catch (err: any) {
+    console.error("Erro ao deletar orçamento em app_storage.json:", err);
     return res.status(500).json({ error: err.message });
   }
 });

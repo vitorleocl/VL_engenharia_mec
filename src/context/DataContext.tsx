@@ -745,6 +745,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checklistsCampo?: ChecklistCampo[];
     agenda?: AgendaVistoria[];
     usuarios?: Usuario[];
+    orcamentosRemovidosIds?: string[];
+    laudosRemovidosIds?: string[];
   }) => {
     fetch('/api/app-data', {
       method: 'POST',
@@ -842,11 +844,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubOrcamentos = onSnapshot(collection(db, 'orcamentos'), (snapshot) => {
         if (!snapshot.empty) {
-          const docs = snapshot.docs.map(d => d.data() as Orcamento).filter(o => o.id !== 'orc-adf-pgx7098');
+          const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
+          const removidosSet = new Set(removidos);
+          const docs = snapshot.docs
+            .map(d => d.data() as Orcamento)
+            .filter(o => o.id !== 'orc-adf-pgx7098' && !removidosSet.has(o.id));
           const docIds = new Set(docs.map(d => d.id));
           const docsMerged = [...docs];
           for (const padrao of ORCAMENTOS_INICIAIS) {
-            if (!docIds.has(padrao.id)) {
+            if (!docIds.has(padrao.id) && !removidosSet.has(padrao.id)) {
               docsMerged.push(padrao);
             }
           }
@@ -1007,10 +1013,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
 
+        const orcRemovidosLocal: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
+        const orcRemovidosSet = new Set([
+          ...orcRemovidosLocal,
+          ...(Array.isArray(data.orcamentosRemovidosIds) ? data.orcamentosRemovidosIds : [])
+        ]);
+
         if (Array.isArray(data.orcamentos) && data.orcamentos.length > 0) {
           setOrcamentos(prev => {
-            const serverMap = new Map<string, Orcamento>(data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098').map((o: Orcamento) => [o.id, o]));
-            const limpos = prev.filter(o => o.id !== 'orc-adf-pgx7098');
+            const serverOrcamentos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !orcRemovidosSet.has(o.id));
+            const serverMap = new Map<string, Orcamento>(serverOrcamentos.map((o: Orcamento) => [o.id, o]));
+            const limpos = prev.filter(o => o.id !== 'orc-adf-pgx7098' && !orcRemovidosSet.has(o.id));
             const atualizados = limpos.map(o => {
               const fromServer = serverMap.get(o.id);
               if (fromServer) {
@@ -1020,8 +1033,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return o;
             });
             const prevIds = new Set(limpos.map(o => o.id));
-            const novos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !prevIds.has(o.id));
-            const merged = [...novos, ...atualizados];
+            const novos = serverOrcamentos.filter((o: Orcamento) => !prevIds.has(o.id) && !orcRemovidosSet.has(o.id));
+            const merged = [...novos, ...atualizados].filter(o => !orcRemovidosSet.has(o.id));
             saveStorage('vl_orcamentos', merged);
             return merged;
           });
@@ -1496,23 +1509,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerOrcamento = (id: string) => {
-    setOrcamentos(prev => {
-      const filtrados = prev.filter(o => o.id !== id);
-      saveStorage('vl_orcamentos', filtrados);
-      salvarServidorDireto({ orcamentos: filtrados });
-      return filtrados;
-    });
-
+    // 1. Armazena imediatamente nos IDs removidos
+    let novosRemovidos: string[] = [];
     try {
       const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
-      if (!removidos.includes(id)) {
-        saveStorage('vl_orcamentos_removidos_ids', [...removidos, id]);
-      }
+      novosRemovidos = Array.from(new Set([...removidos, id]));
+      saveStorage('vl_orcamentos_removidos_ids', novosRemovidos);
     } catch (e) {
       console.warn('Erro ao salvar ID de orçamento removido:', e);
     }
 
-    // Desvincula qualquer laudo que referencie este orçamento
+    // 2. Filtra localmente e envia para persistência do servidor
+    setOrcamentos(prev => {
+      const filtrados = prev.filter(o => o.id !== id);
+      saveStorage('vl_orcamentos', filtrados);
+      salvarServidorDireto({ 
+        orcamentos: filtrados,
+        orcamentosRemovidosIds: novosRemovidos 
+      });
+      return filtrados;
+    });
+
+    // 3. Notifica servidor express para remoção atômica no arquivo de storage
+    fetch(`/api/orcamentos/${id}`, { method: 'DELETE' }).catch(err => {
+      console.warn('Aviso ao deletar orçamento na API express:', err);
+    });
+
+    // 4. Desvincula qualquer laudo que referencie este orçamento
     setLaudos(prev => {
       const atualizados = prev.map(l => {
         if (l.orcamentoOrigemId === id) {
@@ -1527,7 +1550,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return atualizados;
     });
 
-    if (db && auth?.currentUser) {
+    // 5. Deleta do Firestore se disponível
+    if (db) {
       deleteDoc(doc(db, 'orcamentos', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `orcamentos/${id}`);
       });
@@ -2217,7 +2241,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveStorage('vl_ativos', docs);
       }
       if (!snapOrc.empty) {
-        const docs = snapOrc.docs.map(d => d.data() as Orcamento);
+        const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
+        const removidosSet = new Set(removidos);
+        const docs = snapOrc.docs
+          .map(d => d.data() as Orcamento)
+          .filter(o => o.id !== 'orc-adf-pgx7098' && !removidosSet.has(o.id));
         setOrcamentos(docs);
         saveStorage('vl_orcamentos', docs);
       }

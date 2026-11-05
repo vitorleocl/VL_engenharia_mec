@@ -632,7 +632,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
                 {/* Official Page Footer */}
                 <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                  <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: atendimento@vlengenhariamecanica.com.br</span>
+                  <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
                   <span>Recife - PE • (81) 98444-2592</span>
                 </footer>
               </div>
@@ -696,7 +696,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </div>
 
                   <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                    <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: atendimento@vlengenhariamecanica.com.br</span>
+                    <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
                     <span>Recife - PE • (81) 98444-2592</span>
                   </footer>
                 </div>
@@ -771,7 +771,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               </div>
 
               <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                <span>VL Engenharia Mecânica • CREA-PE 182229949-0 • E-mail: atendimento@vlengenhariamecanica.com.br</span>
+                <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
                 <span>Recife - PE • (81) 98444-2592</span>
               </footer>
             </div>
