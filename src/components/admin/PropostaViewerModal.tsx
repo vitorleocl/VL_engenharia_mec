@@ -22,7 +22,8 @@ import {
   Square,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
@@ -68,13 +69,14 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onGerarLaudo,
   onEditarProposta,
 }) => {
-  const { atualizarOrcamento, clientes } = useData();
+  const { atualizarOrcamento, removerOrcamento, clientes } = useData();
   const documentRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [painelSelecaoAberto, setPainelSelecaoAberto] = useState(false);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   // Initialize hidden sections from orcamento
   const [secoesOcultasIds, setSecoesOcultasIds] = useState<string[]>(() => {
@@ -448,6 +450,16 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               )}
             </button>
 
+            {/* Excluir Proposta button */}
+            <button
+              onClick={() => setConfirmandoExclusao(true)}
+              className="p-2 rounded-lg bg-rose-900/40 hover:bg-rose-900/70 text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-800/60 cursor-pointer ml-1"
+              title="Excluir este orçamento definitivamente"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span className="hidden md:inline">Excluir</span>
+            </button>
+
             {/* Close */}
             <button
               onClick={onClose}
@@ -570,7 +582,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 {/* Official Page Header */}
                 <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <img src="/logo.png" alt="VL" className="h-10 w-auto object-contain" />
+                    <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
                     <div>
                       <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                       <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -636,7 +648,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
                   <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <img src="/logo.png" alt="VL" className="h-10 w-auto object-contain" />
+                      <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
                       <div>
                         <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                         <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -711,7 +723,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
               <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <img src="/logo.png" alt="VL" className="h-10 w-auto object-contain" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
                   <div>
                     <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                     <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -915,6 +927,73 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 </button>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* Modal Confirmação de Exclusão do Orçamento */}
+        {confirmandoExclusao && (
+          <div 
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-left">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Excluir Orçamento</h3>
+                    <p className="text-xs text-slate-500">Ação irreversível</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoExclusao(false)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p className="text-slate-700 dark:text-slate-300">
+                  Tem certeza de que deseja excluir permanentemente o orçamento <strong className="font-mono text-slate-900 dark:text-white">{orcamento.codigoProposta || orcamento.id}</strong>?
+                </p>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  <div><strong>Serviço:</strong> {orcamento.servico}</div>
+                  <div><strong>Cliente:</strong> {clientes.find(c => c.id === orcamento.clienteId)?.nomeFantasia || orcamento.clienteNome || 'Cliente'}</div>
+                  <div><strong>Valor:</strong> {(orcamento.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                </div>
+
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  Esta ação removerá este orçamento do banco de dados e do painel técnico.
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoExclusao(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    removerOrcamento(orcamento.id);
+                    setConfirmandoExclusao(false);
+                    onClose();
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs"
+                >
+                  Sim, excluir orçamento
+                </button>
+              </div>
             </div>
           </div>
         )}

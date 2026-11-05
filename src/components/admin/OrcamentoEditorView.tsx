@@ -56,7 +56,7 @@ import {
 export const OrcamentoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { orcamentos, clientes, ativos, atualizarOrcamento } = useData();
+  const { orcamentos, clientes, ativos, atualizarOrcamento, removerOrcamento } = useData();
   const { currentUser } = useAuth();
 
   // Find target quote
@@ -82,6 +82,7 @@ export const OrcamentoEditorView: React.FC = () => {
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
   const [drawerHistoricoAberto, setDrawerHistoricoAberto] = useState(false);
   const [modalModeloPadraoAberto, setModalModeloPadraoAberto] = useState(false);
+  const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
 
   // File Inputs
   const capaFileInputRef = useRef<HTMLInputElement>(null);
@@ -804,6 +805,16 @@ export const OrcamentoEditorView: React.FC = () => {
             <span>Exportar / Imprimir PDF ({secoesVisiveisCount} págs)</span>
           </button>
 
+          {/* Excluir Orçamento */}
+          <button
+            onClick={() => setModalExcluirAberto(true)}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 hover:border-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Excluir este orçamento definitivamente"
+          >
+            <Trash2 className="w-4 h-4 text-rose-500" />
+            <span className="hidden sm:inline">Excluir</span>
+          </button>
+
         </div>
 
       </div>
@@ -1340,6 +1351,74 @@ export const OrcamentoEditorView: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs cursor-pointer"
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmação de Exclusão do Orçamento */}
+      {modalExcluirAberto && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-100 text-rose-600">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Excluir Orçamento Definitivamente</h3>
+                  <p className="text-xs text-slate-500">Ação irreversível</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalExcluirAberto(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-700"
+              >
+                <AlertCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <p className="text-slate-700">
+                Tem certeza de que deseja excluir permanentemente o orçamento <strong className="font-mono text-slate-900">{orcamentoState.codigoProposta || orcamentoState.id}</strong>?
+              </p>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs text-slate-600">
+                <div><strong>Serviço:</strong> {orcamentoState.servico}</div>
+                <div><strong>Cliente:</strong> {orcamentoState.clienteNome || 'Cliente'}</div>
+                <div><strong>Valor:</strong> {(orcamentoState.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                <div><strong>Status:</strong> {orcamentoState.status}</div>
+              </div>
+
+              <p className="text-xs text-rose-600 font-medium">
+                Esta ação removerá este orçamento do banco de dados e do painel técnico.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2.5 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setModalExcluirAberto(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removerOrcamento(orcamentoState.id);
+                  setModalExcluirAberto(false);
+                  navigate('/admin/orcamentos');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs"
+              >
+                Sim, excluir orçamento
               </button>
             </div>
           </div>

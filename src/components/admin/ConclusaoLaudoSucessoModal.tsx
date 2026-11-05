@@ -81,7 +81,7 @@ export const ConclusaoLaudoSucessoModal: React.FC<ConclusaoLaudoSucessoModalProp
           {/* Cartão Central com Logo e Checkmark Dourado */}
           <div className="relative z-20 bg-white p-3 rounded-2xl shadow-2xl border-2 border-emerald-500/50 flex flex-col items-center justify-center">
             <img
-              src="/logo.png"
+              src="/vl-logo-compacto.svg"
               alt="VL Engenharia"
               className="h-12 w-auto object-contain drop-shadow-xs"
             />

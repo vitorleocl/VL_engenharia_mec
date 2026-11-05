@@ -27,13 +27,15 @@ import {
   Camera,
   Layers,
   Paperclip,
-  CheckSquare
+  CheckSquare,
+  Trash2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import { Laudo, LaudoSecao, Cliente, Ativo, EvidenciaFoto, LaudoItemChecklist } from '../../types';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
 import { converterPdfParaImagem } from '../../lib/pdfToImage';
+import { useData } from '../../context/DataContext';
 
 interface LaudoPdfExportModalProps {
   laudo: Laudo;
@@ -65,12 +67,14 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
   onClose,
   onAtualizarSecoes,
 }) => {
+  const { removerLaudo } = useData();
   const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [sucessoDownload, setSucessoDownload] = useState(false);
   const [menuSecoesAberto, setMenuSecoesAberto] = useState(false);
+  const [confirmandoExcluirLaudo, setConfirmandoExcluirLaudo] = useState(false);
 
   // Local state for hidden sections in PDF
   const [secoesOcultadasLocal, setSecoesOcultadasLocal] = useState<Record<string, boolean>>(() => {
@@ -187,23 +191,17 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
         <div className="flex-1 min-h-[calc(297mm-4rem)] sm:min-h-[calc(297mm-6rem)] h-full flex flex-col justify-between text-slate-900">
           {/* Top Header */}
           <div className="border-b-2 border-[#0B1E3D] pb-4 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-xs">
-                <img 
-                  src="/logo.png" 
-                  alt="VL Engenharia Logo" 
-                  className="w-full h-full object-contain"
-                  crossOrigin="anonymous"
-                />
-              </div>
-              <div>
-                <h1 className="text-xl font-black tracking-tight text-[#0B1E3D] leading-none">
-                  VL ENGENHARIA MECÂNICA
-                </h1>
-                <p className="text-[11px] font-bold text-[#1565D8] uppercase tracking-wider mt-1">
-                  Consultoria Técnica, Perícias & Segurança Operacional
-                </p>
-              </div>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/vl-logo-horizontal.svg" 
+                alt="VL Engenharia Mecânica" 
+                className="h-14 sm:h-16 w-auto object-contain"
+                crossOrigin="anonymous"
+              />
+            </div>
+            <div className="text-right text-[10px] text-slate-500 font-mono">
+              <p>CREA-PE: <strong className="text-slate-800">182229949-0</strong></p>
+              <p>Laudo Nº: <strong className="text-slate-800">{laudo.numero}</strong></p>
             </div>
           </div>
 
@@ -741,7 +739,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -1031,7 +1029,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -1162,7 +1160,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/logo.png" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" className="h-9 w-auto object-contain" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -1473,6 +1471,16 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               )}
             </button>
 
+            {/* Excluir Laudo button */}
+            <button
+              onClick={() => setConfirmandoExcluirLaudo(true)}
+              className="p-2 rounded-lg bg-rose-900/40 hover:bg-rose-900/70 text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-800/60 cursor-pointer ml-1"
+              title="Excluir este laudo permanentemente"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span className="hidden md:inline">Excluir</span>
+            </button>
+
             <button
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer ml-1"
@@ -1591,9 +1599,19 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
 
         {/* Modal Bottom Actions */}
         <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0B1324] flex items-center justify-between shrink-0">
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Layout oficial VL Engenharia com marca d'água técnica, foto de capa e anexo da ART CREA-PE.
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setConfirmandoExcluirLaudo(true)}
+              className="px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Excluir este laudo permanentemente"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>Excluir Laudo</span>
+            </button>
+            <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">
+              Layout oficial VL Engenharia com marca d'água técnica, foto de capa e anexo da ART CREA-PE.
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
@@ -1611,6 +1629,73 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Modal Confirmação de Exclusão de Laudo */}
+        {confirmandoExcluirLaudo && (
+          <div 
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-left">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Excluir Laudo Técnico</h3>
+                    <p className="text-xs text-slate-500">Ação irreversível</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoExcluirLaudo(false)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p className="text-slate-700 dark:text-slate-300">
+                  Tem certeza de que deseja excluir permanentemente o laudo <strong className="font-mono text-slate-900 dark:text-white">{laudo.numero}</strong>?
+                </p>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                  <div><strong>Tipo:</strong> {laudo.tipo}</div>
+                  <div><strong>Equipamento:</strong> {laudo.ativoIdentificacao || 'Equipamento periciado'}</div>
+                  <div><strong>Status:</strong> {laudo.status === 'finalizado' ? 'ART emitida / Concluído' : 'Em elaboração'}</div>
+                </div>
+
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  Esta ação removerá este laudo permanentemente do banco de dados e do painel técnico.
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoExcluirLaudo(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    removerLaudo(laudo.id);
+                    setConfirmandoExcluirLaudo(false);
+                    onClose();
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs"
+                >
+                  Sim, excluir laudo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

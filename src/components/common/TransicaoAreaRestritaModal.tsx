@@ -100,7 +100,7 @@ export const TransicaoAreaRestritaModal: React.FC<TransicaoAreaRestritaModalProp
           {/* Cartão Central com Logo Oficial da Empresa */}
           <div className="relative z-20 bg-white p-3.5 rounded-2xl shadow-2xl border-2 border-blue-400/40 flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
             <img
-              src="/logo.png"
+              src="/vl-logo-compacto.svg"
               alt="VL Engenharia"
               className="h-12 w-auto object-contain drop-shadow-xs"
             />

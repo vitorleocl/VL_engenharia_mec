@@ -98,7 +98,7 @@ export const LaudoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { laudos, clientes, ativos, orcamentos, associarOrcamentoAoLaudo, categoriasLaudo, atualizarLaudo, finalizarLaudo, registrarUsoIA, checklistsCampo } = useData();
+  const { laudos, clientes, ativos, orcamentos, associarOrcamentoAoLaudo, categoriasLaudo, atualizarLaudo, finalizarLaudo, removerLaudo, registrarUsoIA, checklistsCampo } = useData();
   const { currentUser } = useAuth();
 
   const laudoOriginal = laudos.find(l => l.id === id);
@@ -137,6 +137,7 @@ export const LaudoEditorView: React.FC = () => {
   const [modalNovaSecaoAberto, setModalNovaSecaoAberto] = useState(false);
   const [modalIaAberto, setModalIaAberto] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
+  const [modalExcluirLaudoAberto, setModalExcluirLaudoAberto] = useState(false);
   const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
   const [modalAssociarOrcamentoAberto, setModalAssociarOrcamentoAberto] = useState(false);
   const [buscaOrcamentoModal, setBuscaOrcamentoModal] = useState('');
@@ -983,6 +984,17 @@ export const LaudoEditorView: React.FC = () => {
                 <span>Finalizar com ART</span>
               </button>
             )}
+
+            {/* Excluir Laudo */}
+            <button
+              type="button"
+              onClick={() => setModalExcluirLaudoAberto(true)}
+              className="px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              title="Excluir este laudo permanentemente"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>Excluir laudo</span>
+            </button>
 
           </div>
         </div>
@@ -2535,6 +2547,75 @@ export const LaudoEditorView: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmação de Exclusão Definitiva do Laudo */}
+      {modalExcluirLaudoAberto && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Excluir Laudo Definitivamente</h3>
+                  <p className="text-xs text-slate-500">Ação irreversível</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalExcluirLaudoAberto(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <p className="text-slate-700 dark:text-slate-300">
+                Tem certeza de que deseja excluir permanentemente o laudo <strong className="font-mono text-slate-900 dark:text-white">{laudoState.numero}</strong>?
+              </p>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <div><strong>Tipo:</strong> {laudoState.tipo}</div>
+                <div><strong>Cliente:</strong> {laudoState.clienteNome}</div>
+                <div><strong>Ativo:</strong> {laudoState.ativoIdentificacao}</div>
+                <div><strong>Status atual:</strong> {laudoState.status === 'finalizado' ? 'ART emitida / Preenchido e Concluído' : laudoState.status === 'em_andamento' ? 'Em elaboração' : 'Rascunho'}</div>
+                {laudoState.artNumero && <div><strong>ART:</strong> <span className="font-mono">{laudoState.artNumero}</span></div>}
+              </div>
+
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                Esta ação removerá este laudo permanentemente do banco de dados e do histórico técnico.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setModalExcluirLaudoAberto(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removerLaudo(laudoState.id);
+                  setModalExcluirLaudoAberto(false);
+                  navigate('/admin/laudos');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs"
+              >
+                Sim, excluir laudo
+              </button>
+            </div>
           </div>
         </div>
       )}

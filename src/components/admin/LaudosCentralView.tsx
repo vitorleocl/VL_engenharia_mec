@@ -42,6 +42,7 @@ export const LaudosCentralView: React.FC = () => {
   // Modals
   const [modalNovoAberto, setModalNovoAberto] = useState(searchParams.get('novo') === '1');
   const [laudoExportandoPdf, setLaudoExportandoPdf] = useState<Laudo | null>(null);
+  const [laudoParaExcluir, setLaudoParaExcluir] = useState<Laudo | null>(null);
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
   // Template & Form State for Novo Laudo
@@ -390,7 +391,7 @@ export const LaudosCentralView: React.FC = () => {
                     </td>
 
                     {/* Quick actions */}
-                    <td className="py-3 px-4 align-top text-right space-x-1">
+                    <td className="py-3 px-4 align-top text-right space-x-1 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
@@ -407,6 +408,15 @@ export const LaudosCentralView: React.FC = () => {
                         title="Exportar documento PDF"
                       >
                         <Download className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setLaudoParaExcluir(laudo)}
+                        className="btn-tech sm text-xs py-1 px-2 text-rose-500 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50/10 cursor-pointer"
+                        title="Excluir este laudo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -688,6 +698,75 @@ export const LaudosCentralView: React.FC = () => {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmação de Exclusão de Laudo */}
+      {laudoParaExcluir && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.7)] backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-rose-100 text-rose-600">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-[18px] font-bold text-[var(--ink)]">Excluir Laudo Técnico</h2>
+                  <p className="text-xs text-[var(--muted)]">Confirmação de exclusão</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLaudoParaExcluir(null)}
+                className="p-1 rounded text-[var(--muted)] hover:text-[var(--ink)]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <p className="text-[var(--ink)]">
+                Tem certeza de que deseja excluir permanentemente este laudo?
+              </p>
+
+              <div className="p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] space-y-1 text-xs">
+                <div><strong>Número:</strong> <span className="font-mono">{laudoParaExcluir.numero}</span></div>
+                <div><strong>Tipo:</strong> {laudoParaExcluir.tipo}</div>
+                <div><strong>Status:</strong> {laudoParaExcluir.status === 'finalizado' ? 'ART emitida / Concluído' : laudoParaExcluir.status === 'em_andamento' ? 'Em elaboração' : 'Pendente / Rascunho'}</div>
+                <div><strong>Criado em:</strong> {new Date(laudoParaExcluir.criadoEm || Date.now()).toLocaleDateString('pt-BR')}</div>
+              </div>
+
+              <p className="text-xs text-rose-500 font-medium">
+                Esta ação removerá este laudo permanentemente do banco de dados e do painel técnico.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 border-t border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => setLaudoParaExcluir(null)}
+                className="btn-tech text-sm px-4 py-2"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const idParaRemover = laudoParaExcluir.id;
+                  removerLaudo(idParaRemover);
+                  setLaudoParaExcluir(null);
+                  showToast('Laudo excluído com sucesso!');
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition-colors cursor-pointer shadow-xs"
+              >
+                Sim, excluir laudo
+              </button>
             </div>
           </div>
         </div>

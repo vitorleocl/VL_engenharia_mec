@@ -220,6 +220,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => {
+    const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
+    const removidosSet = new Set(removidos);
     let loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
     let alterouStorage = false;
 
@@ -230,13 +232,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const temOrcAdf = loaded.some((o: Orcamento) => o.id === 'orc-1790444416499');
-    if (!temOrcAdf) {
+    if (!temOrcAdf && !removidosSet.has('orc-1790444416499')) {
       const orcAdf = ORCAMENTOS_INICIAIS.find(o => o.id === 'orc-1790444416499');
       if (orcAdf) {
         loaded.unshift(orcAdf);
         alterouStorage = true;
       }
     }
+
+    // Filtrar removidos
+    loaded = loaded.filter(o => !removidosSet.has(o.id));
 
     const migrados = loaded.map((orc: Orcamento) => {
       let orcAtualizado = { ...orc };
@@ -1426,12 +1431,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adicionarOrcamento = (dados: Omit<Orcamento, 'id' | 'criadoEm'>): string => {
     const id = `orc-${Date.now()}`;
     const cliente = clientes.find(c => c.id === dados.clienteId);
-    const novo: Orcamento = {
+    const ano = new Date().getFullYear();
+    const codigoProposta = dados.codigoProposta || `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
+    
+    let novo: Orcamento = {
       ...dados,
       id,
+      codigoProposta,
       clienteNome: cliente?.razaoSocial || dados.clienteNome,
       criadoEm: new Date().toISOString(),
     };
+
+    if (!novo.secoes || novo.secoes.length === 0) {
+      novo.secoes = gerarSecoesPadraoOrcamento(novo);
+    }
+
     setOrcamentos(prev => {
       const lista = [novo, ...prev];
       saveStorage('vl_orcamentos', lista);
@@ -1487,6 +1501,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       saveStorage('vl_orcamentos', filtrados);
       salvarServidorDireto({ orcamentos: filtrados });
       return filtrados;
+    });
+
+    try {
+      const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
+      if (!removidos.includes(id)) {
+        saveStorage('vl_orcamentos_removidos_ids', [...removidos, id]);
+      }
+    } catch (e) {
+      console.warn('Erro ao salvar ID de orçamento removido:', e);
+    }
+
+    // Desvincula qualquer laudo que referencie este orçamento
+    setLaudos(prev => {
+      const atualizados = prev.map(l => {
+        if (l.orcamentoOrigemId === id) {
+          const lCopy = { ...l };
+          delete lCopy.orcamentoOrigemId;
+          delete lCopy.orcamentoNumero;
+          return lCopy;
+        }
+        return l;
+      });
+      saveStorage('vl_laudos', atualizados);
+      return atualizados;
     });
 
     if (db && auth?.currentUser) {
@@ -2026,6 +2064,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Erro ao salvar ID de laudo removido:', e);
     }
+
+    // Desvincula de qualquer orçamento que aponte para este laudo gerado
+    setOrcamentos(prev => {
+      const atualizados = prev.map(o => {
+        if (o.laudoGeradoId === id) {
+          return {
+            ...o,
+            laudoGeradoId: undefined,
+            laudoGeradoNumero: undefined,
+          };
+        }
+        return o;
+      });
+      saveStorage('vl_orcamentos', atualizados);
+      return atualizados;
+    });
 
     if (db && auth?.currentUser) {
       deleteDoc(doc(db, 'laudos', id)).catch(err => {
