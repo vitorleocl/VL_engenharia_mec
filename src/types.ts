@@ -123,6 +123,7 @@ export interface Orcamento {
   clienteNome?: string;
   cnpjCliente?: string;
   representanteNome?: string;
+  representanteCargo?: string;
   emailCliente?: string;
   telefoneCliente?: string;
   localidadeServico?: string;
@@ -436,6 +437,11 @@ export interface Laudo {
   clienteId: string;
   clienteNome: string;
   clienteCnpj?: string;
+  clienteContato?: string;
+  clienteContatoCargo?: string;
+  clienteContatoTelefone?: string;
+  clienteContatoEmail?: string;
+  clienteEndereco?: string;
   ativoId: string;
   ativoIdentificacao: string;
   status: LaudoStatus;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileSpreadsheet, 
@@ -45,8 +45,10 @@ export const OrcamentosView: React.FC = () => {
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
   const [busca, setBusca] = useState('');
 
-  // Form states for new rich proposal
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
+  const [cnpjCliente, setCnpjCliente] = useState('');
+  const [representanteNome, setRepresentanteNome] = useState('');
+  const [localidadeServico, setLocalidadeServico] = useState('');
   const [servicoCategoriaId, setServicoCategoriaId] = useState<string>('nr12-projetos');
   const [subtipoSelecionadoId, setSubtipoSelecionadoId] = useState<string>('');
   const [servicoTitulo, setServicoTitulo] = useState('Adequação à NR-12 e projetos mecânicos');
@@ -56,6 +58,16 @@ export const OrcamentosView: React.FC = () => {
   const [validadeDias, setValidadeDias] = useState<number>(15);
   const [valorTotal, setValorTotal] = useState('3500');
   const [condicoesPagamento, setCondicoesPagamento] = useState('50% na aprovação da proposta e 50% após emissão do laudo técnico pericial e registro da ART junto ao CREA-PE.');
+
+  // Preenchimento automático ao selecionar cliente
+  useEffect(() => {
+    const c = clientes.find(cli => cli.id === clienteId);
+    if (c) {
+      setCnpjCliente(c.cpfCnpj || c.cnpj || '');
+      setRepresentanteNome(c.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica');
+      setLocalidadeServico(c.endereco?.cidade ? `${c.endereco.cidade}/${c.endereco.estado || 'PE'}` : 'Recife e Região Metropolitana - PE');
+    }
+  }, [clienteId, clientes]);
 
   // Handle service category change from catalog
   const handleSelectCategoria = (catId: string) => {
@@ -108,9 +120,9 @@ export const OrcamentosView: React.FC = () => {
     const orcamentoRascunho: Omit<Orcamento, 'id' | 'criadoEm'> = {
       clienteId,
       clienteNome: cliente?.nomeFantasia || cliente?.razaoSocial || 'Cliente Contratante',
-      cnpjCliente: cliente?.cpfCnpj || '',
-      representanteNome: cliente?.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica',
-      localidadeServico: cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado}` : 'Recife e Região Metropolitana - PE',
+      cnpjCliente: cnpjCliente.trim() || cliente?.cpfCnpj || cliente?.cnpj || '',
+      representanteNome: representanteNome.trim() || cliente?.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica',
+      localidadeServico: localidadeServico.trim() || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}` : 'Recife e Região Metropolitana - PE'),
       codigoProposta,
       servico: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
       descricaoEscopo: descricaoEscopo.trim() || 'Vistoria técnica in loco, ensaios não destrutivos e emissão de laudo pericial com ART CREA-PE.',
@@ -478,6 +490,41 @@ export const OrcamentosView: React.FC = () => {
                     <option value="personalizado">Outro serviço (Personalizado)</option>
                   </select>
                 </label>
+              </div>
+
+              {/* Bloco Automático: CNPJ/CPF e Principal Contato vinculados ao Cliente */}
+              <div className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--line)] space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold uppercase tracking-wider text-[var(--blue)] flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5" />
+                    <span>Dados do Contratante (Preenchimento Automático)</span>
+                  </span>
+                  <span className="text-[11px] text-[var(--muted)]">Vinculado ao cadastro do cliente</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="block text-xs font-semibold text-[var(--ink)]">
+                    <span className="mb-1 block text-[11px] text-[var(--muted)]">CNPJ / CPF na Proposta</span>
+                    <input
+                      type="text"
+                      value={cnpjCliente}
+                      onChange={(e) => setCnpjCliente(e.target.value)}
+                      placeholder="Preenchido automaticamente do cliente..."
+                      className="w-full p-2 text-xs font-mono font-bold border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                    />
+                  </label>
+
+                  <label className="block text-xs font-semibold text-[var(--ink)]">
+                    <span className="mb-1 block text-[11px] text-[var(--muted)]">Principal Contato / Representante</span>
+                    <input
+                      type="text"
+                      value={representanteNome}
+                      onChange={(e) => setRepresentanteNome(e.target.value)}
+                      placeholder="Nome do responsável técnico ou contratante..."
+                      className="w-full p-2 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                    />
+                  </label>
+                </div>
               </div>
 
               {/* Subtipo do Serviço Selecionado (se houver) */}

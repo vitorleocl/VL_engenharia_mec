@@ -1319,44 +1319,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Cascata imediata para Ativos, Orçamentos e Laudos
-    if (dados.razaoSocial || cnpjUniforme) {
-      setAtivos(prev => {
-        const atualizados = prev.map(a => a.clienteId === id ? {
-          ...a,
-          clienteNome: dados.razaoSocial || a.clienteNome,
-        } : a);
-        saveStorage('vl_ativos', atualizados);
-        salvarServidorDireto({ ativos: atualizados });
-        return atualizados;
-      });
+    const primContato = dados.contatos?.[0];
+    const enderecoStr = dados.endereco?.cidade 
+      ? `${dados.endereco.logradouro ? dados.endereco.logradouro + ', ' : ''}${dados.endereco.numero ? dados.endereco.numero + ' - ' : ''}${dados.endereco.bairro ? dados.endereco.bairro + ' - ' : ''}${dados.endereco.cidade}/${dados.endereco.estado || 'PE'}`.trim() 
+      : undefined;
 
-      setOrcamentos(prev => {
-        const atualizados = prev.map(o => {
-          if (o.clienteId !== id) return o;
-          return {
-            ...o,
-            clienteNome: dados.razaoSocial || o.clienteNome,
-            cnpjCliente: cnpjUniforme || o.cnpjCliente,
-          };
-        });
-        saveStorage('vl_orcamentos', atualizados);
-        salvarServidorDireto({ orcamentos: atualizados });
-        return atualizados;
-      });
+    setAtivos(prev => {
+      const atualizados = prev.map(a => a.clienteId === id ? {
+        ...a,
+        clienteNome: dados.nomeFantasia || dados.razaoSocial || a.clienteNome,
+      } : a);
+      saveStorage('vl_ativos', atualizados);
+      salvarServidorDireto({ ativos: atualizados });
+      return atualizados;
+    });
 
-      setLaudos(prev => {
-        const atualizados = prev.map(l => {
-          if (l.clienteId !== id) return l;
-          return {
-            ...l,
-            clienteNome: dados.razaoSocial || l.clienteNome,
-          };
+    setOrcamentos(prev => {
+      const atualizados = prev.map(o => {
+        if (o.clienteId !== id) return o;
+        const cliNome = dados.nomeFantasia || dados.razaoSocial || o.clienteNome || 'Cliente';
+        const cnpjCli = cnpjUniforme || o.cnpjCliente || '';
+        const repNome = primContato?.nome || o.representanteNome || 'Diretoria / Coordenação Técnica';
+        const loc = dados.endereco?.cidade ? `${dados.endereco.cidade}/${dados.endereco.estado || 'PE'}` : o.localidadeServico || 'Recife - PE';
+
+        const novasSecoes = o.secoes?.map(s => {
+          if (s.id === 'capa' || s.numero === 1) {
+            return {
+              ...s,
+              conteudoHtml: gerarCardClienteHtml({
+                clienteNome: cliNome,
+                cnpj: cnpjCli || 'A preencher',
+                representante: repNome,
+                localidade: loc,
+                codigo: o.codigoProposta || o.id,
+                validade: o.validadeDias || 15,
+                prazo: o.prazoEntrega || `${o.prazoDias || 7} dias úteis`
+              })
+            };
+          }
+          return s;
         });
-        saveStorage('vl_laudos', atualizados);
-        salvarServidorDireto({ laudos: atualizados });
-        return atualizados;
+
+        return {
+          ...o,
+          clienteNome: cliNome,
+          cnpjCliente: cnpjCli,
+          representanteNome: repNome,
+          representanteCargo: primContato?.cargo || o.representanteCargo,
+          telefoneCliente: primContato?.telefone || o.telefoneCliente,
+          emailCliente: primContato?.email || o.emailCliente,
+          localidadeServico: loc,
+          secoes: novasSecoes || o.secoes
+        };
       });
-    }
+      saveStorage('vl_orcamentos', atualizados);
+      salvarServidorDireto({ orcamentos: atualizados });
+      return atualizados;
+    });
+
+    setLaudos(prev => {
+      const atualizados = prev.map(l => {
+        if (l.clienteId !== id) return l;
+        return {
+          ...l,
+          clienteNome: dados.razaoSocial || dados.nomeFantasia || l.clienteNome,
+          clienteCnpj: cnpjUniforme || l.clienteCnpj,
+          clienteContato: primContato?.nome || l.clienteContato,
+          clienteContatoCargo: primContato?.cargo || l.clienteContatoCargo,
+          clienteContatoTelefone: primContato?.telefone || l.clienteContatoTelefone,
+          clienteContatoEmail: primContato?.email || l.clienteContatoEmail,
+          clienteEndereco: enderecoStr || l.clienteEndereco,
+        };
+      });
+      saveStorage('vl_laudos', atualizados);
+      salvarServidorDireto({ laudos: atualizados });
+      return atualizados;
+    });
 
     registrarLog('clientes', id, 'editar', `Cliente atualizado: ${dados.razaoSocial || id}`);
   };
@@ -1446,17 +1484,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cliente = clientes.find(c => c.id === dados.clienteId);
     const ano = new Date().getFullYear();
     const codigoProposta = dados.codigoProposta || `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
+    const primeiroContato = cliente?.contatos?.[0];
     
     let novo: Orcamento = {
       ...dados,
       id,
       codigoProposta,
-      clienteNome: cliente?.razaoSocial || dados.clienteNome,
+      clienteNome: dados.clienteNome || cliente?.nomeFantasia || cliente?.razaoSocial || 'Cliente Contratante',
+      cnpjCliente: dados.cnpjCliente || cliente?.cpfCnpj || cliente?.cnpj || '',
+      representanteNome: dados.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica',
+      representanteCargo: dados.representanteCargo || primeiroContato?.cargo || '',
+      telefoneCliente: dados.telefoneCliente || primeiroContato?.telefone || '(81) 98444-2592',
+      emailCliente: dados.emailCliente || primeiroContato?.email || '',
+      localidadeServico: dados.localidadeServico || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}` : 'Recife e Região Metropolitana - PE'),
       criadoEm: new Date().toISOString(),
     };
 
     if (!novo.secoes || novo.secoes.length === 0) {
-      novo.secoes = gerarSecoesPadraoOrcamento(novo);
+      novo.secoes = gerarSecoesPadraoOrcamento(novo, { cliente });
     }
 
     setOrcamentos(prev => {
@@ -1618,19 +1663,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         ];
 
+    const enderecoFormatado = orc.localidadeServico || (cliente?.endereco?.cidade 
+      ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.bairro ? cliente.endereco.bairro + ' - ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`.trim()
+      : '');
+
     const novoLaudo: Laudo = {
       id: novoLaudoId,
       numero,
       tipo: orc.servico,
       clienteId: orc.clienteId,
-      clienteNome: cliente?.razaoSocial || orc.clienteNome || 'Cliente',
+      clienteNome: cliente?.razaoSocial || cliente?.nomeFantasia || orc.clienteNome || 'Cliente',
+      clienteCnpj: orc.cnpjCliente || cliente?.cpfCnpj || cliente?.cnpj || '',
+      clienteContato: orc.representanteNome || cliente?.contatos?.[0]?.nome || '',
+      clienteContatoCargo: orc.representanteCargo || cliente?.contatos?.[0]?.cargo || '',
+      clienteContatoTelefone: orc.telefoneCliente || cliente?.contatos?.[0]?.telefone || '',
+      clienteContatoEmail: orc.emailCliente || cliente?.contatos?.[0]?.email || '',
+      clienteEndereco: enderecoFormatado,
       ativoId: ativo?.id || '',
       ativoIdentificacao: ativo?.identificacao || orc.ativoIdentificacao || 'Ativo a definir',
       status: 'rascunho',
       artNumero: '',
       dataInspecao: new Date().toISOString().slice(0, 10),
-      responsavelNome: 'Vitor Leonardo',
-      responsavelCrea: 'CREA-PE 1822299490',
+      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
+      responsavelCrea: 'CREA-PE 182229949-0',
       resumoExecutivo: `Laudo técnico originado a partir do Orçamento Comercial #${orc.id}. ${orc.descricaoEscopo || ''}`,
       secoes: secoesPadrao,
       usoIA: { chamadas: 0 },
@@ -1797,6 +1852,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const id = `lau-${Date.now()}`;
     const ehModoIA = modoPreenchimento === 'sugestao_ia';
 
+    const enderecoTaxonomia = cliente?.endereco?.cidade 
+      ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.bairro ? cliente.endereco.bairro + ' - ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`.trim()
+      : '';
+
     const novo: Laudo = {
       id,
       numero,
@@ -1805,8 +1864,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       categoriaId: categoriaEncontradaId,
       subcategoriaId: subcategoriaEncontradaId,
       clienteId,
-      clienteNome: cliente?.razaoSocial || 'Cliente Corporativo',
-      clienteCnpj: cliente?.cnpj || '',
+      clienteNome: cliente?.razaoSocial || cliente?.nomeFantasia || 'Cliente Corporativo',
+      clienteCnpj: cliente?.cpfCnpj || cliente?.cnpj || '',
+      clienteContato: cliente?.contatos?.[0]?.nome || '',
+      clienteContatoCargo: cliente?.contatos?.[0]?.cargo || '',
+      clienteContatoTelefone: cliente?.contatos?.[0]?.telefone || '',
+      clienteContatoEmail: cliente?.contatos?.[0]?.email || '',
+      clienteEndereco: enderecoTaxonomia,
       ativoId,
       ativoIdentificacao: ativo?.identificacao || 'Equipamento / Instalação Mecânica',
       status: 'rascunho',
@@ -1980,13 +2044,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cliente = clientes.find(c => c.id === dados.clienteId);
     const ativo = ativos.find(a => a.id === dados.ativoId);
 
+    const enderecoFormatado = dados.clienteEndereco || (cliente?.endereco?.cidade 
+      ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.bairro ? cliente.endereco.bairro + ' - ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`.trim()
+      : '');
+
     const novo: Laudo = {
       id,
       numero,
       tipo: dados.tipo,
       clienteId: dados.clienteId,
-      clienteNome: cliente?.razaoSocial || 'Cliente',
-      clienteCnpj: cliente?.cnpj || '',
+      clienteNome: dados.clienteNome || cliente?.razaoSocial || cliente?.nomeFantasia || 'Cliente',
+      clienteCnpj: dados.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || '',
+      clienteContato: dados.clienteContato || cliente?.contatos?.[0]?.nome || '',
+      clienteContatoCargo: dados.clienteContatoCargo || cliente?.contatos?.[0]?.cargo || '',
+      clienteContatoTelefone: dados.clienteContatoTelefone || cliente?.contatos?.[0]?.telefone || '',
+      clienteContatoEmail: dados.clienteContatoEmail || cliente?.contatos?.[0]?.email || '',
+      clienteEndereco: enderecoFormatado,
       ativoId: dados.ativoId,
       ativoIdentificacao: ativo?.identificacao || 'Equipamento',
       status: 'rascunho',

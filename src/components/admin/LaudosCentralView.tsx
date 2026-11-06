@@ -183,9 +183,22 @@ export const LaudosCentralView: React.FC = () => {
         }))
       : [];
 
+    const clienteSel = clientes.find(c => c.id === (novoClienteId || clientes[0]?.id));
+    const primContato = clienteSel?.contatos?.[0];
+    const endStr = clienteSel?.endereco?.cidade
+      ? `${clienteSel.endereco.logradouro ? clienteSel.endereco.logradouro + ', ' : ''}${clienteSel.endereco.numero ? clienteSel.endereco.numero + ' - ' : ''}${clienteSel.endereco.bairro ? clienteSel.endereco.bairro + ' - ' : ''}${clienteSel.endereco.cidade}/${clienteSel.endereco.estado || 'PE'}`.trim()
+      : '';
+
     const novoId = criarNovoLaudo({
       tipo: activeSubtipo.nome,
       clienteId: novoClienteId || clientes[0]?.id || '',
+      clienteNome: clienteSel?.razaoSocial || clienteSel?.nomeFantasia || 'Cliente Contratante',
+      clienteCnpj: clienteSel?.cpfCnpj || clienteSel?.cnpj || '',
+      clienteContato: primContato?.nome || '',
+      clienteContatoCargo: primContato?.cargo || '',
+      clienteContatoTelefone: primContato?.telefone || '',
+      clienteContatoEmail: primContato?.email || '',
+      clienteEndereco: endStr,
       ativoId: ativoCorrespondente?.id || '',
       ativoIdentificacao: equip,
       dataInspecao: novaData,
@@ -565,7 +578,7 @@ export const LaudosCentralView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="block text-sm font-semibold">
-                    <span className="mb-1 block">Cliente</span>
+                    <span className="mb-1 block">Cliente Contratante</span>
                     <select
                       value={novoClienteId}
                       onChange={(e) => setNovoClienteId(e.target.value)}
@@ -587,6 +600,33 @@ export const LaudosCentralView: React.FC = () => {
                     />
                   </label>
                 </div>
+
+                {/* Dados Automáticos do Cliente para o Laudo */}
+                {(() => {
+                  const cliSel = clientes.find(c => c.id === (novoClienteId || clientes[0]?.id));
+                  if (!cliSel) return null;
+                  return (
+                    <div className="p-2.5 rounded-lg bg-[var(--paper)] border border-[var(--line)] text-xs flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[var(--muted)]">CNPJ/CPF:</span>
+                        <strong className="text-[var(--ink)] font-mono font-bold">
+                          {cliSel.cpfCnpj || cliSel.cnpj || 'Não informado'}
+                        </strong>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[var(--muted)]">Principal Contato:</span>
+                        <strong className="text-[var(--ink)] font-semibold">
+                          {cliSel.contatos?.[0]?.nome || 'Diretoria Técnica'}
+                        </strong>
+                        {cliSel.contatos?.[0]?.cargo && (
+                          <span className="text-[10px] text-[var(--blue)]">
+                            ({cliSel.contatos[0].cargo})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <label className="block text-sm font-semibold">
                   <span className="mb-1 block">Equipamento / Ativo periciado</span>

@@ -276,7 +276,22 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
                 </div>
               </div>
 
-              <div>
+              <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-200">
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">CNPJ / CPF:</span>
+                  <strong className="text-slate-800 font-mono text-[11px]">
+                    {laudo.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Principal Contato:</span>
+                  <strong className="text-slate-800 text-[11px] truncate block">
+                    {laudo.clienteContato || cliente?.contatos?.[0]?.nome || '—'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="pt-1 border-t border-slate-200">
                 <span className="text-slate-400 block text-[9px] uppercase font-bold">Equipamento / TAG:</span>
                 <strong className="text-[#1565D8] font-bold block text-[11px]">{laudo.ativoIdentificacao}</strong>
               </div>
@@ -304,23 +319,32 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
       let html = sec.conteudoHtml || '';
       const t = sec.titulo.toLowerCase();
 
-      // 1. Destinatário e Qualificação: Garante endereço operacional e contato técnico solicitados
+      // 1. Destinatário e Qualificação: Garante endereço operacional, CNPJ e contato técnico do cliente
       if (t.includes('destinatário') || t.includes('destinatario') || t.includes('qualificação') || t.includes('qualificacao')) {
-        if (!html.includes('Avenida Jose Pinheiro dos Santos') && !html.includes('Pinheiropolis')) {
-          const rowsInfo = `
+        const clienteCnpjVal = laudo.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || '24.417.065/0001-03';
+        const clienteContatoVal = laudo.clienteContato || cliente?.contatos?.[0]?.nome || 'Thiago Cunha';
+        const clienteEmailVal = laudo.clienteContatoEmail || cliente?.contatos?.[0]?.email || 'adfcentroautomotivo@gmail.com';
+        const clienteEnderecoVal = laudo.clienteEndereco || (cliente?.endereco?.cidade 
+          ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.bairro ? cliente.endereco.bairro + ', ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`.trim()
+          : 'Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE');
+
+        const rowsInfo = `
+    <tr>
+      <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">CNPJ / CPF:</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-mono font-bold">${clienteCnpjVal}</td>
+    </tr>
     <tr>
       <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Endereço Operacional:</td>
-      <td class="border border-slate-300 p-2 text-xs text-slate-900">Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900">${clienteEnderecoVal}</td>
     </tr>
     <tr>
       <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-xs text-slate-700">Contato Técnico:</td>
-      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">Thiago Cunha (adfcentroautomotivo@gmail.com)</td>
+      <td class="border border-slate-300 p-2 text-xs text-slate-900 font-semibold">${clienteContatoVal}${clienteEmailVal ? ` (${clienteEmailVal})` : ''}</td>
     </tr>`;
-          if (html.includes('Contratante') || html.includes('contratante')) {
-            html = html.replace(/(<tr[^>]*>[\s\S]*?Contratante[\s\S]*?<\/tr>)/i, `$1${rowsInfo}`);
-          } else if (html.includes('<tbody>')) {
-            html = html.replace('<tbody>', `<tbody>${rowsInfo}`);
-          }
+        if (html.includes('Contratante') || html.includes('contratante')) {
+          html = html.replace(/(<tr[^>]*>[\s\S]*?Contratante[\s\S]*?<\/tr>)/i, `$1${rowsInfo}`);
+        } else if (html.includes('<tbody>')) {
+          html = html.replace('<tbody>', `<tbody>${rowsInfo}`);
         }
       }
 

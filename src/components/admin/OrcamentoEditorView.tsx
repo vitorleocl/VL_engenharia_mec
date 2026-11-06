@@ -28,7 +28,8 @@ import {
   ExternalLink,
   ChevronLeft,
   Loader2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Users
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -433,6 +434,85 @@ export const OrcamentoEditorView: React.FC = () => {
     } finally {
       e.target.value = '';
     }
+  };
+
+  // Atualizar dados cadastrais do cliente na Capa da Proposta
+  const handleAtualizarDadosCapaCliente = (campo: 'clienteNome' | 'cnpjCliente' | 'representanteNome' | 'localidadeServico', valor: string) => {
+    if (!orcamentoState) return;
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      [campo]: valor,
+    };
+
+    const cliNome = campo === 'clienteNome' ? valor : (atualizado.clienteNome || cliente?.razaoSocial || 'Cliente Corporativo');
+    const cnpjCli = campo === 'cnpjCliente' ? valor : (atualizado.cnpjCliente || cliente?.cpfCnpj || cliente?.cnpj || 'A preencher');
+    const repNome = campo === 'representanteNome' ? valor : (atualizado.representanteNome || cliente?.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica');
+    const loc = campo === 'localidadeServico' ? valor : (atualizado.localidadeServico || 'Recife e Região Metropolitana - PE');
+
+    const novasSecoes = (atualizado.secoes || []).map(s => {
+      if (s.id === 'capa' || s.numero === 1) {
+        return {
+          ...s,
+          conteudoHtml: gerarCardClienteHtml({
+            clienteNome: cliNome,
+            cnpj: cnpjCli,
+            representante: repNome,
+            localidade: loc,
+            codigo: atualizado.codigoProposta || atualizado.id,
+            validade: atualizado.validadeDias || 15,
+            prazo: atualizado.prazoEntrega || `${atualizado.prazoDias || 7} dias úteis`
+          })
+        };
+      }
+      return s;
+    });
+
+    atualizado.secoes = novasSecoes;
+    agendarAutoSave(atualizado, `Dados do contratante atualizados na Capa (${campo})`);
+  };
+
+  const handleSincronizarComCadastroCliente = () => {
+    if (!orcamentoState || !cliente) return;
+    const cliNome = cliente.razaoSocial || cliente.nomeFantasia || orcamentoState.clienteNome || 'Cliente Corporativo';
+    const cnpjCli = cliente.cpfCnpj || cliente.cnpj || orcamentoState.cnpjCliente || '';
+    const repNome = cliente.contatos?.[0]?.nome || orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica';
+    const repCargo = cliente.contatos?.[0]?.cargo || orcamentoState.representanteCargo || '';
+    const tel = cliente.contatos?.[0]?.telefone || orcamentoState.telefoneCliente || '';
+    const email = cliente.contatos?.[0]?.email || orcamentoState.emailCliente || '';
+    const loc = cliente.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}` : orcamentoState.localidadeServico || 'Recife - PE';
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      clienteNome: cliNome,
+      cnpjCliente: cnpjCli,
+      representanteNome: repNome,
+      representanteCargo: repCargo,
+      telefoneCliente: tel,
+      emailCliente: email,
+      localidadeServico: loc,
+    };
+
+    const novasSecoes = (atualizado.secoes || []).map(s => {
+      if (s.id === 'capa' || s.numero === 1) {
+        return {
+          ...s,
+          conteudoHtml: gerarCardClienteHtml({
+            clienteNome: cliNome,
+            cnpj: cnpjCli || 'A preencher',
+            representante: repNome,
+            localidade: loc,
+            codigo: atualizado.codigoProposta || atualizado.id,
+            validade: atualizado.validadeDias || 15,
+            prazo: atualizado.prazoEntrega || `${atualizado.prazoDias || 7} dias úteis`
+          })
+        };
+      }
+      return s;
+    });
+
+    atualizado.secoes = novasSecoes;
+    agendarAutoSave(atualizado, 'Dados sincronizados com o cadastro do cliente');
   };
 
   // Reset section to default template
@@ -1136,6 +1216,89 @@ export const OrcamentoEditorView: React.FC = () => {
                     </p>
                   </div>
                 )}
+
+                {/* Card de Dados do Cliente Contratante na Capa (Preenchimento Automático) */}
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 space-y-3 mt-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-blue-200/60">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#1565D8] text-white">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider">
+                          Dados do Cliente Contratante (Capa da Proposta)
+                        </h4>
+                        <p className="text-[11px] text-slate-600">
+                          Preenchido automaticamente a partir do cadastro do cliente. Edite aqui ou sincronize a qualquer momento.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSincronizarComCadastroCliente}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-100 text-[#1565D8] border border-blue-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto"
+                      title="Atualiza estes campos com os dados mais recentes do cadastro do cliente"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-[#1565D8]" />
+                      <span>Sincronizar com Cadastro</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Razão Social / Nome do Cliente
+                      </label>
+                      <input
+                        type="text"
+                        value={orcamentoState.clienteNome || ''}
+                        onChange={(e) => handleAtualizarDadosCapaCliente('clienteNome', e.target.value)}
+                        placeholder="Ex: ADF Centro Automotivo LTDA"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        CNPJ / CPF do Contratante
+                      </label>
+                      <input
+                        type="text"
+                        value={orcamentoState.cnpjCliente || ''}
+                        onChange={(e) => handleAtualizarDadosCapaCliente('cnpjCliente', e.target.value)}
+                        placeholder="Ex: 24.417.065/0001-03"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-mono font-bold text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Principal Contato / Representante
+                      </label>
+                      <input
+                        type="text"
+                        value={orcamentoState.representanteNome || ''}
+                        onChange={(e) => handleAtualizarDadosCapaCliente('representanteNome', e.target.value)}
+                        placeholder="Ex: Thiago Cunha"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Localidade / Unidade
+                      </label>
+                      <input
+                        type="text"
+                        value={orcamentoState.localidadeServico || ''}
+                        onChange={(e) => handleAtualizarDadosCapaCliente('localidadeServico', e.target.value)}
+                        placeholder="Ex: Caruaru/PE ou Recife/PE"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

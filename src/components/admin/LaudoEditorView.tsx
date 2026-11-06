@@ -1004,10 +1004,14 @@ export const LaudoEditorView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-[#1565D8] shrink-0" />
             <div className="truncate">
-              <span className="text-slate-400 block text-[10px]">Cliente:</span>
+              <span className="text-slate-400 block text-[10px]">Cliente & CNPJ:</span>
               <strong className="text-slate-900 dark:text-white font-semibold truncate block">
                 {laudoState.clienteNome}
               </strong>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono block truncate">
+                {laudoState.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || 'Sem CNPJ'}
+                {(laudoState.clienteContato || cliente?.contatos?.[0]?.nome) ? ` • ${laudoState.clienteContato || cliente?.contatos?.[0]?.nome}` : ''}
+              </span>
             </div>
           </div>
 
