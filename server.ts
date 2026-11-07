@@ -889,7 +889,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
         {
           numero: 10,
           titulo: "ETAPA 2 - ESCOPO TÉCNICO DAS ATIVIDADES (METODOLOGIA)",
-          subtitulo: "FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS",
+          subtitulo: "FASES, CHECKLISTS E ENSAIOS EM 4 ETAPAS",
           conteudoHtml: `<div class="space-y-3.5 text-xs">
             <div style="background: #0B1E3D; color: #ffffff; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
               <div style="display: flex; align-items: center; gap: 8px;">
