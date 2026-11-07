@@ -325,13 +325,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa2) {
-            // Only update if completely empty
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+            if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || !s.conteudoHtml.includes('FASE 01')) {
               modificouOrc = true;
               return {
                 ...s,
                 titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-                subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 4 ETAPAS',
+                subtitulo: 'METODOLOGIA EM 5 FASES SEQUENCIAIS',
                 conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
               };
             }
@@ -339,7 +338,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (isEtapa3) {
             let htmlEtapa3 = s.conteudoHtml;
-            if (!htmlEtapa3 || htmlEtapa3.trim() === '') {
+            if (!htmlEtapa3 || htmlEtapa3.trim() === '' || !htmlEtapa3.includes('Memorial de Cálculo') || !htmlEtapa3.includes('TRANSPARÊNCIA')) {
               modificouOrc = true;
               return {
                 ...s,
@@ -354,15 +353,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   representante,
                   incluiNotaFiscal: orcAtualizado.incluiNotaFiscal,
                   chavePix: orcAtualizado.chavePix,
+                  itensCalculo: orcAtualizado.itensCalculo,
                 }),
               };
-            } else if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico')) {
+            } else if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico') || htmlEtapa3.includes('• CREA-PE 182229949-0')) {
               modificouOrc = true;
               htmlEtapa3 = htmlEtapa3
                 .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
                 .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
                 .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
-                .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+                .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '')
+                .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>');
               return { ...s, conteudoHtml: htmlEtapa3 };
             }
           }

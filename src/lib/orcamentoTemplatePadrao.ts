@@ -1,4 +1,4 @@
-import { Orcamento, OrcamentoSecao, Cliente, Ativo } from '../types';
+import { Orcamento, OrcamentoSecao, Cliente, Ativo, OrcamentoItemCalculo } from '../types';
 import { QR_CODE_PIX_PADRAO_BASE64, CHAVE_PIX_FORMATADA_PADRAO, TITULAR_PIX_PADRAO } from './pixUtils';
 
 export interface SecaoDefinicao {
@@ -208,11 +208,11 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
         <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #1565D8; font-weight: 900; font-size: 11px;">M</span>
         <div>
           <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Metodologia de Engenharia em 5 Fases Sequenciais</strong>
-          <span style="font-size: 9px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo e homologação legal CREA-PE</span>
+          <span style="font-size: 9px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo e homologação técnica</span>
         </div>
       </div>
       <span style="background: rgba(212, 175, 55, 0.2); border: 1px solid #D4AF37; color: #fde047; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">
-        CREA-PE HABILITADO
+        ENGENHARIA DIAGNÓSTICA
       </span>
     </div>
 
@@ -228,7 +228,7 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
           <span style="font-size: 10px; color: #1d4ed8; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">Vistoria de Campo</span>
         </div>
         <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente fabril/operacional.
+          Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.
         </p>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #0284c7; font-weight: 600;">
           <span>✓ Entregável:</span> <span style="color: #334155;">Levantamento fotográfico em alta resolução e registro de evidências fáticas.</span>
@@ -245,7 +245,7 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
           <span style="font-size: 10px; color: #b45309; font-weight: 700; background: #fffbeb; padding: 2px 6px; border-radius: 4px;">Conformidade Legal</span>
         </div>
         <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Auditoria item por item das exigências regulamentadoras vigentes (${normas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos elétricos.
+          Auditoria item por item das exigências regulamentadoras vigentes (${normas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos.
         </p>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #b45309; font-weight: 600;">
           <span>✓ Entregável:</span> <span style="color: #334155;">Relatório de conformidade item a item conforme normas ABNT e NRs federais.</span>
@@ -262,7 +262,7 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
           <span style="font-size: 10px; color: #4f46e5; font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px;">Instrumentado</span>
         </div>
         <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e calibração de salvaguardas.
+          Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e integridade de soldas.
         </p>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #4f46e5; font-weight: 600;">
           <span>✓ Entregável:</span> <span style="color: #334155;">Planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.</span>
@@ -309,6 +309,80 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
 }
 
 /**
+ * Gera a tabela visual do Memorial de Cálculo da proposta
+ */
+export function gerarTabelaMemorialCalculoHtml(itens?: OrcamentoItemCalculo[], valorTotalPadrao?: string): string {
+  const itensValidos = (itens && itens.length > 0) ? itens : [
+    {
+      id: 'item-1',
+      descricao: 'Serviços de Engenharia Mecânica, Inspeção Técnica Pericial & Emissão de Laudo com ART CREA-PE',
+      quantidade: 1,
+      valorUnitario: 0,
+      valorTotal: 0,
+    }
+  ];
+
+  const totalCalculado = itensValidos.reduce((acc, it) => acc + (Number(it.valorTotal) || (Number(it.quantidade || 1) * Number(it.valorUnitario || 0))), 0);
+  const totalDisplay = totalCalculado > 0 
+    ? totalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : (valorTotalPadrao || 'R$ 0,00');
+
+  const linhasHtml = itensValidos.map((it, idx) => {
+    const qtd = Number(it.quantidade) || 1;
+    const unit = Number(it.valorUnitario) || 0;
+    const totalLinha = Number(it.valorTotal) || (qtd * unit);
+    const unitFormatado = unit > 0 ? unit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : totalDisplay;
+    const totalLinhaFormatado = totalLinha > 0 ? totalLinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : totalDisplay;
+
+    return `
+      <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+        <td style="padding: 6px 10px; font-weight: 700; color: #64748b; font-family: monospace; width: 32px; text-align: center;">${String(idx + 1).padStart(2, '0')}</td>
+        <td style="padding: 6px 10px; color: #1e293b; font-weight: 600;">${it.descricao || 'Ativo / Serviço técnico especializado'}</td>
+        <td style="padding: 6px 10px; text-align: center; font-weight: 700; color: #0b1e3d; font-family: monospace; width: 55px;">${qtd}</td>
+        <td style="padding: 6px 10px; text-align: right; color: #475569; font-family: monospace; width: 105px;">${unitFormatado}</td>
+        <td style="padding: 6px 10px; text-align: right; font-weight: 800; color: #0b1e3d; font-family: monospace; width: 115px;">${totalLinhaFormatado}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <div style="background: #0B1E3D; color: #ffffff; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="background: #1565D8; color: #ffffff; font-weight: 900; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-family: monospace;">TRANSPARÊNCIA</span>
+          <strong style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;">Memorial de Cálculo & Composição dos Serviços</strong>
+        </div>
+        <span style="font-size: 9px; color: #93c5fd; font-weight: 600;">Detalhamento unitário por ativo / escopo</span>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
+        <thead>
+          <tr style="background: #f1f5f9; color: #475569; border-bottom: 1px solid #cbd5e1; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <th style="padding: 6px 10px; font-weight: 800; text-align: center;">Item</th>
+            <th style="padding: 6px 10px; font-weight: 800;">Descrição do Ativo / Serviço Técnico</th>
+            <th style="padding: 6px 10px; font-weight: 800; text-align: center;">Qtd</th>
+            <th style="padding: 6px 10px; font-weight: 800; text-align: right;">Unitário</th>
+            <th style="padding: 6px 10px; font-weight: 800; text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasHtml}
+        </tbody>
+        <tfoot>
+          <tr style="background: #f8fafc; border-top: 1.5px solid #0B1E3D; font-weight: 800; color: #0b1e3d;">
+            <td colspan="4" style="padding: 7px 10px; text-align: right; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.5px;">
+              VALOR TOTAL DO INVESTIMENTO LÍQUIDO:
+            </td>
+            <td style="padding: 7px 10px; text-align: right; font-family: monospace; font-size: 11.5px; color: #1565D8;">
+              ${totalDisplay}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+
+/**
  * Gera a visualização estilizada da Etapa 3 (Prazo, Pagamento & Investimento)
  */
 export function gerarHtmlEtapa3Investimento(params: {
@@ -320,40 +394,45 @@ export function gerarHtmlEtapa3Investimento(params: {
   representante: string;
   incluiNotaFiscal?: boolean;
   chavePix?: string;
+  itensCalculo?: OrcamentoItemCalculo[];
 }): string {
   const comNotaFiscal = params.incluiNotaFiscal !== false;
   const chavePixDisplay = params.chavePix || CHAVE_PIX_FORMATADA_PADRAO;
+  const tabelaMemorialHtml = gerarTabelaMemorialCalculoHtml(params.itensCalculo, params.valor);
 
-  return `<div class="space-y-4 text-xs">
+  return `<div class="space-y-3.5 text-xs">
     
+    <!-- MEMORIAL DE CÁLCULO TRANSPARENTE -->
+    ${tabelaMemorialHtml}
+
     <!-- HERO CARD DO INVESTIMENTO COMERCIAL -->
-    <div style="background: linear-gradient(135deg, #0B1E3D 0%, #1565D8 100%); color: #ffffff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15); position: relative; overflow: hidden;" class="text-white">
+    <div style="background: linear-gradient(135deg, #0B1E3D 0%, #1565D8 100%); color: #ffffff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 6px 12px -2px rgba(15, 23, 42, 0.15); position: relative; overflow: hidden;" class="text-white">
       <div style="position: absolute; right: -20px; bottom: -20px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255, 255, 255, 0.05); pointer-events: none;"></div>
 
       <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-        <span style="background: rgba(212, 175, 55, 0.25); border: 1.5px solid #D4AF37; color: #fef08a; padding: 3px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;">
-          INVESTIMENTO COMERCIAL LÍQUIDO
+        <span style="background: rgba(212, 175, 55, 0.25); border: 1.5px solid #D4AF37; color: #fef08a; padding: 2px 10px; border-radius: 20px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px;">
+          INVESTIMENTO TOTAL LÍQUIDO
         </span>
         
-        <div style="font-size: 32px; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 6px 0;">
+        <div style="font-size: 28px; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 4px 0;">
           ${params.valor}
         </div>
 
-        <p style="color: #e2e8f0; font-size: 11px; max-width: 500px; margin: 0; line-height: 1.4;">
+        <p style="color: #e2e8f0; font-size: 10.5px; max-width: 500px; margin: 0; line-height: 1.4;">
           ${comNotaFiscal 
             ? 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.'
             : 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.'
           }
         </p>
 
-        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px;">
-          <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px;">
+          <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700;">
             ✓ Taxa ART CREA-PE Inclusa
           </span>
-          <span style="background: ${comNotaFiscal ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.15)'}; border: 1px solid ${comNotaFiscal ? '#86efac' : 'rgba(255,255,255,0.2)'}; padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; color: ${comNotaFiscal ? '#f0fdf4' : '#ffffff'};">
+          <span style="background: ${comNotaFiscal ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.15)'}; border: 1px solid ${comNotaFiscal ? '#86efac' : 'rgba(255,255,255,0.2)'}; padding: 2px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700; color: ${comNotaFiscal ? '#f0fdf4' : '#ffffff'};">
             ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
           </span>
-          <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
+          <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700;">
             ✓ Deslocamento e Relatório Colorido
           </span>
         </div>
@@ -363,38 +442,38 @@ export function gerarHtmlEtapa3Investimento(params: {
     <!-- GRID COM 3 CARDS DE CONDIÇÕES (PRAZO, PAGAMENTO, VALIDADE) -->
     <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
       
-      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #1565D8; border-radius: 10px; padding: 10px 12px; text-align: center;">
-        <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #1565D8; border-radius: 10px; padding: 8px 10px; text-align: center;">
+        <span style="color: #64748b; font-size: 9.5px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 2px;">
           ⏱️ PRAZO DE EXECUÇÃO
         </span>
-        <strong style="color: #0b1e3d; font-size: 13px; font-weight: 800; display: block; margin-bottom: 2px;">
+        <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800; display: block; margin-bottom: 2px;">
           ${params.prazo}
         </strong>
-        <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+        <span style="color: #64748b; font-size: 9.5px; line-height: 1.3; display: block;">
           Contados a partir da vistoria in loco.
         </span>
       </div>
 
-      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #059669; border-radius: 10px; padding: 10px 12px; text-align: center;">
-        <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #059669; border-radius: 10px; padding: 8px 10px; text-align: center;">
+        <span style="color: #64748b; font-size: 9.5px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 2px;">
           💳 CONDIÇÕES DE PAGAMENTO
         </span>
-        <strong style="color: #065f46; font-size: 12px; font-weight: 800; display: block; margin-bottom: 2px;">
+        <strong style="color: #065f46; font-size: 11.5px; font-weight: 800; display: block; margin-bottom: 2px;">
           ${params.condicoes}
         </strong>
-        <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+        <span style="color: #64748b; font-size: 9.5px; line-height: 1.3; display: block;">
           PIX, transferência ou boleto bancário.
         </span>
       </div>
 
-      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #d97706; border-radius: 10px; padding: 10px 12px; text-align: center;">
-        <span style="color: #64748b; font-size: 10px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px;">
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-top: 4px solid #d97706; border-radius: 10px; padding: 8px 10px; text-align: center;">
+        <span style="color: #64748b; font-size: 9.5px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 2px;">
           📅 VALIDADE DA PROPOSTA
         </span>
-        <strong style="color: #92400e; font-size: 13px; font-weight: 800; display: block; margin-bottom: 2px;">
+        <strong style="color: #92400e; font-size: 12px; font-weight: 800; display: block; margin-bottom: 2px;">
           ${params.validade} dias corridos
         </strong>
-        <span style="color: #64748b; font-size: 10px; line-height: 1.3; display: block;">
+        <span style="color: #64748b; font-size: 9.5px; line-height: 1.3; display: block;">
           Garantia de valores e disponibilidade.
         </span>
       </div>
@@ -402,53 +481,53 @@ export function gerarHtmlEtapa3Investimento(params: {
     </div>
 
     <!-- CAIXINHA DE FATURAMENTO & PIX COM QR CODE EMBEDDED -->
-    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
-      <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
+    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
         <!-- QR CODE PIX -->
-        <div style="background: #ffffff; padding: 4px; border: 1.5px solid #86efac; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); text-align: center; flex-shrink: 0;">
-          <img src="${QR_CODE_PIX_PADRAO_BASE64}" alt="QR Code PIX CPF" style="width: 76px; height: 76px; display: block;" />
-          <span style="font-size: 8px; color: #166534; font-weight: 800; display: block; margin-top: 2px; font-family: monospace;">QR CODE PIX</span>
+        <div style="background: #ffffff; padding: 3px; border: 1.5px solid #86efac; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); text-align: center; flex-shrink: 0;">
+          <img src="${QR_CODE_PIX_PADRAO_BASE64}" alt="QR Code PIX CPF" style="width: 68px; height: 68px; display: block;" />
+          <span style="font-size: 7.5px; color: #166534; font-weight: 800; display: block; margin-top: 1px; font-family: monospace;">QR CODE PIX</span>
         </div>
 
-        <div style="font-size: 11px; line-height: 1.45;">
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-            <span style="background: #22c55e; color: #ffffff; width: 20px; height: 20px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px;">$</span>
-            <strong style="color: #14532d; font-size: 11px; text-transform: uppercase;">DADOS PARA PAGAMENTO VIA PIX (QR CODE & CHAVE)</strong>
+        <div style="font-size: 10.5px; line-height: 1.4;">
+          <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;">
+            <span style="background: #22c55e; color: #ffffff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 10px;">$</span>
+            <strong style="color: #14532d; font-size: 10.5px; text-transform: uppercase;">DADOS PARA PAGAMENTO VIA PIX (QR CODE & CHAVE)</strong>
           </div>
           <p style="margin: 2px 0; color: #166534;">
-            Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 12px; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">${chavePixDisplay}</strong>
+            Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 11.5px; background: #dcfce7; padding: 1px 5px; border-radius: 4px; border: 1px solid #86efac;">${chavePixDisplay}</strong>
           </p>
-          <p style="margin: 2px 0; color: #334155; font-size: 10px;">
-            Titular: <strong>${TITULAR_PIX_PADRAO}</strong> • CREA-PE 182229949-0
+          <p style="margin: 2px 0; color: #334155; font-size: 9.5px;">
+            Titular: <strong>${TITULAR_PIX_PADRAO}</strong>
           </p>
-          <p style="margin: 2px 0; color: #64748b; font-size: 9.5px;">
+          <p style="margin: 2px 0; color: #64748b; font-size: 9px;">
             Aponte a câmera do aplicativo do seu banco para o QR Code acima para efetuar o pagamento.
           </p>
         </div>
       </div>
 
       <div style="text-align: right; flex-shrink: 0;">
-        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; display: inline-block;">
+        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 3px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 800; display: inline-block;">
           PIX IMEDIATO
         </span>
       </div>
     </div>
 
     <!-- BLOCO DE HOMOLOGAÇÃO & ASSINATURAS -->
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 12px; border-top: 1px solid #cbd5e1;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 10px; border-top: 1px solid #cbd5e1;">
       
-      <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px 12px; text-align: center;">
-        <div style="border-bottom: 1.5px solid #94a3b8; width: 75%; margin: 16px auto 10px auto;"></div>
-        <p style="color: #0b1e3d; font-weight: 800; font-size: 11px; margin: 0 0 3px 0; text-transform: uppercase;">VL ENGENHARIA MECÂNICA</p>
-        <p style="color: #1565d8; font-weight: 700; font-size: 10.5px; margin: 0 0 2px 0;">Eng. Vitor Leonardo Cordeiro Linhares</p>
-        <p style="color: #64748b; font-size: 9px; font-family: monospace; margin: 0;">CREA-PE: 182229949-0 • Responsável Técnico</p>
+      <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 12px 10px; text-align: center;">
+        <div style="border-bottom: 1.5px solid #94a3b8; width: 75%; margin: 12px auto 8px auto;"></div>
+        <p style="color: #0b1e3d; font-weight: 800; font-size: 10.5px; margin: 0 0 2px 0; text-transform: uppercase;">VL ENGENHARIA MECÂNICA</p>
+        <p style="color: #1565d8; font-weight: 700; font-size: 10px; margin: 0 0 2px 0;">Eng. Vitor Leonardo Cordeiro Linhares</p>
+        <p style="color: #64748b; font-size: 8.5px; font-family: monospace; margin: 0;">CREA-PE: 182229949-0 • Responsável Técnico</p>
       </div>
 
-      <div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 14px 12px; text-align: center;">
-        <div style="border-bottom: 1.5px dashed #94a3b8; width: 75%; margin: 16px auto 10px auto;"></div>
-        <p style="color: #0b1e3d; font-weight: 800; font-size: 11px; margin: 0 0 3px 0; text-transform: uppercase;">${params.clienteNome.toUpperCase()}</p>
-        <p style="color: #475569; font-weight: 600; font-size: 10.5px; margin: 0 0 2px 0;">${params.representante}</p>
-        <p style="color: #64748b; font-size: 9px; margin: 0;">De Acordo / Representante Autorizado do Contratante</p>
+      <div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 12px 10px; text-align: center;">
+        <div style="border-bottom: 1.5px dashed #94a3b8; width: 75%; margin: 12px auto 8px auto;"></div>
+        <p style="color: #0b1e3d; font-weight: 800; font-size: 10.5px; margin: 0 0 2px 0; text-transform: uppercase;">${params.clienteNome.toUpperCase()}</p>
+        <p style="color: #475569; font-weight: 600; font-size: 10px; margin: 0 0 2px 0;">${params.representante}</p>
+        <p style="color: #64748b; font-size: 8.5px; margin: 0;">De Acordo / Representante Autorizado do Contratante</p>
       </div>
 
     </div>

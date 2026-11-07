@@ -1094,7 +1094,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                     Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 12px; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">102.870.934-09</strong>
                   </p>
                   <p style="margin: 2px 0; color: #334155; font-size: 10px;">
-                    Titular: <strong>Vitor Leonardo Cordeiro Linhares</strong> • CREA-PE 182229949-0
+                    Titular: <strong>Vitor Leonardo Cordeiro Linhares</strong>
                   </p>
                   <p style="margin: 2px 0; color: #64748b; font-size: 9.5px;">
                     Aponte a câmera do aplicativo do seu banco para o QR Code acima para efetuar o pagamento imediato.

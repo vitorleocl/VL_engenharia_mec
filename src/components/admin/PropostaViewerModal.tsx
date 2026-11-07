@@ -49,6 +49,39 @@ interface PropostaViewerModalProps {
   onEditarProposta?: (orc: Orcamento) => void;
 }
 
+export const VlLogoVector: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ 
+  className = "h-9 w-auto", 
+  style = { width: '175px', height: '34px' } 
+}) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="529" 
+    height="100" 
+    viewBox="0 0 529 100" 
+    role="img" 
+    aria-label="VL Engenharia"
+    className={className}
+    style={style}
+  >
+    <g transform="translate(6 0)">
+      <defs>
+        <linearGradient id="vl_pv_g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#B7C3D2"/>
+          <stop offset="1" stopColor="#6F86A3"/>
+        </linearGradient>
+      </defs>
+      <path d="M72.1 21.6A36 36 0 1 0 72.1 78.3" fill="none" stroke="url(#vl_pv_g)" strokeWidth="5" strokeLinecap="round"/>
+      <path d="M34.6 11.9A41 41 0 0 0 35.9 88.5" fill="none" stroke="url(#vl_pv_g)" strokeWidth="9" pathLength="100" strokeDasharray="6.4 5.4"/>
+      <path d="M72.5 11.0A45 45 0 0 0 42.1 5.6" fill="none" stroke="#0B2447" strokeWidth="2.6" strokeLinecap="round"/>
+      <path d="M20 30H35L44 54L55 30H70L51 72H37Z" fill="#0B2447"/>
+      <path d="M76 30H90L76.4 60H97L92 72H57Z" fill="#1E5BD8"/>
+    </g>
+    <path d="M118 8V92" stroke="#0B2447" strokeWidth="1" opacity=".5"/>
+    <path d="M184.4 23.8 167.0 73.0H152.0L134.6 23.8H147.3L159.5 60.9L171.8 23.8ZM200.4 63.7H216.0V73.0H188.4V23.8H200.4Z" fill="#0B2447"/>
+    <path d="M236.2 49.2V55.2H245.8V60.7H236.2V67.2H247.1V73.0H229.0V43.5H247.1V49.2ZM280.1 73.0H273.0L260.9 54.8V73.0H253.8V43.5H260.9L273.0 61.7V43.5H280.1ZM306.9 52.8Q306.1 51.3 304.6 50.5Q303.1 49.8 301.1 49.8Q297.6 49.8 295.5 52.1Q293.4 54.3 293.4 58.2Q293.4 62.2 295.6 64.5Q297.9 66.8 301.7 66.8Q304.4 66.8 306.2 65.5Q308.0 64.1 308.9 61.6H299.7V56.3H315.4V63.0Q314.6 65.7 312.7 68.0Q310.7 70.3 307.8 71.7Q304.9 73.2 301.2 73.2Q296.8 73.2 293.4 71.2Q290.0 69.3 288.0 65.9Q286.1 62.5 286.1 58.2Q286.1 53.8 288.0 50.4Q290.0 47.0 293.4 45.0Q296.8 43.1 301.1 43.1Q306.4 43.1 310.1 45.7Q313.7 48.3 314.9 52.8ZM328.5 49.2V55.2H338.2V60.7H328.5V67.2H339.4V73.0H321.4V43.5H339.4V49.2ZM372.5 73.0H365.3L353.3 54.8V73.0H346.1V43.5H353.3L365.3 61.7V43.5H372.5ZM405.2 43.5V73.0H398.0V60.8H386.8V73.0H379.7V43.5H386.8V55.0H398.0V43.5ZM430.7 67.7H419.7L417.9 73.0H410.4L421.1 43.5H429.4L440.1 73.0H432.5ZM428.9 62.2 425.2 51.4 421.6 62.2ZM460.4 73.0 454.2 61.8H452.5V73.0H445.3V43.5H457.4Q460.9 43.5 463.3 44.7Q465.8 45.9 467.0 48.0Q468.2 50.1 468.2 52.7Q468.2 55.7 466.5 58.0Q464.9 60.3 461.7 61.3L468.5 73.0ZM452.5 56.7H457.0Q458.9 56.7 459.9 55.8Q460.9 54.8 460.9 53.0Q460.9 51.4 459.9 50.4Q458.9 49.4 457.0 49.4H452.5ZM481.9 43.5V73.0H474.7V43.5ZM507.4 67.7H496.4L494.7 73.0H487.2L497.8 43.5H506.1L516.8 73.0H509.2ZM505.6 62.2 501.9 51.4 498.3 62.2Z" fill="#1E5BD8"/>
+  </svg>
+);
+
 function gerarPaginasPadrao(orcamento: Orcamento): PropostaPagina[] {
   const secoes = gerarSecoesPadraoOrcamento(orcamento);
   return secoes.map(s => ({
@@ -237,10 +270,30 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
         };
       }
 
-      // FOR ALL OTHER SECTIONS: PRESERVE EXACT CONTENT!
-      // Clean obsolete digital signature badges if present in Etapa 3 and ensure client representative name is present
-      const isEtapa3 = s.id === 'etapa3' || s.numero === 12 || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
-      if (isEtapa3 && conteudo) {
+      // FOR ALL OTHER SECTIONS:
+      // Etapa 2: Escopo Técnico das Atividades (Metodologia)
+      const isEtapa2 = s.id === 'etapa2' || s.numero === 10 || (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')));
+      if (isEtapa2 && (!conteudo || !conteudo.includes('FASE 01'))) {
+        conteudo = gerarHtmlEtapa2Metodologia(orcamento.normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13');
+      }
+
+      // Etapa 3: Prazo, Pagamento & Investimento com Memorial de Cálculo
+      const isEtapa3 = s.id === 'etapa3' || s.numero === 12 || (s.titulo && (s.titulo.toLowerCase().includes('etapa 3') || s.titulo.toLowerCase().includes('investimento')));
+      if (isEtapa3) {
+        if (!conteudo || !conteudo.includes('Memorial de Cálculo') || !conteudo.includes('TRANSPARÊNCIA')) {
+          conteudo = gerarHtmlEtapa3Investimento({
+            valor: orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 4.500,00'),
+            prazo,
+            condicoes: orcamento.condicoesPagamento || '50% entrada e 50% após emissão da ART.',
+            validade,
+            clienteNome,
+            representante,
+            incluiNotaFiscal: orcamento.incluiNotaFiscal,
+            chavePix: orcamento.chavePix,
+            itensCalculo: orcamento.itensCalculo,
+          });
+        }
+
         conteudo = conteudo
           .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
           .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
@@ -254,6 +307,12 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           }
         }
       }
+
+      // Clean excessive CREA occurrences from PIX and badges across all pages
+      conteudo = conteudo
+        .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>')
+        .replace(/<span[^>]*class="[^"]*font-mono"[^>]*>CREA-PE\s*182229949-0<\/span>/gi, '')
+        .replace(/CREA-PE\s*HABILITADO/g, 'ENGENHARIA DIAGNÓSTICA');
 
       // Upgrade Agradecimento & Contato if still using old format
       const isContato = s.id === 'contato' || s.numero === 13 || (s.titulo && s.titulo.toLowerCase().includes('contato'));
@@ -582,11 +641,11 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 {/* Official Page Header */}
                 <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
-                    <div>
-                      <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
+                    <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
+                    <div className="border-l border-slate-300 pl-3">
+                      <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                       <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        Proposta Técnico-Comercial • CREA-PE 182229949-0
+                        Proposta Técnico-Comercial • Engenharia Mecânica
                       </p>
                     </div>
                   </div>
@@ -598,29 +657,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
                 {/* Page Content Body */}
                 <div className="relative z-10 flex-1">
-                  <div className="mb-5">
+                  <div className="mb-4">
                     {paginaRenderizar?.numero === 1 ? (
-                      <div className="space-y-2">
-                        <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                          PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                        </h1>
-                        <div>
-                          <span className="inline-block bg-[#0B1E3D] text-[#D4AF37] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold tracking-wider uppercase border border-[#D4AF37]/40 shadow-xs">
-                            {paginaRenderizar?.subtitulo || obterTituloLaudoProposta(orcamento)}
-                          </span>
-                        </div>
-                      </div>
+                      <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
+                        PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
+                      </h1>
                     ) : (
-                      <div>
-                        <h2 className="text-xl font-black text-[#0B1E3D]">
-                          {paginaRenderizar?.titulo}
-                        </h2>
-                        {paginaRenderizar?.subtitulo && (
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {paginaRenderizar.subtitulo}
-                          </p>
-                        )}
-                      </div>
+                      <h2 className="text-xl font-black text-[#0B1E3D]">
+                        {paginaRenderizar?.titulo}
+                      </h2>
                     )}
                   </div>
 
@@ -648,11 +693,11 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
                   <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
-                      <div>
-                        <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
+                      <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
+                      <div className="border-l border-slate-300 pl-3">
+                        <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                         <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                          Proposta Técnico-Comercial • CREA-PE 182229949-0
+                          Proposta Técnico-Comercial • Engenharia Mecânica
                         </p>
                       </div>
                     </div>
@@ -663,29 +708,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </header>
 
                   <div className="relative z-10 flex-1">
-                    <div className="mb-5">
+                    <div className="mb-4">
                       {pag.numero === 1 ? (
-                        <div className="space-y-2">
-                          <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                            PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                          </h1>
-                          <div>
-                            <span className="inline-block bg-[#0B1E3D] text-[#D4AF37] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold tracking-wider uppercase border border-[#D4AF37]/40 shadow-xs">
-                              {pag.subtitulo || obterTituloLaudoProposta(orcamento)}
-                            </span>
-                          </div>
-                        </div>
+                        <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
+                          PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
+                        </h1>
                       ) : (
-                        <div>
-                          <h2 className="text-xl font-black text-[#0B1E3D]">
-                            {pag.titulo}
-                          </h2>
-                          {pag.subtitulo && (
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {pag.subtitulo}
-                            </p>
-                          )}
-                        </div>
+                        <h2 className="text-xl font-black text-[#0B1E3D]">
+                          {pag.titulo}
+                        </h2>
                       )}
                     </div>
 
@@ -723,11 +754,11 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
               <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <img src="/vl-logo-compacto.svg" alt="VL" className="h-10 w-auto object-contain" />
-                  <div>
-                    <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
+                  <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
+                  <div className="border-l border-slate-300 pl-3">
+                    <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                     <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                      Proposta Técnico-Comercial • CREA-PE 182229949-0
+                      Proposta Técnico-Comercial • Engenharia Mecânica
                     </p>
                   </div>
                 </div>
@@ -738,29 +769,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               </header>
 
               <div className="relative z-10 flex-1">
-                <div className="mb-5">
+                <div className="mb-4">
                   {pag.numero === 1 ? (
-                    <div className="space-y-2">
-                      <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                        PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                      </h1>
-                      <div>
-                        <span className="inline-block bg-[#0B1E3D] text-[#D4AF37] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold tracking-wider uppercase border border-[#D4AF37]/40 shadow-xs">
-                          {pag.subtitulo || obterTituloLaudoProposta(orcamento)}
-                        </span>
-                      </div>
-                    </div>
+                    <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
+                      PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
+                    </h1>
                   ) : (
-                    <div>
-                      <h2 className="text-xl font-black text-[#0B1E3D]">
-                        {pag.titulo}
-                      </h2>
-                      {pag.subtitulo && (
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {pag.subtitulo}
-                        </p>
-                      )}
-                    </div>
+                    <h2 className="text-xl font-black text-[#0B1E3D]">
+                      {pag.titulo}
+                    </h2>
                   )}
                 </div>
 

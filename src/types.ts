@@ -116,6 +116,14 @@ export interface OrcamentoHistorico {
   };
 }
 
+export interface OrcamentoItemCalculo {
+  id: string;
+  descricao: string;
+  quantidade: number;
+  valorUnitario: number;
+  valorTotal: number;
+}
+
 export interface Orcamento {
   id: string;
   codigoProposta?: string; // ex: PROP-2026-001
@@ -137,6 +145,7 @@ export interface Orcamento {
   ativoIdentificacao?: string;
   valor: number;
   valorFormatado?: string;
+  itensCalculo?: OrcamentoItemCalculo[]; // Memorial de cálculo detalhado por ativo/serviço
   prazoDias?: number;
   prazoEntrega?: string;
   validadeDias?: number;

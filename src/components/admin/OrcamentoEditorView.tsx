@@ -29,11 +29,13 @@ import {
   ChevronLeft,
   Loader2,
   FileSpreadsheet,
-  Users
+  Users,
+  Plus,
+  Calculator
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Orcamento, OrcamentoSecao, OrcamentoHistorico } from '../../types';
+import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
@@ -169,18 +171,19 @@ export const OrcamentoEditorView: React.FC = () => {
         }
 
         if (isEtapa2) {
-          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || !s.conteudoHtml.includes('FASE 01')) {
             alterou = true;
             return {
               ...s,
               titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+              subtitulo: 'METODOLOGIA EM 5 FASES SEQUENCIAIS',
               conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
             };
           }
         }
 
         if (isEtapa3) {
-          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || !s.conteudoHtml.includes('Memorial de Cálculo') || !s.conteudoHtml.includes('TRANSPARÊNCIA')) {
             alterou = true;
             return {
               ...s,
@@ -195,15 +198,17 @@ export const OrcamentoEditorView: React.FC = () => {
                 representante,
                 incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal,
                 chavePix: orcamentoOriginal.chavePix,
+                itensCalculo: orcamentoOriginal.itensCalculo,
               }),
             };
-          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico')) {
+          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico') || s.conteudoHtml.includes('• CREA-PE 182229949-0')) {
             alterou = true;
             const limpo = s.conteudoHtml
               .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
               .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
               .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
-              .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+              .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '')
+              .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>');
             return { ...s, conteudoHtml: limpo };
           }
         }
@@ -612,6 +617,7 @@ export const OrcamentoEditorView: React.FC = () => {
               representante: orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica',
               incluiNotaFiscal: novoValor,
               chavePix: orcamentoState.chavePix || '10287093409',
+              itensCalculo: orcamentoState.itensCalculo,
             }),
           };
         }
@@ -644,6 +650,7 @@ export const OrcamentoEditorView: React.FC = () => {
       representante: orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica',
       incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
       chavePix: orcamentoState.chavePix || '10287093409',
+      itensCalculo: orcamentoState.itensCalculo,
     });
 
     const novasSecoes = orcamentoState.secoes.map(s => {
@@ -658,7 +665,122 @@ export const OrcamentoEditorView: React.FC = () => {
       secoes: novasSecoes,
     };
     setOrcamentoState(atualizado);
-    agendarAutoSave(atualizado, 'Etapa 3 sincronizada com QR Code PIX CPF e condições financeiras');
+    agendarAutoSave(atualizado, 'Etapa 3 sincronizada com Memorial de Cálculo e PIX');
+  };
+
+  // Restore Etapa 2 (Metodologia) to default clean cards
+  const handleRestaurarEtapa2 = () => {
+    if (!orcamentoState?.secoes) return;
+    const novoHtml = gerarHtmlEtapa2Metodologia(orcamentoState.normasTecnicas);
+    const novasSecoes = orcamentoState.secoes.map(s => {
+      if (s.id === 'etapa2' || (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')))) {
+        return { 
+          ...s, 
+          titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+          conteudoHtml: novoHtml 
+        };
+      }
+      return s;
+    });
+    const atualizado: Orcamento = { ...orcamentoState, secoes: novasSecoes };
+    setOrcamentoState(atualizado);
+    agendarAutoSave(atualizado, 'Metodologia (Etapa 2) restaurada para formatação padrão em 5 fases');
+  };
+
+  // Memorial de Cálculo itens
+  const itensCalculo: OrcamentoItemCalculo[] = useMemo(() => {
+    if (orcamentoState?.itensCalculo && orcamentoState.itensCalculo.length > 0) {
+      return orcamentoState.itensCalculo;
+    }
+    const valorPadrao = orcamentoState?.valor || 0;
+    return [
+      {
+        id: 'item-1',
+        descricao: orcamentoState?.servico || 'Serviços de Engenharia Mecânica & Laudo Pericial com ART CREA-PE',
+        quantidade: 1,
+        valorUnitario: valorPadrao,
+        valorTotal: valorPadrao,
+      }
+    ];
+  }, [orcamentoState?.itensCalculo, orcamentoState?.valor, orcamentoState?.servico]);
+
+  const handleAtualizarListaItens = (novaLista: OrcamentoItemCalculo[]) => {
+    if (!orcamentoState) return;
+    const novoTotal = novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
+    const valorFormatado = novoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const prazoFormatado = orcamentoState.prazoEntrega || `${orcamentoState.prazoDias || 7} dias úteis`;
+    const condicoesFormatado = orcamentoState.condicoesPagamento || '50% de entrada e 50% após emissão do laudo final e ART.';
+
+    const novoHtmlEtapa3 = gerarHtmlEtapa3Investimento({
+      valor: valorFormatado,
+      prazo: prazoFormatado,
+      condicoes: condicoesFormatado,
+      validade: orcamentoState.validadeDias || 15,
+      clienteNome: orcamentoState.clienteNome || cliente?.razaoSocial || 'Cliente',
+      representante: orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica',
+      incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
+      chavePix: orcamentoState.chavePix || '10287093409',
+      itensCalculo: novaLista,
+    });
+
+    const novasSecoes = (orcamentoState.secoes || []).map(s => {
+      if (s.id === 'etapa3' || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'))) {
+        return { ...s, conteudoHtml: novoHtmlEtapa3 };
+      }
+      return s;
+    });
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      valor: novoTotal,
+      valorFormatado,
+      itensCalculo: novaLista,
+      secoes: novasSecoes,
+    };
+
+    setOrcamentoState(atualizado);
+    agendarAutoSave(atualizado, `Memorial de cálculo atualizado: ${novaLista.length} item(ns), Total: ${valorFormatado}`);
+  };
+
+  const handleAdicionarItemCalculo = () => {
+    const novoItem: OrcamentoItemCalculo = {
+      id: `item-${Date.now()}`,
+      descricao: '',
+      quantidade: 1,
+      valorUnitario: 0,
+      valorTotal: 0,
+    };
+    handleAtualizarListaItens([...itensCalculo, novoItem]);
+  };
+
+  const handleRemoverItemCalculo = (itemId: string) => {
+    if (itensCalculo.length <= 1) {
+      const resetado = [{
+        id: 'item-1',
+        descricao: orcamentoState?.servico || 'Serviços Técnicos Especializados de Engenharia',
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+      }];
+      handleAtualizarListaItens(resetado);
+      return;
+    }
+    const novaLista = itensCalculo.filter(it => it.id !== itemId);
+    handleAtualizarListaItens(novaLista);
+  };
+
+  const handleEditarItemCalculo = (itemId: string, campo: 'descricao' | 'quantidade' | 'valorUnitario', val: any) => {
+    const novaLista = itensCalculo.map(it => {
+      if (it.id === itemId) {
+        const atualizado = { ...it, [campo]: val };
+        const q = campo === 'quantidade' ? (Number(val) || 0) : it.quantidade;
+        const u = campo === 'valorUnitario' ? (Number(val) || 0) : it.valorUnitario;
+        atualizado.valorTotal = q * u;
+        return atualizado;
+      }
+      return it;
+    });
+    handleAtualizarListaItens(novaLista);
   };
 
   // Upload custom QR code image for PIX
@@ -1301,74 +1423,211 @@ export const OrcamentoEditorView: React.FC = () => {
               </div>
             )}
 
-            {/* SPECIAL CASE: Etapa 3 (Investimento, Pagamento, PIX e Nota Fiscal) */}
-            {(secaoAtiva?.id === 'etapa3' || secaoAtiva?.numero === 12 || (secaoAtiva?.titulo && secaoAtiva.titulo.toLowerCase().includes('etapa 3'))) && (
-              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
+            {/* SPECIAL CASE: Etapa 2 (Escopo Técnico das Atividades - Metodologia) */}
+            {(secaoAtiva?.id === 'etapa2' || secaoAtiva?.numero === 10 || (secaoAtiva?.titulo && (secaoAtiva.titulo.toLowerCase().includes('etapa 2') || secaoAtiva.titulo.toLowerCase().includes('metodologia')))) && (
+              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/70 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {/* QR Code thumbnail com preview e botão de troca */}
-                    <div className="relative group bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-center">
-                      <img 
-                        src={orcamentoState.qrCodePixUrl || QR_CODE_PIX_PADRAO_BASE64} 
-                        alt="QR Code PIX CPF" 
-                        className="w-14 h-14 block object-contain mx-auto" 
-                      />
-                      <span className="text-[7.5px] font-bold text-emerald-800 font-mono block mt-0.5">
-                        {orcamentoState.qrCodePixUrl ? 'QR CUSTOM' : 'QR OFICIAL'}
-                      </span>
+                    <div className="p-2 rounded-lg bg-blue-600 text-white shrink-0">
+                      <Layers className="w-5 h-5" />
                     </div>
-
                     <div>
                       <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Chave PIX & Nota Fiscal da Proposta</span>
+                        <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                        <span>Metodologia Sequencial de Engenharia (5 Fases)</span>
                       </h4>
                       <p className="text-[11px] text-slate-600 mt-0.5">
-                        Chave PIX (CPF): <strong className="font-mono text-emerald-950 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200">{CHAVE_PIX_FORMATADA_PADRAO}</strong>
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        Titular: {TITULAR_PIX_PADRAO} • CREA-PE 182229949-0
+                        Vistoria in loco, checklists normativos, instrumentação/ensaios, laudo pericial conclusivo e homologação de ART.
                       </p>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleRestaurarEtapa2}
+                    className="px-3 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors shrink-0"
+                    title="Restaura a formatação inicial estilizada em cards para a Metodologia"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Restaurar Formatação Padrão</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Botão para carregar/trocar imagem do QR Code do PIX */}
+            {/* SPECIAL CASE: Etapa 3 (Investimento, Pagamento, PIX e Nota Fiscal + Memorial de Cálculo) */}
+            {(secaoAtiva?.id === 'etapa3' || secaoAtiva?.numero === 12 || (secaoAtiva?.titulo && secaoAtiva.titulo.toLowerCase().includes('etapa 3'))) && (
+              <div className="space-y-4">
+                {/* Memorial de Cálculo Interativo */}
+                <div className="p-4 rounded-xl border border-blue-200 bg-white space-y-3 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-blue-100 text-[#1565D8]">
+                        <Calculator className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider">
+                          Memorial de Cálculo da Proposta (Transparência por Ativo / Serviço)
+                        </h4>
+                        <p className="text-[11px] text-slate-500">
+                          Preço unitário por ativo/serviço, quantidade e soma automática do valor total do laudo.
+                        </p>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => pixQrCodeInputRef.current?.click()}
-                      className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-                      title="Clique para selecionar a imagem do seu QR Code PIX (PNG/JPG)"
+                      onClick={handleAdicionarItemCalculo}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0e489e] text-white text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors shrink-0"
                     >
-                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{orcamentoState.qrCodePixUrl ? 'Substituir Imagem QR' : 'Inserir Imagem do QR Code'}</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Adicionar Linha / Ativo</span>
                     </button>
+                  </div>
 
-                    {/* Nota Fiscal Selectable Toggle */}
-                    <button
-                      type="button"
-                      onClick={handleToggleNotaFiscal}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors ${
-                        orcamentoState.incluiNotaFiscal !== false
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
-                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                      }`}
-                      title="Alternar entre proposta com ou sem Nota Fiscal"
-                    >
-                      <span>NFS-e:</span>
-                      <span>{orcamentoState.incluiNotaFiscal !== false ? 'Inclusa ✓' : 'Sem NFS-e (Recibo)'}</span>
-                    </button>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-600 bg-slate-50 text-[11px] uppercase">
+                          <th className="py-2 px-2.5 font-bold w-10 text-center">#</th>
+                          <th className="py-2 px-2.5 font-bold">Descrição do Ativo ou Escopo de Serviço</th>
+                          <th className="py-2 px-2.5 font-bold w-24 text-center">Qtd</th>
+                          <th className="py-2 px-2.5 font-bold w-36 text-right">Unitário (R$)</th>
+                          <th className="py-2 px-2.5 font-bold w-36 text-right">Subtotal (R$)</th>
+                          <th className="py-2 px-2.5 font-bold w-12 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {itensCalculo.map((it, idx) => (
+                          <tr key={it.id} className="hover:bg-slate-50/70">
+                            <td className="py-2 px-2.5 text-center font-mono text-slate-400 font-bold">
+                              {idx + 1}
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <input
+                                type="text"
+                                value={it.descricao}
+                                onChange={(e) => handleEditarItemCalculo(it.id, 'descricao', e.target.value)}
+                                placeholder="Ex: Inspeção e Laudo de Caminhão Munck placa PGX7098 com ensaio LP"
+                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                              />
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <input
+                                type="number"
+                                min={1}
+                                value={it.quantidade}
+                                onChange={(e) => handleEditarItemCalculo(it.id, 'quantidade', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-center text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                              />
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <input
+                                type="number"
+                                step="any"
+                                min={0}
+                                value={it.valorUnitario}
+                                onChange={(e) => handleEditarItemCalculo(it.id, 'valorUnitario', parseFloat(e.target.value) || 0)}
+                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-right text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                              />
+                            </td>
+                            <td className="py-2 px-2.5 text-right font-mono font-bold text-[#0B1E3D]">
+                              {(it.valorTotal || (it.quantidade * it.valorUnitario)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td className="py-2 px-2.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoverItemCalculo(it.id)}
+                                className="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                                title="Remover linha"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-blue-50/80 border-t-2 border-[#0B1E3D] font-bold">
+                          <td colSpan={4} className="py-2.5 px-3 text-right text-slate-800 uppercase text-[11px]">
+                            Valor Total da Proposta (Soma das Linhas):
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-sm text-[#1565D8]">
+                            {(orcamentoState.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
 
-                    {/* Sincronizar Bloco de Pagamento */}
-                    <button
-                      type="button"
-                      onClick={handleSincronizarEtapa3}
-                      className="px-3 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-                      title="Atualiza o conteúdo da Etapa 3 com o QR Code oficial do PIX, termos de pagamento e status da Nota Fiscal"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Atualizar Bloco PIX / NF</span>
-                    </button>
+                {/* Bloco de Faturamento PIX & Nota Fiscal */}
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {/* QR Code thumbnail com preview e botão de troca */}
+                      <div className="relative group bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-center">
+                        <img 
+                          src={orcamentoState.qrCodePixUrl || QR_CODE_PIX_PADRAO_BASE64} 
+                          alt="QR Code PIX CPF" 
+                          className="w-14 h-14 block object-contain mx-auto" 
+                        />
+                        <span className="text-[7.5px] font-bold text-emerald-800 font-mono block mt-0.5">
+                          {orcamentoState.qrCodePixUrl ? 'QR CUSTOM' : 'QR OFICIAL'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Chave PIX & Nota Fiscal da Proposta</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          Chave PIX (CPF): <strong className="font-mono text-emerald-950 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200">{CHAVE_PIX_FORMATADA_PADRAO}</strong>
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Titular: {TITULAR_PIX_PADRAO}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Botão para carregar/trocar imagem do QR Code do PIX */}
+                      <button
+                        type="button"
+                        onClick={() => pixQrCodeInputRef.current?.click()}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                        title="Clique para selecionar a imagem do seu QR Code PIX (PNG/JPG)"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{orcamentoState.qrCodePixUrl ? 'Substituir Imagem QR' : 'Inserir Imagem do QR Code'}</span>
+                      </button>
+
+                      {/* Nota Fiscal Selectable Toggle */}
+                      <button
+                        type="button"
+                        onClick={handleToggleNotaFiscal}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors ${
+                          orcamentoState.incluiNotaFiscal !== false
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                        }`}
+                        title="Alternar entre proposta com ou sem Nota Fiscal"
+                      >
+                        <span>NFS-e:</span>
+                        <span>{orcamentoState.incluiNotaFiscal !== false ? 'Inclusa ✓' : 'Sem NFS-e (Recibo)'}</span>
+                      </button>
+
+                      {/* Sincronizar Bloco de Pagamento */}
+                      <button
+                        type="button"
+                        onClick={handleSincronizarEtapa3}
+                        className="px-3 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                        title="Atualiza o conteúdo da Etapa 3 com o Memorial de Cálculo, QR Code oficial do PIX e termos de pagamento"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Recalcular & Sincronizar Etapa 3</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1493,7 +1752,7 @@ export const OrcamentoEditorView: React.FC = () => {
 
             <div className="space-y-3 overflow-y-auto flex-1 pr-1 text-xs text-slate-700">
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900">
-                <strong>Proteção do Molde Original:</strong> O modelo padrão de 13 páginas e as diretrizes institucionais do Eng. Vitor Leonardo (CREA-PE: 182229949-0) são imutáveis e servem como matriz de origem para novos orçamentos.
+                <strong>Proteção do Molde Original:</strong> O modelo padrão de 13 páginas e as diretrizes institucionais do Eng. Vitor Leonardo são imutáveis e servem como matriz de origem para novos orçamentos.
               </div>
 
               <h4 className="font-bold text-slate-900 mt-2">Estrutura das 13 Páginas Padronizadas:</h4>
