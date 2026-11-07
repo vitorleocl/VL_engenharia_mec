@@ -505,12 +505,6 @@ export function gerarHtmlEtapa3Investimento(params: {
           </p>
         </div>
       </div>
-
-      <div style="text-align: right; flex-shrink: 0;">
-        <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 3px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 800; display: inline-block;">
-          PIX IMEDIATO
-        </span>
-      </div>
     </div>
 
     <!-- BLOCO DE HOMOLOGAÇÃO & ASSINATURAS -->

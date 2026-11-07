@@ -1101,11 +1101,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                   </p>
                 </div>
               </div>
-              <div style="text-align: right; flex-shrink: 0;">
-                <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; display: inline-block;">
-                  PIX IMEDIATO
-                </span>
-              </div>
+
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
