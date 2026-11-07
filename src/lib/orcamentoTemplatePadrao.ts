@@ -208,11 +208,11 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
         <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #1565D8; font-weight: 900; font-size: 11px;">M</span>
         <div>
           <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Metodologia de Engenharia em 5 Fases Sequenciais</strong>
-          <span style="font-size: 9.5px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo técnico e emissão de ART</span>
+          <span style="font-size: 9px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo e homologação legal CREA-PE</span>
         </div>
       </div>
-      <span style="background: rgba(212, 175, 55, 0.2); border: 1px solid #D4AF37; color: #fde047; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">
-        ENGENHARIA DIAGNÓSTICA
+      <span style="background: rgba(212, 175, 55, 0.2); border: 1px solid #D4AF37; color: #fde047; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">
+        CREA-PE HABILITADO
       </span>
     </div>
 
@@ -291,15 +291,15 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="background: #f3e8ff; color: #6b21a8; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 05</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Emissão e Registro Oficial de ART</strong>
+            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Emissão e Registro Oficial da ART CREA-PE</strong>
           </div>
           <span style="font-size: 10px; color: #7c3aed; font-weight: 700; background: #faf5ff; padding: 2px 6px; border-radius: 4px;">Homologação Legal</span>
         </div>
         <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.
+          Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.
         </p>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #7c3aed; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Certidão oficial de ART quitada com chave de autenticidade e QR code de validação.</span>
+          <span>✓ Entregável:</span> <span style="color: #334155;">Certidão oficial de ART quitada com chave de autenticidade e QR code do CREA-PE.</span>
         </div>
       </div>
 
@@ -348,7 +348,7 @@ export function gerarHtmlEtapa3Investimento(params: {
 
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px;">
           <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
-            ✓ Taxa de ART Inclusa
+            ✓ Taxa ART CREA-PE Inclusa
           </span>
           <span style="background: ${comNotaFiscal ? 'rgba(34, 197, 94, 0.25)' : 'rgba(255, 255, 255, 0.15)'}; border: 1px solid ${comNotaFiscal ? '#86efac' : 'rgba(255,255,255,0.2)'}; padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; color: ${comNotaFiscal ? '#f0fdf4' : '#ffffff'};">
             ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
@@ -419,7 +419,7 @@ export function gerarHtmlEtapa3Investimento(params: {
             Chave PIX (CPF): <strong style="color: #0b1e3d; font-family: monospace; font-size: 12px; background: #dcfce7; padding: 1px 6px; border-radius: 4px; border: 1px solid #86efac;">${chavePixDisplay}</strong>
           </p>
           <p style="margin: 2px 0; color: #334155; font-size: 10px;">
-            Titular: <strong>${TITULAR_PIX_PADRAO}</strong>
+            Titular: <strong>${TITULAR_PIX_PADRAO}</strong> • CREA-PE 182229949-0
           </p>
           <p style="margin: 2px 0; color: #64748b; font-size: 9.5px;">
             Aponte a câmera do aplicativo do seu banco para o QR Code acima para efetuar o pagamento.
@@ -575,7 +575,7 @@ export function gerarHtmlContatoAgradecimento(): string {
 
 export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
   { id: 'capa', numero: 1, titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA', subtitulo: 'DIREÇÃO TÉCNICA E RESPONSABILIDADE LEGAL' },
-  { id: 'missao', numero: 2, titulo: 'Nossa Missão, Propósito & Credenciais Técnicas', subtitulo: 'DIREÇÃO TÉCNICA E CREDENCIAIS PROFISSIONAIS' },
+  { id: 'missao', numero: 2, titulo: 'Nossa Missão, Propósito & Credenciais Técnicas', subtitulo: 'DIREÇÃO TÉCNICA & HABILITAÇÃO CREA-PE' },
   { id: 'principios', numero: 3, titulo: 'Nossos Princípios Fundamentais', subtitulo: 'VALORES INEGOCIÁVEIS EM CADA AVALIAÇÃO' },
   { id: 'entregamos', numero: 4, titulo: 'O Que Entregamos (Soluções Técnicas)', subtitulo: 'SEGURANÇA, CUSTO-BENEFÍCIO & RESPALDO COM ART' },
   { id: 'problemas', numero: 5, titulo: 'Problemas que Ajudamos a Resolver', subtitulo: 'DIAGNÓSTICO PREVENTIVO & MITIGAÇÃO DE RISCOS' },
@@ -636,12 +636,12 @@ export function gerarSecoesPadraoOrcamento(
       id: 'missao',
       numero: 2,
       titulo: 'Nossa Missão, Propósito & Credenciais Técnicas',
-      subtitulo: 'DIREÇÃO TÉCNICA, PERFIL PROFISSIONAL & RESPONSABILIDADE',
+      subtitulo: 'DIREÇÃO TÉCNICA, PERFIL PROFISSIONAL & HABILITAÇÃO CREA-PE',
       conteudoHtml: `<div class="space-y-4">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-xl border border-slate-200 bg-slate-50/80">
           <div class="shrink-0 text-center">
             <img src="/vitor-leonardo.png" alt="Eng. Vitor Leonardo Cordeiro Linhares" class="w-32 h-38 object-cover rounded-lg shadow-sm border-2 border-[#1565D8] mx-auto bg-slate-200" />
-            <span class="inline-block mt-2 px-2.5 py-0.5 rounded bg-[#0B1E3D] text-white text-[10px] font-bold tracking-wider uppercase">Engenheiro Responsável</span>
+            <span class="inline-block mt-2 px-2.5 py-0.5 rounded bg-[#0B1E3D] text-white text-[10px] font-bold tracking-wider uppercase font-mono">CREA-PE 182229949-0</span>
           </div>
           <div class="space-y-2 text-left">
             <h3 class="text-base font-black text-[#0B1E3D]">Eng. Vitor Leonardo Cordeiro Linhares</h3>

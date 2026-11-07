@@ -586,7 +586,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                     <div>
                       <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                       <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        Proposta Técnico-Comercial
+                        Proposta Técnico-Comercial • CREA-PE 182229949-0
                       </p>
                     </div>
                   </div>
@@ -625,7 +625,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </div>
 
                   <div 
-                    className="text-slate-800 text-xs leading-relaxed max-w-none [overflow-wrap:anywhere]"
+                    className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
                     dangerouslySetInnerHTML={{ __html: paginaRenderizar?.conteudoHtml || '<p>Conteúdo da proposta técnica.</p>' }}
                   />
                 </div>
@@ -652,7 +652,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                       <div>
                         <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                         <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                          Proposta Técnico-Comercial
+                          Proposta Técnico-Comercial • CREA-PE 182229949-0
                         </p>
                       </div>
                     </div>
@@ -690,7 +690,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                     </div>
 
                     <div 
-                      className="text-slate-800 text-xs leading-relaxed max-w-none [overflow-wrap:anywhere]"
+                      className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
                       dangerouslySetInnerHTML={{ __html: pag.conteudoHtml }}
                     />
                   </div>
@@ -727,7 +727,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   <div>
                     <h4 className="text-base font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
                     <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                      Proposta Técnico-Comercial
+                      Proposta Técnico-Comercial • CREA-PE 182229949-0
                     </p>
                   </div>
                 </div>
@@ -765,7 +765,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 </div>
 
                 <div 
-                  className="text-slate-800 text-xs leading-relaxed max-w-none [overflow-wrap:anywhere]"
+                  className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
                   dangerouslySetInnerHTML={{ __html: pag.conteudoHtml }}
                 />
               </div>

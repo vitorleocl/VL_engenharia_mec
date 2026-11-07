@@ -169,12 +169,7 @@ export const OrcamentoEditorView: React.FC = () => {
         }
 
         if (isEtapa2) {
-          const precisaAtualizar = !s.conteudoHtml || s.conteudoHtml.trim() === '' ||
-            s.conteudoHtml.includes('CREA-PE HABILITADO') ||
-            !s.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases Sequenciais') ||
-            !s.conteudoHtml.includes('FASE 01');
-
-          if (precisaAtualizar) {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
             alterou = true;
             return {
               ...s,
@@ -186,14 +181,7 @@ export const OrcamentoEditorView: React.FC = () => {
         }
 
         if (isEtapa3) {
-          let htmlEtapa3 = s.conteudoHtml;
-          const precisaAtualizar = !htmlEtapa3 || htmlEtapa3.trim() === '' ||
-            htmlEtapa3.includes('INFORMAÇÕES DA CONTRATADA (VL ENGENHARIA)') ||
-            !htmlEtapa3.includes('INVESTIMENTO COMERCIAL LÍQUIDO') ||
-            htmlEtapa3.includes('• CREA-PE 182229949-0') ||
-            !htmlEtapa3.includes('QR CODE PIX');
-
-          if (precisaAtualizar) {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
             alterou = true;
             return {
               ...s,
@@ -210,9 +198,9 @@ export const OrcamentoEditorView: React.FC = () => {
                 chavePix: orcamentoOriginal.chavePix,
               }),
             };
-          } else if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico')) {
+          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico')) {
             alterou = true;
-            const limpo = htmlEtapa3
+            const limpo = s.conteudoHtml
               .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
               .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
               .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
