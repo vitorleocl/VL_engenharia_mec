@@ -331,7 +331,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return {
                 ...s,
                 titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-                subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS',
+                subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 4 ETAPAS',
                 conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
               };
             }
