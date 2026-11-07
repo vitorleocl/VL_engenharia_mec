@@ -334,6 +334,7 @@ export const ATIVOS_INICIAIS: Ativo[] = [
 export const ORCAMENTOS_INICIAIS: Orcamento[] = [
   {
     id: 'orc-01',
+    codigoProposta: 'PROP-2026/001',
     clienteId: 'cli-01',
     clienteNome: 'Construtora & Engenharia Suape S.A.',
     servico: 'Inspeções em Caminhões Munck e Guindastes',

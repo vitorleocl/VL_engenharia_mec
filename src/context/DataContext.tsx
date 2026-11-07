@@ -245,7 +245,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const migrados = loaded.map((orc: Orcamento) => {
       let orcAtualizado = { ...orc };
-      let modificouOrc = false;
+      if (orcAtualizado.id === 'orc-01' && !orcAtualizado.codigoProposta) {
+        orcAtualizado.codigoProposta = 'PROP-2026/001';
+        modificouOrc = true;
+      }
 
       // 1. Upgrade secoes if present
       if (orcAtualizado.secoes && orcAtualizado.secoes.length > 0) {
@@ -325,8 +328,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa2) {
-            // Only update if completely empty
-            if (!s.conteudoHtml || s.conteudoHtml.trim() === '') {
+            const precisaAtualizar = !s.conteudoHtml || s.conteudoHtml.trim() === '' ||
+              s.conteudoHtml.includes('CREA-PE HABILITADO') ||
+              !s.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases Sequenciais') ||
+              !s.conteudoHtml.includes('FASE 01');
+
+            if (precisaAtualizar) {
               modificouOrc = true;
               return {
                 ...s,
@@ -339,7 +346,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (isEtapa3) {
             let htmlEtapa3 = s.conteudoHtml;
-            if (!htmlEtapa3 || htmlEtapa3.trim() === '') {
+            const precisaAtualizar = !htmlEtapa3 || htmlEtapa3.trim() === '' ||
+              htmlEtapa3.includes('INFORMAÇÕES DA CONTRATADA (VL ENGENHARIA)') ||
+              !htmlEtapa3.includes('INVESTIMENTO COMERCIAL LÍQUIDO') ||
+              htmlEtapa3.includes('• CREA-PE 182229949-0') ||
+              !htmlEtapa3.includes('QR CODE PIX');
+
+            if (precisaAtualizar) {
               modificouOrc = true;
               return {
                 ...s,
@@ -462,7 +475,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa2) {
-            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
+            const precisaAtualizar = !p.conteudoHtml || p.conteudoHtml.trim() === '' ||
+              p.conteudoHtml.includes('CREA-PE HABILITADO') ||
+              !p.conteudoHtml.includes('Metodologia de Engenharia em 5 Fases Sequenciais') ||
+              !p.conteudoHtml.includes('FASE 01');
+
+            if (precisaAtualizar) {
               modificouOrc = true;
               return {
                 ...p,
@@ -474,7 +492,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (isEtapa3) {
-            if (!p.conteudoHtml || p.conteudoHtml.trim() === '') {
+            const precisaAtualizar = !p.conteudoHtml || p.conteudoHtml.trim() === '' ||
+              p.conteudoHtml.includes('INFORMAÇÕES DA CONTRATADA (VL ENGENHARIA)') ||
+              !p.conteudoHtml.includes('INVESTIMENTO COMERCIAL LÍQUIDO') ||
+              p.conteudoHtml.includes('• CREA-PE 182229949-0') ||
+              !p.conteudoHtml.includes('QR CODE PIX');
+
+            if (precisaAtualizar) {
               modificouOrc = true;
               return {
                 ...p,
