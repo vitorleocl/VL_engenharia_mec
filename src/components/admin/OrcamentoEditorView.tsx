@@ -183,7 +183,7 @@ export const OrcamentoEditorView: React.FC = () => {
         }
 
         if (isEtapa3) {
-          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || !s.conteudoHtml.includes('Memorial de Cálculo') || !s.conteudoHtml.includes('TRANSPARÊNCIA')) {
+          if (!s.conteudoHtml || s.conteudoHtml.trim() === '' || !s.conteudoHtml.includes('Memorial de Cálculo')) {
             alterou = true;
             return {
               ...s,
@@ -201,14 +201,25 @@ export const OrcamentoEditorView: React.FC = () => {
                 itensCalculo: orcamentoOriginal.itensCalculo,
               }),
             };
-          } else if (s.conteudoHtml.includes('Assinado Digitalmente') || s.conteudoHtml.includes('Aceite Eletrônico') || s.conteudoHtml.includes('• CREA-PE 182229949-0')) {
+          } else if (
+            s.conteudoHtml.includes('Assinado Digitalmente') ||
+            s.conteudoHtml.includes('Aceite Eletrônico') ||
+            s.conteudoHtml.includes('• CREA-PE 182229949-0') ||
+            s.conteudoHtml.includes('PIX IMEDIATO') ||
+            s.conteudoHtml.includes('TRANSPARÊNCIA') ||
+            s.conteudoHtml.includes('Relatório Colorido')
+          ) {
             alterou = true;
             const limpo = s.conteudoHtml
               .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
               .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
               .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
               .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '')
-              .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>');
+              .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>')
+              .replace(/<div style="text-align:\s*right;\s*flex-shrink:\s*0;">\s*<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>\s*<\/div>/gi, '')
+              .replace(/<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>/gi, '')
+              .replace(/<span[^>]*>[^<]*TRANSPARÊNCIA[^<]*<\/span>/gi, '')
+              .replace(/Deslocamento e Relatório Colorido/g, 'Deslocamento e Laudo Completo');
             return { ...s, conteudoHtml: limpo };
           }
         }
@@ -1466,7 +1477,7 @@ export const OrcamentoEditorView: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider">
-                          Memorial de Cálculo da Proposta (Transparência por Ativo / Serviço)
+                          Memorial de Cálculo da Proposta (Detalhamento por Ativo / Serviço)
                         </h4>
                         <p className="text-[11px] text-slate-500">
                           Preço unitário por ativo/serviço, quantidade e soma automática do valor total do laudo.

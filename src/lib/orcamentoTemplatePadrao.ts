@@ -348,10 +348,7 @@ export function gerarTabelaMemorialCalculoHtml(itens?: OrcamentoItemCalculo[], v
   return `
     <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
       <div style="background: #0B1E3D; color: #ffffff; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="background: #1565D8; color: #ffffff; font-weight: 900; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-family: monospace;">TRANSPARÊNCIA</span>
-          <strong style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;">Memorial de Cálculo & Composição dos Serviços</strong>
-        </div>
+        <strong style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;">Memorial de Cálculo & Composição dos Serviços</strong>
         <span style="font-size: 9px; color: #93c5fd; font-weight: 600;">Detalhamento unitário por ativo / escopo</span>
       </div>
       <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
@@ -433,7 +430,7 @@ export function gerarHtmlEtapa3Investimento(params: {
             ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
           </span>
           <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-size: 9.5px; font-weight: 700;">
-            ✓ Deslocamento e Relatório Colorido
+            ✓ Deslocamento e Laudo Completo
           </span>
         </div>
       </div>

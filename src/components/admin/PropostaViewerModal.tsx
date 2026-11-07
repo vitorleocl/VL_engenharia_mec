@@ -280,7 +280,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       // Etapa 3: Prazo, Pagamento & Investimento com Memorial de Cálculo
       const isEtapa3 = s.id === 'etapa3' || s.numero === 12 || (s.titulo && (s.titulo.toLowerCase().includes('etapa 3') || s.titulo.toLowerCase().includes('investimento')));
       if (isEtapa3) {
-        if (!conteudo || !conteudo.includes('Memorial de Cálculo') || !conteudo.includes('TRANSPARÊNCIA')) {
+        if (!conteudo || !conteudo.includes('Memorial de Cálculo')) {
           conteudo = gerarHtmlEtapa3Investimento({
             valor: orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 4.500,00'),
             prazo,
@@ -298,7 +298,11 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
           .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
           .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
-          .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '');
+          .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '')
+          .replace(/<div style="text-align:\s*right;\s*flex-shrink:\s*0;">\s*<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>\s*<\/div>/gi, '')
+          .replace(/<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>/gi, '')
+          .replace(/<span[^>]*>[^<]*TRANSPARÊNCIA[^<]*<\/span>/gi, '')
+          .replace(/Deslocamento e Relatório Colorido/g, 'Deslocamento e Laudo Completo');
 
         if (representante) {
           const regexRepres = /(<div style="background:\s*#ffffff;\s*border:\s*1\.5px dashed[^>]*>[\s\S]*?<div style="border-bottom:\s*1\.5px dashed[^>]*><\/div>\s*<p[^>]*>[\s\S]*?<\/p>\s*)<p[^>]*>[\s\S]*?<\/p>(\s*<p[^>]*>De Acordo[^<]*<\/p>)/gi;

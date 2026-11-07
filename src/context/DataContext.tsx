@@ -338,7 +338,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (isEtapa3) {
             let htmlEtapa3 = s.conteudoHtml;
-            if (!htmlEtapa3 || htmlEtapa3.trim() === '' || !htmlEtapa3.includes('Memorial de Cálculo') || !htmlEtapa3.includes('TRANSPARÊNCIA')) {
+            if (!htmlEtapa3 || htmlEtapa3.trim() === '' || !htmlEtapa3.includes('Memorial de Cálculo')) {
               modificouOrc = true;
               return {
                 ...s,
@@ -356,14 +356,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   itensCalculo: orcAtualizado.itensCalculo,
                 }),
               };
-            } else if (htmlEtapa3.includes('Assinado Digitalmente') || htmlEtapa3.includes('Aceite Eletrônico') || htmlEtapa3.includes('• CREA-PE 182229949-0')) {
+            } else if (
+              htmlEtapa3.includes('Assinado Digitalmente') ||
+              htmlEtapa3.includes('Aceite Eletrônico') ||
+              htmlEtapa3.includes('• CREA-PE 182229949-0') ||
+              htmlEtapa3.includes('PIX IMEDIATO') ||
+              htmlEtapa3.includes('TRANSPARÊNCIA') ||
+              htmlEtapa3.includes('Relatório Colorido')
+            ) {
               modificouOrc = true;
               htmlEtapa3 = htmlEtapa3
                 .replace(/<span[^>]*>[^<]*Assinado Digitalmente pelo Emissor[^<]*<\/span>/gi, '')
                 .replace(/<span[^>]*>[^<]*\[Aceite Eletrônico \/ Assinatura Digital\][^<]*<\/span>/gi, '')
                 .replace(/✓ Assinado Digitalmente pelo Emissor/g, '')
                 .replace(/\[Aceite Eletrônico \/ Assinatura Digital\]/g, '')
-                .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>');
+                .replace(/Titular:\s*<strong>([^<]+)<\/strong>\s*•\s*CREA-PE\s*182229949-0/gi, 'Titular: <strong>$1</strong>')
+                .replace(/<div style="text-align:\s*right;\s*flex-shrink:\s*0;">\s*<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>\s*<\/div>/gi, '')
+                .replace(/<span[^>]*>[^<]*PIX IMEDIATO[^<]*<\/span>/gi, '')
+                .replace(/<span[^>]*>[^<]*TRANSPARÊNCIA[^<]*<\/span>/gi, '')
+                .replace(/Deslocamento e Relatório Colorido/g, 'Deslocamento e Laudo Completo');
               return { ...s, conteudoHtml: htmlEtapa3 };
             }
           }

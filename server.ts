@@ -1035,7 +1035,7 @@ app.post("/api/ai/generate-proposal", async (req, res) => {
                     ${comNotaFiscal ? '✓ Nota Fiscal de Serviços (NFS-e)' : '• Faturamento via Recibo (Sem NFS-e)'}
                   </span>
                   <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 700;">
-                    ✓ Deslocamento e Relatório Colorido
+                    ✓ Deslocamento e Laudo Completo
                   </span>
                 </div>
               </div>
