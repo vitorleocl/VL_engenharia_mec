@@ -583,7 +583,7 @@ export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
   { id: 'identificacao', numero: 7, titulo: 'Identificação das Partes & Demanda', subtitulo: 'QUADRO TÉCNICO COMPARATIVO DAS ENTIDADES' },
   { id: 'equipe', numero: 8, titulo: 'Nossa Equipe & Estrutura da Proposta', subtitulo: 'RESPONSABILIDADE TÉCNICA EM 3 ETAPAS' },
   { id: 'etapa1', numero: 9, titulo: 'Etapa 1 - Relação dos Serviços & Levantamento Fotográfico', subtitulo: 'DIRETRIZES DE CAMPO E EVIDÊNCIAS INICIAIS' },
-  { id: 'etapa2', numero: 10, titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS' },
+  { id: 'etapa2', numero: 10, titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'FASES, CHECKLISTS E ENSAIOS EM 4 ETAPAS' },
   { id: 'operacional', numero: 11, titulo: 'Informações Técnicas Operacionais & Diretrizes', subtitulo: 'OBRIGAÇÕES E CONDIÇÕES OPERACIONAIS' },
   { id: 'etapa3', numero: 12, titulo: 'Etapa 3 - Prazo, Pagamento & Investimento', subtitulo: 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS' },
   { id: 'contato', numero: 13, titulo: 'Agradecimento & Contato', subtitulo: 'INFORMAÇÕES INSTITUCIONAIS E ATENDIMENTO DIRETO' },
