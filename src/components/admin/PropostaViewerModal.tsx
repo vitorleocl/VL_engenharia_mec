@@ -304,6 +304,17 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           .replace(/<span[^>]*>[^<]*TRANSPARÊNCIA[^<]*<\/span>/gi, '')
           .replace(/Deslocamento e Relatório Colorido/g, 'Deslocamento e Laudo Completo');
 
+        // Garante que a opção de Nota Fiscal reflita com precisão o estado do orçamento
+        if (orcamento.incluiNotaFiscal === false) {
+          conteudo = conteudo
+            .replace(/✓ Nota Fiscal de Serviços \(NFS-e\)/g, '• Faturamento via Recibo (Sem NFS-e)')
+            .replace(/Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal \(NFS-e\) e taxa de ART inclusa\./g, 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.');
+        } else if (orcamento.incluiNotaFiscal === true) {
+          conteudo = conteudo
+            .replace(/• Faturamento via Recibo \(Sem NFS-e\)/g, '✓ Nota Fiscal de Serviços (NFS-e)')
+            .replace(/Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa\./g, 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.');
+        }
+
         if (representante) {
           const regexRepres = /(<div style="background:\s*#ffffff;\s*border:\s*1\.5px dashed[^>]*>[\s\S]*?<div style="border-bottom:\s*1\.5px dashed[^>]*><\/div>\s*<p[^>]*>[\s\S]*?<\/p>\s*)<p[^>]*>[\s\S]*?<\/p>(\s*<p[^>]*>De Acordo[^<]*<\/p>)/gi;
           if (regexRepres.test(conteudo)) {

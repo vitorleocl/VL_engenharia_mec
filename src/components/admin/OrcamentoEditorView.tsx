@@ -92,10 +92,31 @@ export const OrcamentoEditorView: React.FC = () => {
   const secaoFotoInputRef = useRef<HTMLInputElement>(null);
   const pixQrCodeInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimerRef = useRef<any>(null);
+  const carregarIdRef = useRef<string | null>(null);
 
   // Initialize orcamentoState with editable 13 sections
   useEffect(() => {
     if (!orcamentoOriginal) return;
+
+    // Se já carregamos este orçamento no estado local e ele não mudou de rota/ID,
+    // não sobrescrever o orcamentoState enquanto o usuário digita ou edita!
+    if (carregarIdRef.current === orcamentoOriginal.id && orcamentoState) {
+      return;
+    }
+    carregarIdRef.current = orcamentoOriginal.id;
+
+    // Default memorial calculation items fallback
+    const itensCalculoBase: OrcamentoItemCalculo[] = (orcamentoOriginal.itensCalculo && orcamentoOriginal.itensCalculo.length > 0)
+      ? orcamentoOriginal.itensCalculo
+      : [
+          {
+            id: 'item-1',
+            descricao: orcamentoOriginal.servico || 'Serviços de Engenharia Mecânica & Laudo Pericial com ART CREA-PE',
+            quantidade: 1,
+            valorUnitario: orcamentoOriginal.valor || 0,
+            valorTotal: orcamentoOriginal.valor || 0,
+          }
+        ];
 
     // If orcamento already has rich secoes, use them, ensuring Capa, Catalogo, Etapa 2, Etapa 3 and Contato are upgraded
     if (orcamentoOriginal.secoes && orcamentoOriginal.secoes.length > 0) {
@@ -196,9 +217,9 @@ export const OrcamentoEditorView: React.FC = () => {
                 validade,
                 clienteNome,
                 representante,
-                incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal,
+                incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
                 chavePix: orcamentoOriginal.chavePix,
-                itensCalculo: orcamentoOriginal.itensCalculo,
+                itensCalculo: itensCalculoBase,
               }),
             };
           } else if (
@@ -239,17 +260,21 @@ export const OrcamentoEditorView: React.FC = () => {
         return s;
       });
 
-      if (alterou) {
-        const inicializado: Orcamento = {
-          ...orcamentoOriginal,
-          secoes: secoesAtualizadas,
-        };
-        setOrcamentoState(inicializado);
-        atualizarOrcamento(orcamentoOriginal.id, { secoes: secoesAtualizadas });
-        return;
-      }
+      const orcamentoCarregado: Orcamento = {
+        ...orcamentoOriginal,
+        incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
+        itensCalculo: itensCalculoBase,
+        secoes: secoesAtualizadas,
+      };
 
-      setOrcamentoState(orcamentoOriginal);
+      setOrcamentoState(orcamentoCarregado);
+
+      if (alterou) {
+        atualizarOrcamento(orcamentoOriginal.id, { 
+          ...orcamentoCarregado,
+          secoes: secoesAtualizadas 
+        });
+      }
       return;
     }
 
@@ -258,11 +283,15 @@ export const OrcamentoEditorView: React.FC = () => {
       const secoesConvertidas = converterPaginasParaSecoes(orcamentoOriginal.paginasProposta, orcamentoOriginal);
       const inicializado: Orcamento = {
         ...orcamentoOriginal,
+        incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
+        itensCalculo: itensCalculoBase,
         secoes: secoesConvertidas,
       };
       setOrcamentoState(inicializado);
-      // Persist the initialized editable sections copy
-      atualizarOrcamento(orcamentoOriginal.id, { secoes: secoesConvertidas });
+      atualizarOrcamento(orcamentoOriginal.id, {
+        ...inicializado,
+        secoes: secoesConvertidas,
+      });
       return;
     }
 
@@ -270,11 +299,16 @@ export const OrcamentoEditorView: React.FC = () => {
     const secoesPadrao = gerarSecoesPadraoOrcamento(orcamentoOriginal, { cliente, ativo });
     const inicializado: Orcamento = {
       ...orcamentoOriginal,
+      incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
+      itensCalculo: itensCalculoBase,
       secoes: secoesPadrao,
     };
     setOrcamentoState(inicializado);
-    atualizarOrcamento(orcamentoOriginal.id, { secoes: secoesPadrao });
-  }, [orcamentoOriginal, cliente, ativo]);
+    atualizarOrcamento(orcamentoOriginal.id, {
+      ...inicializado,
+      secoes: secoesPadrao,
+    });
+  }, [orcamentoOriginal, cliente, ativo, orcamentoState, atualizarOrcamento]);
 
   // Active section helper
   const secaoAtiva = useMemo(() => {
@@ -291,6 +325,46 @@ export const OrcamentoEditorView: React.FC = () => {
     };
   }, []);
 
+  // Immediate Save helper - passes the full updated budget to atualizarOrcamento
+  const salvarImediato = useCallback((novoOrcamento: Orcamento, resumoAlteracao = 'Alterações salvas') => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    setOrcamentoState(novoOrcamento);
+    setStatusSalvo('salvando');
+
+    // Keep paginasProposta synchronized with secoes for backward compatibility
+    const paginasSincronizadas = novoOrcamento.secoes?.map(s => ({
+      numero: s.numero,
+      titulo: s.titulo,
+      subtitulo: s.subtitulo,
+      conteudoHtml: s.conteudoHtml,
+    })) || [];
+
+    // History item
+    const novoHistoricoItem: OrcamentoHistorico = {
+      editadoEm: new Date().toISOString(),
+      editadoPorUid: currentUser?.uid || 'master',
+      editadoPorNome: currentUser?.nome || 'Eng. Vitor Leonardo',
+      resumoAlteracao,
+    };
+
+    const historicoAtualizado = [
+      novoHistoricoItem,
+      ...(novoOrcamento.historico || []).slice(0, 19), // Keep last 20 revisions
+    ];
+
+    atualizarOrcamento(novoOrcamento.id, {
+      ...novoOrcamento,
+      paginasProposta: paginasSincronizadas,
+      historico: historicoAtualizado,
+    });
+
+    setStatusSalvo('salvo');
+    const now = new Date();
+    setHorarioUltimoSalvo(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  }, [atualizarOrcamento, currentUser]);
+
   // Debounced Auto-Save
   const agendarAutoSave = useCallback((novoOrcamento: Orcamento, resumoAlteracao = 'Edição de conteúdo') => {
     setOrcamentoState(novoOrcamento);
@@ -301,43 +375,9 @@ export const OrcamentoEditorView: React.FC = () => {
     }
 
     autoSaveTimerRef.current = setTimeout(() => {
-      setStatusSalvo('salvando');
-
-      // Keep paginasProposta synchronized with secoes for backward compatibility
-      const paginasSincronizadas = novoOrcamento.secoes?.map(s => ({
-        numero: s.numero,
-        titulo: s.titulo,
-        subtitulo: s.subtitulo,
-        conteudoHtml: s.conteudoHtml,
-      })) || [];
-
-      // History item
-      const novoHistoricoItem: OrcamentoHistorico = {
-        editadoEm: new Date().toISOString(),
-        editadoPorUid: currentUser?.uid || 'master',
-        editadoPorNome: currentUser?.nome || 'Eng. Vitor Leonardo',
-        resumoAlteracao,
-      };
-
-      const historicoAtualizado = [
-        novoHistoricoItem,
-        ...(novoOrcamento.historico || []).slice(0, 19), // Keep last 20 revisions
-      ];
-
-      atualizarOrcamento(novoOrcamento.id, {
-        status: novoOrcamento.status,
-        imagemCapaUrl: novoOrcamento.imagemCapaUrl,
-        imagemCapaLegenda: novoOrcamento.imagemCapaLegenda,
-        secoes: novoOrcamento.secoes,
-        paginasProposta: paginasSincronizadas,
-        historico: historicoAtualizado,
-      });
-
-      setStatusSalvo('salvo');
-      const now = new Date();
-      setHorarioUltimoSalvo(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 1200);
-  }, [atualizarOrcamento, currentUser]);
+      salvarImediato(novoOrcamento, resumoAlteracao);
+    }, 800);
+  }, [salvarImediato]);
 
   // Content change in active section
   const handleConteudoSecaoChange = (novoHtml: string) => {
@@ -641,8 +681,7 @@ export const OrcamentoEditorView: React.FC = () => {
       incluiNotaFiscal: novoValor,
       secoes: novasSecoes,
     };
-    setOrcamentoState(atualizado);
-    agendarAutoSave(atualizado, `Nota Fiscal alterada para: ${novoValor ? 'Inclusa (NFS-e)' : 'Não inclusa (Recibo + ART)'}`);
+    salvarImediato(atualizado, `Nota Fiscal alterada para: ${novoValor ? 'Inclusa (NFS-e)' : 'Não inclusa (Recibo + ART)'}`);
   };
 
   // Synchronize Etapa 3 with PIX QR Code and current terms
@@ -675,8 +714,7 @@ export const OrcamentoEditorView: React.FC = () => {
       ...orcamentoState,
       secoes: novasSecoes,
     };
-    setOrcamentoState(atualizado);
-    agendarAutoSave(atualizado, 'Etapa 3 sincronizada com Memorial de Cálculo e PIX');
+    salvarImediato(atualizado, 'Etapa 3 sincronizada com Memorial de Cálculo e PIX');
   };
 
   // Restore Etapa 2 (Metodologia) to default clean cards
@@ -694,8 +732,7 @@ export const OrcamentoEditorView: React.FC = () => {
       return s;
     });
     const atualizado: Orcamento = { ...orcamentoState, secoes: novasSecoes };
-    setOrcamentoState(atualizado);
-    agendarAutoSave(atualizado, 'Metodologia (Etapa 2) restaurada para formatação padrão em 5 fases');
+    salvarImediato(atualizado, 'Metodologia (Etapa 2) restaurada para formatação padrão em 5 fases');
   };
 
   // Memorial de Cálculo itens
@@ -715,7 +752,7 @@ export const OrcamentoEditorView: React.FC = () => {
     ];
   }, [orcamentoState?.itensCalculo, orcamentoState?.valor, orcamentoState?.servico]);
 
-  const handleAtualizarListaItens = (novaLista: OrcamentoItemCalculo[]) => {
+  const handleAtualizarListaItens = (novaLista: OrcamentoItemCalculo[], salvarDireto = false) => {
     if (!orcamentoState) return;
     const novoTotal = novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
     const valorFormatado = novoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -749,8 +786,11 @@ export const OrcamentoEditorView: React.FC = () => {
       secoes: novasSecoes,
     };
 
-    setOrcamentoState(atualizado);
-    agendarAutoSave(atualizado, `Memorial de cálculo atualizado: ${novaLista.length} item(ns), Total: ${valorFormatado}`);
+    if (salvarDireto) {
+      salvarImediato(atualizado, `Memorial de cálculo atualizado: ${novaLista.length} item(ns), Total: ${valorFormatado}`);
+    } else {
+      agendarAutoSave(atualizado, `Memorial de cálculo atualizado: ${novaLista.length} item(ns), Total: ${valorFormatado}`);
+    }
   };
 
   const handleAdicionarItemCalculo = () => {
@@ -761,7 +801,7 @@ export const OrcamentoEditorView: React.FC = () => {
       valorUnitario: 0,
       valorTotal: 0,
     };
-    handleAtualizarListaItens([...itensCalculo, novoItem]);
+    handleAtualizarListaItens([...itensCalculo, novoItem], true);
   };
 
   const handleRemoverItemCalculo = (itemId: string) => {
@@ -773,25 +813,25 @@ export const OrcamentoEditorView: React.FC = () => {
         valorUnitario: 0,
         valorTotal: 0,
       }];
-      handleAtualizarListaItens(resetado);
+      handleAtualizarListaItens(resetado, true);
       return;
     }
     const novaLista = itensCalculo.filter(it => it.id !== itemId);
-    handleAtualizarListaItens(novaLista);
+    handleAtualizarListaItens(novaLista, true);
   };
 
   const handleEditarItemCalculo = (itemId: string, campo: 'descricao' | 'quantidade' | 'valorUnitario', val: any) => {
     const novaLista = itensCalculo.map(it => {
       if (it.id === itemId) {
         const atualizado = { ...it, [campo]: val };
-        const q = campo === 'quantidade' ? (Number(val) || 0) : it.quantidade;
-        const u = campo === 'valorUnitario' ? (Number(val) || 0) : it.valorUnitario;
+        const q = campo === 'quantidade' ? (Number(val) || 0) : (Number(it.quantidade) || 1);
+        const u = campo === 'valorUnitario' ? (Number(val) || 0) : (Number(it.valorUnitario) || 0);
         atualizado.valorTotal = q * u;
         return atualizado;
       }
       return it;
     });
-    handleAtualizarListaItens(novaLista);
+    handleAtualizarListaItens(novaLista, false);
   };
 
   // Upload custom QR code image for PIX
@@ -966,6 +1006,18 @@ export const OrcamentoEditorView: React.FC = () => {
         {/* Status indicator & Right Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           
+          {/* Botão Salvar Proposta Manual Imediato */}
+          <button
+            type="button"
+            onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Salvo manualmente pelo usuário')}
+            disabled={statusSalvo === 'salvando'}
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            title="Salvar todas as alterações da proposta agora"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{statusSalvo === 'salvando' ? 'Salvando...' : 'Salvar Proposta'}</span>
+          </button>
+
           {/* Autosave Status Badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
             {statusSalvo === 'salvando' ? (
@@ -1484,14 +1536,25 @@ export const OrcamentoEditorView: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAdicionarItemCalculo}
-                      className="px-2.5 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0e489e] text-white text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors shrink-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Adicionar Linha / Ativo</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Memorial de cálculo salvo')}
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                        title="Salvar alterações do Memorial de Cálculo imediatamente"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Salvar Tabela</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAdicionarItemCalculo}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0e489e] text-white text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar Linha / Ativo</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -1517,6 +1580,7 @@ export const OrcamentoEditorView: React.FC = () => {
                                 type="text"
                                 value={it.descricao}
                                 onChange={(e) => handleEditarItemCalculo(it.id, 'descricao', e.target.value)}
+                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
                                 placeholder="Ex: Inspeção e Laudo de Caminhão Munck placa PGX7098 com ensaio LP"
                                 className="w-full px-2 py-1 rounded border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
                               />
@@ -1525,8 +1589,9 @@ export const OrcamentoEditorView: React.FC = () => {
                               <input
                                 type="number"
                                 min={1}
-                                value={it.quantidade}
+                                value={it.quantidade || 1}
                                 onChange={(e) => handleEditarItemCalculo(it.id, 'quantidade', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
                                 className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-center text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
                               />
                             </td>
@@ -1535,8 +1600,10 @@ export const OrcamentoEditorView: React.FC = () => {
                                 type="number"
                                 step="any"
                                 min={0}
-                                value={it.valorUnitario}
-                                onChange={(e) => handleEditarItemCalculo(it.id, 'valorUnitario', parseFloat(e.target.value) || 0)}
+                                value={it.valorUnitario === 0 ? '' : it.valorUnitario}
+                                placeholder="0,00"
+                                onChange={(e) => handleEditarItemCalculo(it.id, 'valorUnitario', e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
+                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
                                 className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-right text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
                               />
                             </td>
@@ -1620,12 +1687,12 @@ export const OrcamentoEditorView: React.FC = () => {
                         className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors ${
                           orcamentoState.incluiNotaFiscal !== false
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
-                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                            : 'bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300'
                         }`}
                         title="Alternar entre proposta com ou sem Nota Fiscal"
                       >
-                        <span>NFS-e:</span>
-                        <span>{orcamentoState.incluiNotaFiscal !== false ? 'Inclusa ✓' : 'Sem NFS-e (Recibo)'}</span>
+                        <span>Nota Fiscal (NFS-e):</span>
+                        <span className="font-extrabold">{orcamentoState.incluiNotaFiscal !== false ? '✓ Inclusa' : '✕ Desativada (Recibo + ART)'}</span>
                       </button>
 
                       {/* Sincronizar Bloco de Pagamento */}

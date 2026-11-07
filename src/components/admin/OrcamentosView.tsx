@@ -134,6 +134,16 @@ export const OrcamentosView: React.FC = () => {
       validadeDias,
       condicoesPagamento,
       normasTecnicas,
+      incluiNotaFiscal: true,
+      itensCalculo: [
+        {
+          id: 'item-1',
+          descricao: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
+          quantidade: 1,
+          valorUnitario: valorNum,
+          valorTotal: valorNum,
+        }
+      ],
     };
 
     const idCriado = adicionarOrcamento(orcamentoRascunho);
