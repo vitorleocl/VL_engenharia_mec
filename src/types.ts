@@ -124,6 +124,32 @@ export interface OrcamentoItemCalculo {
   valorTotal: number;
 }
 
+export type OrcamentoParcela = { 
+  parcela: string; 
+  quando?: string; 
+  gatilho?: string;
+  percentual: number; 
+  valor: number; 
+};
+export type OrcamentoCronogramaItem = { 
+  fase?: string; 
+  marco?: string; 
+  dias?: string; 
+  prazo?: string; 
+  descricao?: string; 
+  responsavel?: string; 
+};
+export type OrcamentoAtivoItem = { 
+  id: string; 
+  tipo?: string; 
+  identificacao: string; 
+  fabricante?: string; 
+  modelo?: string; 
+  quantidade?: number;
+  valorUnitario?: number;
+  valorTotal?: number;
+};
+
 export interface Orcamento {
   id: string;
   codigoProposta?: string; // ex: PROP-2026-001
@@ -177,18 +203,15 @@ export interface Orcamento {
   contratadaPixChave?: string;
   contratadaPixTitular?: string;
   contratadaPixCidade?: string;
-  parcelas?: Array<{ parcela: string; quando: string; percentual: number; valor: number }>;
-  cronograma?: Array<{ 
-    fase?: string; 
-    marco?: string; 
-    dias?: string; 
-    prazo?: string; 
-    descricao?: string; 
-    responsavel?: string; 
-  }>;
+  pixChave?: string;
+  pixTitular?: string;
+  pixCidade?: string;
+  parcelas?: OrcamentoParcela[];
+  cronograma?: OrcamentoCronogramaItem[];
   incluso?: string[];
   foraDoEscopo?: string[];
-  ativosLista?: Array<{ id: string; tipo: string; identificacao: string; fabricante?: string; modelo?: string; quantidade?: number }>;
+  ativos?: OrcamentoAtivoItem[];
+  ativosLista?: OrcamentoAtivoItem[];
   modoExportacaoPdf?: 'executiva' | 'completa';
   secoes?: OrcamentoSecao[];
   secoesOcultasPdf?: string[];

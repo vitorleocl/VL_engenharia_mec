@@ -21,11 +21,15 @@
   --sans:'Barlow Semi Condensed','Arial Narrow',Arial,sans-serif;
   --serif:'Source Serif 4',Georgia,serif;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font:400 9.3pt/1.46 var(--serif);color:var(--text);background:#fff;font-variant-numeric:lining-nums}
-a{color:inherit;text-decoration:none}
-@media screen{body{background:#C9D1DF;padding:16px 0}.sheet{margin:0 auto 16px;box-shadow:0 1px 6px rgba(21,38,75,.28)}}
+.proposta-print-page *{box-sizing:border-box}
+@media print {
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.proposta-print-active{font:400 9.3pt/1.46 var(--serif);color:var(--text);background:#fff;font-variant-numeric:lining-nums}
+}
+@media screen{
+  body.proposta-print-active{background:#C9D1DF;padding:16px 0}
+  .proposta-print-page .sheet{margin:0 auto 16px;box-shadow:0 1px 6px rgba(21,38,75,.28)}
+}
 
 .sheet{width:210mm;height:297mm;position:relative;overflow:hidden;background:#fff;break-after:page;page-break-after:always}
 .sheet:last-child{break-after:auto;page-break-after:auto}

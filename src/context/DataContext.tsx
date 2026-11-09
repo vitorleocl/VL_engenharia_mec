@@ -786,29 +786,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAndListenFirestore = async () => {
       try {
-        // Garantir que os laudos canônicos (especialmente LAU-2026/002 - Renault Duster) existam no Firestore
-        for (const l of laudos) {
-          if (!cancelado) {
-            try {
-              await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
-            } catch (errLaudo) {
-              console.warn('[Firestore] Aviso ao gravar laudo:', l.id, errLaudo);
-            }
-          }
-        }
-
-        // Garantir que os orçamentos canônicos existam no Firestore
-        for (const o of orcamentos) {
-          if (!cancelado) {
-            try {
-              await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
-            } catch (errOrc) {
-              console.warn('[Firestore] Aviso ao gravar orçamento:', o.id, errOrc);
-            }
-          }
-        }
-
-        // Se a nuvem estiver vazia, faz o seed inicial dos demais dados canônicos
+        // Se a nuvem estiver vazia, faz o seed inicial dos dados canônicos uma única vez
         const clientesSnap = await getDocs(collection(db, 'clientes'));
         if (clientesSnap.empty && !cancelado) {
           console.log('[Firestore] Inicializando coleções na nuvem com dados canônicos...');
@@ -817,6 +795,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           for (const a of ativos) {
             await setDoc(doc(db, 'ativos', a.id), a, { merge: true });
+          }
+          for (const l of laudos) {
+            await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
+          }
+          for (const o of orcamentos) {
+            await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
           }
           for (const ck of checklistsCampo) {
             await setDoc(doc(db, 'checklistsCampo', ck.id), ck, { merge: true });
@@ -830,7 +814,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('[Firestore] Dados canônicos unificados na nuvem com sucesso!');
         }
       } catch (err) {
-        console.warn('[Firestore] Erro na verificação inicial:', err);
+        console.warn('[Firestore] Verificação inicial em modo tolerante:', err);
       }
 
       // Listeners em tempo real para sincronização instantânea entre múltiplos dispositivos

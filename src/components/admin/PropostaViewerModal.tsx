@@ -60,8 +60,9 @@ export const VlLogoVector: React.FC<{ className?: string; style?: React.CSSPrope
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width="529" 
-    height="100" 
-    viewBox="0 0 529 100" 
+    height="112" 
+    viewBox="0 -6 529 112" 
+    overflow="visible"
     role="img" 
     aria-label="VL Engenharia"
     className={className}

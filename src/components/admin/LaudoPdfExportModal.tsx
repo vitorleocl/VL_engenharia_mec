@@ -763,7 +763,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '32px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '36px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -1053,7 +1053,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '32px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '36px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">
@@ -1184,7 +1184,7 @@ export const LaudoPdfExportModal: React.FC<LaudoPdfExportModalProps> = ({
               {/* Standard Header */}
               <div className="border-b-2 border-[#0B1E3D] pb-3 mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '32px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
+                  <img src="/vl-logo-compacto.svg" alt="VL" style={{ width: '160px', height: '36px', objectFit: 'contain' }} className="h-9 w-auto object-contain shrink-0" crossOrigin="anonymous" />
                   <div>
                     <h3 className="text-sm font-black text-[#0B1E3D]">VL ENGENHARIA MECÂNICA</h3>
                     <p className="text-[9px] text-[#1565D8] font-bold uppercase tracking-wider">

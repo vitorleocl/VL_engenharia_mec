@@ -140,3 +140,13 @@ export function executarTesteOficialPixEmv(): { sucesso: boolean; payloadGerado:
     esperado
   };
 }
+
+export const generatePixPayload = gerarPixCopiaECola;
+export function validatePixPayload(payload: string): { valido: boolean; mensagem?: string } {
+  const ok = validarPixCrc(payload);
+  return { valido: ok, mensagem: ok ? 'CRC válido' : 'CRC inválido' };
+}
+export async function generatePixSvgQr(payload: string): Promise<string> {
+  const QRCode = (await import('qrcode')).default;
+  return QRCode.toString(payload, { type: 'svg', margin: 1 });
+}

@@ -272,13 +272,6 @@ export const OrcamentoEditorView: React.FC = () => {
       };
 
       setOrcamentoState(orcamentoCarregado);
-
-      if (alterou) {
-        atualizarOrcamento(orcamentoOriginal.id, { 
-          ...orcamentoCarregado,
-          secoes: secoesAtualizadas 
-        });
-      }
       return;
     }
 
@@ -292,10 +285,6 @@ export const OrcamentoEditorView: React.FC = () => {
         secoes: secoesConvertidas,
       };
       setOrcamentoState(inicializado);
-      atualizarOrcamento(orcamentoOriginal.id, {
-        ...inicializado,
-        secoes: secoesConvertidas,
-      });
       return;
     }
 
@@ -311,11 +300,7 @@ export const OrcamentoEditorView: React.FC = () => {
       secoes: secoesPadrao,
     };
     setOrcamentoState(inicializado);
-    atualizarOrcamento(orcamentoOriginal.id, {
-      ...inicializado,
-      secoes: secoesPadrao,
-    });
-  }, [orcamentoOriginal, cliente, ativo, orcamentoState, atualizarOrcamento]);
+  }, [orcamentoOriginal?.id, cliente, ativo]);
 
   // Active section helper
   const secaoAtiva = useMemo(() => {
