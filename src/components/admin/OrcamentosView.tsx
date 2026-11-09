@@ -27,7 +27,12 @@ import { useAuth } from '../../context/AuthContext';
 import { Orcamento } from '../../types';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { SERVICOS_LISTA, ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
-import { gerarSecoesPadraoOrcamento } from '../../lib/orcamentoTemplatePadrao';
+import { 
+  gerarSecoesPadraoOrcamento, 
+  gerarSecoesPadraoOrcamentoV2, 
+  DADOS_VL_PADRAO, 
+  calcularValidadeAte 
+} from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentosView: React.FC = () => {
   const { 
@@ -116,6 +121,9 @@ export const OrcamentosView: React.FC = () => {
     const valorNum = parseFloat(valorTotal) || 2500;
     const ano = new Date().getFullYear();
     const codigoProposta = `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
+    const emitidaEm = new Date().toISOString().split('T')[0];
+    const validaAte = calcularValidadeAte(emitidaEm, validadeDias);
+    const metade = valorNum / 2;
 
     const orcamentoRascunho: Omit<Orcamento, 'id' | 'criadoEm'> = {
       clienteId,
@@ -123,7 +131,14 @@ export const OrcamentosView: React.FC = () => {
       cnpjCliente: cnpjCliente.trim() || cliente?.cpfCnpj || cliente?.cnpj || '',
       representanteNome: representanteNome.trim() || cliente?.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica',
       localidadeServico: localidadeServico.trim() || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}` : 'Recife e Região Metropolitana - PE'),
+      emailCliente: cliente?.contatos?.[0]?.email || 'comercial@cliente.com.br',
+      telefoneCliente: cliente?.contatos?.[0]?.telefone || '(81) 98444-2592',
       codigoProposta,
+      revisao: '00',
+      emitidaEm,
+      validaAte,
+      layoutVersao: 'v2',
+      modoExportacaoPdf: 'completa',
       servico: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
       descricaoEscopo: descricaoEscopo.trim() || 'Vistoria técnica in loco, ensaios não destrutivos e emissão de laudo pericial com ART CREA-PE.',
       status: 'rascunho',
@@ -132,9 +147,21 @@ export const OrcamentosView: React.FC = () => {
       prazoDias,
       prazoEntrega: `${prazoDias} dias úteis`,
       validadeDias,
-      condicoesPagamento,
-      normasTecnicas,
+      condicoesPagamento: condicoesPagamento || '50% na aprovação e 50% após emissão do laudo e ART.',
+      normasTecnicas: normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável',
       incluiNotaFiscal: true,
+      chavePix: DADOS_VL_PADRAO.pixChave,
+      contratadaCnpj: DADOS_VL_PADRAO.cnpj,
+      contratadaNome: DADOS_VL_PADRAO.razaoSocial,
+      contratadaResponsavel: DADOS_VL_PADRAO.responsavel,
+      contratadaCrea: DADOS_VL_PADRAO.crea,
+      contratadaTelefone: DADOS_VL_PADRAO.telefone,
+      contratadaEmail: DADOS_VL_PADRAO.email,
+      contratadaEndereco: DADOS_VL_PADRAO.endereco,
+      contratadaCidade: DADOS_VL_PADRAO.cidade,
+      contratadaPixChave: DADOS_VL_PADRAO.pixChave,
+      contratadaPixTitular: DADOS_VL_PADRAO.pixTitular,
+      contratadaPixCidade: DADOS_VL_PADRAO.pixCidade,
       itensCalculo: [
         {
           id: 'item-1',
@@ -144,7 +171,21 @@ export const OrcamentosView: React.FC = () => {
           valorTotal: valorNum,
         }
       ],
+      parcelas: [
+        { parcela: '1ª', quando: 'Na aprovação da proposta comercial', percentual: 50, valor: metade },
+        { parcela: '2ª', quando: 'Após emissão do laudo técnico pericial e registro da ART no CREA-PE', percentual: 50, valor: metade }
+      ],
+      cronograma: [
+        { marco: 'Alinhamento & Análise de Documentação Técnica', prazo: 'D+1', responsavel: 'VL & Contratante' },
+        { marco: 'Inspeção Técnica In Loco e Ensaios Não Destrutivos', prazo: 'D+3 a D+4', responsavel: 'Eng. Vitor Leonardo' },
+        { marco: 'Análise de Conformidade e Memoriais de Cálculo', prazo: 'D+5', responsavel: 'Corpo Técnico VL' },
+        { marco: 'Emissão de Laudo Preliminar para Validação', prazo: 'D+6', responsavel: 'Engenheiro Mecânico' },
+        { marco: 'Protocolo da ART CREA-PE & Entrega Oficial do Laudo', prazo: `D+${prazoDias}`, responsavel: 'VL Engenharia' }
+      ]
     };
+
+    // Gera as 6 seções do Modelo Base Aprovado (v2)
+    orcamentoRascunho.secoes = gerarSecoesPadraoOrcamentoV2(orcamentoRascunho as Orcamento, { cliente });
 
     const idCriado = adicionarOrcamento(orcamentoRascunho);
     return { id: idCriado, ...orcamentoRascunho, criadoEm: new Date().toISOString() } as Orcamento;

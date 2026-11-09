@@ -23,10 +23,11 @@ import {
   Eye,
   EyeOff,
   Check,
-  Trash2
+  Trash2,
+  AlertTriangle,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas-pro';
 import { Orcamento, PropostaPagina } from '../../types';
 import { useData } from '../../context/DataContext';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
@@ -37,8 +38,11 @@ import {
   gerarCardClienteHtml,
   gerarHtmlEtapa2Metodologia,
   gerarHtmlEtapa3Investimento,
-  gerarHtmlContatoAgradecimento
+  gerarHtmlContatoAgradecimento,
+  DADOS_VL_PADRAO,
+  calcularValidadeAte
 } from '../../lib/orcamentoTemplatePadrao';
+import { gerarPixCopiaECola, validarPixCrc } from '../../lib/pixEmv';
 
 interface PropostaViewerModalProps {
   orcamento: Orcamento;
@@ -104,12 +108,14 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 }) => {
   const { atualizarOrcamento, removerOrcamento, clientes } = useData();
   const documentRef = useRef<HTMLDivElement>(null);
-  const printContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [painelSelecaoAberto, setPainelSelecaoAberto] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [modoExportacao, setModoExportacao] = useState<'completa' | 'executiva'>(orcamento.modoExportacaoPdf || 'completa');
+  const [modalValidacaoAberto, setModalValidacaoAberto] = useState(false);
+  const [pendenciasValidacao, setPendenciasValidacao] = useState<{ tipo: 'erro' | 'aviso'; mensagem: string; detalhe?: string }[]>([]);
 
   // Initialize hidden sections from orcamento
   const [secoesOcultasIds, setSecoesOcultasIds] = useState<string[]>(() => {
@@ -357,58 +363,120 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
   const paginaRenderizar = paginas.find(p => p.numero === paginaAtual) || paginas[0];
 
-  const handlePrintNative = () => {
-    window.print();
+  const verificarPendenciasProposta = () => {
+    const pendencias: { tipo: 'erro' | 'aviso'; mensagem: string; detalhe?: string }[] = [];
+    const cliente = clientes.find(c => c.id === orcamento.clienteId);
+
+    // 1. Cliente: CNPJ/CPF e Representante
+    const cnpj = (orcamento.cnpjCliente || cliente?.cpfCnpj || cliente?.cnpj || '').trim();
+    if (!cnpj || cnpj.toLowerCase().includes('a preencher') || cnpj.toLowerCase().includes('consulte o contrato')) {
+      pendencias.push({
+        tipo: 'aviso',
+        mensagem: 'CNPJ/CPF do Cliente não informado',
+        detalhe: 'Identificar o documento formal confere validade jurídica e precisão tributária à proposta.'
+      });
+    }
+
+    const primeiroContato = cliente?.contatos?.[0];
+    const representante = (orcamento.representanteNome || primeiroContato?.nome || '').trim();
+    if (!representante || representante.toLowerCase().includes('a preencher') || representante === 'Diretoria / Coordenação Técnica' || representante === 'Responsável Autorizado') {
+      pendencias.push({
+        tipo: 'aviso',
+        mensagem: 'Nome do Principal Contato / Representante genérico',
+        detalhe: 'Recomendamos identificar nominalmente o responsável para o aceite formal da proposta.'
+      });
+    }
+
+    // 2. Validade: alerta se expirada
+    const hoje = new Date().toISOString().split('T')[0];
+    const dataValidade = orcamento.validaAte || calcularValidadeAte(orcamento.emitidaEm || orcamento.criadoEm, orcamento.validadeDias || 15);
+    if (dataValidade) {
+      let dataIso = dataValidade;
+      if (dataValidade.includes('/')) {
+        const parts = dataValidade.split('/');
+        if (parts.length === 3) {
+          dataIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+      if (dataIso < hoje) {
+        pendencias.push({
+          tipo: 'aviso',
+          mensagem: 'Proposta com data de validade vencida',
+          detalhe: `A proposta venceu em ${dataValidade}. Recomenda-se atualizar a data de emissão ou o prazo de validade antes do envio.`
+        });
+      }
+    }
+
+    // 3. Memorial de Cálculo: conferir soma
+    if (orcamento.itensCalculo && orcamento.itensCalculo.length > 0) {
+      const soma = orcamento.itensCalculo.reduce((acc, it) => acc + (it.valorTotal || (it.quantidade * it.valorUnitario) || 0), 0);
+      const valorTotal = orcamento.valor || 0;
+      if (Math.abs(soma - valorTotal) > 0.05) {
+        pendencias.push({
+          tipo: 'erro',
+          mensagem: 'Divergência de valores no Memorial de Cálculo',
+          detalhe: `A soma dos itens (${soma.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) difere do valor total contratado (${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}).`
+        });
+      }
+    }
+
+    // 4. PIX CRC
+    try {
+      const chavePix = orcamento.chavePix || DADOS_VL_PADRAO.pixChave;
+      const pixCode = gerarPixCopiaECola({
+        chavePix,
+        valor: (orcamento.valor || 2280) / 2,
+        titular: DADOS_VL_PADRAO.pixTitular,
+        cidade: DADOS_VL_PADRAO.pixCidade,
+        identificador: (orcamento.codigoProposta || orcamento.id || 'PROP2026').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20),
+      });
+      if (!validarPixCrc(pixCode)) {
+        pendencias.push({
+          tipo: 'erro',
+          mensagem: 'Código PIX com checksum inválido',
+          detalhe: 'O cálculo de validação do Bacen (CRC16) falhou. Verifique a chave PIX nas configurações.'
+        });
+      }
+    } catch {
+      pendencias.push({
+        tipo: 'erro',
+        mensagem: 'Erro ao gerar payload do PIX',
+        detalhe: 'Verifique a chave PIX e os valores da proposta.'
+      });
+    }
+
+    return pendencias;
   };
 
-  const handleDownloadPdf = async () => {
+  const executarExportacaoPdf = (modoEscolhido: 'completa' | 'executiva' = modoExportacao) => {
     setGerandoPdf(true);
+    // Salva a preferência de modo no orçamento
+    atualizarOrcamento(orcamento.id, { modoExportacaoPdf: modoEscolhido });
 
-    try {
-      const pageElements = printContainerRef.current?.querySelectorAll<HTMLElement>('.proposta-pdf-page');
-      if (!pageElements || pageElements.length === 0) {
-        throw new Error('Páginas de impressão não encontradas.');
-      }
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
-
-      const total = pageElements.length;
-      for (let i = 0; i < total; i++) {
-        if (i > 0) {
-          pdf.addPage('a4', 'p');
-        }
-
-        const pageEl = pageElements[i];
-        const canvas = await html2canvas(pageEl, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          windowWidth: 794,
-          onclone: (clonedDoc) => {
-            clonedDoc.documentElement.classList.remove('dark');
-            clonedDoc.body.classList.remove('dark');
-          },
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-      }
-
-      const nomeArquivo = `Proposta_${orcamento.codigoProposta || orcamento.id}_${(orcamento.clienteNome || 'Cliente').replace(/\s+/g, '_')}.pdf`;
-      pdf.save(nomeArquivo);
-    } catch (err) {
-      console.error('Erro ao gerar PDF da proposta:', err);
-      alert('Ocorreu um erro ao compilar o PDF multi-página. Abrindo impressão nativa do navegador.');
-      window.print();
-    } finally {
-      setGerandoPdf(false);
+    // Abre a rota de impressão vetorial nativa em nova janela para exportação direta
+    const url = `/admin/orcamentos/${orcamento.id}/imprimir?auto=1&modo=${modoEscolhido}`;
+    const win = window.open(url, '_blank');
+    if (!win) {
+      window.location.href = url;
     }
+    setTimeout(() => {
+      setGerandoPdf(false);
+      setModalValidacaoAberto(false);
+    }, 1000);
+  };
+
+  const handleIniciarExportacao = () => {
+    const pendencias = verificarPendenciasProposta();
+    if (pendencias.length > 0) {
+      setPendenciasValidacao(pendencias);
+      setModalValidacaoAberto(true);
+    } else {
+      executarExportacaoPdf();
+    }
+  };
+
+  const handlePrintNative = () => {
+    handleIniciarExportacao();
   };
 
   return (
@@ -483,6 +551,40 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               </button>
             </div>
 
+            {/* Mode Selector Toggle: Completa (6 folhas) vs Executiva (4 folhas) */}
+            <div className="hidden lg:flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setModoExportacao('completa');
+                  atualizarOrcamento(orcamento.id, { modoExportacaoPdf: 'completa' });
+                }}
+                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
+                  modoExportacao === 'completa' 
+                    ? 'bg-amber-400 text-slate-950 shadow-xs' 
+                    : 'text-slate-300 hover:text-white'
+                }`}
+                title="Versão Completa com 6 folhas A4 incluindo credenciais institucionais e portfólio"
+              >
+                Completa (6 fls)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModoExportacao('executiva');
+                  atualizarOrcamento(orcamento.id, { modoExportacaoPdf: 'executiva' });
+                }}
+                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
+                  modoExportacao === 'executiva' 
+                    ? 'bg-amber-400 text-slate-950 shadow-xs' 
+                    : 'text-slate-300 hover:text-white'
+                }`}
+                title="Versão Executiva com 4 folhas A4 focada em escopo técnico, metodologia e investimento"
+              >
+                Executiva (4 fls)
+              </button>
+            </div>
+
             {/* Editar Proposta button */}
             {onEditarProposta && (
               <button
@@ -499,22 +601,23 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             <button
               onClick={handlePrintNative}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
-              title="Imprimir (Ctrl+P)"
+              title="Visualizar e Imprimir Proposta Vetorial (A4)"
             >
               <Printer className="w-4 h-4" />
               <span className="hidden md:inline">Imprimir</span>
             </button>
 
-            {/* PDF Download Button */}
+            {/* PDF Download Button (1-click Vector PDF) */}
             <button
-              onClick={handleDownloadPdf}
+              onClick={handleIniciarExportacao}
               disabled={gerandoPdf}
               className="px-3.5 py-2 rounded-lg bg-[#1565D8] hover:bg-[#1565D8]/90 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+              title={`Exportar PDF Vetorial de alta precisão (${modoExportacao === 'completa' ? '6 folhas' : '4 folhas'}, texto selecionável, links ativos e < 500 KB)`}
             >
               {gerandoPdf ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Gerando PDF...</span>
+                  <span>Preparando...</span>
                 </>
               ) : (
                 <>
@@ -752,63 +855,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           </div>
         </div>
 
-        {/* Hidden Dedicated Print Container: renders all pages with strict A4 dimensions for PDF export */}
-        <div 
-          ref={printContainerRef}
-          className="fixed left-[-9999px] top-0 pointer-events-none"
-          style={{ width: '794px' }}
-          aria-hidden="true"
-        >
-          {paginas.map((pag) => (
-            <div 
-              key={`print-page-${pag.numero}`}
-              className="proposta-pdf-page bg-white text-slate-900 min-h-[1123px] max-h-[1123px] w-[794px] p-10 flex flex-col justify-between relative overflow-hidden"
-              style={{ boxSizing: 'border-box' }}
-            >
-              <EngineeringWatermark opacity="opacity-[0.045]" />
 
-              <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
-                  <div className="border-l border-slate-300 pl-3">
-                    <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
-                    <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                      Proposta Técnico-Comercial • Engenharia Mecânica
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right text-[10px] text-slate-600 font-mono">
-                  <p>Ref: <strong>{orcamento.codigoProposta || orcamento.id}</strong></p>
-                  <p>Página {pag.numero} de {totalPaginas}</p>
-                </div>
-              </header>
-
-              <div className="relative z-10 flex-1">
-                <div className="mb-4">
-                  {pag.numero === 1 ? (
-                    <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                      PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                    </h1>
-                  ) : (
-                    <h2 className="text-xl font-black text-[#0B1E3D]">
-                      {pag.titulo}
-                    </h2>
-                  )}
-                </div>
-
-                <div 
-                  className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
-                  dangerouslySetInnerHTML={{ __html: pag.conteudoHtml }}
-                />
-              </div>
-
-              <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
-                <span>Recife - PE • (81) 98444-2592</span>
-              </footer>
-            </div>
-          ))}
-        </div>
 
         {/* Modal Bottom Footer */}
         <div className="px-6 py-3 bg-slate-50 dark:bg-[#0B1324] border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 shrink-0">
@@ -1024,6 +1071,112 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-xs"
                 >
                   Sim, excluir orçamento
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Validação Pré-Exportação da Proposta (Passo 5) */}
+        {modalValidacaoAberto && (
+          <div 
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-left animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl ${
+                    pendenciasValidacao.some(p => p.tipo === 'erro')
+                      ? 'bg-rose-100 dark:bg-rose-950 text-rose-600'
+                      : 'bg-amber-100 dark:bg-amber-950 text-amber-600'
+                  }`}>
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      Validação Pré-Emissão da Proposta
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Verificação de integridade e dados contratuais
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalValidacaoAberto(false)}
+                  className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  O sistema verificou os dados de <strong className="text-slate-900 dark:text-white">{orcamento.codigoProposta || orcamento.id}</strong> antes da geração do PDF oficial:
+                </p>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {pendenciasValidacao.map((item, idx) => (
+                    <div 
+                      key={idx}
+                      className={`p-3 rounded-xl border text-xs space-y-1 ${
+                        item.tipo === 'erro'
+                          ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50 text-rose-900 dark:text-rose-200'
+                          : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${item.tipo === 'erro' ? 'bg-rose-600' : 'bg-amber-500'}`} />
+                          {item.mensagem}
+                        </span>
+                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-black uppercase ${
+                          item.tipo === 'erro'
+                            ? 'bg-rose-200 text-rose-800'
+                            : 'bg-amber-200 text-amber-900'
+                        }`}>
+                          {item.tipo === 'erro' ? 'Correção' : 'Aviso'}
+                        </span>
+                      </div>
+                      {item.detalhe && (
+                        <p className="text-[11px] opacity-90 leading-relaxed pl-3.5">
+                          {item.detalhe}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 space-y-0.5">
+                  <div><strong>Modo selecionado:</strong> {modoExportacao === 'completa' ? 'Proposta Completa (6 folhas A4 com anexo institucional)' : 'Proposta Executiva (4 folhas A4 compacta)'}</div>
+                  <div><strong>Formato de saída:</strong> PDF Vetorial nativo (&lt; 500 KB, texto selecionável, links ativos)</div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+                {onEditarProposta && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalValidacaoAberto(false);
+                      onClose();
+                      onEditarProposta(orcamento);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Corrigir no Orçamento</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => executarExportacaoPdf()}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-[#1565D8] hover:bg-[#0b4fb8] text-white transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Prosseguir com a Emissão</span>
                 </button>
               </div>
             </div>

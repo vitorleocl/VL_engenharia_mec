@@ -8,6 +8,59 @@ export interface SecaoDefinicao {
   subtitulo?: string;
 }
 
+export const DADOS_VL_PADRAO = {
+  cnpj: '48.243.689/0001-20',
+  razaoSocial: 'VL Engenharia Mecânica',
+  responsavelTecnico: 'Eng. Vitor Leonardo C. Linhares',
+  responsavel: 'Eng. Vitor Leonardo C. Linhares',
+  crea: '182229949-0',
+  telefone: '(81) 98444-2592',
+  telefoneLink: '5581984442592',
+  email: 'atendimento@vlengenhariamecanica.com.br',
+  sede: 'Recife / Paulista, PE',
+  endereco: 'Rua José da Silva Lucena, 185 - Imbiribeira',
+  cidade: 'Recife / PE',
+  pixChave: '10287093409',
+  pixTitular: 'Vitor Leonardo Cordeiro Linhares',
+  pixCidade: 'RECIFE',
+};
+
+export function formatarDataBrasileira(data?: string | Date): string {
+  if (!data) {
+    const hoje = new Date();
+    const d = String(hoje.getDate()).padStart(2, '0');
+    const m = String(hoje.getMonth() + 1).padStart(2, '0');
+    const y = hoje.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  if (typeof data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(data)) {
+    return data;
+  }
+  try {
+    const dObj = new Date(data);
+    if (isNaN(dObj.getTime())) return '';
+    const d = String(dObj.getDate()).padStart(2, '0');
+    const m = String(dObj.getMonth() + 1).padStart(2, '0');
+    const y = dObj.getFullYear();
+    return `${d}/${m}/${y}`;
+  } catch {
+    return '';
+  }
+}
+
+export function calcularValidadeAte(emitidaEmStr?: string, validadeDias: number = 15): string {
+  let dataBase = new Date();
+  if (emitidaEmStr && /^\d{2}\/\d{2}\/\d{4}$/.test(emitidaEmStr)) {
+    const [d, m, y] = emitidaEmStr.split('/').map(Number);
+    dataBase = new Date(y, m - 1, d);
+  }
+  dataBase.setDate(dataBase.getDate() + (validadeDias || 15));
+  const d = String(dataBase.getDate()).padStart(2, '0');
+  const m = String(dataBase.getMonth() + 1).padStart(2, '0');
+  const y = dataBase.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
 export const HTML_CARDS_CATALOGO_SERVICOS = `<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
   <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;" class="p-3 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-blue-200 shadow-xs relative">
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -643,6 +696,15 @@ export function gerarHtmlContatoAgradecimento(): string {
   </div>`;
 }
 
+export const SECOES_PROPOSTA_V2_DEFINICAO: SecaoDefinicao[] = [
+  { id: 'folha1-capa', numero: 1, titulo: 'Capa & Resumo Executivo', subtitulo: 'RESUMO COMERCIAL, PREÇO E APROVAÇÃO' },
+  { id: 'folha2-etapa1', numero: 2, titulo: 'Etapa 1 - Relação dos Serviços, Partes e Normas', subtitulo: 'DIRETRIZES TÉCNICAS E ESCOPO CONTRATUAL' },
+  { id: 'folha3-etapa2', numero: 3, titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'METODOLOGIA DE ENGENHARIA DIAGNÓSTICA' },
+  { id: 'folha4-etapa3', numero: 4, titulo: 'Etapa 3 - Prazo, Pagamento & Investimento', subtitulo: 'MEMORIAL DE CÁLCULO, PARCELAS E ACEITE' },
+  { id: 'folha5-institucional1', numero: 5, titulo: 'Sobre a VL Engenharia - Responsável & Princípios', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 1' },
+  { id: 'folha6-institucional2', numero: 6, titulo: 'Sobre a VL Engenharia - Soluções & Contato', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 2' },
+];
+
 export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
   { id: 'capa', numero: 1, titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA', subtitulo: 'DIREÇÃO TÉCNICA E RESPONSABILIDADE LEGAL' },
   { id: 'missao', numero: 2, titulo: 'Nossa Missão, Propósito & Credenciais Técnicas', subtitulo: 'DIREÇÃO TÉCNICA & HABILITAÇÃO CREA-PE' },
@@ -660,14 +722,183 @@ export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
 ];
 
 /**
- * Retorna as 13 seções padrão preenchidas com dados da proposta individual.
- * Regra Crítica: Esta função é o molde gerador que cria a CÓPIA INDIVIDUAL editável.
- * O modelo padrão nunca é sobrescrito pelas edições de um orçamento.
+ * Retorna a descrição unificada de ativos garantindo fonte única de verdade.
  */
-export function gerarSecoesPadraoOrcamento(
+export function obterDescricaoAtivosUnificada(
+  orcamento: Partial<Orcamento>,
+  dadosExtras?: { ativo?: Ativo }
+): string {
+  if (orcamento.ativosLista && orcamento.ativosLista.length > 0) {
+    const totalQtd = orcamento.ativosLista.reduce((acc, a) => acc + (a.quantidade || 1), 0);
+    const nomes = orcamento.ativosLista.map(a => a.identificacao).join(', ');
+    return `${totalQtd} ${nomes}`;
+  }
+  if (orcamento.qtdEquipamentos && orcamento.qtdEquipamentos.trim() !== '') {
+    return orcamento.qtdEquipamentos;
+  }
+  if (orcamento.ativoIdentificacao && orcamento.ativoIdentificacao.trim() !== '') {
+    return orcamento.ativoIdentificacao;
+  }
+  if (dadosExtras?.ativo?.identificacao) {
+    return dadosExtras.ativo.identificacao;
+  }
+  return '01 Ativo Principal, conforme demanda do contratante';
+}
+
+/**
+ * Molde V2 aprovado (6 folhas A4) para novos orçamentos.
+ */
+export function gerarSecoesPadraoOrcamentoV2(
   orcamento: Orcamento,
   dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
 ): OrcamentoSecao[] {
+  const clienteNome = orcamento.clienteNome || dadosExtras?.cliente?.nomeFantasia || dadosExtras?.cliente?.razaoSocial || 'Cliente Corporativo';
+  const cnpj = orcamento.cnpjCliente || dadosExtras?.cliente?.cpfCnpj || dadosExtras?.cliente?.cnpj || 'A preencher';
+  const primeiroContato = dadosExtras?.cliente?.contatos?.[0];
+  const representante = orcamento.representanteNome || primeiroContato?.nome || 'Diretoria / Coordenação Técnica';
+  const email = orcamento.emailCliente || primeiroContato?.email || 'comercial@cliente.com.br';
+  const telefone = orcamento.telefoneCliente || primeiroContato?.telefone || '(81) 98444-2592';
+  const localidade = orcamento.localidadeServico || (dadosExtras?.cliente?.endereco?.cidade ? `${dadosExtras.cliente.endereco.cidade}, ${dadosExtras.cliente.endereco.estado || 'PE'}` : 'Recife / Região Metropolitana, PE');
+  const servico = orcamento.servico || 'Laudo de Conformidade Técnica e Avaliação Pericial';
+  const valor = orcamento.valorFormatado || (orcamento.valor ? orcamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 2.500,00');
+  const validadeDias = orcamento.validadeDias || 15;
+  const emitidaEm = orcamento.emitidaEm || formatarDataBrasileira(orcamento.criadoEm);
+  const validaAte = orcamento.validaAte || calcularValidadeAte(emitidaEm, validadeDias);
+  const prazo = orcamento.prazoEntrega || `${orcamento.prazoDias || 7} dias úteis`;
+  const condicoes = orcamento.condicoesPagamento || '50% na aprovação da proposta e 50% após emissão do laudo técnico pericial e ART CREA-PE.';
+  const normas = orcamento.normasTecnicas || 'ABNT NBR, NR-10, NR-11, NR-12 e NR-13 conforme aplicável';
+  const escopo = orcamento.descricaoEscopo || 'Prestação de serviços especializados em Engenharia Mecânica, diagnóstico de integridade estrutural, verificação de conformidade com as Normas Regulamentadoras federais (ABNT / Ministério do Trabalho) e emissão de Anotação de Responsabilidade Técnica (ART) oficial junto ao CREA-PE.';
+  const codigo = orcamento.codigoProposta || orcamento.id || 'PROP-2026/001';
+  const revisao = orcamento.revisao || '00';
+  const ativosDescricao = obterDescricaoAtivosUnificada(orcamento, dadosExtras);
+
+  return [
+    {
+      id: 'folha1-capa',
+      numero: 1,
+      titulo: 'Capa & Resumo Executivo',
+      subtitulo: 'RESUMO COMERCIAL, PREÇO E APROVAÇÃO',
+      conteudoHtml: `<div class="space-y-4 text-xs">
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <p class="font-bold text-[#0B1E3D] text-sm mb-1">${servico}</p>
+          <p class="text-slate-600 mb-2">Proposta técnico-comercial e orçamento de engenharia para <strong>${clienteNome}</strong></p>
+          <p class="text-slate-500 text-[11px] leading-relaxed">${escopo}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-white rounded-lg border border-slate-200">
+            <span class="text-slate-400 font-mono text-[10px] block uppercase">Contratante</span>
+            <strong class="text-slate-800 text-xs">${clienteNome}</strong>
+            <span class="text-slate-500 text-[11px] block mt-0.5">CNPJ: ${cnpj}</span>
+          </div>
+          <div class="p-3 bg-white rounded-lg border border-slate-200">
+            <span class="text-slate-400 font-mono text-[10px] block uppercase">Referência</span>
+            <strong class="text-blue-700 text-xs font-mono">${codigo} • Rev. ${revisao}</strong>
+            <span class="text-slate-500 text-[11px] block mt-0.5">Válida até: ${validaAte}</span>
+          </div>
+          <div class="p-3 bg-white rounded-lg border border-slate-200">
+            <span class="text-slate-400 font-mono text-[10px] block uppercase">Ativos Inspecionados</span>
+            <strong class="text-slate-800 text-xs">${ativosDescricao}</strong>
+          </div>
+          <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <span class="text-blue-600 font-mono text-[10px] block uppercase">Investimento Total</span>
+            <strong class="text-blue-900 text-sm font-black">${valor}</strong>
+            <span class="text-blue-700 text-[10px] block">${orcamento.incluiNotaFiscal !== false ? 'NFS-e e taxa de ART inclusas' : 'Recibo de autônomo e ART inclusa'}</span>
+          </div>
+        </div>
+      </div>`
+    },
+    {
+      id: 'folha2-etapa1',
+      numero: 2,
+      titulo: 'Etapa 1 - Relação dos Serviços, Partes e Normas',
+      subtitulo: 'DIRETRIZES TÉCNICAS E ESCOPO CONTRATUAL',
+      conteudoHtml: `<div class="space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div>
+            <h4 class="font-bold text-[#0B1E3D] mb-1">CONTRATADA (VL ENGENHARIA)</h4>
+            <p><strong>Razão:</strong> ${DADOS_VL_PADRAO.razaoSocial}</p>
+            <p><strong>CNPJ:</strong> ${DADOS_VL_PADRAO.cnpj}</p>
+            <p><strong>Responsável:</strong> ${DADOS_VL_PADRAO.responsavelTecnico}</p>
+            <p><strong>CREA-PE:</strong> ${DADOS_VL_PADRAO.crea}</p>
+            <p><strong>Telefone:</strong> ${DADOS_VL_PADRAO.telefone}</p>
+          </div>
+          <div>
+            <h4 class="font-bold text-[#0B1E3D] mb-1">CONTRATANTE</h4>
+            <p><strong>Razão:</strong> ${clienteNome}</p>
+            <p><strong>CNPJ/CPF:</strong> ${cnpj}</p>
+            <p><strong>Contato:</strong> ${representante}</p>
+            <p><strong>Localidade:</strong> ${localidade}</p>
+            <p><strong>Telefone:</strong> ${telefone}</p>
+          </div>
+        </div>
+        <div class="p-3 bg-white rounded-lg border border-slate-200">
+          <p><strong>Objeto:</strong> ${servico}</p>
+          <p><strong>Ativos Avaliados:</strong> ${ativosDescricao}</p>
+          <p><strong>Normas de Referência:</strong> ${normas}</p>
+        </div>
+      </div>`
+    },
+    {
+      id: 'folha3-etapa2',
+      numero: 3,
+      titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
+      subtitulo: 'METODOLOGIA DE ENGENHARIA DIAGNÓSTICA',
+      conteudoHtml: gerarHtmlEtapa2Metodologia(normas)
+    },
+    {
+      id: 'folha4-etapa3',
+      numero: 4,
+      titulo: 'Etapa 3 - Prazo, Pagamento & Investimento',
+      subtitulo: 'MEMORIAL DE CÁLCULO, PARCELAS E ACEITE',
+      conteudoHtml: gerarHtmlEtapa3Investimento({
+        valor,
+        prazo,
+        condicoes,
+        validade: validadeDias,
+        clienteNome,
+        representante,
+        incluiNotaFiscal: orcamento.incluiNotaFiscal !== false,
+        chavePix: orcamento.chavePix || DADOS_VL_PADRAO.pixChave,
+        itensCalculo: orcamento.itensCalculo,
+      })
+    },
+    {
+      id: 'folha5-institucional1',
+      numero: 5,
+      titulo: 'Sobre a VL Engenharia - Responsável & Princípios',
+      subtitulo: 'ANEXO INSTITUCIONAL • PARTE 1',
+      conteudoHtml: `<div class="space-y-4 text-xs">
+        <div class="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <img src="/vitor-leonardo.png" alt="Eng. Vitor Leonardo" class="w-24 h-30 object-cover rounded-lg border-2 border-[#1565D8] bg-slate-200 shrink-0" />
+          <div class="space-y-1">
+            <h4 class="font-bold text-sm text-[#0B1E3D]">${DADOS_VL_PADRAO.responsavelTecnico}</h4>
+            <span class="text-blue-700 font-bold text-[11px] block">Engenheiro Mecânico Responsável Técnico • CREA-PE ${DADOS_VL_PADRAO.crea}</span>
+            <p class="text-slate-600 leading-relaxed text-[11px]">Especialista em laudos periciais mecânicos, adequação a Normas Regulamentadoras (NR-11, NR-12, NR-13), projetos PMOC de climatização e ensaios instrumentados com ART oficial.</p>
+          </div>
+        </div>
+      </div>`
+    },
+    {
+      id: 'folha6-institucional2',
+      numero: 6,
+      titulo: 'Sobre a VL Engenharia - Soluções & Contato',
+      subtitulo: 'ANEXO INSTITUCIONAL • PARTE 2',
+      conteudoHtml: `<div class="space-y-4 text-xs">
+        ${HTML_CARDS_CATALOGO_SERVICOS}
+        ${gerarHtmlContatoAgradecimento()}
+      </div>`
+    }
+  ];
+}
+
+/**
+ * Retorna as 13 seções legadas (para manter compatibilidade retroativa com propostas anteriores).
+ */
+export function gerarSecoesPadraoOrcamentoLegado(
+  orcamento: Orcamento,
+  dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
+): OrcamentoSecao[] {
+
   const clienteNome = orcamento.clienteNome || dadosExtras?.cliente?.razaoSocial || 'Cliente Corporativo';
   const cnpj = orcamento.cnpjCliente || dadosExtras?.cliente?.cpfCnpj || 'Consulte o contrato';
   const primeiroContato = dadosExtras?.cliente?.contatos?.[0];
@@ -1036,3 +1267,54 @@ export function converterPaginasParaSecoes(
     };
   });
 }
+
+/**
+ * Converte um orçamento legado para a nova versão V2 (6 folhas A4)
+ */
+export function converterOrcamentoLegadoParaV2(
+  orcamento: Orcamento,
+  dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
+): Orcamento {
+  const emitidaEm = orcamento.emitidaEm || formatarDataBrasileira(orcamento.criadoEm);
+  const validadeDias = orcamento.validadeDias || 15;
+  const validaAte = orcamento.validaAte || calcularValidadeAte(emitidaEm, validadeDias);
+
+  const novoOrcamento: Orcamento = {
+    ...orcamento,
+    layoutVersao: 'v2',
+    emitidaEm,
+    validadeDias,
+    validaAte,
+    revisao: orcamento.revisao || '00',
+    contratadaCnpj: DADOS_VL_PADRAO.cnpj,
+    contratadaNome: DADOS_VL_PADRAO.razaoSocial,
+    contratadaResponsavel: DADOS_VL_PADRAO.responsavelTecnico,
+    contratadaCrea: DADOS_VL_PADRAO.crea,
+    contratadaTelefone: DADOS_VL_PADRAO.telefone,
+    contratadaEmail: DADOS_VL_PADRAO.email,
+    contratadaEndereco: DADOS_VL_PADRAO.sede,
+    contratadaPixChave: DADOS_VL_PADRAO.pixChave,
+    contratadaPixTitular: DADOS_VL_PADRAO.pixTitular,
+    contratadaPixCidade: DADOS_VL_PADRAO.pixCidade,
+    modoExportacaoPdf: orcamento.modoExportacaoPdf || 'completa',
+  };
+
+  novoOrcamento.secoes = gerarSecoesPadraoOrcamentoV2(novoOrcamento, dadosExtras);
+  return novoOrcamento;
+}
+
+/**
+ * Função principal geradora de seções.
+ * Se o orçamento for marcado como 'legado', retorna o modelo anterior de 13 seções.
+ * Caso contrário (novos orçamentos ou orçamentos V2), retorna o modelo base de 6 folhas A4 aprovado.
+ */
+export function gerarSecoesPadraoOrcamento(
+  orcamento: Orcamento,
+  dadosExtras?: { cliente?: Cliente; ativo?: Ativo }
+): OrcamentoSecao[] {
+  if (orcamento.layoutVersao === 'legado') {
+    return gerarSecoesPadraoOrcamentoLegado(orcamento, dadosExtras);
+  }
+  return gerarSecoesPadraoOrcamentoV2(orcamento, dadosExtras);
+}
+

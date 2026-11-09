@@ -26,6 +26,7 @@ import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { ChecklistCampoView } from './components/admin/ChecklistCampoView';
 import { GestaoView } from './components/admin/GestaoView';
+import { PropostaPrintView } from './components/admin/PropostaPrintView';
 
 function FloatingContactHelper() {
   const location = useLocation();
@@ -139,6 +140,10 @@ export default function App() {
                     <OrcamentoEditorView />
                   </AdminLayout>
                 }
+              />
+              <Route
+                path="/admin/orcamentos/:id/imprimir"
+                element={<PropostaPrintView />}
               />
               <Route
                 path="/admin/agenda"

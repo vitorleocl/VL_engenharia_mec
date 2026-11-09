@@ -47,13 +47,17 @@ import {
 import { 
   SECOES_PROPOSTA_DEFINICAO, 
   gerarSecoesPadraoOrcamento, 
+  gerarSecoesPadraoOrcamentoV2,
+  converterOrcamentoLegadoParaV2,
   converterPaginasParaSecoes,
   HTML_CARDS_CATALOGO_SERVICOS,
   obterTituloLaudoProposta,
   gerarCardClienteHtml,
   gerarHtmlEtapa2Metodologia,
   gerarHtmlEtapa3Investimento,
-  gerarHtmlContatoAgradecimento
+  gerarHtmlContatoAgradecimento,
+  DADOS_VL_PADRAO,
+  calcularValidadeAte
 } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentoEditorView: React.FC = () => {
@@ -295,10 +299,13 @@ export const OrcamentoEditorView: React.FC = () => {
       return;
     }
 
-    // Otherwise, generate the standard 13-section editable copy
-    const secoesPadrao = gerarSecoesPadraoOrcamento(orcamentoOriginal, { cliente, ativo });
+    // Otherwise, generate the approved V2 6-sheet editable copy
+    const secoesPadrao = orcamentoOriginal.layoutVersao === 'legado'
+      ? gerarSecoesPadraoOrcamento(orcamentoOriginal, { cliente, ativo })
+      : gerarSecoesPadraoOrcamentoV2(orcamentoOriginal, { cliente, ativo });
     const inicializado: Orcamento = {
       ...orcamentoOriginal,
+      layoutVersao: orcamentoOriginal.layoutVersao || 'v2',
       incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
       itensCalculo: itensCalculoBase,
       secoes: secoesPadrao,
@@ -578,7 +585,9 @@ export const OrcamentoEditorView: React.FC = () => {
       return;
     }
 
-    const secoesPadrao = gerarSecoesPadraoOrcamento(orcamentoState, { cliente, ativo });
+    const secoesPadrao = orcamentoState.layoutVersao === 'v2'
+      ? gerarSecoesPadraoOrcamentoV2(orcamentoState, { cliente, ativo })
+      : gerarSecoesPadraoOrcamento(orcamentoState, { cliente, ativo });
     const secaoOriginal = secoesPadrao.find(s => s.id === secaoAtiva.id) || secoesPadrao[secaoAtiva.numero - 1];
 
     if (!secaoOriginal) return;
@@ -599,6 +608,19 @@ export const OrcamentoEditorView: React.FC = () => {
       ...orcamentoState,
       secoes: novasSecoes,
     }, `Restauração do texto padrão na seção ${secaoAtiva.numero}`);
+  };
+
+  // Convert legacy quote to approved V2 6-sheet layout
+  const handleConverterParaV2 = () => {
+    if (!orcamentoState) return;
+    if (!window.confirm('Deseja converter este orçamento para o Novo Layout Aprovado (6 folhas A4)? Todos os dados do cliente, escopo, valores e memorial serão preservados na nova identidade visual vetorial.')) {
+      return;
+    }
+
+    const convertido = converterOrcamentoLegadoParaV2(orcamentoState, { cliente, ativo });
+    setOrcamentoState(convertido);
+    setSecaoAtivaId('capa');
+    salvarImediato(convertido, 'Proposta convertida com sucesso para o Novo Layout Aprovado (6 folhas A4)');
   };
 
   // Quick navigation
@@ -1059,6 +1081,35 @@ export const OrcamentoEditorView: React.FC = () => {
             <ShieldCheck className="w-4 h-4 text-blue-600" />
             <span className="hidden md:inline">Modelo Base</span>
           </button>
+
+          {/* Convert to V2 button or V2 active badge */}
+          {orcamentoState.layoutVersao !== 'v2' ? (
+            <button
+              onClick={handleConverterParaV2}
+              className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+              title="Converter para o novo layout aprovado da VL Engenharia (6 folhas A4)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Converter p/ Novo Modelo (6 fls)</span>
+            </button>
+          ) : (
+            <span className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Modelo Aprovado (6 Folhas A4)</span>
+              <span className="sm:hidden">6 Folhas</span>
+            </span>
+          )}
+
+          {/* Direct Print / Export Route Link */}
+          <Link
+            to={`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`}
+            target="_blank"
+            className="p-2 rounded-xl border border-blue-200 hover:bg-blue-50 text-[#1565D8] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Abrir impressão nativa direta em nova aba"
+          >
+            <Printer className="w-4 h-4 text-[#1565D8]" />
+            <span className="hidden lg:inline">Imprimir Direto</span>
+          </Link>
 
           {/* View / Export PDF Button */}
           <button

@@ -161,6 +161,35 @@ export interface Orcamento {
   propostaGeradaEm?: string;
   imagemCapaUrl?: string;
   imagemCapaLegenda?: string;
+  // Novos campos estruturados para o Modelo Base A4 Vetorial (6 folhas)
+  layoutVersao?: 'legado' | 'v2';
+  emitidaEm?: string;
+  validaAte?: string;
+  revisao?: string;
+  contratadaCnpj?: string;
+  contratadaNome?: string;
+  contratadaResponsavel?: string;
+  contratadaCrea?: string;
+  contratadaTelefone?: string;
+  contratadaEmail?: string;
+  contratadaEndereco?: string;
+  contratadaCidade?: string;
+  contratadaPixChave?: string;
+  contratadaPixTitular?: string;
+  contratadaPixCidade?: string;
+  parcelas?: Array<{ parcela: string; quando: string; percentual: number; valor: number }>;
+  cronograma?: Array<{ 
+    fase?: string; 
+    marco?: string; 
+    dias?: string; 
+    prazo?: string; 
+    descricao?: string; 
+    responsavel?: string; 
+  }>;
+  incluso?: string[];
+  foraDoEscopo?: string[];
+  ativosLista?: Array<{ id: string; tipo: string; identificacao: string; fabricante?: string; modelo?: string; quantidade?: number }>;
+  modoExportacaoPdf?: 'executiva' | 'completa';
   secoes?: OrcamentoSecao[];
   secoesOcultasPdf?: string[];
   historico?: OrcamentoHistorico[];
