@@ -31,11 +31,14 @@ import {
   FileSpreadsheet,
   Users,
   Plus,
-  Calculator
+  Calculator,
+  ArrowUp,
+  ArrowDown,
+  Sliders
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo } from '../../types';
+import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
@@ -57,7 +60,8 @@ import {
   gerarHtmlEtapa3Investimento,
   gerarHtmlContatoAgradecimento,
   DADOS_VL_PADRAO,
-  calcularValidadeAte
+  calcularValidadeAte,
+  FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentoEditorView: React.FC = () => {
@@ -214,8 +218,8 @@ export const OrcamentoEditorView: React.FC = () => {
             return {
               ...s,
               titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-              subtitulo: 'METODOLOGIA EM 5 FASES SEQUENCIAIS',
-              conteudoHtml: gerarHtmlEtapa2Metodologia(normas),
+              subtitulo: 'METODOLOGIA DE ENGENHARIA EM ETAPAS',
+              conteudoHtml: gerarHtmlEtapa2Metodologia(normas, orcamentoOriginal.metodologiaFases, orcamentoOriginal.tituloMetodologia),
             };
           }
         }
@@ -735,22 +739,102 @@ export const OrcamentoEditorView: React.FC = () => {
     salvarImediato(atualizado, 'Etapa 3 sincronizada com Memorial de Cálculo e PIX');
   };
 
-  // Restore Etapa 2 (Metodologia) to default clean cards
-  const handleRestaurarEtapa2 = () => {
+  // Metodologia em Etapas dinâmica
+  const fasesMetodologia: OrcamentoMetodologiaFase[] = useMemo(() => {
+    if (orcamentoState?.metodologiaFases && orcamentoState.metodologiaFases.length > 0) {
+      return orcamentoState.metodologiaFases;
+    }
+    return FASES_METODOLOGIA_PADRAO;
+  }, [orcamentoState?.metodologiaFases]);
+
+  const tituloMetodologiaAtual = orcamentoState?.tituloMetodologia || 'Metodologia de engenharia em etapas';
+
+  const atualizarMetodologiaState = (
+    novasFases: OrcamentoMetodologiaFase[],
+    novoTitulo?: string,
+    mensagem: string = 'Metodologia de engenharia atualizada'
+  ) => {
     if (!orcamentoState?.secoes) return;
-    const novoHtml = gerarHtmlEtapa2Metodologia(orcamentoState.normasTecnicas);
+    const tituloFinal = novoTitulo !== undefined ? novoTitulo : (orcamentoState.tituloMetodologia || 'Metodologia de engenharia em etapas');
+    const novoHtml = gerarHtmlEtapa2Metodologia(orcamentoState.normasTecnicas, novasFases, tituloFinal);
+
     const novasSecoes = orcamentoState.secoes.map(s => {
-      if (s.id === 'etapa2' || (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')))) {
-        return { 
-          ...s, 
+      if (
+        s.id === 'etapa2' || 
+        s.id === 'folha3-etapa2' || 
+        (s.titulo && (s.titulo.toLowerCase().includes('etapa 2') || s.titulo.toLowerCase().includes('metodologia')))
+      ) {
+        return {
+          ...s,
           titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-          conteudoHtml: novoHtml 
+          subtitulo: 'METODOLOGIA DE ENGENHARIA EM ETAPAS',
+          conteudoHtml: novoHtml,
         };
       }
       return s;
     });
-    const atualizado: Orcamento = { ...orcamentoState, secoes: novasSecoes };
-    salvarImediato(atualizado, 'Metodologia (Etapa 2) restaurada para formatação padrão em 5 fases');
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      tituloMetodologia: tituloFinal,
+      metodologiaFases: novasFases,
+      secoes: novasSecoes,
+    };
+
+    salvarImediato(atualizado, mensagem);
+  };
+
+  const handleToggleFaseMetodologia = (faseId: string, ativa: boolean) => {
+    const novasFases = fasesMetodologia.map(f => f.id === faseId ? { ...f, ativa } : f);
+    atualizarMetodologiaState(novasFases, orcamentoState?.tituloMetodologia, `Etapa ${ativa ? 'ativada' : 'desativada'} na metodologia`);
+  };
+
+  const handleUpdateFaseMetodologia = (faseId: string, campo: keyof OrcamentoMetodologiaFase, valor: any) => {
+    const novasFases = fasesMetodologia.map(f => f.id === faseId ? { ...f, [campo]: valor } : f);
+    atualizarMetodologiaState(novasFases, orcamentoState?.tituloMetodologia, 'Informação da etapa atualizada');
+  };
+
+  const handleAdicionarFaseMetodologia = () => {
+    const novoId = `fase-${Date.now()}`;
+    const novaFase: OrcamentoMetodologiaFase = {
+      id: novoId,
+      faseNumero: fasesMetodologia.length + 1,
+      tag: 'Fase',
+      titulo: 'Nova Etapa Técnica de Engenharia',
+      subtituloBadge: 'Atividade Especializada',
+      descricao: 'Descrição detalhada do escopo técnico, procedimentos metodológicos e critérios normativos desta etapa.',
+      entregavel: 'Relatório técnico ou planilha de resultados técnicos.',
+      ativa: true,
+    };
+    const novasFases = [...fasesMetodologia, novaFase];
+    atualizarMetodologiaState(novasFases, orcamentoState?.tituloMetodologia, 'Nova etapa adicionada à metodologia');
+  };
+
+  const handleRemoverFaseMetodologia = (faseId: string) => {
+    const novasFases = fasesMetodologia.filter(f => f.id !== faseId);
+    atualizarMetodologiaState(novasFases, orcamentoState?.tituloMetodologia, 'Etapa removida da metodologia');
+  };
+
+  const handleMoverFaseMetodologia = (index: number, direcao: 'up' | 'down') => {
+    if (direcao === 'up' && index === 0) return;
+    if (direcao === 'down' && index === fasesMetodologia.length - 1) return;
+    const alvoIndex = direcao === 'up' ? index - 1 : index + 1;
+    const novasFases = [...fasesMetodologia];
+    const [item] = novasFases.splice(index, 1);
+    novasFases.splice(alvoIndex, 0, item);
+    atualizarMetodologiaState(novasFases, orcamentoState?.tituloMetodologia, 'Ordem das etapas reorganizada');
+  };
+
+  const handleRestaurarEtapasPadrao = () => {
+    atualizarMetodologiaState(
+      FASES_METODOLOGIA_PADRAO, 
+      'Metodologia de engenharia em etapas', 
+      'Metodologia restaurada para o padrão'
+    );
+  };
+
+  const handleTituloMetodologiaChange = (novoTitulo: string) => {
+    atualizarMetodologiaState(fasesMetodologia, novoTitulo, 'Título da metodologia atualizado');
   };
 
   // Memorial de Cálculo itens
@@ -1533,34 +1617,240 @@ export const OrcamentoEditorView: React.FC = () => {
               </div>
             )}
 
-            {/* SPECIAL CASE: Etapa 2 (Escopo Técnico das Atividades - Metodologia) */}
-            {(secaoAtiva?.id === 'etapa2' || secaoAtiva?.numero === 10 || (secaoAtiva?.titulo && (secaoAtiva.titulo.toLowerCase().includes('etapa 2') || secaoAtiva.titulo.toLowerCase().includes('metodologia')))) && (
-              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/70 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* SPECIAL CASE: Etapa 2 (Escopo Técnico das Atividades - Metodologia Dinâmica em Etapas) */}
+            {(secaoAtiva?.id === 'folha3-etapa2' || secaoAtiva?.id === 'etapa2' || secaoAtiva?.numero === 3 || secaoAtiva?.numero === 10 || (secaoAtiva?.titulo && (secaoAtiva.titulo.toLowerCase().includes('etapa 2') || secaoAtiva.titulo.toLowerCase().includes('metodologia')))) && (
+              <div className="p-4 sm:p-5 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/60 via-white to-slate-50 space-y-4 shadow-sm">
+                
+                {/* Header do Gerenciador de Metodologia */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-600 text-white shrink-0">
-                      <Layers className="w-5 h-5" />
+                    <div className="p-2.5 rounded-xl bg-[#0B1E3D] text-white shrink-0 shadow-xs">
+                      <Layers className="w-5 h-5 text-blue-400" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                        <span>Metodologia Sequencial de Engenharia (5 Fases)</span>
-                      </h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider">
+                          Metodologia de Engenharia em Etapas
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#1565D8] border border-blue-200">
+                          {fasesMetodologia.filter(f => f.ativa !== false).length} ativa(s) de {fasesMetodologia.length}
+                        </span>
+                      </div>
                       <p className="text-[11px] text-slate-600 mt-0.5">
-                        Vistoria in loco, checklists normativos, instrumentação/ensaios, laudo pericial conclusivo e homologação de ART.
+                        Selecione, ative, personalize e ordene as etapas aplicáveis para este orçamento.
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleRestaurarEtapa2}
-                    className="px-3 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors shrink-0"
-                    title="Restaura a formatação inicial estilizada em cards para a Metodologia"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Restaurar Formatação Padrão</span>
-                  </button>
+
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <button
+                      type="button"
+                      onClick={handleRestaurarEtapasPadrao}
+                      className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                      title="Restaura as 5 etapas técnicas fundamentais e o título padrão"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Restaurar Padrão</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleAdicionarFaseMetodologia}
+                      className="px-3 py-1.5 rounded-lg bg-[#1565D8] hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                      title="Adiciona uma nova etapa customizada à metodologia"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Nova Etapa</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Edição do Título da Seção */}
+                <div className="p-3 bg-white rounded-xl border border-blue-200 shadow-2xs space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <label className="text-[11px] font-bold text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Título da Seção de Metodologia na Proposta & PDF:</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500">Exibido em destaque no topo da Folha 3 e no sumário</span>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={orcamentoState.tituloMetodologia ?? tituloMetodologiaAtual}
+                    onChange={(e) => handleTituloMetodologiaChange(e.target.value)}
+                    placeholder="Ex: Metodologia de engenharia em etapas"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold text-[#0B1E3D] bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
+                  />
+
+                  {/* Sugestões rápidas de título */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[10px]">
+                    <span className="text-slate-400 font-bold uppercase">Sugestões:</span>
+                    {[
+                      'Metodologia de engenharia em etapas',
+                      'Metodologia de ensaios físicos e afins',
+                      'Metodologia de conformidade técnica e ensaios',
+                      'Metodologia diagnóstica pericial'
+                    ].map((sugestao) => (
+                      <button
+                        key={sugestao}
+                        type="button"
+                        onClick={() => handleTituloMetodologiaChange(sugestao)}
+                        className={`px-2 py-0.5 rounded-md border font-semibold cursor-pointer transition-colors ${
+                          (orcamentoState.tituloMetodologia || tituloMetodologiaAtual) === sugestao
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border-slate-200'
+                        }`}
+                      >
+                        {sugestao}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Lista de Etapas Configuráveis */}
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                    <span>Etapas da Metodologia ({fasesMetodologia.length}):</span>
+                    <span className="text-[11px] text-slate-500 font-normal">
+                      Marque ou desmarque para incluir ou retirar cada etapa da proposta
+                    </span>
+                  </div>
+
+                  {fasesMetodologia.map((fase, idx) => {
+                    const isAtiva = fase.ativa !== false;
+                    const fasesAtivasAteAqui = fasesMetodologia.slice(0, idx + 1).filter(f => f.ativa !== false).length;
+                    const numeroSeq = isAtiva ? String(fasesAtivasAteAqui).padStart(2, '0') : null;
+
+                    return (
+                      <div
+                        key={fase.id || `fase-${idx}`}
+                        className={`rounded-xl border transition-all ${
+                          isAtiva
+                            ? 'bg-white border-blue-300 shadow-xs'
+                            : 'bg-slate-100/80 border-slate-200 opacity-70'
+                        }`}
+                      >
+                        {/* Barra Superior da Etapa */}
+                        <div className={`p-3 flex flex-wrap items-center justify-between gap-2 border-b ${
+                          isAtiva ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-100 border-slate-200'
+                        }`}>
+                          <div className="flex items-center gap-2.5">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={isAtiva}
+                                onChange={(e) => handleToggleFaseMetodologia(fase.id, e.target.checked)}
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              />
+                              <span className={`text-xs font-bold ${isAtiva ? 'text-[#0B1E3D]' : 'text-slate-500'}`}>
+                                {isAtiva ? 'Etapa Inclusa na Proposta' : 'Etapa Desativada (Oculta)'}
+                              </span>
+                            </label>
+
+                            {isAtiva ? (
+                              <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-black bg-[#0B1E3D] text-[#D4AF37]">
+                                FASE {numeroSeq}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 text-slate-500">
+                                Inativa
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoverFaseMetodologia(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
+                              title="Mover para cima"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoverFaseMetodologia(idx, 'down')}
+                              disabled={idx === fasesMetodologia.length - 1}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
+                              title="Mover para baixo"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoverFaseMetodologia(fase.id)}
+                              className="p-1 rounded hover:bg-rose-100 text-rose-600 cursor-pointer"
+                              title="Excluir etapa permanentemente"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Campos da Etapa */}
+                        <div className="p-3.5 space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="sm:col-span-2 space-y-1">
+                              <label className="text-[10px] font-bold text-slate-600 uppercase">
+                                Título da Etapa:
+                              </label>
+                              <input
+                                type="text"
+                                value={fase.titulo}
+                                onChange={(e) => handleUpdateFaseMetodologia(fase.id, 'titulo', e.target.value)}
+                                placeholder="Título descritivo da etapa..."
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-[#0B1E3D] bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-600 uppercase">
+                                Categoria / Badge:
+                              </label>
+                              <input
+                                type="text"
+                                value={fase.subtituloBadge || ''}
+                                onChange={(e) => handleUpdateFaseMetodologia(fase.id, 'subtituloBadge', e.target.value)}
+                                placeholder="Ex: Instrumentado, Vistoria..."
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-600 uppercase">
+                              Descrição Técnica Detalhada:
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={fase.descricao}
+                              onChange={(e) => handleUpdateFaseMetodologia(fase.id, 'descricao', e.target.value)}
+                              placeholder="Procedimento técnico, normas aplicadas, ensaios realizados..."
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-1">
+                              <span className="text-emerald-600">✓</span> Entregável Específico:
+                            </label>
+                            <input
+                              type="text"
+                              value={fase.entregavel}
+                              onChange={(e) => handleUpdateFaseMetodologia(fase.id, 'entregavel', e.target.value)}
+                              placeholder="Ex: Planilha de grandezas medidas com instrumentos calibrados RBC/Inmetro."
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+
               </div>
             )}
 

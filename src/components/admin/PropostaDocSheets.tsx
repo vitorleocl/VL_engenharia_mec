@@ -6,7 +6,8 @@ import {
   formatarDataBrasileira, 
   calcularValidadeAte, 
   obterDescricaoAtivosUnificada,
-  obterTituloLaudoProposta
+  obterTituloLaudoProposta,
+  FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 import { gerarPixCopiaECola } from '../../lib/pixEmv';
 import { VlLogoVector } from './PropostaViewerModal';
@@ -72,6 +73,17 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
       }
     ];
   }, [orcamento.itensCalculo, servicoTitulo, valorTotalNum]);
+
+  // Metodologia em etapas dinâmica
+  const fasesMetodologia = useMemo(() => {
+    const fasesBase = (orcamento.metodologiaFases && orcamento.metodologiaFases.length > 0)
+      ? orcamento.metodologiaFases
+      : FASES_METODOLOGIA_PADRAO;
+    const ativas = fasesBase.filter(f => f.ativa !== false);
+    return ativas.length > 0 ? ativas : fasesBase;
+  }, [orcamento.metodologiaFases]);
+
+  const tituloMetodologia = orcamento.tituloMetodologia || 'Metodologia de engenharia em etapas';
 
   // Parcelas (50% / 50%)
   const parcelas = useMemo(() => {
@@ -156,7 +168,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
               <span className="e">Etapa 2</span>
               <a href="#p3">
                 <span className="t">Escopo técnico das atividades</span>
-                <span className="d">Metodologia em 5 fases sequenciais, checklists normativos, ensaios instrumentados e condições de acesso.</span>
+                <span className="d">Metodologia em etapas sequenciais, checklists normativos, ensaios instrumentados e condições de acesso.</span>
               </a>
               <span className="p">p. 3</span>
             </li>
@@ -410,91 +422,39 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
         <div className="where"><b>Etapa 2 de 3</b> Escopo técnico das atividades (metodologia)</div>
       </div>
       <div className="body">
-        <h2>Metodologia de engenharia em 5 fases</h2>
+        <h2>{tituloMetodologia}</h2>
 
         <div className="band">
           <div>
-            <b>Cinco fases sequenciais, da vistoria à ART</b>
+            <b>{fasesMetodologia.length} etapa{fasesMetodologia.length > 1 ? 's' : ''} sequenciais, da vistoria à ART</b>
             <span>Inspeção in loco, checklists normativos, instrumentação, laudo e homologação técnica.</span>
           </div>
           <em>Engenharia diagnóstica</em>
         </div>
 
         <div style={{ marginTop: '2mm' }}>
-          <div className="ph">
-            <div className="no"><small>Fase</small>01</div>
-            <div>
-              <div className="hd">
-                <h4>Inspeção visual in loco e diagnóstico preliminar</h4>
-                <span className="tag">Vistoria de campo</span>
+          {fasesMetodologia.map((fase, idx) => {
+            const num = String(idx + 1).padStart(2, '0');
+            const desc = (fase.descricao || '').replace(/\{normasTecnicas\}/g, normasTecnicas);
+            return (
+              <div className="ph" key={fase.id || `fase-${idx}`}>
+                <div className="no"><small>Fase</small>{num}</div>
+                <div>
+                  <div className="hd">
+                    <h4>{fase.titulo}</h4>
+                    {fase.subtituloBadge && <span className="tag">{fase.subtituloBadge}</span>}
+                  </div>
+                  <p>{desc}</p>
+                  {fase.entregavel && (
+                    <div className="dl">
+                      <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
+                      <span><b>Entregável:</b> {fase.entregavel}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p>Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.</p>
-              <div className="dl">
-                <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
-                <span><b>Entregável:</b> levantamento fotográfico em alta resolução e registro de evidências fáticas.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="ph">
-            <div className="no"><small>Fase</small>02</div>
-            <div>
-              <div className="hd">
-                <h4>Aplicação de checklists normativos técnicos</h4>
-                <span className="tag">Conformidade legal</span>
-              </div>
-              <p>Auditoria item por item das exigências regulamentadoras vigentes ({normasTecnicas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos.</p>
-              <div className="dl">
-                <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
-                <span><b>Entregável:</b> relatório de conformidade item a item conforme normas ABNT e NRs federais.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="ph">
-            <div className="no"><small>Fase</small>03</div>
-            <div>
-              <div className="hd">
-                <h4>Ensaios físicos, medições e testes funcionais</h4>
-                <span className="tag">Instrumentado</span>
-              </div>
-              <p>Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e integridade de soldas.</p>
-              <div className="dl">
-                <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
-                <span><b>Entregável:</b> planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="ph">
-            <div className="no"><small>Fase</small>04</div>
-            <div>
-              <div className="hd">
-                <h4>Dossiê técnico, matriz de risco e parecer conclusivo</h4>
-                <span className="tag">Engenharia diagnóstica</span>
-              </div>
-              <p>Elaboração de laudo pericial detalhado contendo análise de risco quantitativa (HRN/SIL), memorial técnico descritivo, plano de ação corretivo claro e cronograma prioritário de adequações físicas.</p>
-              <div className="dl">
-                <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
-                <span><b>Entregável:</b> laudo pericial conclusivo digital em PDF com assinatura eletrônica e certificado digital.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="ph">
-            <div className="no"><small>Fase</small>05</div>
-            <div>
-              <div className="hd">
-                <h4>Emissão e registro oficial da ART CREA-PE</h4>
-                <span className="tag">Homologação legal</span>
-              </div>
-              <p>Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.</p>
-              <div className="dl">
-                <svg viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="1.7"/></svg>
-                <span><b>Entregável:</b> certidão oficial de ART quitada com chave de autenticidade e QR Code do CREA-PE.</span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         <div className="blk">

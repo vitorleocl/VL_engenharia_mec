@@ -124,6 +124,17 @@ export interface OrcamentoItemCalculo {
   valorTotal: number;
 }
 
+export interface OrcamentoMetodologiaFase {
+  id: string;
+  faseNumero?: number;
+  tag?: string; // ex: 'Fase'
+  titulo: string;
+  subtituloBadge?: string; // ex: 'Vistoria de campo', 'Conformidade legal', 'Instrumentado', etc.
+  descricao: string;
+  entregavel: string;
+  ativa: boolean;
+}
+
 export type OrcamentoParcela = { 
   parcela: string; 
   quando?: string; 
@@ -208,6 +219,8 @@ export interface Orcamento {
   pixCidade?: string;
   parcelas?: OrcamentoParcela[];
   cronograma?: OrcamentoCronogramaItem[];
+  tituloMetodologia?: string;
+  metodologiaFases?: OrcamentoMetodologiaFase[];
   incluso?: string[];
   foraDoEscopo?: string[];
   ativos?: OrcamentoAtivoItem[];

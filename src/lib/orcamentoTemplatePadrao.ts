@@ -1,4 +1,4 @@
-import { Orcamento, OrcamentoSecao, Cliente, Ativo, OrcamentoItemCalculo } from '../types';
+import { Orcamento, OrcamentoSecao, Cliente, Ativo, OrcamentoItemCalculo, OrcamentoMetodologiaFase } from '../types';
 import { QR_CODE_PIX_PADRAO_BASE64, CHAVE_PIX_FORMATADA_PADRAO, TITULAR_PIX_PADRAO } from './pixUtils';
 
 export interface SecaoDefinicao {
@@ -250,18 +250,117 @@ export function gerarCardClienteHtml(params: {
   </div>`;
 }
 
+export const FASES_METODOLOGIA_PADRAO: OrcamentoMetodologiaFase[] = [
+  {
+    id: 'fase-1',
+    faseNumero: 1,
+    tag: 'Fase',
+    titulo: 'Inspeção visual in loco e diagnóstico preliminar',
+    subtituloBadge: 'Vistoria de campo',
+    descricao: 'Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.',
+    entregavel: 'Levantamento fotográfico em alta resolução e registro de evidências fáticas.',
+    ativa: true,
+  },
+  {
+    id: 'fase-2',
+    faseNumero: 2,
+    tag: 'Fase',
+    titulo: 'Aplicação de checklists normativos técnicos',
+    subtituloBadge: 'Conformidade legal',
+    descricao: 'Auditoria item por item das exigências regulamentadoras vigentes ({normasTecnicas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos.',
+    entregavel: 'Relatório de conformidade item a item conforme normas ABNT e NRs federais.',
+    ativa: true,
+  },
+  {
+    id: 'fase-3',
+    faseNumero: 3,
+    tag: 'Fase',
+    titulo: 'Ensaios físicos, medições e testes funcionais',
+    subtituloBadge: 'Instrumentado',
+    descricao: 'Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e integridade de soldas.',
+    entregavel: 'Planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.',
+    ativa: true,
+  },
+  {
+    id: 'fase-4',
+    faseNumero: 4,
+    tag: 'Fase',
+    titulo: 'Dossiê técnico, matriz de risco e parecer conclusivo',
+    subtituloBadge: 'Engenharia diagnóstica',
+    descricao: 'Elaboração de laudo pericial detalhado contendo análise de risco quantitativa (HRN/SIL), memorial técnico descritivo, plano de ação corretivo claro e cronograma prioritário de adequações físicas.',
+    entregavel: 'Laudo pericial conclusivo digital em PDF com assinatura eletrônica e certificado digital.',
+    ativa: true,
+  },
+  {
+    id: 'fase-5',
+    faseNumero: 5,
+    tag: 'Fase',
+    titulo: 'Emissão e registro oficial da ART CREA-PE',
+    subtituloBadge: 'Homologação legal',
+    descricao: 'Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.',
+    entregavel: 'Certidão oficial de ART quitada com chave de autenticidade e QR Code do CREA-PE.',
+    ativa: true,
+  },
+];
+
 /**
- * Gera a visualização estilizada em cards para a Etapa 2 (Metodologia em 5 Fases)
+ * Gera a visualização estilizada em cards para a Etapa 2 (Metodologia em Etapas)
  */
-export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR-12, NR-13'): string {
+export function gerarHtmlEtapa2Metodologia(
+  normas: string = 'ABNT NBR, NR-11, NR-12, NR-13',
+  fases?: OrcamentoMetodologiaFase[],
+  tituloCustom?: string
+): string {
+  const fasesBase = (fases && fases.length > 0) ? fases : FASES_METODOLOGIA_PADRAO;
+  const fasesAtivas = fasesBase.filter(f => f.ativa !== false);
+  const fasesParaRenderizar = fasesAtivas.length > 0 ? fasesAtivas : fasesBase;
+  
+  const totalEtapas = fasesParaRenderizar.length;
+  const tituloHeader = tituloCustom || (totalEtapas === 5 ? 'Metodologia de Engenharia em 5 Fases' : 'Metodologia de Engenharia em Etapas');
+
+  const temasCores = [
+    { border: '#bfdbfe', borderLeft: '#1d4ed8', badgeBg: '#dbeafe', badgeColor: '#1e40af', tagColor: '#1d4ed8', tagBg: '#eff6ff', iconColor: '#0284c7' },
+    { border: '#fde68a', borderLeft: '#d97706', badgeBg: '#fef3c7', badgeColor: '#92400e', tagColor: '#b45309', tagBg: '#fffbeb', iconColor: '#b45309' },
+    { border: '#c7d2fe', borderLeft: '#4f46e5', badgeBg: '#e0e7ff', badgeColor: '#4338ca', tagColor: '#4f46e5', tagBg: '#eef2ff', iconColor: '#4f46e5' },
+    { border: '#a7f3d0', borderLeft: '#059669', badgeBg: '#d1fae5', badgeColor: '#065f46', tagColor: '#059669', tagBg: '#ecfdf5', iconColor: '#059669' },
+    { border: '#e9d5ff', borderLeft: '#7c3aed', badgeBg: '#f3e8ff', badgeColor: '#6b21a8', tagColor: '#7c3aed', tagBg: '#faf5ff', iconColor: '#7c3aed' },
+    { border: '#bae6fd', borderLeft: '#0284c7', badgeBg: '#e0f2fe', badgeColor: '#0369a1', tagColor: '#0284c7', tagBg: '#f0f9ff', iconColor: '#0284c7' },
+  ];
+
+  const cardsHtml = fasesParaRenderizar.map((fase, idx) => {
+    const tema = temasCores[idx % temasCores.length];
+    const num = String(idx + 1).padStart(2, '0');
+    const desc = (fase.descricao || '').replace(/\{normasTecnicas\}/g, normas);
+
+    return `
+      <!-- Fase ${num} -->
+      <div style="background: #ffffff; border: 1.5px solid ${tema.border}; border-left: 5px solid ${tema.borderLeft}; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="background: ${tema.badgeBg}; color: ${tema.badgeColor}; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE ${num}</span>
+            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">${fase.titulo}</strong>
+          </div>
+          ${fase.subtituloBadge ? `<span style="font-size: 10px; color: ${tema.tagColor}; font-weight: 700; background: ${tema.tagBg}; padding: 2px 6px; border-radius: 4px;">${fase.subtituloBadge}</span>` : ''}
+        </div>
+        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
+          ${desc}
+        </p>
+        ${fase.entregavel ? `
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: ${tema.iconColor}; font-weight: 600;">
+          <span>✓ Entregável:</span> <span style="color: #334155;">${fase.entregavel}</span>
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+
   return `<div class="space-y-3.5 text-xs">
     
     <div style="background: #0B1E3D; color: #ffffff; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;" class="shadow-xs">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #1565D8; font-weight: 900; font-size: 11px;">M</span>
         <div>
-          <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Metodologia de Engenharia em 5 Fases Sequenciais</strong>
-          <span style="font-size: 9px; color: #93c5fd;">Inspeção in loco, checklists normativos, instrumentação, laudo e homologação técnica</span>
+          <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">${tituloHeader}</strong>
+          <span style="font-size: 9px; color: #93c5fd;">${totalEtapas} etapa${totalEtapas > 1 ? 's' : ''} sequenciais: inspeção in loco, checklists normativos, ensaios e homologação técnica</span>
         </div>
       </div>
       <span style="background: rgba(212, 175, 55, 0.2); border: 1px solid #D4AF37; color: #fde047; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">
@@ -270,92 +369,7 @@ export function gerarHtmlEtapa2Metodologia(normas: string = 'ABNT NBR, NR-11, NR
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 9px;">
-      
-      <!-- Fase 1 -->
-      <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-left: 5px solid #1d4ed8; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #dbeafe; color: #1e40af; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 01</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Inspeção Visual In Loco & Diagnóstico Preliminar</strong>
-          </div>
-          <span style="font-size: 10px; color: #1d4ed8; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">Vistoria de Campo</span>
-        </div>
-        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.
-        </p>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #0284c7; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Levantamento fotográfico em alta resolução e registro de evidências fáticas.</span>
-        </div>
-      </div>
-
-      <!-- Fase 2 -->
-      <div style="background: #ffffff; border: 1.5px solid #fde68a; border-left: 5px solid #d97706; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #fef3c7; color: #92400e; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 02</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Aplicação de Checklists Normativos Técnicos</strong>
-          </div>
-          <span style="font-size: 10px; color: #b45309; font-weight: 700; background: #fffbeb; padding: 2px 6px; border-radius: 4px;">Conformidade Legal</span>
-        </div>
-        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Auditoria item por item das exigências regulamentadoras vigentes (${normas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos.
-        </p>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #b45309; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Relatório de conformidade item a item conforme normas ABNT e NRs federais.</span>
-        </div>
-      </div>
-
-      <!-- Fase 3 -->
-      <div style="background: #ffffff; border: 1.5px solid #c7d2fe; border-left: 5px solid #4f46e5; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #e0e7ff; color: #4338ca; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 03</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Ensaios Físicos, Medições e Testes Funcionais</strong>
-          </div>
-          <span style="font-size: 10px; color: #4f46e5; font-weight: 700; background: #eef2ff; padding: 2px 6px; border-radius: 4px;">Instrumentado</span>
-        </div>
-        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e integridade de soldas.
-        </p>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #4f46e5; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.</span>
-        </div>
-      </div>
-
-      <!-- Fase 4 -->
-      <div style="background: #ffffff; border: 1.5px solid #a7f3d0; border-left: 5px solid #059669; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #d1fae5; color: #065f46; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 04</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Dossiê Técnico, Matriz de Risco & Parecer Conclusivo</strong>
-          </div>
-          <span style="font-size: 10px; color: #059669; font-weight: 700; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">Engenharia Diagnóstica</span>
-        </div>
-        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Elaboração de laudo pericial detalhado contendo análise de risco quantitativa (HRN/SIL), memorial técnico descritivo, plano de ação corretivo claro e cronograma prioritário de adequações físicas.
-        </p>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #059669; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Laudo Pericial Conclusivo digital em PDF com assinatura eletrônica e certificado digital.</span>
-        </div>
-      </div>
-
-      <!-- Fase 5 -->
-      <div style="background: #ffffff; border: 1.5px solid #e9d5ff; border-left: 5px solid #7c3aed; border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="background: #f3e8ff; color: #6b21a8; font-weight: 900; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: monospace;">FASE 05</span>
-            <strong style="color: #0b1e3d; font-size: 12px; font-weight: 800;">Emissão e Registro Oficial da ART CREA-PE</strong>
-          </div>
-          <span style="font-size: 10px; color: #7c3aed; font-weight: 700; background: #faf5ff; padding: 2px 6px; border-radius: 4px;">Homologação Legal</span>
-        </div>
-        <p style="color: #475569; font-size: 11px; line-height: 1.45; margin: 0 0 6px 0;">
-          Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.
-        </p>
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #7c3aed; font-weight: 600;">
-          <span>✓ Entregável:</span> <span style="color: #334155;">Certidão oficial de ART quitada com chave de autenticidade e QR code do CREA-PE.</span>
-        </div>
-      </div>
-
+      ${cardsHtml}
     </div>
 
   </div>`;
@@ -699,7 +713,7 @@ export function gerarHtmlContatoAgradecimento(): string {
 export const SECOES_PROPOSTA_V2_DEFINICAO: SecaoDefinicao[] = [
   { id: 'folha1-capa', numero: 1, titulo: 'Capa & Resumo Executivo', subtitulo: 'RESUMO COMERCIAL, PREÇO E APROVAÇÃO' },
   { id: 'folha2-etapa1', numero: 2, titulo: 'Etapa 1 - Relação dos Serviços, Partes e Normas', subtitulo: 'DIRETRIZES TÉCNICAS E ESCOPO CONTRATUAL' },
-  { id: 'folha3-etapa2', numero: 3, titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'METODOLOGIA DE ENGENHARIA DIAGNÓSTICA' },
+  { id: 'folha3-etapa2', numero: 3, titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'METODOLOGIA DE ENGENHARIA EM ETAPAS' },
   { id: 'folha4-etapa3', numero: 4, titulo: 'Etapa 3 - Prazo, Pagamento & Investimento', subtitulo: 'MEMORIAL DE CÁLCULO, PARCELAS E ACEITE' },
   { id: 'folha5-institucional1', numero: 5, titulo: 'Sobre a VL Engenharia - Responsável & Princípios', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 1' },
   { id: 'folha6-institucional2', numero: 6, titulo: 'Sobre a VL Engenharia - Soluções & Contato', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 2' },
@@ -845,8 +859,8 @@ export function gerarSecoesPadraoOrcamentoV2(
       id: 'folha3-etapa2',
       numero: 3,
       titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)',
-      subtitulo: 'METODOLOGIA DE ENGENHARIA DIAGNÓSTICA',
-      conteudoHtml: gerarHtmlEtapa2Metodologia(normas)
+      subtitulo: 'METODOLOGIA DE ENGENHARIA EM ETAPAS',
+      conteudoHtml: gerarHtmlEtapa2Metodologia(normas, orcamento.metodologiaFases, orcamento.tituloMetodologia)
     },
     {
       id: 'folha4-etapa3',
