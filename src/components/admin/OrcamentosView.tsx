@@ -138,7 +138,7 @@ export const OrcamentosView: React.FC = () => {
       emitidaEm,
       validaAte,
       layoutVersao: 'v2',
-      modoExportacaoPdf: 'completa',
+      modoExportacaoPdf: 'executiva',
       servico: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
       descricaoEscopo: descricaoEscopo.trim() || 'Vistoria técnica in loco, ensaios não destrutivos e emissão de laudo pericial com ART CREA-PE.',
       status: 'rascunho',
@@ -278,15 +278,24 @@ export const OrcamentosView: React.FC = () => {
               type="button"
               onClick={() => setPropostaModalOrcamento(orcamento)}
               className="p-1.5 rounded-lg text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors"
-              title="Visualizar e Baixar Proposta em PDF (13 Páginas)"
+              title="Visualizar Proposta no Novo Layout A4"
             >
               <Eye className="w-3.5 h-3.5" />
             </button>
+            <a
+              href={`/admin/orcamentos/${orcamento.id}/imprimir?auto=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+              title="Imprimir / Exportar PDF Vetorial A4 Direto"
+            >
+              <Printer className="w-3.5 h-3.5" />
+            </a>
             <button
               type="button"
               onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
               className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--line)]/50 transition-colors"
-              title="Editar todas as 13 seções no editor rico"
+              title="Editar proposta no editor rico"
             >
               <Edit className="w-3.5 h-3.5" />
             </button>
@@ -326,7 +335,7 @@ export const OrcamentosView: React.FC = () => {
               Orçamentos & Propostas Comerciais
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#1565D8]/10 text-[#1565D8] border border-[#1565D8]/20">
-              13 Páginas A4 • PDF Oficial
+              Novo Modelo A4 (4 a 6 Folhas) • Vetorial
             </span>
           </div>
           <p className="text-[var(--muted)] text-[14.5px] sm:text-[15.5px] mt-0.5">
@@ -354,10 +363,10 @@ export const OrcamentosView: React.FC = () => {
           </div>
           <div>
             <strong className="text-[var(--ink)] block text-[13px]">
-              Geração Completa de Propostas em 13 Páginas Padronizadas
+              Geração de Propostas no Novo Modelo A4 (4 a 6 Folhas)
             </strong>
             <span>
-              Inclui Capa com dados do cliente, Catálogo de laudos, Metodologia em 5 fases, Tabela de investimento, QR Code PIX e Contrato.
+              Capa com resumo e preço dinâmico, Etapa 1 de escopo, Etapa 2 de metodologia em 5 fases, Etapa 3 com memorial de cálculo e PIX, e anexos institucionais.
             </span>
           </div>
         </div>

@@ -44,8 +44,8 @@ export const PropostaPrintView: React.FC = () => {
     return ativos.find(a => a.id === orcamento?.ativoId);
   }, [ativos, orcamento]);
 
-  // Export Mode: 'completa' (6 pages) or 'executiva' (4 pages)
-  const initialMode = (searchParams.get('modo') as 'executiva' | 'completa') || orcamento?.modoExportacaoPdf || 'completa';
+  // Export Mode: 'executiva' (4 pages) default or 'completa' (6 pages)
+  const initialMode = (searchParams.get('modo') as 'executiva' | 'completa') || orcamento?.modoExportacaoPdf || 'executiva';
   const [modo, setModo] = useState<'executiva' | 'completa'>(initialMode);
   const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
   const [pixPayload, setPixPayload] = useState<string>('');
@@ -306,13 +306,14 @@ export const PropostaPrintView: React.FC = () => {
 
         /* Running Header (Pages 2-6) */
         .rh {
-          height: 12mm;
+          height: 12.5mm;
           border-bottom: var(--w2) solid var(--ink);
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding-top: 1.5mm;
           margin-bottom: 2mm;
+          overflow: visible;
         }
         .rh img { height: 7mm; width: auto; object-fit: contain; }
         .rh .where {
@@ -358,6 +359,7 @@ export const PropostaPrintView: React.FC = () => {
           align-items: flex-start;
           border-bottom: var(--w3) solid var(--ink);
           padding-bottom: 2.6mm;
+          overflow: visible;
         }
         .cover .ch img { height: 9.5mm; width: auto; }
         .cover .ch .meta {

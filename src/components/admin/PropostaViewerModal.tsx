@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Orcamento, PropostaPagina } from '../../types';
 import { useData } from '../../context/DataContext';
+import { PropostaDocSheets } from './PropostaDocSheets';
 import { EngineeringWatermark } from '../common/EngineeringWatermark';
 import { 
   HTML_CARDS_CATALOGO_SERVICOS,
@@ -60,8 +61,8 @@ export const VlLogoVector: React.FC<{ className?: string; style?: React.CSSPrope
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width="529" 
-    height="112" 
-    viewBox="0 -6 529 112" 
+    height="126" 
+    viewBox="0 -14 535 126" 
     overflow="visible"
     role="img" 
     aria-label="VL Engenharia"
@@ -107,16 +108,33 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onGerarLaudo,
   onEditarProposta,
 }) => {
-  const { atualizarOrcamento, removerOrcamento, clientes } = useData();
+  const { atualizarOrcamento, removerOrcamento, clientes, ativos } = useData();
   const documentRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
-  const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('pagina');
+  const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('continua');
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [painelSelecaoAberto, setPainelSelecaoAberto] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
-  const [modoExportacao, setModoExportacao] = useState<'completa' | 'executiva'>(orcamento.modoExportacaoPdf || 'completa');
+  const [modoExportacao, setModoExportacao] = useState<'completa' | 'executiva'>(orcamento.modoExportacaoPdf || 'executiva');
   const [modalValidacaoAberto, setModalValidacaoAberto] = useState(false);
   const [pendenciasValidacao, setPendenciasValidacao] = useState<{ tipo: 'erro' | 'aviso'; mensagem: string; detalhe?: string }[]>([]);
+
+  // 6 Folhas A4 oficiais do modelo aprovado
+  const folhasDisponiveis = useMemo(() => {
+    const lista = [
+      { numero: 1, id: 'folha1-capa', titulo: 'Capa & Resumo Executivo', subtitulo: 'RESUMO COMERCIAL, PREÇO E APROVAÇÃO' },
+      { numero: 2, id: 'folha2-etapa1', titulo: 'Etapa 1 - Relação dos Serviços, Partes e Normas', subtitulo: 'DIRETRIZES TÉCNICAS E ESCOPO CONTRATUAL' },
+      { numero: 3, id: 'folha3-etapa2', titulo: 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)', subtitulo: 'METODOLOGIA DE ENGENHARIA DIAGNÓSTICA' },
+      { numero: 4, id: 'folha4-etapa3', titulo: 'Etapa 3 - Prazo, Pagamento & Investimento', subtitulo: 'MEMORIAL DE CÁLCULO, PARCELAS E ACEITE' },
+    ];
+    if (modoExportacao === 'completa') {
+      lista.push(
+        { numero: 5, id: 'folha5-institucional1', titulo: 'Sobre a VL Engenharia - Responsável & Princípios', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 1' },
+        { numero: 6, id: 'folha6-institucional2', titulo: 'Sobre a VL Engenharia - Soluções & Contato', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 2' },
+      );
+    }
+    return lista;
+  }, [modoExportacao]);
 
   // Initialize hidden sections from orcamento
   const [secoesOcultasIds, setSecoesOcultasIds] = useState<string[]>(() => {
@@ -352,7 +370,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     });
   }, [todasSecoes, secoesOcultasIds, orcamento, clientes]);
 
-  const totalPaginas = paginas.length;
+  const totalPaginas = folhasDisponiveis.length;
 
   useEffect(() => {
     if (paginaAtual > totalPaginas && totalPaginas > 0) {
@@ -362,7 +380,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const paginaRenderizar = paginas.find(p => p.numero === paginaAtual) || paginas[0];
+  const paginaRenderizar = folhasDisponiveis.find(p => p.numero === paginaAtual) || folhasDisponiveis[0];
 
   const verificarPendenciasProposta = () => {
     const pendencias: { tipo: 'erro' | 'aviso'; mensagem: string; detalhe?: string }[] = [];
@@ -496,7 +514,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   Proposta Oficial • {orcamento.codigoProposta || orcamento.id}
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
-                  {totalPaginas} {totalPaginas === 1 ? 'Página no PDF' : 'Páginas no PDF'}
+                  {totalPaginas} Folhas A4 • Layout Oficial Aprovado
                 </span>
                 {secoesOcultasCount > 0 && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -608,6 +626,18 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               <span className="hidden md:inline">Imprimir</span>
             </button>
 
+            {/* Direct Vector Print Route Link */}
+            <a
+              href={`/admin/orcamentos/${orcamento.id}/imprimir?auto=1&modo=${modoExportacao}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+              title="Abrir Rota de Impressão A4 Nativa (PDF Vetorial < 500 KB)"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden lg:inline">A4 Direto</span>
+            </a>
+
             {/* PDF Download Button (1-click Vector PDF) */}
             <button
               onClick={handleIniciarExportacao}
@@ -680,9 +710,9 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 onChange={(e) => setPaginaAtual(Number(e.target.value))}
                 className="ml-2 px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-800 font-semibold max-w-[200px] sm:max-w-none truncate"
               >
-                {paginas.map(p => (
+                {folhasDisponiveis.map(p => (
                   <option key={p.numero} value={p.numero}>
-                    Pág {p.numero}: {p.titulo}
+                    Folha {p.numero}: {p.titulo}
                   </option>
                 ))}
               </select>
@@ -746,113 +776,17 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           )}
         </div>
 
-        {/* Document Scroll Canvas */}
+        {/* Document Scroll Canvas - Renderiza as Folhas Oficiais A4 do Modelo Aprovado */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200 dark:bg-slate-900 flex justify-center">
           <div ref={documentRef} className="w-full max-w-[210mm] space-y-6">
-            
-            {modoVisualizacao === 'pagina' ? (
-              // Single page render with mechanical engineering background watermark
-              <div className="printable-document bg-white text-slate-900 min-h-[297mm] p-8 sm:p-12 shadow-xl border border-slate-300 flex flex-col justify-between relative overflow-hidden">
-                
-                {/* Engineering Watermark with gears, machines, and blueprints */}
-                <EngineeringWatermark opacity="opacity-[0.045]" />
-
-                {/* Official Page Header */}
-                <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
-                    <div className="border-l border-slate-300 pl-3">
-                      <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
-                      <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                        Proposta Técnico-Comercial • Engenharia Mecânica
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[10px] text-slate-600 font-mono">
-                    <p>Ref: <strong>{orcamento.codigoProposta || orcamento.id}</strong></p>
-                    <p>Página {paginaRenderizar?.numero || 1} de {totalPaginas}</p>
-                  </div>
-                </header>
-
-                {/* Page Content Body */}
-                <div className="relative z-10 flex-1">
-                  <div className="mb-4">
-                    {paginaRenderizar?.numero === 1 ? (
-                      <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                        PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                      </h1>
-                    ) : (
-                      <h2 className="text-xl font-black text-[#0B1E3D]">
-                        {paginaRenderizar?.titulo}
-                      </h2>
-                    )}
-                  </div>
-
-                  <div 
-                    className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
-                    dangerouslySetInnerHTML={{ __html: paginaRenderizar?.conteudoHtml || '<p>Conteúdo da proposta técnica.</p>' }}
-                  />
-                </div>
-
-                {/* Official Page Footer */}
-                <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                  <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
-                  <span>Recife - PE • (81) 98444-2592</span>
-                </footer>
-              </div>
-            ) : (
-              // Continuous 13-page view with mechanical engineering background watermark
-              paginas.map((pag) => (
-                <div 
-                  key={pag.numero}
-                  className="printable-document bg-white text-slate-900 min-h-[297mm] p-8 sm:p-12 shadow-xl border border-slate-300 flex flex-col justify-between page-break-after-always relative mb-6 overflow-hidden"
-                >
-                  {/* Engineering Watermark with gears, machines, and blueprints */}
-                  <EngineeringWatermark opacity="opacity-[0.045]" />
-
-                  <header className="relative z-10 border-b-2 border-[#0B1E3D] pb-4 mb-6 flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <VlLogoVector className="shrink-0" style={{ width: '180px', height: '36px' }} />
-                      <div className="border-l border-slate-300 pl-3">
-                        <h4 className="text-sm font-black text-[#0B1E3D] leading-tight">VL ENGENHARIA MECÂNICA</h4>
-                        <p className="text-[10px] text-[#1565D8] font-bold uppercase tracking-wider">
-                          Proposta Técnico-Comercial • Engenharia Mecânica
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right text-[10px] text-slate-600 font-mono">
-                      <p>Ref: <strong>{orcamento.codigoProposta || orcamento.id}</strong></p>
-                      <p>Página {pag.numero} de {totalPaginas}</p>
-                    </div>
-                  </header>
-
-                  <div className="relative z-10 flex-1">
-                    <div className="mb-4">
-                      {pag.numero === 1 ? (
-                        <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] tracking-tight leading-snug">
-                          PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA
-                        </h1>
-                      ) : (
-                        <h2 className="text-xl font-black text-[#0B1E3D]">
-                          {pag.titulo}
-                        </h2>
-                      )}
-                    </div>
-
-                    <div 
-                      className="prose prose-sm max-w-none text-slate-800 text-xs leading-relaxed space-y-3"
-                      dangerouslySetInnerHTML={{ __html: pag.conteudoHtml }}
-                    />
-                  </div>
-
-                  <footer className="relative z-10 border-t border-slate-300 pt-3 mt-8 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                    <span>VL Engenharia Mecânica • E-mail: atendimento@vlengenhariamecanica.com.br</span>
-                    <span>Recife - PE • (81) 98444-2592</span>
-                  </footer>
-                </div>
-              ))
-            )}
-
+            <PropostaDocSheets
+              orcamento={orcamento}
+              cliente={clientes.find(c => c.id === orcamento.clienteId)}
+              ativo={ativos?.find(a => a.id === orcamento.ativoId)}
+              modo={modoExportacao}
+              folhaEspecifica={modoVisualizacao === 'pagina' ? paginaAtual : undefined}
+              embutidoNoModal={true}
+            />
           </div>
         </div>
 

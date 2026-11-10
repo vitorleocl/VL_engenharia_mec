@@ -705,7 +705,10 @@ export const SECOES_PROPOSTA_V2_DEFINICAO: SecaoDefinicao[] = [
   { id: 'folha6-institucional2', numero: 6, titulo: 'Sobre a VL Engenharia - Soluções & Contato', subtitulo: 'ANEXO INSTITUCIONAL • PARTE 2' },
 ];
 
-export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = [
+// O modelo base padrão do sistema agora é o modelo V2 (6 folhas A4 aprovadas)
+export const SECOES_PROPOSTA_DEFINICAO: SecaoDefinicao[] = SECOES_PROPOSTA_V2_DEFINICAO;
+
+export const SECOES_PROPOSTA_LEGADO_DEFINICAO: SecaoDefinicao[] = [
   { id: 'capa', numero: 1, titulo: 'PROPOSTA TÉCNICA COMERCIAL // ORÇAMENTO DE ENGENHARIA', subtitulo: 'DIREÇÃO TÉCNICA E RESPONSABILIDADE LEGAL' },
   { id: 'missao', numero: 2, titulo: 'Nossa Missão, Propósito & Credenciais Técnicas', subtitulo: 'DIREÇÃO TÉCNICA & HABILITAÇÃO CREA-PE' },
   { id: 'principios', numero: 3, titulo: 'Nossos Princípios Fundamentais', subtitulo: 'VALORES INEGOCIÁVEIS EM CADA AVALIAÇÃO' },
@@ -1200,7 +1203,7 @@ export function converterPaginasParaSecoes(
   const tituloLaudoDinamico = orcamento ? obterTituloLaudoProposta(orcamento) : 'LAUDO TÉCNICO DE ENGENHARIA';
 
   return paginas.map((pag, idx) => {
-    const def = SECOES_PROPOSTA_DEFINICAO.find(d => d.numero === pag.numero) || SECOES_PROPOSTA_DEFINICAO[idx];
+    const def = SECOES_PROPOSTA_LEGADO_DEFINICAO.find(d => d.numero === pag.numero) || SECOES_PROPOSTA_DEFINICAO[idx];
     const isCapa = (def && def.id === 'capa') || pag.numero === 1 ||
       (pag.titulo && pag.titulo.toLowerCase().includes('capa'));
     const isCatalogo = (def && def.id === 'catalogo') || pag.numero === 6 ||

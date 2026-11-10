@@ -122,7 +122,20 @@ export const OrcamentoEditorView: React.FC = () => {
           }
         ];
 
-    // If orcamento already has rich secoes, use them, ensuring Capa, Catalogo, Etapa 2, Etapa 3 and Contato are upgraded
+    // Se o orçamento for legado (13 seções antigas) ou ainda não estiver na versão V2 aprovada,
+    // converte automaticamente para o modelo base V2 (6 folhas A4)
+    if (orcamentoOriginal.layoutVersao !== 'v2' || !orcamentoOriginal.secoes || orcamentoOriginal.secoes.length > 6) {
+      const orcamentoMigrado = converterOrcamentoLegadoParaV2(orcamentoOriginal, { cliente, ativo });
+      const inicializado: Orcamento = {
+        ...orcamentoMigrado,
+        incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
+        itensCalculo: itensCalculoBase,
+      };
+      setOrcamentoState(inicializado);
+      return;
+    }
+
+    // If orcamento already has rich secoes in V2, use them, ensuring Capa, Etapa 2, Etapa 3 and Contato are upgraded
     if (orcamentoOriginal.secoes && orcamentoOriginal.secoes.length > 0) {
       let alterou = false;
       const clienteNome = orcamentoOriginal.clienteNome || cliente?.razaoSocial || 'Cliente Corporativo';
@@ -289,9 +302,7 @@ export const OrcamentoEditorView: React.FC = () => {
     }
 
     // Otherwise, generate the approved V2 6-sheet editable copy
-    const secoesPadrao = orcamentoOriginal.layoutVersao === 'legado'
-      ? gerarSecoesPadraoOrcamento(orcamentoOriginal, { cliente, ativo })
-      : gerarSecoesPadraoOrcamentoV2(orcamentoOriginal, { cliente, ativo });
+    const secoesPadrao = gerarSecoesPadraoOrcamentoV2(orcamentoOriginal, { cliente, ativo });
     const inicializado: Orcamento = {
       ...orcamentoOriginal,
       layoutVersao: orcamentoOriginal.layoutVersao || 'v2',
@@ -1852,8 +1863,8 @@ export const OrcamentoEditorView: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-6 h-6 text-[#1565D8]" />
                 <div>
-                  <h3 className="font-extrabold text-[#0B1E3D] text-base">Modelo Padrão de Proposta Institucional</h3>
-                  <p className="text-[11px] text-slate-500">Estrutura fixa de 13 páginas da VL Engenharia Mecânica</p>
+                  <h3 className="font-extrabold text-[#0B1E3D] text-base">Novo Modelo Base A4 Oficial (4 a 6 Folhas)</h3>
+                  <p className="text-[11px] text-slate-500">Matriz oficial aprovada da VL Engenharia Mecânica</p>
                 </div>
               </div>
               <button
@@ -1866,10 +1877,10 @@ export const OrcamentoEditorView: React.FC = () => {
 
             <div className="space-y-3 overflow-y-auto flex-1 pr-1 text-xs text-slate-700">
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900">
-                <strong>Proteção do Molde Original:</strong> O modelo padrão de 13 páginas e as diretrizes institucionais do Eng. Vitor Leonardo são imutáveis e servem como matriz de origem para novos orçamentos.
+                <strong>Novo Modelo Base Oficial:</strong> O novo layout aprovado organiza a proposta em até 6 folhas A4 técnicas padronizadas (Capa com resumo e preço dinâmico, Etapa 1 de escopo, Etapa 2 de metodologia em 5 fases, Etapa 3 com memorial de cálculo e PIX, e 2 folhas de anexo institucional).
               </div>
 
-              <h4 className="font-bold text-slate-900 mt-2">Estrutura das 13 Páginas Padronizadas:</h4>
+              <h4 className="font-bold text-slate-900 mt-2">Estrutura das 6 Folhas A4 Padronizadas:</h4>
               <ol className="space-y-1.5 list-decimal list-inside text-slate-600 font-medium">
                 {SECOES_PROPOSTA_DEFINICAO.map((def) => (
                   <li key={def.id} className="p-1.5 rounded bg-slate-50 border border-slate-100">
@@ -1880,12 +1891,27 @@ export const OrcamentoEditorView: React.FC = () => {
               </ol>
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex justify-end">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  if (orcamentoState) {
+                    const migrado = converterOrcamentoLegadoParaV2(orcamentoState, { cliente, ativo });
+                    salvarImediato(migrado, 'Orçamento redefinido para o Novo Modelo Base A4 aprovado');
+                    setModalModeloPadraoAberto(false);
+                  }
+                }}
+                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Aplicar Novo Modelo Base (6 Folhas)</span>
+              </button>
+
               <button
                 onClick={() => setModalModeloPadraoAberto(false)}
                 className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs cursor-pointer"
               >
-                Entendido
+                Fechar
               </button>
             </div>
           </div>
