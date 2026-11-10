@@ -922,18 +922,105 @@ export const OrcamentoEditorView: React.FC = () => {
     handleAtualizarListaItens(novaLista, true);
   };
 
-  const handleEditarItemCalculo = (itemId: string, campo: 'descricao' | 'quantidade' | 'valorUnitario', val: any) => {
+  const handleEditarItemCalculo = (
+    itemId: string, 
+    campo: 'descricao' | 'quantidade' | 'valorUnitario' | 'valorTotal' | 'exibirComoGlobal', 
+    val: any
+  ) => {
     const novaLista = itensCalculo.map(it => {
       if (it.id === itemId) {
         const atualizado = { ...it, [campo]: val };
-        const q = campo === 'quantidade' ? (Number(val) || 0) : (Number(it.quantidade) || 1);
-        const u = campo === 'valorUnitario' ? (Number(val) || 0) : (Number(it.valorUnitario) || 0);
-        atualizado.valorTotal = q * u;
+        const q = campo === 'quantidade' ? Math.max(1, parseInt(val, 10) || 1) : Math.max(1, Number(it.quantidade) || 1);
+        atualizado.quantidade = q;
+
+        if (campo === 'valorTotal') {
+          // Usuário digitou diretamente o SUBTOTAL da linha (ex: 3200,00)
+          const totalInformado = Math.max(0, typeof val === 'number' ? val : (parseFloat(val) || 0));
+          atualizado.valorTotal = totalInformado;
+          atualizado.modoCalculo = 'total_fixo';
+          atualizado.valorUnitario = q > 0 ? (totalInformado / q) : totalInformado;
+        } else if (campo === 'valorUnitario') {
+          // Usuário digitou o VALOR UNITÁRIO (ex: 500,00)
+          const unitarioInformado = Math.max(0, typeof val === 'number' ? val : (parseFloat(val) || 0));
+          atualizado.valorUnitario = unitarioInformado;
+          atualizado.modoCalculo = 'unitario';
+          atualizado.valorTotal = q * unitarioInformado;
+        } else if (campo === 'quantidade') {
+          // Se for modo 'total_fixo', mantém o valor total e recalcula o unitário rateado
+          if (it.modoCalculo === 'total_fixo' && Number(it.valorTotal) > 0) {
+            atualizado.valorUnitario = q > 0 ? (Number(it.valorTotal) / q) : Number(it.valorTotal);
+          } else {
+            const u = Number(it.valorUnitario) || 0;
+            atualizado.valorTotal = q * u;
+          }
+        }
         return atualizado;
       }
       return it;
     });
     handleAtualizarListaItens(novaLista, false);
+  };
+
+  const handleFixarTotalItem = (itemId: string, valorTotalAlvo: number) => {
+    const novaLista = itensCalculo.map(it => {
+      if (it.id === itemId) {
+        const q = Math.max(1, Number(it.quantidade) || 1);
+        return {
+          ...it,
+          valorTotal: valorTotalAlvo,
+          modoCalculo: 'total_fixo' as const,
+          valorUnitario: q > 0 ? (valorTotalAlvo / q) : valorTotalAlvo,
+        };
+      }
+      return it;
+    });
+    handleAtualizarListaItens(novaLista, true);
+  };
+
+  const handleToggleExibirComoGlobal = (itemId: string) => {
+    const novaLista = itensCalculo.map(it => {
+      if (it.id === itemId) {
+        return {
+          ...it,
+          exibirComoGlobal: !it.exibirComoGlobal,
+        };
+      }
+      return it;
+    });
+    handleAtualizarListaItens(novaLista, true);
+  };
+
+  const handleFixarTotalGeralProposta = (totalAlvo: number) => {
+    if (!orcamentoState || totalAlvo <= 0) return;
+    if (itensCalculo.length === 1) {
+      handleFixarTotalItem(itensCalculo[0].id, totalAlvo);
+    } else {
+      const somaAtual = itensCalculo.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
+      if (somaAtual > 0) {
+        const fator = totalAlvo / somaAtual;
+        let acumulado = 0;
+        const ajustados = itensCalculo.map((it, idx) => {
+          if (idx === itensCalculo.length - 1) {
+            const subtotal = Math.max(0, Math.round((totalAlvo - acumulado) * 100) / 100);
+            return {
+              ...it,
+              valorTotal: subtotal,
+              modoCalculo: 'total_fixo' as const,
+              valorUnitario: (it.quantidade || 1) > 0 ? (subtotal / (it.quantidade || 1)) : subtotal,
+            };
+          }
+          const subtotal = Math.round((it.valorTotal * fator) * 100) / 100;
+          acumulado += subtotal;
+          return {
+            ...it,
+            valorTotal: subtotal,
+            modoCalculo: 'total_fixo' as const,
+            valorUnitario: (it.quantidade || 1) > 0 ? (subtotal / (it.quantidade || 1)) : subtotal,
+          };
+        });
+        handleAtualizarListaItens(ajustados, true);
+      }
+    }
   };
 
   // Upload custom QR code image for PIX
@@ -1894,71 +1981,158 @@ export const OrcamentoEditorView: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Dica e Solução de Dízima Periódica */}
+                  <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-amber-200 text-amber-900 shrink-0 mt-0.5 sm:mt-0">
+                        <Calculator className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <strong className="block text-[11px] uppercase tracking-wide text-amber-950">
+                          Dízima Periódica ou Total Fechado (Ex.: R$ 3.200,00 ÷ 6)
+                        </strong>
+                        <p className="text-[11px] text-amber-900 mt-0.5 leading-relaxed">
+                          O campo <strong>Subtotal (R$)</strong> é diretamente editável! Ao digitar <strong>3.200,00</strong> no Subtotal com Qtd 6, o sistema trava o total exato sem perder os R$ 0,02 centavos (evitando 533,33 × 6 = 3.199,98) e calcula o unitário médio de R$ 533,33 automaticamente.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleFixarTotalGeralProposta(3200)}
+                        className="px-2.5 py-1 rounded-md bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-[10.5px] border border-amber-300 shadow-2xs cursor-pointer transition-colors"
+                        title="Fixa o total da proposta exatamente em R$ 3.200,00 ajustando o memorial"
+                      >
+                        ⚡ Fixar em R$ 3.200,00
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left">
                       <thead>
                         <tr className="border-b border-slate-200 text-slate-600 bg-slate-50 text-[11px] uppercase">
                           <th className="py-2 px-2.5 font-bold w-10 text-center">#</th>
                           <th className="py-2 px-2.5 font-bold">Descrição do Ativo ou Escopo de Serviço</th>
-                          <th className="py-2 px-2.5 font-bold w-24 text-center">Qtd</th>
+                          <th className="py-2 px-2.5 font-bold w-20 text-center">Qtd</th>
                           <th className="py-2 px-2.5 font-bold w-36 text-right">Unitário (R$)</th>
-                          <th className="py-2 px-2.5 font-bold w-36 text-right">Subtotal (R$)</th>
-                          <th className="py-2 px-2.5 font-bold w-12 text-center">Ações</th>
+                          <th className="py-2 px-2.5 font-bold w-40 text-right">Subtotal (R$) <span className="text-[#1565D8] font-black">✎</span></th>
+                          <th className="py-2 px-2.5 font-bold w-24 text-center">Modo / Ações</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {itensCalculo.map((it, idx) => (
-                          <tr key={it.id} className="hover:bg-slate-50/70">
-                            <td className="py-2 px-2.5 text-center font-mono text-slate-400 font-bold">
-                              {idx + 1}
-                            </td>
-                            <td className="py-2 px-2.5">
-                              <input
-                                type="text"
-                                value={it.descricao}
-                                onChange={(e) => handleEditarItemCalculo(it.id, 'descricao', e.target.value)}
-                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
-                                placeholder="Ex: Inspeção e Laudo de Caminhão Munck placa PGX7098 com ensaio LP"
-                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
-                              />
-                            </td>
-                            <td className="py-2 px-2.5">
-                              <input
-                                type="number"
-                                min={1}
-                                value={it.quantidade || 1}
-                                onChange={(e) => handleEditarItemCalculo(it.id, 'quantidade', Math.max(1, parseInt(e.target.value, 10) || 1))}
-                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
-                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-center text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
-                              />
-                            </td>
-                            <td className="py-2 px-2.5">
-                              <input
-                                type="number"
-                                step="any"
-                                min={0}
-                                value={it.valorUnitario === 0 ? '' : it.valorUnitario}
-                                placeholder="0,00"
-                                onChange={(e) => handleEditarItemCalculo(it.id, 'valorUnitario', e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
-                                onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
-                                className="w-full px-2 py-1 rounded border border-slate-200 text-xs font-mono text-right text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
-                              />
-                            </td>
-                            <td className="py-2 px-2.5 text-right font-mono font-bold text-[#0B1E3D]">
-                              {(it.valorTotal || (it.quantidade * it.valorUnitario)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td className="py-2 px-2.5 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleRemoverItemCalculo(it.id)}
-                                className="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
-                                title="Remover linha"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {itensCalculo.map((it, idx) => {
+                          const qtd = Number(it.quantidade) || 1;
+                          const subtotalNum = Number(it.valorTotal) || (qtd * (Number(it.valorUnitario) || 0));
+                          const unitNum = (Number(it.valorUnitario) > 0) ? Number(it.valorUnitario) : (subtotalNum / qtd);
+                          const isDizima = qtd > 1 && Math.abs(Math.round(unitNum * 100) * qtd - Math.round(subtotalNum * 100)) > 1;
+
+                          return (
+                            <tr key={it.id} className="hover:bg-slate-50/70">
+                              <td className="py-2 px-2.5 text-center font-mono text-slate-400 font-bold">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <input
+                                  type="text"
+                                  value={it.descricao}
+                                  onChange={(e) => handleEditarItemCalculo(it.id, 'descricao', e.target.value)}
+                                  onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
+                                  placeholder="Ex: Inspeção e Laudo de Caminhão Munck placa PGX7098 com ensaio LP"
+                                  className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                                />
+                                {isDizima && (
+                                  <span className="block text-[9.5px] text-amber-800 font-medium mt-0.5">
+                                    ⚡ Dízima periódica: R$ {subtotalNum.toFixed(2)} ÷ {qtd} un. = R$ {unitNum.toFixed(2)}/un.
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 px-2">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={it.quantidade || 1}
+                                  onChange={(e) => handleEditarItemCalculo(it.id, 'quantidade', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                  onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
+                                  className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs font-mono text-center text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                                />
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <div className="space-y-0.5">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    min={0}
+                                    value={unitNum === 0 ? '' : (Math.round(unitNum * 100) / 100)}
+                                    placeholder="0,00"
+                                    onChange={(e) => handleEditarItemCalculo(it.id, 'valorUnitario', e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
+                                    onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
+                                    className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs font-mono text-right text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                                    title="Preço unitário por ativo/serviço. Ao alterar, calcula Subtotal = Qtd × Unitário."
+                                  />
+                                  {isDizima && (
+                                    <span className="block text-[9px] text-slate-500 font-mono text-right" title="Dízima periódica: unitário rateado">
+                                      ~ {unitNum.toFixed(4)}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <div className="space-y-0.5">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    min={0}
+                                    value={subtotalNum === 0 ? '' : (Math.round(subtotalNum * 100) / 100)}
+                                    placeholder="0,00"
+                                    onChange={(e) => handleEditarItemCalculo(it.id, 'valorTotal', e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
+                                    onBlur={() => handleAtualizarListaItens(itensCalculo, true)}
+                                    className={`w-full px-2 py-1.5 rounded border text-xs font-mono font-bold text-right focus:outline-none focus:ring-1 ${
+                                      it.modoCalculo === 'total_fixo'
+                                        ? 'bg-blue-50/80 border-blue-400 text-[#0B1E3D] focus:ring-[#1565D8]'
+                                        : 'bg-white border-slate-200 text-[#0B1E3D] focus:ring-[#1565D8]'
+                                    }`}
+                                    title="Subtotal editável! Digite o total desejado (ex: 3200,00) para fixar sem arredondamento quebrado."
+                                  />
+                                  {it.modoCalculo === 'total_fixo' ? (
+                                    <span className="block text-[8.5px] text-blue-700 font-bold text-right">
+                                      🔒 Total Fixo Fechado
+                                    </span>
+                                  ) : (
+                                    <span className="block text-[8.5px] text-slate-400 text-right">
+                                      (Qtd × Unit)
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-2.5 text-center">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleExibirComoGlobal(it.id)}
+                                    className={`px-1.5 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
+                                      it.exibirComoGlobal
+                                        ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                                    }`}
+                                    title={it.exibirComoGlobal ? 'Exibindo como "Lote / Global" no laudo/PDF' : 'Clique para exibir como "Lote / Global" no laudo/PDF sem unitário quebrado'}
+                                  >
+                                    {it.exibirComoGlobal ? 'Lote' : 'Unit'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoverItemCalculo(it.id)}
+                                    className="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                                    title="Remover linha"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot>
                         <tr className="bg-blue-50/80 border-t-2 border-[#0B1E3D] font-bold">

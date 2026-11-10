@@ -1213,15 +1213,33 @@ export const PropostaPrintView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {itensCalculo.map((item, idx) => (
-                    <tr key={item.id || idx}>
-                      <td>{String(idx + 1).padStart(2, '0')}</td>
-                      <td>{item.descricao}</td>
-                      <td className="r">{item.quantidade}</td>
-                      <td className="r">{(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                      <td className="r"><b>{(item.valorTotal || ((item.valorUnitario || 0) * (item.quantidade || 1))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
-                    </tr>
-                  ))}
+                  {itensCalculo.map((item, idx) => {
+                    const qtd = Number(item.quantidade) || 1;
+                    const subtotal = Number(item.valorTotal) || (qtd * (Number(item.valorUnitario) || 0));
+                    const unitNum = (Number(item.valorUnitario) > 0) ? Number(item.valorUnitario) : (subtotal / qtd);
+                    const isDizima = Math.abs(Math.round(unitNum * 100) * qtd - Math.round(subtotal * 100)) > 1;
+
+                    return (
+                      <tr key={item.id || idx}>
+                        <td>{String(idx + 1).padStart(2, '0')}</td>
+                        <td>
+                          {item.descricao}
+                          {isDizima && (
+                            <div style={{ fontSize: '7.5pt', color: 'var(--muted)', marginTop: '0.4mm' }}>
+                              * Valor unitário médio rateado sobre o total contratado
+                            </div>
+                          )}
+                        </td>
+                        <td className="r">{qtd}</td>
+                        <td className="r">
+                          {item.exibirComoGlobal ? 'Lote / Global' : (
+                            `${unitNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${isDizima ? '*' : ''}`
+                          )}
+                        </td>
+                        <td className="r"><b>{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr>

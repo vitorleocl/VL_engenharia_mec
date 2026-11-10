@@ -122,6 +122,9 @@ export interface OrcamentoItemCalculo {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
+  modoCalculo?: 'unitario' | 'total_fixo';
+  exibirComoGlobal?: boolean;
+  observacaoDizima?: string;
 }
 
 export interface OrcamentoMetodologiaFase {

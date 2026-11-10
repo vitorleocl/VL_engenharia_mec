@@ -515,12 +515,27 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
             </thead>
             <tbody>
               {itensCalculo.map((it) => {
-                const subtotal = it.valorTotal || ((it.quantidade || 1) * (it.valorUnitario || 0));
+                const qtd = Number(it.quantidade) || 1;
+                const subtotal = Number(it.valorTotal) || (qtd * (Number(it.valorUnitario) || 0));
+                const unitNum = (Number(it.valorUnitario) > 0) ? Number(it.valorUnitario) : (subtotal / qtd);
+                const isDizima = Math.abs(Math.round(unitNum * 100) * qtd - Math.round(subtotal * 100)) > 1;
+
                 return (
                   <tr key={it.id}>
-                    <td><b>{it.descricao}</b></td>
-                    <td className="r font-mono">{it.quantidade}</td>
-                    <td className="r font-mono">{(it.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    <td>
+                      <b>{it.descricao}</b>
+                      {isDizima && (
+                        <span className="block text-[8.5px] text-slate-500 font-normal">
+                          * Valor unitário médio rateado sobre o total contratado do escopo
+                        </span>
+                      )}
+                    </td>
+                    <td className="r font-mono">{qtd}</td>
+                    <td className="r font-mono">
+                      {it.exibirComoGlobal ? 'Lote / Global' : (
+                        `${unitNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${isDizima ? '*' : ''}`
+                      )}
+                    </td>
                     <td className="r font-mono"><b>{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
                   </tr>
                 );

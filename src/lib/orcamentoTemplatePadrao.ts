@@ -394,19 +394,37 @@ export function gerarTabelaMemorialCalculoHtml(itens?: OrcamentoItemCalculo[], v
     ? totalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     : (valorTotalPadrao || 'R$ 0,00');
 
+  let temDizimaTabela = false;
+
   const linhasHtml = itensValidos.map((it, idx) => {
     const qtd = Number(it.quantidade) || 1;
-    const unit = Number(it.valorUnitario) || 0;
-    const totalLinha = Number(it.valorTotal) || (qtd * unit);
-    const unitFormatado = unit > 0 ? unit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : totalDisplay;
+    const totalLinha = Number(it.valorTotal) || (qtd * (Number(it.valorUnitario) || 0));
+    const unitCalculado = (Number(it.valorUnitario) > 0) ? Number(it.valorUnitario) : (totalLinha / qtd);
+    
+    // Verifica se há dízima periódica ou arredondamento de centavos
+    const isDizima = Math.abs(Math.round(unitCalculado * 100) * qtd - Math.round(totalLinha * 100)) > 1;
+    if (isDizima) temDizimaTabela = true;
+
+    let unitDisplay: string;
+    if (it.exibirComoGlobal) {
+      unitDisplay = 'Lote / Global';
+    } else if (unitCalculado > 0) {
+      unitDisplay = unitCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + (isDizima ? '*' : '');
+    } else {
+      unitDisplay = totalDisplay;
+    }
+
     const totalLinhaFormatado = totalLinha > 0 ? totalLinha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : totalDisplay;
 
     return `
       <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
         <td style="padding: 6px 10px; font-weight: 700; color: #64748b; font-family: monospace; width: 32px; text-align: center;">${String(idx + 1).padStart(2, '0')}</td>
-        <td style="padding: 6px 10px; color: #1e293b; font-weight: 600;">${it.descricao || 'Ativo / Serviço técnico especializado'}</td>
+        <td style="padding: 6px 10px; color: #1e293b; font-weight: 600;">
+          ${it.descricao || 'Ativo / Serviço técnico especializado'}
+          ${isDizima ? `<div style="font-size: 8px; color: #64748b; font-weight: 400; margin-top: 1px;">* Valor unitário médio rateado sobre o valor total do escopo</div>` : ''}
+        </td>
         <td style="padding: 6px 10px; text-align: center; font-weight: 700; color: #0b1e3d; font-family: monospace; width: 55px;">${qtd}</td>
-        <td style="padding: 6px 10px; text-align: right; color: #475569; font-family: monospace; width: 105px;">${unitFormatado}</td>
+        <td style="padding: 6px 10px; text-align: right; color: #475569; font-family: monospace; width: 105px;">${unitDisplay}</td>
         <td style="padding: 6px 10px; text-align: right; font-weight: 800; color: #0b1e3d; font-family: monospace; width: 115px;">${totalLinhaFormatado}</td>
       </tr>
     `;
