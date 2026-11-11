@@ -34,11 +34,13 @@ import {
   Calculator,
   ArrowUp,
   ArrowDown,
-  Sliders
+  Sliders,
+  Lock,
+  DollarSign
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase } from '../../types';
+import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase, OrcamentoParcela } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
@@ -64,6 +66,39 @@ import {
   FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 
+/**
+ * Converte qualquer entrada de valor monetário (ex: "3200", "3.200,00", "3200.50", "R$ 4.500")
+ * em número de ponto flutuante válido de forma resiliente.
+ */
+export function parseValorMoeda(val: string | number | undefined | null): number {
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (!val) return 0;
+  let s = String(val).trim().replace(/^R\$\s*/i, '').replace(/\s+/g, '');
+  if (!s) return 0;
+
+  if (s.includes('.') && s.includes(',')) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes(',')) {
+    s = s.replace(',', '.');
+  } else if (s.includes('.')) {
+    const parts = s.split('.');
+    if (parts.length > 2) {
+      s = parts.join('');
+    } else if (parts[1].length === 3 && parseInt(parts[0], 10) > 0) {
+      s = parts[0] + parts[1];
+    }
+  }
+
+  const num = parseFloat(s);
+  return isNaN(num) ? 0 : Math.max(0, num);
+}
+
 export const OrcamentoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -88,6 +123,9 @@ export const OrcamentoEditorView: React.FC = () => {
   const [secaoAtivaId, setSecaoAtivaId] = useState<string>('capa');
   const [statusSalvo, setStatusSalvo] = useState<'salvo' | 'salvando' | 'alterado'>('salvo');
   const [horarioUltimoSalvo, setHorarioUltimoSalvo] = useState<string>('');
+  
+  // Estado para o input genérico de Valor Total Cheio da proposta
+  const [valorCheioDigitado, setValorCheioDigitado] = useState<string>('');
   
   // Modals & Drawers
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
@@ -854,12 +892,21 @@ export const OrcamentoEditorView: React.FC = () => {
     ];
   }, [orcamentoState?.itensCalculo, orcamentoState?.valor, orcamentoState?.servico]);
 
-  const handleAtualizarListaItens = (novaLista: OrcamentoItemCalculo[], salvarDireto = false) => {
+  const handleAtualizarListaItens = (
+    novaLista: OrcamentoItemCalculo[], 
+    salvarDireto = false,
+    dadosExtras?: Partial<Orcamento>
+  ) => {
     if (!orcamentoState) return;
-    const novoTotal = novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
-    const valorFormatado = novoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const novoTotal = dadosExtras?.valor !== undefined
+      ? dadosExtras.valor
+      : novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
+    const valorFormatado = dadosExtras?.valorFormatado || novoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const prazoFormatado = orcamentoState.prazoEntrega || `${orcamentoState.prazoDias || 7} dias úteis`;
     const condicoesFormatado = orcamentoState.condicoesPagamento || '50% de entrada e 50% após emissão do laudo final e ART.';
+
+    // Sincroniza o valor digitado no input genérico de valor cheio
+    setValorCheioDigitado(novoTotal > 0 ? (novoTotal % 1 === 0 ? novoTotal.toString() : novoTotal.toFixed(2)) : '');
 
     const novoHtmlEtapa3 = gerarHtmlEtapa3Investimento({
       valor: valorFormatado,
@@ -880,12 +927,33 @@ export const OrcamentoEditorView: React.FC = () => {
       return s;
     });
 
+    const metade = Math.round((novoTotal / 2) * 100) / 100;
+    const segundaMetade = Math.round((novoTotal - metade) * 100) / 100;
+    const parcelasPadrao: OrcamentoParcela[] = [
+      {
+        parcela: '1ª Parcela (Entrada)',
+        quando: 'Na aprovação / mobilização',
+        gatilho: 'Aceite formal da proposta comercial',
+        percentual: 50,
+        valor: metade,
+      },
+      {
+        parcela: '2ª Parcela (Saldo)',
+        quando: 'Na emissão do laudo final e ART',
+        gatilho: 'Entrega digital do laudo conclusivo homologado no CREA-PE',
+        percentual: 50,
+        valor: segundaMetade,
+      }
+    ];
+
     const atualizado: Orcamento = {
       ...orcamentoState,
       valor: novoTotal,
       valorFormatado,
       itensCalculo: novaLista,
       secoes: novasSecoes,
+      parcelas: dadosExtras?.parcelas || (orcamentoState.parcelas && orcamentoState.parcelas.length > 0 ? orcamentoState.parcelas : parcelasPadrao),
+      ...dadosExtras,
     };
 
     if (salvarDireto) {
@@ -934,13 +1002,13 @@ export const OrcamentoEditorView: React.FC = () => {
         atualizado.quantidade = q;
 
         if (campo === 'valorTotal') {
-          // Usuário digitou diretamente o SUBTOTAL da linha (ex: 3200,00)
+          // Usuário digitou diretamente o SUBTOTAL da linha
           const totalInformado = Math.max(0, typeof val === 'number' ? val : (parseFloat(val) || 0));
           atualizado.valorTotal = totalInformado;
           atualizado.modoCalculo = 'total_fixo';
           atualizado.valorUnitario = q > 0 ? (totalInformado / q) : totalInformado;
         } else if (campo === 'valorUnitario') {
-          // Usuário digitou o VALOR UNITÁRIO (ex: 500,00)
+          // Usuário digitou o VALOR UNITÁRIO
           const unitarioInformado = Math.max(0, typeof val === 'number' ? val : (parseFloat(val) || 0));
           atualizado.valorUnitario = unitarioInformado;
           atualizado.modoCalculo = 'unitario';
@@ -990,37 +1058,103 @@ export const OrcamentoEditorView: React.FC = () => {
     handleAtualizarListaItens(novaLista, true);
   };
 
-  const handleFixarTotalGeralProposta = (totalAlvo: number) => {
-    if (!orcamentoState || totalAlvo <= 0) return;
-    if (itensCalculo.length === 1) {
-      handleFixarTotalItem(itensCalculo[0].id, totalAlvo);
+  /**
+   * Fixa o valor total cheio da proposta de forma 100% genérica.
+   * Permite que o usuário digite qualquer valor total (ex: 3200, 4500, 15000, etc.),
+   * distribuindo com precisão exata de centavos e calculando os unitários médios
+   * sem erros de arredondamento por dízima periódica.
+   */
+  const handleFixarTotalGeralProposta = (totalAlvoRaw: number | string) => {
+    if (!orcamentoState) return;
+    const totalAlvo = typeof totalAlvoRaw === 'number' ? totalAlvoRaw : parseValorMoeda(totalAlvoRaw);
+    if (totalAlvo <= 0) return;
+
+    const totalFormatado = totalAlvo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    let ajustados: OrcamentoItemCalculo[] = [];
+
+    if (itensCalculo.length <= 1) {
+      const itemBase = itensCalculo[0] || {
+        id: 'item-1',
+        descricao: orcamentoState.servico || 'Serviços de Engenharia Mecânica & Laudo Pericial com ART CREA-PE',
+        quantidade: 1,
+      };
+      const q = Math.max(1, Number(itemBase.quantidade) || 1);
+      ajustados = [
+        {
+          ...itemBase,
+          valorTotal: totalAlvo,
+          modoCalculo: 'total_fixo' as const,
+          valorUnitario: q > 0 ? (totalAlvo / q) : totalAlvo,
+        }
+      ];
     } else {
       const somaAtual = itensCalculo.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
       if (somaAtual > 0) {
         const fator = totalAlvo / somaAtual;
         let acumulado = 0;
-        const ajustados = itensCalculo.map((it, idx) => {
+        ajustados = itensCalculo.map((it, idx) => {
+          const q = Math.max(1, Number(it.quantidade) || 1);
           if (idx === itensCalculo.length - 1) {
             const subtotal = Math.max(0, Math.round((totalAlvo - acumulado) * 100) / 100);
             return {
               ...it,
               valorTotal: subtotal,
               modoCalculo: 'total_fixo' as const,
-              valorUnitario: (it.quantidade || 1) > 0 ? (subtotal / (it.quantidade || 1)) : subtotal,
+              valorUnitario: q > 0 ? (subtotal / q) : subtotal,
             };
           }
-          const subtotal = Math.round((it.valorTotal * fator) * 100) / 100;
+          const subtotal = Math.round(((Number(it.valorTotal) || 0) * fator) * 100) / 100;
           acumulado += subtotal;
           return {
             ...it,
             valorTotal: subtotal,
             modoCalculo: 'total_fixo' as const,
-            valorUnitario: (it.quantidade || 1) > 0 ? (subtotal / (it.quantidade || 1)) : subtotal,
+            valorUnitario: q > 0 ? (subtotal / q) : subtotal,
           };
         });
-        handleAtualizarListaItens(ajustados, true);
+      } else {
+        const parcelaBase = Math.floor((totalAlvo / itensCalculo.length) * 100) / 100;
+        let acum = 0;
+        ajustados = itensCalculo.map((it, idx) => {
+          const q = Math.max(1, Number(it.quantidade) || 1);
+          const subtotal = idx === itensCalculo.length - 1 ? Math.max(0, Math.round((totalAlvo - acum) * 100) / 100) : parcelaBase;
+          acum += subtotal;
+          return {
+            ...it,
+            valorTotal: subtotal,
+            modoCalculo: 'total_fixo' as const,
+            valorUnitario: q > 0 ? (subtotal / q) : subtotal,
+          };
+        });
       }
     }
+
+    setValorCheioDigitado(totalAlvo % 1 === 0 ? totalAlvo.toString() : totalAlvo.toFixed(2));
+
+    const metade = Math.round((totalAlvo / 2) * 100) / 100;
+    const segundaMetade = Math.round((totalAlvo - metade) * 100) / 100;
+    const novasParcelas: OrcamentoParcela[] = [
+      {
+        parcela: '1ª Parcela (Entrada)',
+        quando: 'Na aprovação / mobilização',
+        gatilho: 'Aceite formal da proposta comercial',
+        percentual: 50,
+        valor: metade,
+      },
+      {
+        parcela: '2ª Parcela (Saldo)',
+        quando: 'Na emissão do laudo final e ART',
+        gatilho: 'Entrega digital do laudo conclusivo homologado no CREA-PE',
+        percentual: 50,
+        valor: segundaMetade,
+      }
+    ];
+
+    handleAtualizarListaItens(ajustados, true, {
+      valor: totalAlvo,
+      valorFormatado: totalFormatado,
+      parcelas: novasParcelas,
+    });
   };
 
   // Upload custom QR code image for PIX
@@ -1163,7 +1297,18 @@ export const OrcamentoEditorView: React.FC = () => {
             <span>•</span>
             <span>Serviço: <strong className="text-slate-900">{orcamentoState.servico}</strong></span>
             <span>•</span>
-            <span>Valor: <strong className="text-[#1565D8] font-mono">{(orcamentoState.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong></span>
+            <div className="flex items-center gap-1.5">
+              <span>Valor Total:</span>
+              <strong className="text-[#1565D8] font-mono text-sm">{(orcamentoState.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+              <button
+                type="button"
+                onClick={() => setSecaoAtivaId('etapa3')}
+                className="ml-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
+                title="Ir para o Memorial de Cálculo e editar o valor cheio da proposta"
+              >
+                ✎ Editar Valor Cheio
+              </button>
+            </div>
           </div>
 
           {/* Quick Selectable Nota Fiscal & PIX Indicator */}
@@ -1981,31 +2126,62 @@ export const OrcamentoEditorView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Dica e Solução de Dízima Periódica */}
-                  <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      <div className="p-1.5 rounded-lg bg-amber-200 text-amber-900 shrink-0 mt-0.5 sm:mt-0">
-                        <Calculator className="w-4 h-4" />
+                  {/* Painel Genérico de Valor Cheio & Rateio Sem Dízima */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-50/90 via-sky-50/80 to-slate-50 border border-blue-200 text-xs shadow-2xs">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="p-2 rounded-xl bg-[#0B1E3D] text-[#D4AF37] shrink-0 mt-0.5 shadow-2xs">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <strong className="text-xs uppercase tracking-wide text-[#0B1E3D] font-extrabold">
+                              Valor Cheio da Proposta (Padrão & Diretamente Editável)
+                            </strong>
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-[#1565D8] font-bold text-[9.5px]">
+                              100% Genérico Sem Dízima
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                            Digite qualquer <strong>valor total fechado</strong> da proposta abaixo. O sistema fixa esse total exato no contrato, no PDF e no PIX, rateando os unitários automaticamente sem dízima periódica ou divergência de centavos.
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <strong className="block text-[11px] uppercase tracking-wide text-amber-950">
-                          Dízima Periódica ou Total Fechado (Ex.: R$ 3.200,00 ÷ 6)
-                        </strong>
-                        <p className="text-[11px] text-amber-900 mt-0.5 leading-relaxed">
-                          O campo <strong>Subtotal (R$)</strong> é diretamente editável! Ao digitar <strong>3.200,00</strong> no Subtotal com Qtd 6, o sistema trava o total exato sem perder os R$ 0,02 centavos (evitando 533,33 × 6 = 3.199,98) e calcula o unitário médio de R$ 533,33 automaticamente.
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleFixarTotalGeralProposta(3200)}
-                        className="px-2.5 py-1 rounded-md bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-[10.5px] border border-amber-300 shadow-2xs cursor-pointer transition-colors"
-                        title="Fixa o total da proposta exatamente em R$ 3.200,00 ajustando o memorial"
-                      >
-                        ⚡ Fixar em R$ 3.200,00
-                      </button>
+                      {/* Campo de Input Genérico do Valor Cheio */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-blue-300 shadow-xs">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-lg border border-slate-200">
+                          <span className="text-xs font-bold text-slate-500 font-mono">R$</span>
+                          <input
+                            type="text"
+                            value={valorCheioDigitado}
+                            onChange={(e) => setValorCheioDigitado(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleFixarTotalGeralProposta(valorCheioDigitado);
+                              }
+                            }}
+                            onBlur={() => {
+                              if (valorCheioDigitado && parseValorMoeda(valorCheioDigitado) !== orcamentoState.valor) {
+                                handleFixarTotalGeralProposta(valorCheioDigitado);
+                              }
+                            }}
+                            placeholder="0,00"
+                            className="w-28 sm:w-36 px-1 py-0.5 text-xs font-mono font-black text-[#0B1E3D] bg-transparent focus:outline-none"
+                            title="Digite qualquer valor total para fixar a proposta (ex: 3200, 4500, etc.)"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleFixarTotalGeralProposta(valorCheioDigitado)}
+                          className="px-3 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0e489e] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                          title="Fixar este valor exato no total da proposta e ratear no memorial"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Fixar Total</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2093,7 +2269,7 @@ export const OrcamentoEditorView: React.FC = () => {
                                         ? 'bg-blue-50/80 border-blue-400 text-[#0B1E3D] focus:ring-[#1565D8]'
                                         : 'bg-white border-slate-200 text-[#0B1E3D] focus:ring-[#1565D8]'
                                     }`}
-                                    title="Subtotal editável! Digite o total desejado (ex: 3200,00) para fixar sem arredondamento quebrado."
+                                    title="Subtotal editável! Digite o total desejado desta linha para fixar sem arredondamento quebrado."
                                   />
                                   {it.modoCalculo === 'total_fixo' ? (
                                     <span className="block text-[8.5px] text-blue-700 font-bold text-right">
@@ -2136,13 +2312,44 @@ export const OrcamentoEditorView: React.FC = () => {
                       </tbody>
                       <tfoot>
                         <tr className="bg-blue-50/80 border-t-2 border-[#0B1E3D] font-bold">
-                          <td colSpan={4} className="py-2.5 px-3 text-right text-slate-800 uppercase text-[11px]">
-                            Valor Total da Proposta (Soma das Linhas):
+                          <td colSpan={3} className="py-2.5 px-3 text-right text-slate-800 uppercase text-[11px]">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span>Valor Total Cheio da Proposta:</span>
+                              <span className="text-[10px] text-blue-700 font-normal font-mono">(Editável direto)</span>
+                            </div>
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono text-sm text-[#1565D8]">
-                            {(orcamentoState.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          <td colSpan={2} className="py-2.5 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className="text-xs font-mono font-bold text-slate-500">R$</span>
+                              <input
+                                type="text"
+                                value={valorCheioDigitado}
+                                onChange={(e) => setValorCheioDigitado(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleFixarTotalGeralProposta(valorCheioDigitado);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (valorCheioDigitado && parseValorMoeda(valorCheioDigitado) !== orcamentoState.valor) {
+                                    handleFixarTotalGeralProposta(valorCheioDigitado);
+                                  }
+                                }}
+                                className="w-32 px-2 py-1 rounded bg-white border border-blue-400 font-mono font-black text-sm text-right text-[#1565D8] shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
+                                title="Altere o valor total cheio aqui a qualquer momento. Pressione Enter ou saia do campo para atualizar."
+                              />
+                            </div>
                           </td>
-                          <td></td>
+                          <td className="py-2.5 px-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleFixarTotalGeralProposta(valorCheioDigitado)}
+                              className="p-1.5 rounded-lg bg-[#1565D8] hover:bg-[#0e489e] text-white text-[10px] font-bold transition-colors cursor-pointer"
+                              title="Atualizar total cheio"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
                         </tr>
                       </tfoot>
                     </table>
