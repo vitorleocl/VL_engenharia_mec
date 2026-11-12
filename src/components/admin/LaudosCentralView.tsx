@@ -245,7 +245,7 @@ export const LaudosCentralView: React.FC = () => {
             Central de laudos
           </h1>
           <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
-            {laudos.length} documentos emitidos · Modelos pré-prontos das 7 especialidades da VL Engenharia.
+            {laudos.length} documentos emitidos · Modelos pré-prontos das {SERVICOS_LISTA.length} especialidades da VL Engenharia.
           </p>
         </div>
 

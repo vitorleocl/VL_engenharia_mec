@@ -498,5 +498,635 @@ export const SERVICOS_LISTA: ServicoItem[] = [
         ]
       }
     ]
+  },
+  {
+    id: 'nr13-vasos-compressores',
+    nome: 'Inspeção de Vasos de Pressão e Compressores (NR-13)',
+    norma: 'NR-13 · Portaria MTP 1.846/2022 · ASME VIII',
+    descricao: 'Foco em reservatórios de ar comprimido, autoclaves, vasos de processo e cilindros sob pressão.',
+    subtipos: [
+      {
+        id: 'nr13-vp-enquadramento-pv',
+        nome: 'Enquadramento Normativo (Cálculo P × V)',
+        normaRef: 'NR-13 · Portaria MTP nº 1.846/2022',
+        detalhe: 'Classificação do equipamento conforme a Portaria MTP nº 1.846/2022 (enquadrado ou não na NR-13).',
+        checklistSugerido: [
+          'Levantamento da Pressão Máxima de Operação / PMTA (kPa / kgf/cm² / bar)',
+          'Levantamento ou medição geométrica do volume interno (m³ / litros)',
+          'Cálculo do produto P × V e identificação da classe de fluido (A, B, C ou D)',
+          'Enquadramento na categoria do vaso (I a V) conforme Portaria MTP nº 1.846/2022',
+          'Definição dos prazos legais de inspeção externa, interna e calibração de dispositivos'
+        ],
+        secoesSugeridas: [
+          '1. Identificação Técnica do Vaso de Pressão / Compressor',
+          '2. Levantamento de Pressão, Volume e Classe de Fluido',
+          '3. Cálculo P × V e Enquadramento pela Portaria MTP nº 1.846/2022',
+          '4. Classificação de Categoria e Periodicidade Legal de Inspeções'
+        ]
+      },
+      {
+        id: 'nr13-vp-inspecao-seguranca',
+        nome: 'Inspeção de Segurança Inicial, Periódica e Extraordinária',
+        normaRef: 'NR-13 · Exame Externo e Interno',
+        detalhe: 'Exame externo e exame interno detalhado (checklist visual de casco, soldas, bases, pintura, corrosão e componentes).',
+        checklistSugerido: [
+          'Exame externo completo: casco, tampos, cordões de solda, bocais e flanges',
+          'Verificação de bases, suportes, chumbadores, pintura e corrosão externa',
+          'Exame interno detalhado: sinais de corrosão alveolar, pites, trincas ou incrustações',
+          'Avaliação dos acessórios, dreno de condensado, válvulas de bloqueio e conexões',
+          'Conferência de acessos seguros e condições de instalação conforme NR-13'
+        ],
+        secoesSugeridas: [
+          '1. Caracterização do Equipamento e Tipo de Inspeção (Inicial / Periódica / Extraordinária)',
+          '2. Resultado do Exame Visual Externo (Casco, Soldas, Bases e Pintura)',
+          '3. Resultado do Exame Visual Interno e Avaliação de Corrosão',
+          '4. Verificação dos Componentes, Drenos e Dispositivos Auxiliares',
+          '5. Parecer Técnico e Recomendações de Segurança'
+        ]
+      },
+      {
+        id: 'nr13-vp-ultrassom-espessura',
+        nome: 'Ensaio Não Destrutivo (END) — Medição de Espessura por Ultrassom',
+        normaRef: 'ASME Sec. VIII · NR-13',
+        detalhe: 'Mapeamento de pontos no costado e tampos com comparação à espessura mínima calculada (ASME Sec. VIII).',
+        checklistSugerido: [
+          'Calibração do medidor de espessura por ultrassom com bloco padrão rastreado',
+          'Mapeamento de pontos nos quadrantes do costado (superior, médio e inferior)',
+          'Mapeamento de pontos nos tampos (torisférico / elíptico / semiesférico) e bocais',
+          'Cálculo da espessura mínima admissível pelo código ASME Seção VIII Div. 1',
+          'Cálculo de taxa de corrosão e vida residual estimada do casco e tampos'
+        ],
+        secoesSugeridas: [
+          '1. Instrumentação Utilizada e Certificado de Calibração do Aparelho',
+          '2. Croqui de Mapeamento de Pontos (Costado e Tampos)',
+          '3. Tabela Comparativa: Espessura Medida × Espessura Mínima (ASME Sec. VIII)',
+          '4. Análise de Taxa de Corrosão e Integridade Estrutural'
+        ]
+      },
+      {
+        id: 'nr13-vp-boroscopia',
+        nome: 'Inspeção Boroscópica Interna',
+        normaRef: 'NR-13 · Endoscopia Industrial',
+        detalhe: 'Avaliação visual interna via câmera endoscópica para vasos/compressores sem boca de visita.',
+        checklistSugerido: [
+          'Acesso interno por bocais roscados ou conexões de inspeção sem abertura destrutiva',
+          'Registro em alta definição da superfície interna inferior (acúmulo de condensado/óleo)',
+          'Inspeção visual interna de soldas circunferenciais, longitudinais e tampos',
+          'Verificação de oxidação, corrosão localizada, depósitos ou delaminações',
+          'Justificativa técnica documentada da aplicabilidade da boroscopia conforme NR-13'
+        ],
+        secoesSugeridas: [
+          '1. Justificativa Técnica e Condições de Acesso ao Interior do Vaso',
+          '2. Equipamento Endoscópico Utilizado e Pontos de Inserção',
+          '3. Registro Fotográfico Comentado das Superfícies e Soldas Internas',
+          '4. Conclusão quanto à Integridade Interna e Necessidade de Limpeza/Drenagem'
+        ]
+      },
+      {
+        id: 'nr13-vp-teste-hidrostatico',
+        nome: 'Teste Hidrostático / Teste de Estanqueidade',
+        normaRef: 'NR-13 · ASME Sec. VIII (PMTA)',
+        detalhe: 'Ensaio de resistência estrutural ou verificação de ausência de vazamentos sob PMTA (ou justificativa técnica de método alternativo).',
+        checklistSugerido: [
+          'Isolamento e bloqueio seguro do vaso com manômetros calibrados em escala adequada',
+          'Pressurização controlada em patamares até pressão de teste / PMTA normatizada',
+          'Monitoramento de estabilidade de pressão e ausência de deformações ou vazamentos',
+          'Registro gráfico / tabela tempo × pressão durante o patamar de teste',
+          'Emissão de justificativa técnica formal quando aplicado método alternativo ao hidrostático'
+        ],
+        secoesSugeridas: [
+          '1. Parâmetros do Ensaio (PMTA, Pressão de Teste e Fluido Utilizado)',
+          '2. Procedimento de Pressurização, Patamares e Tempo de Permanência',
+          '3. Registro de Leituras de Manômetros Calibrados e Estanqueidade',
+          '4. Parecer Conclusivo (ou Memorial de Método Alternativo NR-13)'
+        ]
+      },
+      {
+        id: 'nr13-vp-calibracao-psv-manometro',
+        nome: 'Aferição e Calibração de Dispositivos de Segurança',
+        normaRef: 'NR-13 · RBC / INMETRO',
+        detalhe: 'Calibração rastreável RBC/INMETRO de Válvulas de Segurança (PSV) e Manômetros, com emissão de certificado e lacre numerado.',
+        checklistSugerido: [
+          'Inspeção visual, limpeza e desmonte/teste de bancada de Válvula de Segurança (PSV)',
+          'Ajuste da pressão de abertura (set pressure) igual ou inferior à PMTA e verificação de vedação',
+          'Calibração de manômetro em múltiplos pontos da escala com padrão rastreado RBC/INMETRO',
+          'Instalação de lacre numerado inviolável e etiqueta/tag na PSV e no manômetro',
+          'Emissão de Certificado de Calibração vinculado ao prontuário do vaso'
+        ],
+        secoesSugeridas: [
+          '1. Identificação dos Dispositivos de Segurança (PSV e Manômetros)',
+          '2. Padrões de Referência Rastreados (RBC / INMETRO)',
+          '3. Resultados de Aferição, Pressão de Abertura e Classe de Exatidão',
+          '4. Numeração dos Lacres Aplicados e Validade das Calibrações'
+        ]
+      },
+      {
+        id: 'nr13-vp-prontuario-nr13',
+        nome: 'Reconstituição ou Elaboração de Prontuário NR-13',
+        normaRef: 'NR-13 · Memorial de Cálculo PMTA',
+        detalhe: 'Memorial de cálculo (PMTA), caracterização técnica, partes vitais, desenhos esquemáticos e registro fotográfico.',
+        checklistSugerido: [
+          'Levantamento dimensional completo em campo (diâmetro, comprimento, espessura de chapa e tampos)',
+          'Memorial de cálculo da Pressão Máxima de Trabalho Admissível (PMTA)',
+          'Especificação dos materiais, código de projeto e eficiência de junta adotada',
+          'Desenhos esquemáticos / croquis cotados com identificação de bocais e partes vitais',
+          'Dossiê fotográfico e consolidação do Prontuário NR-13 assinado por PH'
+        ],
+        secoesSugeridas: [
+          '1. Dados Gerais, Fabricante e Caracterização do Vaso de Pressão',
+          '2. Memorial de Cálculo Estrutural e Determinação da PMTA',
+          '3. Relação de Partes Vitais e Dispositivos de Segurança',
+          '4. Desenhos Esquemáticos Dimensionais e Registro Fotográfico'
+        ]
+      },
+      {
+        id: 'nr13-vp-plaqueta-identificacao',
+        nome: 'Emissão e Atualização de Plaqueta de Identificação',
+        normaRef: 'NR-13 · Identificação Metálica',
+        detalhe: 'Confecção/fixação de placa metálica com categoria, PMTA, nº de série, fabricante e data de inspeção.',
+        checklistSugerido: [
+          'Gravação indelével em placa metálica resistente à corrosão (aço inox ou alumínio gravado)',
+          'Inclusão obrigatória de: Fabricante, nº de identificação/série, ano de fabricação e PMTA',
+          'Inclusão da pressão de teste hidrostático, ano/código de projeto e Categoria NR-13',
+          'Fixação segura em local visível do costado e atualização de etiqueta de próxima inspeção',
+          'Registro fotográfico da placa instalada no equipamento'
+        ],
+        secoesSugeridas: [
+          '1. Dados Obrigatórios da Placa de Identificação NR-13',
+          '2. Especificação da Plaqueta Metálica e Forma de Fixação',
+          '3. Registro Fotográfico da Plaqueta e Sinalização de Categoria no Vaso'
+        ]
+      },
+      {
+        id: 'nr13-vp-livro-seguranca',
+        nome: 'Abertura e Registro de Livro de Segurança (Físico ou Digital)',
+        normaRef: 'NR-13 · Registro de Segurança',
+        detalhe: 'Registro formal das ocorrências, inspeções e recomendações técnicas.',
+        checklistSugerido: [
+          'Abertura formal do Livro / Registro de Segurança vinculado ao nº de série do vaso',
+          'Termo de abertura com dados do estabelecimento, equipamento e Profissional Habilitado',
+          'Lançamento cronológico de inspeções, calibrações, reparos e ocorrências operacionais',
+          'Anotação explícita das recomendações técnicas e prazos de atendimento',
+          'Assinatura do Profissional Habilitado (PH) e disponibilização para fiscalização MTE'
+        ],
+        secoesSugeridas: [
+          '1. Termo de Abertura do Registro de Segurança NR-13',
+          '2. Histórico Cronológico de Inspeções e Intervenções',
+          '3. Registro de Ocorrências e Recomendações Técnicas Vigentes'
+        ]
+      },
+      {
+        id: 'nr13-vp-relatorio-art',
+        nome: 'Emissão de Relatório de Inspeção NR-13 + ART',
+        normaRef: 'NR-13 · CREA-PE',
+        detalhe: 'Parecer conclusivo (Aprovado, Aprovado com Ressalvas ou Reprovado) e Plano de Ação.',
+        checklistSugerido: [
+          'Consolidação dos exames externos, internos, END de ultrassom e calibração de PSV/manômetro',
+          'Análise de conformidade documental (Prontuário, Registro de Segurança e Projeto de Instalação)',
+          'Emissão de parecer técnico conclusivo: Aprovado, Aprovado com Ressalvas ou Reprovado',
+          'Plano de Ação detalhado com criticidade, responsáveis e prazos de adequação',
+          'Emissão da Anotação de Responsabilidade Técnica (ART) no CREA-PE'
+        ],
+        secoesSugeridas: [
+          '1. Resumo Executivo e Identificação do Vaso / Compressor',
+          '2. Resultados Consolidados das Inspeções e Ensaios (END / Calibração)',
+          '3. Parecer Técnico Conclusivo de Aptidão Operacional',
+          '4. Plano de Ação Corretiva e Cronograma de Próximas Inspeções',
+          '5. Anexos: Certificados RBC/INMETRO e ART CREA-PE'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'nr13-caldeiras',
+    nome: 'Inspeção de Caldeiras a Vapor (NR-13)',
+    norma: 'NR-13 · Caldeiras a Vapor · RBC/INMETRO',
+    descricao: 'Foco em geradores de vapor aquatubulares, flamotubulares e elétricos.',
+    subtipos: [
+      {
+        id: 'nr13-cald-periodica',
+        nome: 'Inspeção de Segurança Periódica (Exame Interno e Externo)',
+        normaRef: 'NR-13 · Caldeiras a Vapor',
+        detalhe: 'Avaliação de fornalha, espelhos, feixe tubular, refratários, isolamento térmico e estrutura.',
+        checklistSugerido: [
+          'Exame interno da fornalha, tubulões, espelhos e feixe tubular (corrosão, incrustações e trincas)',
+          'Avaliação de refratários, portas de visita, alívio de explosão e isolamento térmico',
+          'Exame externo da carcaça, chaminé, dutos de gases, bases estruturais e escadas/plataformas',
+          'Verificação das condições da casa de caldeiras (ventilação, rotas de fuga, iluminação de emergência)',
+          'Acompanhamento de teste operacional em regime de produção de vapor'
+        ],
+        secoesSugeridas: [
+          '1. Identificação da Caldeira (Categoria A ou B, PMTA, Capacidade de Vapor)',
+          '2. Exame Interno Detalhado (Fornalha, Espelhos, Tubos e Refratários)',
+          '3. Exame Externo, Isolamento Térmico e Casa de Caldeiras',
+          '4. Conclusão Técnica e Prazos para Próximas Inspeções'
+        ]
+      },
+      {
+        id: 'nr13-cald-controle-intertravamento',
+        nome: 'Verificação de Sistemas de Controle e Intertravamento',
+        normaRef: 'NR-13 · Segurança Operacional',
+        detalhe: "Testes funcionais de pressostatos, indicadores de nível d'água, válvulas de descarga de fundo e bloqueio de combustível.",
+        checklistSugerido: [
+          "Teste funcional de duplo indicador de nível d'água (visor e eletrodos/garrafa de nível)",
+          'Teste de corte de combustível / aquecimento por baixo nível de água (segurança crítica)',
+          'Aferição da atuação dos pressostatos de operação e de segurança (alta pressão)',
+          'Teste de descarga de fundo, válvulas de alimentação de água e injetores/bombas',
+          'Verificação do painel de comando, alarmes sonoros/visuais e bloqueio de chama (fotocélula)'
+        ],
+        secoesSugeridas: [
+          '1. Arquitetura de Controle e Segurança da Caldeira',
+          '2. Ensaios de Nível Mínimo, Pressostatos e Malha de Intertravamento',
+          '3. Avaliação de Válvulas de Descarga, Alimentação e Bloqueio de Combustível',
+          '4. Parecer de Confiabilidade dos Sistemas de Segurança'
+        ]
+      },
+      {
+        id: 'nr13-cald-end',
+        nome: 'Ensaios Não Destrutivos (END) em Caldeiras',
+        normaRef: 'NR-13 · ASME · Ultrassom / LP / PM',
+        detalhe: 'Ultrassom de espessura, líquido penetrante (LP) ou partículas magnéticas em soldas críticas.',
+        checklistSugerido: [
+          'Medição de espessura por ultrassom no costado, espelhos, tubulão e tubos de fumaça/água',
+          'Ensaio por Líquido Penetrante (LP) nas ligações tubo-espelho e bocais críticos',
+          'Ensaio por Partículas Magnéticas (PM) em soldas estruturais e zonas termicamente afetadas',
+          'Verificação de empolamentos, superaquecimento localizado ou perda de espessura',
+          'Comparação dos resultados com a espessura mínima admissível de projeto'
+        ],
+        secoesSugeridas: [
+          '1. Escopo e Técnicas END Aplicadas (US, LP e/ou PM)',
+          '2. Mapeamento de Espessuras em Espelhos, Costado e Tubulões',
+          '3. Relatório de Descontinuidades em Soldas Críticas',
+          '4. Avaliação de Integridade Mecânica e Recomendações'
+        ]
+      },
+      {
+        id: 'nr13-cald-calibracao-psv',
+        nome: 'Calibração de Manômetros e Válvulas de Segurança (PSV)',
+        normaRef: 'NR-13 · RBC / INMETRO',
+        detalhe: 'Ensaio de bancada ou em operação com lacre e certificado RBC/INMETRO.',
+        checklistSugerido: [
+          'Calibração da(s) válvula(s) de segurança em bancada ou com dispositivo hidráulico assistido',
+          'Verificação da pressão de abertura, diferencial de alívio e estanqueidade de fechamento',
+          'Calibração dos manômetros principal e auxiliares com faixa de leitura adequada à PMTA',
+          'Aplicação de lacre numerado e emissão de certificados rastreáveis RBC/INMETRO',
+          'Conferência de desobstrução da tubulação de descarga da PSV para local seguro'
+        ],
+        secoesSugeridas: [
+          '1. Relação de Válvulas de Segurança (PSV) e Manômetros da Caldeira',
+          '2. Metodologia de Calibração e Padrões RBC/INMETRO',
+          '3. Laudo de Ensaio de Abertura, Fechamento e Lacração',
+          '4. Certificados Vinculados e Datas de Recalibração'
+        ]
+      },
+      {
+        id: 'nr13-cald-auditoria-documental',
+        nome: 'Auditoria Documental e Operacional NR-13',
+        normaRef: 'NR-13 · Documentação & Operação',
+        detalhe: 'Verificação de Prontuário, Registro de Segurança, Projeto de Instalação, Plano de Manutenção e Certificado de Qualificação do Operador.',
+        checklistSugerido: [
+          'Conferência do Prontuário completo fornecido pelo fabricante ou reconstituído por PH',
+          'Verificação do Registro de Segurança atualizado e assinado em todas as ocorrências',
+          'Análise do Projeto de Instalação da caldeira e conformidade da casa de caldeiras',
+          'Checagem do Plano de Manutenção Preditiva/Preventiva e tratamento químico da água',
+          'Validação dos Certificados de Treinamento de Segurança na Operação de Caldeiras e reciclagem'
+        ],
+        secoesSugeridas: [
+          '1. Checklist Documental Obrigatório da NR-13',
+          '2. Auditoria de Qualificação e Reciclagem dos Operadores',
+          '3. Verificação do Projeto de Instalação e Tratamento de Água',
+          '4. Matriz de Pendências Documentais e Prazos Legais'
+        ]
+      },
+      {
+        id: 'nr13-cald-laudo-integridade-art',
+        nome: 'Emissão de Laudo Técnico de Integridade / Inspeção + ART',
+        normaRef: 'NR-13 · CREA-PE',
+        detalhe: 'Relatório completo com prazos para próximas inspeções e plano de adequação.',
+        checklistSugerido: [
+          'Integração dos resultados de exames interno/externo, END, testes de intertravamento e PSV',
+          'Avaliação de vida útil remanescente (para caldeiras acima de 25 anos quando aplicável)',
+          'Definição explícita dos prazos máximos para próximas inspeções periódicas (NR-13)',
+          'Plano de adequação com medidas corretivas priorizadas por criticidade',
+          'Emissão da ART registrada no CREA-PE e atualização do Registro de Segurança'
+        ],
+        secoesSugeridas: [
+          '1. Sumário Técnico e Enquadramento Normativo NR-13',
+          '2. Consolidação dos Exames, Ensaios END e Testes Funcionais',
+          '3. Avaliação de Integridade e Vida Remanescente',
+          '4. Parecer Conclusivo, Prazos de Reinspeção e Plano de Adequação',
+          '5. ART CREA-PE e Evidências Fotográficas'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'gas-combustivel-glp-gn',
+    nome: 'Inspeção de Centrais e Redes de Gás Combustível (GLP / GN)',
+    norma: 'NBR 15514 · NBR 13523 · NBR 15526 · NR-26',
+    descricao: 'Foco em abrigos de cilindros (P-13, P-45, P-190), tanques estacionários, tubulações e pontos de consumo (cozinhas, laboratórios, aquecedores).',
+    subtipos: [
+      {
+        id: 'gas-abrigos-centrais-glp',
+        nome: 'Inspeção Técnica de Abrigos e Centrais de GLP',
+        normaRef: 'ABNT NBR 15514 · NBR 13523',
+        detalhe: 'Verificação estrutural, ventilação (venezianas), afastamentos mínimos de segurança, piso, cobertura e acessos (ABNT NBR 15514 e NBR 13523).',
+        checklistSugerido: [
+          'Condições estruturais de paredes resistentes ao fogo, piso incombustível e cobertura',
+          'Áreas de ventilação natural permanente (venezianas superior e inferior conforme NBR 15514)',
+          'Afastamentos mínimos de ralos, fontes de ignição, quadros elétricos e divisas',
+          'Classificação de área elétrica à prova de explosão (Ex) dentro da zona de risco',
+          'Acesso desobstruído, portão com abertura para fora, cadeado e extintor PQS adequado'
+        ],
+        secoesSugeridas: [
+          '1. Identificação da Central / Abrigo de Cilindros (P-13, P-45, P-190 ou Tanque)',
+          '2. Avaliação Construtiva, Ventilação e Afastamentos Normativos',
+          '3. Verificação de Instalações Elétricas e Proteção Contra Incêndio',
+          '4. Não Conformidades e Adequações Requeridas (NBR 15514 / NBR 13523)'
+        ]
+      },
+      {
+        id: 'gas-teste-estanqueidade',
+        nome: 'Teste de Estanqueidade em Redes e Tubulações de Gás',
+        normaRef: 'ABNT NBR 13419 · NBR 15526',
+        detalhe: 'Ensaio pneumático com nitrogênio (N₂) seco ou ar comprimido a 1,5 × P_operação, monitoramento de ΔP = 0 por tempo normativo (ABNT NBR 13419 / NBR 15526) com manômetro calibrado.',
+        checklistSugerido: [
+          'Bloqueio e desconexão dos aparelhos de consumo e reguladores sensíveis à pressão de ensaio',
+          'Pressurização com nitrogênio (N₂) seco ou ar comprimido a 1,5 × P_operação conforme norma',
+          'Estabilização térmica e monitoramento contínuo com manômetro calibrado RBC (ΔP = 0)',
+          'Registro fotográfico da pressão inicial (P1), cronômetro e pressão final (P2) após tempo normativo',
+          'Avaliação de suportação, proteção mecânica, pintura amarela (NR-26) e válvulas de bloqueio'
+        ],
+        secoesSugeridas: [
+          '1. Traçado da Rede, Trechos Ensaiados e Pressão de Operação',
+          '2. Metodologia de Teste Pneumático (N₂ / Ar Comprimido) e Instrumento Calibrado',
+          '3. Registro Cronológico P1 / P2 e Comprovação de ΔP = 0',
+          '4. Termo Técnico de Estanqueidade da Rede de Gás'
+        ]
+      },
+      {
+        id: 'gas-rastreamento-lel',
+        nome: 'Rastreamento de Vazamentos com Detector de Gases (LEL)',
+        normaRef: 'Detector LEL · Segurança GLP/GN',
+        detalhe: 'Medição pontual em conexões, válvulas, registros, reguladores, fogões, fornos e bicos de Bunsen.',
+        checklistSugerido: [
+          'Verificação prévia e teste de resposta (bump test) do detector portátil de gases inflamáveis (LEL)',
+          'Varredura pontual nas conexões de cilindros, pig-tails, coletores e reguladores de 1º/2º estágio',
+          'Varredura em válvulas de bloqueio, flanges, uniões roscadas e engates rápidos',
+          'Rastreamento nos pontos de consumo: fogões, fornos, chapas, aquecedores e bicos de Bunsen',
+          'Registro de leituras (% LEL / ppm) e bloqueio imediato caso detectado escape de gás'
+        ],
+        secoesSugeridas: [
+          '1. Especificação e Calibração do Detector de Gases Combustíveis (LEL)',
+          '2. Roteiro de Medição: Central de Gás, Ramais e Pontos de Consumo',
+          '3. Tabela de Leituras Pontuais (% LEL) e Pontos Críticos Identificados',
+          '4. Medidas Imediatas de Correção e Parecer de Segurança'
+        ]
+      },
+      {
+        id: 'gas-auditoria-componentes',
+        nome: 'Auditoria de Validade e Conformidade de Componentes',
+        normaRef: 'ABNT · INMETRO · Reteste',
+        detalhe: 'Levantamento de datas de fabricação/vencimento de reguladores de pressão, mangueiras flexíveis homologadas e reteste hidrostático de cilindros.',
+        checklistSugerido: [
+          'Levantamento de data de fabricação e vencimento (5 anos) dos reguladores de pressão',
+          'Inspeção de mangueiras flexíveis metálicas ou normatizadas (NBR 13419 / NBR 14177) e validade',
+          'Conferência de selo de certificação INMETRO em válvulas, registros e mangueiras',
+          'Verificação das datas de reteste hidrostático dos cilindros estacionários/transportáveis',
+          'Elaboração de inventário de substituições preventivas programadas'
+        ],
+        secoesSugeridas: [
+          '1. Inventário de Reguladores de Pressão, Mangueiras e Válvulas',
+          '2. Conferência de Homologação INMETRO / Normas ABNT',
+          '3. Controle de Datas de Fabricação, Vencimento e Reteste de Cilindros',
+          '4. Cronograma de Troca de Componentes Vencidos ou Próximos ao Vencimento'
+        ]
+      },
+      {
+        id: 'gas-sinalizacao-seguranca',
+        nome: 'Inspeção de Sinalização de Segurança',
+        normaRef: 'NR-26 · NBR 15514',
+        detalhe: 'Verificação de placas obrigatórias ("Perigo - Inflamável", "Proibido Chama/Faísca", identificação de capacidade e fornecedor conforme NR-26).',
+        checklistSugerido: [
+          'Presença de placa "PERIGO - INFLAMÁVEL" e "PROIBIDO FUMAR / CHAMA / FAÍSCA"',
+          'Identificação da capacidade máxima de armazenamento (kg), classe de risco e fornecedor',
+          'Identificação por cores na tubulação de gás combustível conforme ABNT NBR 6493 / NR-26 (Amarelo)',
+          'Sinalização de válvula de corte geral de emergência em local visível e acessível',
+          'Integridade, fixação e legibilidade das placas em materiais resistentes às intempéries'
+        ],
+        secoesSugeridas: [
+          '1. Requisitos de Sinalização para Centrais de GLP/GN (NR-26 / NBR 15514)',
+          '2. Verificação de Placas Obrigatórias e Identificação de Tubulações',
+          '3. Evidências Fotográficas e Itens de Adequação Visual'
+        ]
+      },
+      {
+        id: 'gas-laudo-estanqueidade-art',
+        nome: 'Emissão de Laudo de Estanqueidade + Relatório Preventivo + ART',
+        normaRef: 'NBR 15526 · CREA-PE',
+        detalhe: 'Documento técnico conclusivo por abrigo e ponto de consumo com registro fotográfico (P1/P2 e LEL) e Plano de Ação.',
+        checklistSugerido: [
+          'Consolidação do teste de estanqueidade (P1/P2 com ΔP = 0) e rastreamento LEL por ambiente',
+          'Avaliação individual de cada abrigo/central e de todos os pontos de consumo atendidos',
+          'Anexo fotográfico completo dos manômetros calibrados, leituras LEL e componentes',
+          'Plano de Ação com classificação de risco e prazos de adequação de não conformidades',
+          'Emissão da ART no CREA-PE com validade técnica para CBM / AVCB e auditorias'
+        ],
+        secoesSugeridas: [
+          '1. Identificação do Empreendimento, Centrais de Gás e Pontos de Consumo',
+          '2. Resultados do Ensaio de Estanqueidade (P1/P2) e Medições LEL',
+          '3. Auditoria de Abrigos, Componentes e Sinalização (NBR 15514 / NR-26)',
+          '4. Parecer Técnico Conclusivo e Plano de Ação Corretiva',
+          '5. Registro Fotográfico, Certificados de Calibração e ART CREA-PE'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'nr13-tubulacoes-tanques',
+    nome: 'Inspeção de Tubulações e Tanques Metálicos (NR-13)',
+    norma: 'NR-13 · ASME B31.3 · API 653',
+    descricao: 'Foco em linhas industriais de vapor, ar comprimido, gases, fluidos térmicos e tanques de armazenamento não enterrados.',
+    subtipos: [
+      {
+        id: 'nr13-tub-cadastramento',
+        nome: 'Cadastramento e Enquadramento de Tubulações (NR-13)',
+        normaRef: 'NR-13 · Fluido Classe A ou B',
+        detalhe: 'Classificação por classe de fluido (A ou B), pressão e diâmetro.',
+        checklistSugerido: [
+          'Identificação de todas as linhas industriais (vapor, ar comprimido, gases e fluidos térmicos)',
+          'Classificação rigorosa dos fluidos transportados (Classe A ou Classe B conforme NR-13)',
+          'Levantamento de diâmetro nominal (DN), pressão de operação e temperatura de projeto',
+          'Definição do enquadramento obrigatório na NR-13 para cada linha ou sistema interligado',
+          'Estruturação do inventário codificado de tubulações com tags de campo'
+        ],
+        secoesSugeridas: [
+          '1. Inventário Geral das Linhas de Tubulação Industrial',
+          '2. Classificação de Fluidos (Classe A / B) e Parâmetros Operacionais',
+          '3. Critérios de Enquadramento na NR-13 (Pressão, Diâmetro e Ligação a Vasos/Caldeiras)',
+          '4. Cadastro Mestre de Tubulações Enquadradas'
+        ]
+      },
+      {
+        id: 'nr13-tub-fluxograma-isometrico',
+        nome: 'Elaboração de Fluxograma de Engenharia e Isométricos',
+        normaRef: 'NR-13 · Engenharia de Tubulações',
+        detalhe: 'Levantamento em campo e desenho técnico da rede com identificação de válvulas e pontos de medição.',
+        checklistSugerido: [
+          'Levantamento dimensional as-built do traçado completo das tubulações em planta',
+          'Identificação gráfica de válvulas de bloqueio, retenção, controle, purgadores e PSVs',
+          'Demarcação numerada dos pontos críticos de medição de espessura (TMLs)',
+          'Elaboração do Fluxograma de Engenharia (P&ID) e/ou Desenhos Isométricos',
+          'Vinculação dos desenhos técnicos ao Prontuário de Tubulações NR-13'
+        ],
+        secoesSugeridas: [
+          '1. Premissas do Levantamento As-Built em Campo',
+          '2. Simbologia, Identificação de Válvulas e Acessórios de Linha',
+          '3. Mapeamento dos Pontos de Medição de Espessura (TMLs)',
+          '4. Pranchas de Fluxograma de Engenharia e Isométricos'
+        ]
+      },
+      {
+        id: 'nr13-tub-inspecao-espessura',
+        nome: 'Inspeção Visual e Medição de Espessura em Linhas',
+        normaRef: 'NR-13 · Ultrassom · CSI',
+        detalhe: 'Avaliação de suportes, juntas de expansão, corrosão sob isolamento (CSI) e pontos críticos de desgaste.',
+        checklistSugerido: [
+          'Inspeção visual de suportes, guias, molas, abraçadeiras, vibrações anômalas e ancoragens',
+          'Avaliação de juntas de expansão, purgadores de vapor, flanges e vazamentos em gaxetas',
+          'Inspeção em janelas de verificação de Corrosão Sob Isolamento (CSI / CUI) em linhas isoladas',
+          'Medição de espessura por ultrassom em curvas, tês, reduções e trechos de alta velocidade',
+          'Comparação com espessura mínima admissível (ASME B31.1 / B31.3) e cálculo de taxa de desgaste'
+        ],
+        secoesSugeridas: [
+          '1. Linhas Inspecionadas e Condições Operacionais',
+          '2. Exame Visual de Suportes, Juntas de Expansão e Isolamento (CSI)',
+          '3. Mapeamento Ultrassônico de Espessuras em Pontos Críticos (TMLs)',
+          '4. Análise de Corrosão, Erosão e Recomendações de Reparo'
+        ]
+      },
+      {
+        id: 'nr13-tanques-metalicos',
+        nome: 'Inspeção de Tanques Metálicos de Armazenamento',
+        normaRef: 'NR-13 · API 653 · NBR 17505',
+        detalhe: 'Avaliação de costado, teto, fundo, bacia de contenção, respiros e dispositivos de alívio.',
+        checklistSugerido: [
+          'Inspeção estrutural dos anéis do costado, soldas verticais/horizontais e deformações',
+          'Avaliação do teto, guarda-corpos, escadas marinheiro/helicoidais e bocas de visita',
+          'Inspeção da chapa de fundo, projeção da borda (chime), recalque de base e aterramento',
+          'Avaliação da integridade e capacidade da bacia de contenção e válvulas de drenagem',
+          'Verificação de respiros, corta-chamas, válvulas de alívio de pressão/vácuo e medição de espessura'
+        ],
+        secoesSugeridas: [
+          '1. Dados Construtivos do Tanque Metálico e Produto Armazenado',
+          '2. Inspeção de Costado, Teto, Fundo e Medição de Espessuras',
+          '3. Avaliação de Bacia de Contenção, Respiros e Dispositivos de Alívio',
+          '4. Parecer de Integridade Estrutural e Plano de Manutenção'
+        ]
+      },
+      {
+        id: 'nr13-tub-plano-inspecao-art',
+        nome: 'Plano de Inspeção e Manutenção de Tubulações + ART',
+        normaRef: 'NR-13 · CREA-PE',
+        detalhe: 'Definição de periodicidade de monitoramento e emissão de laudo conclusivo.',
+        checklistSugerido: [
+          'Definição do Plano Formal de Inspeção e Manutenção baseado em criticidade e fluido',
+          'Estabelecimento de intervalos máximos entre inspeções externas e medições END',
+          'Rotina de inspeção de dispositivos de segurança, purgadores e suportação',
+          'Emissão de Laudo Conclusivo de Conformidade de Tubulações e Tanques (NR-13)',
+          'Registro da ART no CREA-PE sob responsabilidade de Profissional Habilitado'
+        ],
+        secoesSugeridas: [
+          '1. Política e Critérios de Monitoramento de Tubulações (NR-13)',
+          '2. Matriz de Criticidade e Periodicidade por Linha / Tanque',
+          '3. Procedimentos de Inspeção Periódica e Acompanhamento de Espessura',
+          '4. Parecer Conclusivo e ART CREA-PE'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'engenharia-documental-auditoria',
+    nome: 'Engenharia Documental, Auditoria e Gestão de Conformidade',
+    norma: 'NR-13 · ABNT NBR · CBM · MTE',
+    descricao: 'Foco em consultoria técnica, validação remota/presencial de terceiros e gestão de prazos.',
+    subtipos: [
+      {
+        id: 'doc-auditoria-terceiros',
+        nome: 'Auditoria Técnica de Laudos de Terceiros',
+        normaRef: 'NR-13 · Auditoria Normativa',
+        detalhe: 'Revisão normativa de relatórios, certificados de calibração e evidências fotográficas executadas por equipes parceiras.',
+        checklistSugerido: [
+          'Conferência de escopo mínimo exigido pela NR-13 e normas ABNT/ASME aplicáveis',
+          'Validação da rastreabilidade RBC/INMETRO e validade dos certificados de calibração anexos',
+          'Análise crítica das medições de espessura, memória de cálculo PMTA e coerência dos dados',
+          'Auditoria de consistência das evidências fotográficas, datas, lacres e plaquetas',
+          'Verificação de emissão e regularidade da ART junto ao CREA correspondente'
+        ],
+        secoesSugeridas: [
+          '1. Identificação dos Documentos e Equipes Terceiras Auditadas',
+          '2. Critérios de Revisão Normativa e Técnica Aplicados',
+          '3. Lista de Inconsistências, Lacunas Documentais e Pontos Validados',
+          '4. Parecer de Homologação ou Solicitação de Retificação Técnica'
+        ]
+      },
+      {
+        id: 'doc-plano-acao-adequacao',
+        nome: 'Elaboração de Plano de Ação e Adequação (NR-13 / NBR)',
+        normaRef: 'NR-13 · ABNT NBR · Matriz de Risco',
+        detalhe: 'Matriz de risco com priorização (Alta/Crítica, Média, Baixa) e prazos legais para correção de Não Conformidades.',
+        checklistSugerido: [
+          'Consolidação de todas as Não Conformidades (NCs) levantadas nas inspeções de campo',
+          'Classificação por Matriz de Risco: Alta/Crítica (risco grave e iminente), Média e Baixa',
+          'Definição da ação corretiva recomendada, responsável técnico e recursos necessários',
+          'Estabelecimento de prazos legais e metas escalonadas de atendimento normativo',
+          'Planilha de acompanhamento de evidências de fechamento (Antes × Depois)'
+        ],
+        secoesSugeridas: [
+          '1. Diagnóstico Consolidado das Não Conformidades',
+          '2. Metodologia de Priorização (Criticidade Alta/Crítica, Média e Baixa)',
+          '3. Matriz 5W2H de Adequações Técnicas e Prazos Legais',
+          '4. Protocolo de Validação e Encerramento das Pendências'
+        ]
+      },
+      {
+        id: 'doc-consultoria-cbm-mte',
+        nome: 'Consultoria para Adequação de Instalações (Pré-Vistoria CBM / MTE)',
+        normaRef: 'CBM / AVCB · MTE',
+        detalhe: 'Acompanhamento técnico para obtenção de AVCB (Corpo de Bombeiros) ou atendimento a notificações do Ministério do Trabalho.',
+        checklistSugerido: [
+          'Análise de autos de infração, termos de notificação do MTE ou exigências do Corpo de Bombeiros',
+          'Pré-vistoria técnica in loco simulando os critérios rigorosos dos órgãos fiscalizadores',
+          'Orientação executiva sobre centrais de GLP/GN, vasos sob pressão, máquinas e sinalização',
+          'Organização do dossiê técnico completo (laudos, testes de estanqueidade, ARTs e certificados)',
+          'Acompanhamento técnico de campo durante a vistoria oficial ou protocolo de defesa técnica'
+        ],
+        secoesSugeridas: [
+          '1. Análise das Exigências / Notificações (CBMPE / MTE)',
+          '2. Relatório de Pré-Vistoria Técnica e Gap Analysis das Instalações',
+          '3. Dossiê de Documentos, Laudos e ARTs Exigidos para Protocolo',
+          '4. Parecer de Prontidão para Vistoria Oficial / AVCB'
+        ]
+      },
+      {
+        id: 'doc-cronograma-vencimentos',
+        nome: 'Gestão de Cronograma Anual de Vencimentos',
+        normaRef: 'NR-13 · Controle Preventivo',
+        detalhe: 'Controle preventivo de validade de exames externos/internos, calibrações de PSV/manômetros e testes de estanqueidade.',
+        checklistSugerido: [
+          'Inventário mestre de todos os ativos submetidos a inspeções periódicas obrigatórias',
+          'Mapeamento das datas de vencimento de exames externos, internos e testes de estanqueidade',
+          'Controle de periodicidade de calibração de PSVs, manômetros, pressostatos e detectores',
+          'Programação anual escalonada para evitar paradas não planejadas e autuações',
+          'Sistema de alertas preventivos (90, 60 e 30 dias antes do vencimento)'
+        ],
+        secoesSugeridas: [
+          '1. Inventário Consolidado de Ativos e Obrigações Normativas',
+          '2. Calendário Anual de Exames NR-13, Calibrações e Estanqueidade',
+          '3. Matriz de Alertas Preventivos e Planejamento de Paradas',
+          '4. Indicadores de Conformidade e Aderência ao Cronograma'
+        ]
+      }
+    ]
   }
 ];
