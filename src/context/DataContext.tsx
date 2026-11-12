@@ -44,19 +44,6 @@ import { LAUDO_DUSTER_COMPLETO } from '../data/laudoDusterCompleto';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
-import { 
-  sincronizarFirestoreNR12eNR13, 
-  sincronizarFirestoreVeicular,
-  sincronizarFirestoreIncendio,
-  sincronizarFirestoreMaquinasPesadas,
-  sincronizarFirestorePlayground,
-  sincronizarFirestoreEstruturasMetalicas,
-  sincronizarFirestoreElevacaoIndustrial,
-  sincronizarFirestoreTubulacoesProcesso,
-  sincronizarFirestorePericiasAvaliacaoBens,
-  sincronizarFirestoreGeradoresAcessibilidadeRuido,
-  sincronizarFirestoreClimatizacao
-} from '../lib/firestoreTaxonomia';
 import { db, auth } from '../lib/firebase';
 import { 
   doc, 
@@ -68,7 +55,13 @@ import {
   onSnapshot, 
   getDocFromServer 
 } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
+import { 
+  handleFirestoreError, 
+  isFirestoreWriteQuotaBlocked, 
+  isQuotaExceededError, 
+  markFirestoreWriteQuotaBlocked, 
+  OperationType 
+} from '../lib/firestoreUtils';
 import { useAuth } from './AuthContext';
 import { 
   HTML_CARDS_CATALOGO_SERVICOS,
@@ -827,6 +820,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
 
   const isHydratedRef = useRef(false);
+  const dusterSyncAttemptedRef = useRef(false);
 
   const salvarServidorDireto = useCallback((parcial: { 
     clientes?: Cliente[]; 
@@ -867,33 +861,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // Se a nuvem estiver vazia, faz o seed inicial dos dados canônicos uma única vez
         const clientesSnap = await getDocs(collection(db, 'clientes'));
-        if (clientesSnap.empty && !cancelado) {
+        if (clientesSnap.empty && !cancelado && !isFirestoreWriteQuotaBlocked()) {
           console.log('[Firestore] Inicializando coleções na nuvem com dados canônicos...');
-          for (const c of clientes) {
-            await setDoc(doc(db, 'clientes', c.id), c, { merge: true });
-          }
-          for (const a of ativos) {
-            await setDoc(doc(db, 'ativos', a.id), a, { merge: true });
-          }
-          for (const l of laudos) {
-            await setDoc(doc(db, 'laudos', l.id), l, { merge: true });
-          }
-          for (const o of orcamentos) {
-            await setDoc(doc(db, 'orcamentos', o.id), o, { merge: true });
-          }
-          for (const ck of checklistsCampo) {
-            await setDoc(doc(db, 'checklistsCampo', ck.id), ck, { merge: true });
-          }
-          for (const ag of agenda) {
-            await setDoc(doc(db, 'agendaVistorias', ag.id), ag, { merge: true });
-          }
-          for (const u of usuarios) {
-            await setDoc(doc(db, 'usuarios', u.uid), u, { merge: true });
+          const seedEntries: Array<{ col: string; id: string; data: unknown }> = [
+            ...clientes.map(c => ({ col: 'clientes', id: c.id, data: c })),
+            ...ativos.map(a => ({ col: 'ativos', id: a.id, data: a })),
+            ...laudos.map(l => ({ col: 'laudos', id: l.id, data: l })),
+            ...orcamentos.map(o => ({ col: 'orcamentos', id: o.id, data: o })),
+            ...checklistsCampo.map(ck => ({ col: 'checklistsCampo', id: ck.id, data: ck })),
+            ...agenda.map(ag => ({ col: 'agendaVistorias', id: ag.id, data: ag })),
+            ...usuarios.map(u => ({ col: 'usuarios', id: u.uid, data: u })),
+          ];
+          for (const entry of seedEntries) {
+            if (cancelado || isFirestoreWriteQuotaBlocked()) break;
+            try {
+              await setDoc(doc(db, entry.col, entry.id), entry.data as Record<string, unknown>, { merge: true });
+            } catch (seedErr) {
+              if (isQuotaExceededError(seedErr)) {
+                markFirestoreWriteQuotaBlocked();
+                break;
+              }
+              throw seedErr;
+            }
           }
           console.log('[Firestore] Dados canônicos unificados na nuvem com sucesso!');
         }
       } catch (err) {
-        console.warn('[Firestore] Verificação inicial em modo tolerante:', err);
+        if (isQuotaExceededError(err)) {
+          markFirestoreWriteQuotaBlocked();
+        } else {
+          console.warn('[Firestore] Verificação inicial em modo tolerante:', err);
+        }
       }
 
       // Listeners em tempo real para sincronização instantânea entre múltiplos dispositivos
@@ -966,9 +964,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 orcamentoNumero: duster.orcamentoNumero || 'PROP-1790444416499'
               };
               docsMerged[dusterIdx] = dusterCompleto;
-              if (db && auth?.currentUser) {
+              if (db && auth?.currentUser && !dusterSyncAttemptedRef.current && !isFirestoreWriteQuotaBlocked()) {
+                dusterSyncAttemptedRef.current = true;
                 setDoc(doc(db, 'laudos', 'lau-2026-002-duster'), dusterCompleto, { merge: true }).catch(err => {
-                  console.warn('Erro ao sincronizar laudo duster completo no Firestore:', err);
+                  handleFirestoreError(err, OperationType.WRITE, 'laudos/lau-2026-002-duster');
                 });
               }
             } else if (!duster.orcamentoOrigemId) {
@@ -1223,98 +1222,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearTimeout(timer);
   }, [clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios]);
 
-  // Sincronização de documentos Firestore das categorias de laudo (apenas para o master autenticado)
-  useEffect(() => {
-    if (!firebaseUser || !auth?.currentUser || currentUser?.role !== 'master') return;
-
-    sincronizarFirestoreNR12eNR13().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia NR12/NR13] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia NR12/NR13] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreVeicular().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Veicular] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Veicular] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreIncendio().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Incêndio] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Incêndio] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreMaquinasPesadas().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Máquinas Pesadas] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Máquinas Pesadas] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestorePlayground().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Playground] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Playground] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreEstruturasMetalicas().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Estruturas Metálicas] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Estruturas Metálicas] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreElevacaoIndustrial().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Elevação Industrial] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Elevação Industrial] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreTubulacoesProcesso().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Tubulações de Processo] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Tubulações de Processo] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestorePericiasAvaliacaoBens().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Perícias e Avaliação de Bens] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Perícias e Avaliação de Bens] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreGeradoresAcessibilidadeRuido().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Geradores e Acessibilidade/Ruído] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Geradores e Acessibilidade/Ruído] Sincronização em segundo plano:', err);
-    });
-
-    sincronizarFirestoreClimatizacao().then(res => {
-      if (res.sucesso) {
-        console.log(`[Firestore Taxonomia Climatização e Manutenção] ${res.mensagem}`);
-      }
-    }).catch(err => {
-      console.warn('[Firestore Taxonomia Climatização e Manutenção] Sincronização em segundo plano:', err);
-    });
-  }, [firebaseUser, currentUser?.role]);
+  // Taxonomia de laudos é servida localmente via CATEGORIAS_LAUDOS_TAXONOMIA e localStorage,
+  // evitando centenas de gravações automáticas por carregamento que esgotam a cota diária do Firestore.
 
   // Log Auditoria Helper
   const registrarLog = (colecao: string, docId: string, acao: LogAuditoria['acao'], detalhes?: string) => {
@@ -1376,7 +1285,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return lista;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'clientes', id), novo).catch(err => {
         handleFirestoreError(err, OperationType.CREATE, `clientes/${id}`);
       });
@@ -1409,7 +1318,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return atualizados;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'clientes', id), dadosTratados, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `clientes/${id}`);
       });
@@ -1504,7 +1413,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return filtrados;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'clientes', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `clientes/${id}`);
       });
@@ -1531,7 +1440,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return lista;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'ativos', id), novo).catch(err => {
         handleFirestoreError(err, OperationType.CREATE, `ativos/${id}`);
       });
@@ -1554,7 +1463,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return atualizados;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'ativos', id), dadosAtualizados, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `ativos/${id}`);
       });
@@ -1571,7 +1480,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return filtrados;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'ativos', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `ativos/${id}`);
       });
@@ -1613,7 +1522,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return lista;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'orcamentos', id), novo).catch(err => {
         handleFirestoreError(err, OperationType.CREATE, `orcamentos/${id}`);
       });
@@ -1631,7 +1540,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return atualizados;
     });
     registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'orcamentos', id), dados, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
       });
@@ -1639,15 +1548,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarStatusOrcamento = (id: string, status: Orcamento['status']) => {
+    const agora = new Date().toISOString();
+    const existente = orcamentos.find(o => o.id === id);
+    const patch: Partial<Orcamento> = { status };
+    if (status === 'aprovado' && !existente?.aprovadoEm) {
+      patch.aprovadoEm = agora;
+    }
+    if (status === 'faturado' && !existente?.faturadoEm) {
+      patch.faturadoEm = agora;
+    }
+
     setOrcamentos(prev => {
-      const atualizados = prev.map(o => o.id === id ? { ...o, status } : o);
+      const atualizados = prev.map(o => o.id === id ? { ...o, ...patch } : o);
       saveStorage('vl_orcamentos', atualizados);
       salvarServidorDireto({ orcamentos: atualizados });
       return atualizados;
     });
 
-    if (db && auth?.currentUser) {
-      setDoc(doc(db, 'orcamentos', id), { status }, { merge: true }).catch(err => {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'orcamentos', id), patch, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
       });
     }
@@ -1698,7 +1617,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // 5. Deleta do Firestore se disponível
-    if (db) {
+    if (db && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'orcamentos', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `orcamentos/${id}`);
       });
@@ -1820,7 +1739,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...o, 
             laudoGeradoId: laudoId || undefined,
             laudoGeradoNumero: laudoVinculado?.numero || undefined,
-            status: laudoId ? ('aprovado' as const) : o.status
+            status: laudoId ? (o.status === 'faturado' ? 'faturado' : 'aprovado') : o.status
           };
         }
         // Se outro orçamento apontava para este mesmo laudo, remove vínculo antigo
@@ -1868,12 +1787,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // 4. Salvar no Firestore se houver usuário conectado
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       if (orcamentoId) {
         setDoc(doc(db, 'orcamentos', orcamentoId), {
           laudoGeradoId: laudoId || null,
           laudoGeradoNumero: laudoVinculado?.numero || null,
-          ...(laudoId ? { status: 'aprovado' } : {})
+          ...(laudoId && orcAtual?.status !== 'faturado' ? { status: 'aprovado' } : {})
         }, { merge: true }).catch(err => {
           handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${orcamentoId}`);
         });
@@ -2570,19 +2489,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           // Envia para /api/app-data e Firestore
-          if (db && auth?.currentUser) {
-            await setDoc(doc(db, 'checklistsCampo', item.checklistId), item.payload, { merge: true });
-          }
-
           await fetch('/api/app-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ checklistsCampo: checklistsCampo.map(c => c.id === item.checklistId ? item.payload : c) }),
           }).catch(() => undefined);
 
+          if (db && auth?.currentUser) {
+            if (isFirestoreWriteQuotaBlocked()) {
+              break;
+            }
+            await setDoc(doc(db, 'checklistsCampo', item.checklistId), item.payload, { merge: true });
+          }
+
           await removeFromQueue(item.id);
           await removeDraftOffline(item.checklistId);
         } catch (err) {
+          if (isQuotaExceededError(err)) {
+            markFirestoreWriteQuotaBlocked();
+            break;
+          }
           console.warn('[OfflineSync] Falha ao sincronizar item da fila:', item.checklistId, err);
         }
       }
@@ -2674,7 +2600,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (offline) {
+    if (offline || isFirestoreWriteQuotaBlocked()) {
       enqueueSync({
         id: `sync-${id}-${Date.now()}`,
         checklistId: id,
@@ -2685,6 +2611,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), novo).catch(err => {
+          if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
           enqueueSync({
             id: `sync-${id}-${Date.now()}`,
@@ -2710,7 +2637,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (offline && atualizado) {
+    if ((offline || isFirestoreWriteQuotaBlocked()) && atualizado) {
       enqueueSync({
         id: `sync-${id}-${Date.now()}`,
         checklistId: id,
@@ -2722,6 +2649,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), { ...dados, atualizadoEm: agora }, { merge: true }).catch(err => {
+          if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
           if (atualizado) {
             enqueueSync({
@@ -2759,7 +2687,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado: ${id}`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (offline && existente) {
+    if ((offline || isFirestoreWriteQuotaBlocked()) && existente) {
       enqueueSync({
         id: `sync-${id}-${Date.now()}`,
         checklistId: id,
@@ -2771,6 +2699,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), dadosFinais, { merge: true }).catch(err => {
+          if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Firestore sync err (enfileirando offline):', err);
           if (existente) {
             enqueueSync({

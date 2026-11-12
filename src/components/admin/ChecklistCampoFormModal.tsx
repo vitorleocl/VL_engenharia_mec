@@ -180,11 +180,11 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     };
   }, [checklistParaEditar]);
 
-  // Ordenar orçamentos priorizando os Aprovados (B3)
+  // Ordenar orçamentos priorizando os Aprovados e Faturados (B3)
   const orcamentosOrdenados = useMemo(() => {
     return [...orcamentos].sort((a, b) => {
-      const aAprov = a.status === 'aprovado' ? 0 : 1;
-      const bAprov = b.status === 'aprovado' ? 0 : 1;
+      const aAprov = a.status === 'aprovado' || a.status === 'faturado' ? 0 : 1;
+      const bAprov = b.status === 'aprovado' || b.status === 'faturado' ? 0 : 1;
       if (aAprov !== bAprov) return aAprov - bAprov;
       return new Date(b.criadoEm || 0).getTime() - new Date(a.criadoEm || 0).getTime();
     });
@@ -770,7 +770,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                   <option value="">-- Selecione o orçamento (prioridade aprovados) --</option>
                   {orcamentosOrdenados.map((orc, idx) => (
                     <option key={orc.id ? `${orc.id}-${idx}` : `orc-${idx}`} value={orc.id}>
-                      [{orc.status === 'aprovado' ? 'APROVADO' : (orc.status || 'RASCUNHO').toUpperCase()}] {orc.codigoProposta || orc.id} · {orc.clienteNome || 'Cliente'} — {orc.servico}
+                      [{orc.status === 'faturado' ? 'FATURADO' : orc.status === 'aprovado' ? 'APROVADO' : (orc.status || 'RASCUNHO').toUpperCase()}] {orc.codigoProposta || orc.id} · {orc.clienteNome || 'Cliente'} — {orc.servico}
                     </option>
                   ))}
                 </select>

@@ -1393,12 +1393,18 @@ export const OrcamentoEditorView: React.FC = () => {
                 value={orcamentoState.status}
                 onChange={(e) => {
                   const novoStatus = e.target.value as Orcamento['status'];
-                  setOrcamentoState(prev => prev ? { ...prev, status: novoStatus } : prev);
-                  atualizarOrcamento(orcamentoState.id, { status: novoStatus });
+                  const agora = new Date().toISOString();
+                  const patch: Partial<Orcamento> = { status: novoStatus };
+                  if (novoStatus === 'aprovado' && !orcamentoState.aprovadoEm) patch.aprovadoEm = agora;
+                  if (novoStatus === 'faturado' && !orcamentoState.faturadoEm) patch.faturadoEm = agora;
+                  setOrcamentoState(prev => prev ? { ...prev, ...patch } : prev);
+                  atualizarOrcamento(orcamentoState.id, patch);
                 }}
                 className={`text-[11px] font-extrabold uppercase rounded px-1.5 py-0.5 border cursor-pointer ${
                   orcamentoState.status === 'aprovado'
                     ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : orcamentoState.status === 'faturado'
+                    ? 'bg-sky-100 text-sky-800 border-sky-300'
                     : orcamentoState.status === 'enviado'
                     ? 'bg-blue-100 text-blue-800 border-blue-300'
                     : orcamentoState.status === 'recusado'
@@ -1410,6 +1416,7 @@ export const OrcamentoEditorView: React.FC = () => {
                 <option value="enviado">Enviada</option>
                 <option value="aprovado">Aprovada</option>
                 <option value="recusado">Recusada</option>
+                <option value="faturado">Faturado</option>
               </select>
             </div>
           </div>

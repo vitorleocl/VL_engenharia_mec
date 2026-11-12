@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
+import { isFirestoreWriteQuotaBlocked, isQuotaExceededError, markFirestoreWriteQuotaBlocked } from '../lib/firestoreUtils';
 import { Usuario, SolicitacaoAcesso } from '../types';
 
 interface AuthContextType {
@@ -111,11 +112,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
 
           try {
-            if (db) {
-              await setDoc(doc(db, 'usuarios', user.uid), masterUser, { merge: true });
+            if (db && !isFirestoreWriteQuotaBlocked()) {
+              const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
+              if (!userSnap.exists() || userSnap.data()?.role !== 'master') {
+                await setDoc(doc(db, 'usuarios', user.uid), masterUser, { merge: true });
+              }
             }
           } catch (e) {
-            console.warn('[Auth] Sincronização offline Firestore do master:', e);
+            if (isQuotaExceededError(e)) {
+              markFirestoreWriteQuotaBlocked();
+            } else {
+              console.warn('[Auth] Sincronização offline Firestore do master:', e);
+            }
           }
 
           setFirebaseUser(user);
@@ -274,11 +282,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         criadoEm: '2025-01-01T00:00:00Z',
       };
 
-      if (db && auth?.currentUser) {
+      if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
         try {
-          await setDoc(doc(db, 'usuarios', masterUser.uid), masterUser, { merge: true });
+          const userSnap = await getDoc(doc(db, 'usuarios', masterUser.uid));
+          if (!userSnap.exists() || userSnap.data()?.role !== 'master') {
+            await setDoc(doc(db, 'usuarios', masterUser.uid), masterUser, { merge: true });
+          }
         } catch (e) {
-          console.warn('[Auth] Sincronização offline Firestore:', e);
+          if (isQuotaExceededError(e)) {
+            markFirestoreWriteQuotaBlocked();
+          } else {
+            console.warn('[Auth] Sincronização offline Firestore:', e);
+          }
         }
       }
 

@@ -21,6 +21,7 @@ import { ClientesView } from './components/admin/ClientesView';
 import { AtivosView } from './components/admin/AtivosView';
 import { OrcamentosView } from './components/admin/OrcamentosView';
 import { OrcamentoEditorView } from './components/admin/OrcamentoEditorView';
+import { FaturamentoView } from './components/admin/FaturamentoView';
 import { AgendaView } from './components/admin/AgendaView';
 import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
@@ -150,6 +151,14 @@ export default function App() {
               <Route
                 path="/admin/orcamentos/:id/imprimir"
                 element={<PropostaPrintView />}
+              />
+              <Route
+                path="/admin/faturamento"
+                element={
+                  <AdminLayout>
+                    <FaturamentoView />
+                  </AdminLayout>
+                }
               />
               <Route
                 path="/admin/agenda"

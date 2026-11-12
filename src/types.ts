@@ -87,7 +87,7 @@ export interface Ativo {
   criadoEm: string;
 }
 
-export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado';
+export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado' | 'faturado';
 
 export interface PropostaPagina {
   id?: string;
@@ -197,6 +197,8 @@ export interface Orcamento {
   chavePix?: string;
   qrCodePixUrl?: string;
   status: OrcamentoStatus;
+  aprovadoEm?: string;
+  faturadoEm?: string;
   laudoGeradoId?: string;
   tipoLaudoVinculadoId?: string;
   fotosDescricao?: string;

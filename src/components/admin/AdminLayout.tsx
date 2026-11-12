@@ -7,6 +7,7 @@ import {
   Users, 
   Cpu, 
   FileSpreadsheet, 
+  TrendingUp,
   ShieldCheck, 
   LogOut, 
   ExternalLink,
@@ -96,6 +97,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/orcamentos',
       icon: FileSpreadsheet,
       badge: String(orcamentos.length),
+      visible: isColaborador
+    },
+    {
+      id: 'faturamento',
+      label: 'Faturamento',
+      path: '/admin/faturamento',
+      icon: TrendingUp,
+      badge: String(orcamentos.filter(o => o.status === 'faturado').length),
       visible: isColaborador
     },
     {

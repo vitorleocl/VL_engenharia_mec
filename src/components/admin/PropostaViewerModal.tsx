@@ -763,7 +763,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               >
                 Aprovada
               </button>
-              {orcamento.status === 'aprovado' && onGerarLaudo && (
+              <button
+                onClick={() => onStatusChange(orcamento.id, 'faturado')}
+                className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer ${
+                  orcamento.status === 'faturado' ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                Faturado
+              </button>
+              {(orcamento.status === 'aprovado' || orcamento.status === 'faturado') && onGerarLaudo && (
                 <button
                   onClick={() => onGerarLaudo(orcamento)}
                   className="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer ml-1"

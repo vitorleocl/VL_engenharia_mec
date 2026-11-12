@@ -48,6 +48,8 @@ export const OrcamentosView: React.FC = () => {
   const [propostaModalOrcamento, setPropostaModalOrcamento] = useState<Orcamento | null>(null);
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
   const [busca, setBusca] = useState('');
+  const [filtroMes, setFiltroMes] = useState('');
+  const [filtroClienteId, setFiltroClienteId] = useState('');
 
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
   const [cnpjCliente, setCnpjCliente] = useState('');
@@ -213,23 +215,70 @@ export const OrcamentosView: React.FC = () => {
     setModalNovoAberto(false);
   };
 
-  // Filter orcamentos by search query
-  const orcamentosFiltrados = useMemo(() => {
-    if (!busca.trim()) return orcamentos;
-    const b = busca.toLowerCase();
-    return orcamentos.filter(o => 
-      (o.servico && o.servico.toLowerCase().includes(b)) ||
-      (o.codigoProposta && o.codigoProposta.toLowerCase().includes(b)) ||
-      (o.clienteNome && o.clienteNome.toLowerCase().includes(b)) ||
-      (o.descricaoEscopo && o.descricaoEscopo.toLowerCase().includes(b))
-    );
-  }, [orcamentos, busca]);
+  // Meses disponíveis nos orçamentos (YYYY-MM)
+  const mesesDisponiveis = useMemo(() => {
+    const mapMeses = new Map<string, string>();
+    orcamentos.forEach((o) => {
+      const ref = o.emitidaEm || o.criadoEm;
+      if (!ref) return;
+      const d = new Date(ref);
+      if (isNaN(d.getTime())) return;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!mapMeses.has(ym)) {
+        const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        mapMeses.set(ym, label.charAt(0).toUpperCase() + label.slice(1));
+      }
+    });
+    return Array.from(mapMeses.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [orcamentos]);
 
-  // Categorize orcamentos into 4 columns: Novos, Enviados, Aprovados, Recusados
+  // Clientes para filtro
+  const clientesFiltro = useMemo(() => {
+    const mapa = new Map<string, string>();
+    clientes.forEach((c) => {
+      mapa.set(c.id, c.nomeFantasia || c.razaoSocial);
+    });
+    orcamentos.forEach((o) => {
+      if (o.clienteId && !mapa.has(o.clienteId) && o.clienteNome) {
+        mapa.set(o.clienteId, o.clienteNome);
+      }
+    });
+    return Array.from(mapa.entries()).sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+  }, [clientes, orcamentos]);
+
+  // Filter orcamentos by search query, month, and client
+  const orcamentosFiltrados = useMemo(() => {
+    const b = busca.trim().toLowerCase();
+    return orcamentos.filter((o) => {
+      if (filtroClienteId && o.clienteId !== filtroClienteId) {
+        return false;
+      }
+      if (filtroMes) {
+        const ref = o.emitidaEm || o.criadoEm;
+        const d = ref ? new Date(ref) : null;
+        const ym = d && !isNaN(d.getTime())
+          ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          : '';
+        if (ym !== filtroMes) return false;
+      }
+      if (b) {
+        return (
+          (o.servico && o.servico.toLowerCase().includes(b)) ||
+          (o.codigoProposta && o.codigoProposta.toLowerCase().includes(b)) ||
+          (o.clienteNome && o.clienteNome.toLowerCase().includes(b)) ||
+          (o.descricaoEscopo && o.descricaoEscopo.toLowerCase().includes(b))
+        );
+      }
+      return true;
+    });
+  }, [orcamentos, busca, filtroMes, filtroClienteId]);
+
+  // Categorize orcamentos into 5 columns: Novos, Enviados, Aprovados, Recusados, Faturado
   const colNovos = orcamentosFiltrados.filter(o => o.status === 'rascunho' || !o.status);
   const colEnviados = orcamentosFiltrados.filter(o => o.status === 'enviado');
   const colAprovados = orcamentosFiltrados.filter(o => o.status === 'aprovado');
   const colRecusados = orcamentosFiltrados.filter(o => o.status === 'recusado');
+  const colFaturados = orcamentosFiltrados.filter(o => o.status === 'faturado');
 
   const renderOrcamentoCard = (orcamento: Orcamento) => {
     const cliente = clientes.find(c => c.id === orcamento.clienteId);
@@ -238,45 +287,45 @@ export const OrcamentosView: React.FC = () => {
     return (
       <div 
         key={orcamento.id}
-        className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-3.5 space-y-2.5 shadow-xs hover:border-[var(--blue)] transition-colors cursor-pointer group"
+        className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-3.5 space-y-2.5 shadow-xs hover:border-[var(--blue)] transition-colors cursor-pointer group min-w-0 overflow-hidden"
         onClick={() => setPropostaModalOrcamento(orcamento)}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 min-w-0">
           <div className="min-w-0 flex-1">
             <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-[#1565D8]/10 text-[#1565D8] border border-[#1565D8]/20 mb-1">
               {orcamento.codigoProposta || orcamento.id}
             </span>
-            <b className="font-[family-name:var(--d)] font-bold text-[14.5px] text-[var(--ink)] block leading-snug">
+            <b className="font-[family-name:var(--d)] font-bold text-[14px] text-[var(--ink)] block leading-snug break-words">
               {orcamento.servico || 'Proposta Técnica'}
             </b>
           </div>
         </div>
 
-        <div className="text-[12.5px] text-[var(--muted)] flex items-center justify-between">
+        <div className="text-[12.5px] text-[var(--muted)] flex items-center justify-between gap-2 min-w-0">
           <span className="truncate">{cliente?.nomeFantasia || cliente?.razaoSocial || orcamento.clienteNome || 'Cliente'}</span>
           {orcamento.normasTecnicas && (
-            <span className="text-[10px] font-mono text-[var(--muted)] truncate max-w-[110px]" title={orcamento.normasTecnicas}>
+            <span className="text-[10px] font-mono text-[var(--muted)] truncate max-w-[95px] shrink-0" title={orcamento.normasTecnicas}>
               {orcamento.normasTecnicas.split('·')[0].trim()}
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-1.5 border-t border-[var(--line)] text-[13.5px]">
-          <span className="font-black font-[family-name:var(--d)] text-[var(--blue)]">
+        <div className="flex items-center justify-between pt-1.5 border-t border-[var(--line)] text-[13.5px] gap-2">
+          <span className="font-black font-[family-name:var(--d)] text-[var(--blue)] tabular-nums">
             {valorFormatado}
           </span>
-          <span className="text-[11px] text-[var(--muted)] font-mono">
-            {new Date(orcamento.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
+          <span className="text-[11px] text-[var(--muted)] font-mono tabular-nums">
+            {new Date(orcamento.emitidaEm || orcamento.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
           </span>
         </div>
 
-        {/* Quick actions row */}
-        <div className="pt-1.5 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-1">
+        {/* Quick actions + Contained status selector */}
+        <div className="pt-1.5 space-y-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between gap-1">
             <button
               type="button"
               onClick={() => setPropostaModalOrcamento(orcamento)}
-              className="p-1.5 rounded-lg text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors"
+              className="p-1.5 rounded-lg text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors cursor-pointer"
               title="Visualizar Proposta no Novo Layout A4"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -293,7 +342,7 @@ export const OrcamentosView: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
-              className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--line)]/50 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--line)]/50 transition-colors cursor-pointer"
               title="Editar proposta no editor rico"
             >
               <Edit className="w-3.5 h-3.5" />
@@ -311,12 +360,13 @@ export const OrcamentosView: React.FC = () => {
           <select
             value={orcamento.status || 'rascunho'}
             onChange={(e) => atualizarStatusOrcamento(orcamento.id, e.target.value as any)}
-            className="text-[11px] py-1 px-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-semibold"
+            className="w-full min-w-0 max-w-full text-[11.5px] py-1.5 px-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-semibold cursor-pointer focus:outline-none focus:border-[var(--blue)]"
           >
             <option value="rascunho">Novo / Rascunho</option>
             <option value="enviado">Enviado</option>
             <option value="aprovado">Aprovado</option>
             <option value="recusado">Recusado</option>
+            <option value="faturado">Faturado</option>
           </select>
         </div>
       </div>
@@ -329,16 +379,11 @@ export const OrcamentosView: React.FC = () => {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
-              Orçamentos & Propostas Comerciais
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#1565D8]/10 text-[#1565D8] border border-[#1565D8]/20">
-              Novo Modelo A4 (4 a 6 Folhas) • Vetorial
-            </span>
-          </div>
+          <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
+            Orçamentos & Propostas Comerciais
+          </h1>
           <p className="text-[var(--muted)] text-[14.5px] sm:text-[15.5px] mt-0.5">
-            Do primeiro contato comercial à aprovação, pagamento via PIX e emissão da ART CREA-PE.
+            Histórico de aprovações e emissões de orçamentos
           </p>
         </div>
 
@@ -346,7 +391,7 @@ export const OrcamentosView: React.FC = () => {
           <button
             type="button"
             onClick={() => setModalNovoAberto(true)}
-            className="btn-tech pri text-[14px] px-4 py-2 shadow-sm flex items-center gap-2"
+            className="btn-tech pri text-[14px] px-4 py-2 shadow-sm flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nova proposta comercial</span>
@@ -354,9 +399,9 @@ export const OrcamentosView: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
+      {/* Search & Filters (Mês, Cliente) */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="w-4 h-4 text-[var(--muted)] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -366,27 +411,60 @@ export const OrcamentosView: React.FC = () => {
             className="w-full pl-9 pr-3 py-2 text-[14px] border border-[var(--line)] rounded-xl bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)] shadow-2xs"
           />
         </div>
-        {busca && (
+
+        <select
+          value={filtroMes}
+          onChange={(e) => setFiltroMes(e.target.value)}
+          aria-label="Filtrar por mês"
+          className="py-2 px-3 text-[13.5px] border border-[var(--line)] rounded-xl bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)] cursor-pointer"
+        >
+          <option value="">Todos os meses</option>
+          {mesesDisponiveis.map(([ym, label]) => (
+            <option key={ym} value={ym}>
+              {label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filtroClienteId}
+          onChange={(e) => setFiltroClienteId(e.target.value)}
+          aria-label="Filtrar por cliente"
+          className="py-2 px-3 text-[13.5px] border border-[var(--line)] rounded-xl bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)] cursor-pointer max-w-[240px]"
+        >
+          <option value="">Todos os clientes</option>
+          {clientesFiltro.map(([id, nome]) => (
+            <option key={id} value={id}>
+              {nome}
+            </option>
+          ))}
+        </select>
+
+        {(busca || filtroMes || filtroClienteId) && (
           <button
             type="button"
-            onClick={() => setBusca('')}
-            className="text-xs text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+            onClick={() => {
+              setBusca('');
+              setFiltroMes('');
+              setFiltroClienteId('');
+            }}
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--card)] cursor-pointer"
           >
-            Limpar busca
+            Limpar filtros
           </button>
         )}
       </div>
 
-      {/* 4-column Kanban Board */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+      {/* 5-column Kanban Board */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
         
         {/* Coluna 1: Novos */}
-        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3">
+        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3 min-w-0">
           <div className="flex items-center justify-between pb-1 border-b border-[var(--line)]">
             <h3 className="font-[family-name:var(--d)] font-bold text-[15px] text-[var(--ink)]">
               Novos
             </h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)]">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)] tabular-nums">
               {colNovos.length}
             </span>
           </div>
@@ -400,12 +478,12 @@ export const OrcamentosView: React.FC = () => {
         </div>
 
         {/* Coluna 2: Enviados */}
-        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3">
+        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3 min-w-0">
           <div className="flex items-center justify-between pb-1 border-b border-[var(--line)]">
             <h3 className="font-[family-name:var(--d)] font-bold text-[15px] text-[var(--ink)]">
               Enviados
             </h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)]">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)] tabular-nums">
               {colEnviados.length}
             </span>
           </div>
@@ -419,12 +497,12 @@ export const OrcamentosView: React.FC = () => {
         </div>
 
         {/* Coluna 3: Aprovados */}
-        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3">
+        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3 min-w-0">
           <div className="flex items-center justify-between pb-1 border-b border-[var(--line)]">
             <h3 className="font-[family-name:var(--d)] font-bold text-[15px] text-emerald-600 dark:text-emerald-400">
               Aprovados
             </h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
               {colAprovados.length}
             </span>
           </div>
@@ -438,12 +516,12 @@ export const OrcamentosView: React.FC = () => {
         </div>
 
         {/* Coluna 4: Recusados */}
-        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3">
+        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3 min-w-0">
           <div className="flex items-center justify-between pb-1 border-b border-[var(--line)]">
             <h3 className="font-[family-name:var(--d)] font-bold text-[15px] text-[var(--muted)]">
               Recusados
             </h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)]">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-[var(--muted)] tabular-nums">
               {colRecusados.length}
             </span>
           </div>
@@ -452,6 +530,25 @@ export const OrcamentosView: React.FC = () => {
             {colRecusados.map(renderOrcamentoCard)}
             {colRecusados.length === 0 && (
               <p className="text-[var(--muted)] text-xs text-center py-8">Nada por aqui.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Coluna 5: Faturado */}
+        <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-3.5 space-y-3 min-w-0">
+          <div className="flex items-center justify-between pb-1 border-b border-[var(--line)]">
+            <h3 className="font-[family-name:var(--d)] font-bold text-[15px] text-sky-600 dark:text-sky-400">
+              Faturado
+            </h3>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--card)] border border-[var(--line)] text-sky-600 dark:text-sky-400 font-bold tabular-nums">
+              {colFaturados.length}
+            </span>
+          </div>
+
+          <div className="space-y-2.5 min-h-[140px]">
+            {colFaturados.map(renderOrcamentoCard)}
+            {colFaturados.length === 0 && (
+              <p className="text-[var(--muted)] text-xs text-center py-8">Nenhum orçamento faturado ainda.</p>
             )}
           </div>
         </div>
