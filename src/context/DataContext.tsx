@@ -1542,15 +1542,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarAtivo = (id: string, dados: Partial<Ativo>) => {
+    const clienteRel = dados.clienteId ? clientes.find(c => c.id === dados.clienteId) : undefined;
+    const dadosAtualizados: Partial<Ativo> = clienteRel
+      ? { ...dados, clienteNome: clienteRel.nomeFantasia || clienteRel.razaoSocial }
+      : dados;
+
     setAtivos(prev => {
-      const atualizados = prev.map(a => a.id === id ? { ...a, ...dados } : a);
+      const atualizados = prev.map(a => a.id === id ? { ...a, ...dadosAtualizados } : a);
       saveStorage('vl_ativos', atualizados);
       salvarServidorDireto({ ativos: atualizados });
       return atualizados;
     });
 
     if (db && auth?.currentUser) {
-      setDoc(doc(db, 'ativos', id), dados, { merge: true }).catch(err => {
+      setDoc(doc(db, 'ativos', id), dadosAtualizados, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `ativos/${id}`);
       });
     }

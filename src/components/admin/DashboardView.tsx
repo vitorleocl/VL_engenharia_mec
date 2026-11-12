@@ -1,10 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  ArrowRight,
-  AlertTriangle
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -58,15 +54,6 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  // Lista de equipamentos com vencimento em 30 dias (suporta exibição individual ou em lista)
-  const equipamentosVencendo = [
-    {
-      nome: 'Munck 12 t',
-      obra: 'Obra Boa Viagem',
-      dataVencimento: '12/11'
-    }
-  ];
-
   return (
     <div className="space-y-7 max-w-[1200px]">
       
@@ -77,7 +64,7 @@ export const DashboardView: React.FC = () => {
             {saudacaoPeriodo}, {primeiroNome}
           </h1>
           <p className="text-[var(--adm-mut,#a9b8cf)] text-[0.95rem] mt-1 font-normal leading-relaxed">
-            Você tem 2 vistorias agendadas hoje e {orcamentosAbertos} {orcamentosAbertos === 1 ? 'orçamento aguardando' : 'orçamentos aguardando'} resposta.
+            Você tem {emElaboracao} {emElaboracao === 1 ? 'laudo em elaboração' : 'laudos em elaboração'} e {orcamentosAbertos} {orcamentosAbertos === 1 ? 'orçamento aguardando' : 'orçamentos aguardando'} resposta.
           </p>
         </div>
 
@@ -163,11 +150,8 @@ export const DashboardView: React.FC = () => {
         </Link>
       </section>
 
-      {/* 3. Grid Principal em 2 Colunas */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-7 items-start">
-        
-        {/* Coluna Esquerda: Laudos recentes (ajuste dinâmico de altura sem espaço vazio) */}
-        <section className="bg-[var(--adm-card,#0f2038)] border border-[var(--adm-line,rgba(159,176,200,0.16))] rounded-[14px] p-6 sm:p-7 min-w-0">
+      {/* 3. Laudos Recentes */}
+      <section className="bg-[var(--adm-card,#0f2038)] border border-[var(--adm-line,rgba(159,176,200,0.16))] rounded-[14px] p-6 sm:p-7 min-w-0">
           <div className="flex items-baseline justify-between mb-4.5">
             <h2 className="text-[1.2rem] font-semibold text-[var(--adm-text,#f4f7fc)]">
               Laudos recentes
@@ -243,85 +227,6 @@ export const DashboardView: React.FC = () => {
             </div>
           )}
         </section>
-
-        {/* Coluna Direita: Agenda de hoje & Vencem em 30 dias */}
-        <div className="flex flex-col gap-7">
-          
-          {/* Agenda de hoje */}
-          <section className="bg-[var(--adm-card,#0f2038)] border border-[var(--adm-line,rgba(159,176,200,0.16))] rounded-[14px] p-6 sm:p-7">
-            <h2 className="text-[1.2rem] font-semibold text-[var(--adm-text,#f4f7fc)] mb-4.5">
-              Agenda de hoje
-            </h2>
-            
-            <ul className="space-y-4 text-[0.92rem]">
-              <li className="grid grid-cols-[64px_1fr] gap-3 items-start">
-                <time className="font-semibold text-[var(--adm-blue-soft,#6ea1ff)]">
-                  09:00
-                </time>
-                <div>
-                  <b className="font-medium text-[var(--adm-text,#f4f7fc)] block">
-                    Vistoria de Munck 12 t
-                  </b>
-                  <small className="block text-[var(--adm-mut,#a9b8cf)] text-[0.82rem] mt-0.5">
-                    Jaboatão · Obra Marina
-                  </small>
-                </div>
-              </li>
-
-              <li className="grid grid-cols-[64px_1fr] gap-3 items-start">
-                <time className="font-semibold text-[var(--adm-blue-soft,#6ea1ff)]">
-                  14:30
-                </time>
-                <div>
-                  <b className="font-medium text-[var(--adm-text,#f4f7fc)] block">
-                    Playground condominial
-                  </b>
-                  <small className="block text-[var(--adm-mut,#a9b8cf)] text-[0.82rem] mt-0.5">
-                    Piedade · Cond. Mar Azul
-                  </small>
-                </div>
-              </li>
-            </ul>
-          </section>
-
-          {/* Vencem em 30 dias (com faixa âmbar de 3px na borda esquerda) */}
-          <section className="bg-[var(--adm-card,#0f2038)] border border-[var(--adm-line,rgba(159,176,200,0.16))] border-l-[3px] border-l-[var(--adm-warn,#fbbf24)] rounded-[14px] p-6 sm:p-7">
-            <h2 className="text-[1.2rem] font-semibold text-[var(--adm-text,#f4f7fc)] flex items-center gap-2.5">
-              <AlertTriangle className="w-[18px] h-[18px] text-[var(--adm-warn,#fbbf24)] flex-none" />
-              <span>Vencem em 30 dias</span>
-            </h2>
-
-            {equipamentosVencendo.length > 1 ? (
-              <ul className="my-3 space-y-2.5 text-[0.92rem]">
-                {equipamentosVencendo.map((eq, i) => (
-                  <li key={i} className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-[var(--adm-text,#f4f7fc)]">
-                    <span className="font-medium">
-                      {eq.nome} <span className="text-[var(--adm-mut,#a9b8cf)] font-normal">· {eq.obra}</span>
-                    </span>
-                    <span className="text-xs text-[var(--adm-warn,#fbbf24)] font-medium whitespace-nowrap">
-                      Vence em {eq.dataVencimento}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="my-2.5 text-[var(--adm-mut,#a9b8cf)] leading-[1.7] text-[0.92rem]">
-                {equipamentosVencendo[0]?.nome} da {equipamentosVencendo[0]?.obra} vence em {equipamentosVencendo[0]?.dataVencimento}. Renove a inspeção periódica com emissão de ART.
-              </p>
-            )}
-
-            <Link
-              to="/admin/ativos"
-              className="mt-4 h-10 px-3.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] text-[0.88rem] font-medium inline-flex items-center gap-2 hover:border-[#6ea1ff] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff]"
-            >
-              <span>Ver equipamentos</span>
-              <ArrowRight className="w-4 h-4 opacity-75" />
-            </Link>
-          </section>
-
-        </div>
-
-      </div>
 
     </div>
   );

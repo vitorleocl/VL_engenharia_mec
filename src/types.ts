@@ -42,10 +42,12 @@ export interface ClienteEndereco {
 
 export interface Cliente {
   id: string;
+  tipoPessoa?: 'juridica' | 'fisica';
   razaoSocial: string;
   nomeFantasia?: string;
   cpfCnpj: string;
   cnpj?: string;
+  rg?: string;
   contatos: ClienteContato[];
   endereco: ClienteEndereco;
   criadoEm: string;

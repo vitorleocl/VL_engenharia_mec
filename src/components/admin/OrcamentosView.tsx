@@ -19,7 +19,6 @@ import {
   Layers,
   FileText,
   SlidersHorizontal,
-  ShieldCheck,
   Check
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
@@ -352,34 +351,6 @@ export const OrcamentosView: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>Nova proposta comercial</span>
           </button>
-        </div>
-      </div>
-
-      {/* System Highlights Banner */}
-      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--line)] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-[var(--muted)]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#1565D8]/10 text-[#1565D8] flex items-center justify-center shrink-0">
-            <FileSpreadsheet className="w-5 h-5" />
-          </div>
-          <div>
-            <strong className="text-[var(--ink)] block text-[13px]">
-              Geração de Propostas no Novo Modelo A4 (4 a 6 Folhas)
-            </strong>
-            <span>
-              Capa com resumo e preço dinâmico, Etapa 1 de escopo, Etapa 2 de metodologia em 5 fases, Etapa 3 com memorial de cálculo e PIX, e anexos institucionais.
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="inline-flex items-center gap-1 font-mono text-[var(--ink)]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#1565D8]" />
-            CREA-PE 182229949-0
-          </span>
-          <span className="text-[var(--line)]">|</span>
-          <span className="font-semibold text-[#1565D8]">
-            {orcamentos.length} propostas cadastradas
-          </span>
         </div>
       </div>
 

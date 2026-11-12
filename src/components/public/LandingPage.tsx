@@ -864,12 +864,12 @@ export const LandingPage: React.FC = () => {
               </div>
               <div>
                 <a
-                  href="https://instagram.com/vlengenhariamec"
+                  href="https://instagram.com/vlengenharia.mec"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-[var(--blue)] flex items-center gap-2"
                 >
-                  @vlengenhariamec
+                  @vlengenharia.mec
                 </a>
               </div>
             </div>

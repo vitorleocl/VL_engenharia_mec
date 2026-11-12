@@ -138,6 +138,34 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", company: "VL Engenharia", timestamp: new Date().toISOString() });
 });
 
+app.get("/api/cnpj/:cnpj", async (req, res) => {
+  const digits = String(req.params.cnpj || "").replace(/\D/g, "");
+  if (digits.length !== 14) {
+    return res.status(400).json({ error: "CNPJ inválido. Informe 14 dígitos numéricos." });
+  }
+  try {
+    const upstream = await fetch(`https://publica.cnpj.ws/cnpj/${digits}`, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "VL-Engenharia-App/1.0",
+      },
+    });
+    const text = await upstream.text();
+    let payload: any = {};
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = { raw: text };
+    }
+    if (!upstream.ok) {
+      return res.status(upstream.status).json(payload);
+    }
+    return res.json(payload);
+  } catch (err: any) {
+    return res.status(502).json({ error: err?.message || "Falha ao consultar CNPJ." });
+  }
+});
+
 // AI Usage status
 app.get("/api/ai/usage", (req, res) => {
   const calls = getMonthlyAICalls();
