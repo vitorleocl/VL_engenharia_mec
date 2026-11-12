@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { 
   Printer, 
@@ -11,7 +11,9 @@ import {
   ExternalLink,
   ShieldCheck,
   Building,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  X
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useData } from '../../context/DataContext';
@@ -25,6 +27,7 @@ import {
   FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 import { gerarPixCopiaECola } from '../../lib/pixEmv';
+import { exportarPropostaParaPdf } from '../../lib/propostaPdfExport';
 import { VlLogoVector } from './PropostaViewerModal';
 
 export const PropostaPrintView: React.FC = () => {
@@ -51,6 +54,10 @@ export const PropostaPrintView: React.FC = () => {
   const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
   const [pixPayload, setPixPayload] = useState<string>('');
   const [copiadoPix, setCopiadoPix] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
+  const [sucessoPdf, setSucessoPdf] = useState<string | null>(null);
+  const printContainerRef = useRef<HTMLDivElement>(null);
 
   // Formatted data & single source of truth
   const codigo = orcamento?.codigoProposta || orcamento?.id || 'PROP-2026/001';
@@ -152,19 +159,44 @@ export const PropostaPrintView: React.FC = () => {
     document.title = `Proposta_${codigoClean}_${clienteClean}_Rev${revisao}`;
   }, [clienteNome, codigo, revisao]);
 
-  // Handle auto-print if requested via URL
-  useEffect(() => {
-    if (searchParams.get('auto') === '1') {
-      document.fonts?.ready?.then(() => {
-        setTimeout(() => {
-          window.print();
-        }, 600);
+  const handleDownloadPdf = useCallback(async () => {
+    if (!printContainerRef.current) return;
+    setGerandoPdf(true);
+    setErroPdf(null);
+    setSucessoPdf(null);
+    try {
+      const nomeArquivo = await exportarPropostaParaPdf(printContainerRef.current, {
+        codigo,
+        clienteNome,
+        revisao,
       });
+      setSucessoPdf(`PDF "${nomeArquivo}" baixado com sucesso.`);
+      setTimeout(() => setSucessoPdf(null), 4000);
+    } catch (err: any) {
+      console.error('Erro ao gerar PDF da proposta:', err);
+      setErroPdf(err?.message || 'Não foi possível gerar o PDF diretamente. Utilize o botão "Imprimir" do navegador.');
+    } finally {
+      setGerandoPdf(false);
     }
-  }, [searchParams]);
+  }, [codigo, clienteNome, revisao]);
+
+  // Se veio com ?auto=pdf, dispara download automático de forma segura
+  useEffect(() => {
+    if (searchParams.get('auto') === 'pdf' && orcamento) {
+      const timer = setTimeout(() => {
+        handleDownloadPdf();
+      }, 450);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, orcamento, handleDownloadPdf]);
 
   const handlePrint = () => {
-    window.print();
+    setErroPdf(null);
+    try {
+      window.print();
+    } catch {
+      setErroPdf('A impressão do navegador foi bloqueada neste ambiente. Utilize "Baixar PDF (.pdf)" para salvar o arquivo.');
+    }
   };
 
   const handleCopiarPix = () => {
@@ -193,13 +225,22 @@ export const PropostaPrintView: React.FC = () => {
     <div className="proposta-print-wrapper bg-slate-200 min-h-screen text-slate-900">
       {/* Top Bar for Screen Preview (Hidden during @media print) */}
       <header className="no-print sticky top-0 z-50 bg-[#0B1E3D] text-white px-4 py-3 shadow-lg flex flex-wrap items-center justify-between gap-3 border-b border-blue-900/50">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button 
-            onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition"
+            type="button"
+            onClick={() => navigate('/admin/orcamentos')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao Editor
+            Orçamentos
+          </button>
+          <button 
+            type="button"
+            onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition cursor-pointer"
+          >
+            <FileText className="w-4 h-4" />
+            Editar Proposta
           </button>
           <div className="hidden sm:block">
             <span className="text-xs text-blue-200 block">Proposta Técnica Comercial</span>
@@ -207,15 +248,16 @@ export const PropostaPrintView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Export Mode Toggle */}
           <div className="flex items-center bg-blue-950/80 p-0.5 rounded-lg border border-blue-800/80 text-xs">
             <button
+              type="button"
               onClick={() => {
                 setModo('completa');
                 setSearchParams({ modo: 'completa' });
               }}
-              className={`px-3 py-1.5 rounded-md font-semibold transition ${
+              className={`px-3 py-1.5 rounded-md font-semibold transition cursor-pointer ${
                 modo === 'completa' 
                   ? 'bg-blue-600 text-white shadow-xs' 
                   : 'text-blue-200 hover:text-white'
@@ -224,11 +266,12 @@ export const PropostaPrintView: React.FC = () => {
               Completa (6 folhas)
             </button>
             <button
+              type="button"
               onClick={() => {
                 setModo('executiva');
                 setSearchParams({ modo: 'executiva' });
               }}
-              className={`px-3 py-1.5 rounded-md font-semibold transition ${
+              className={`px-3 py-1.5 rounded-md font-semibold transition cursor-pointer ${
                 modo === 'executiva' 
                   ? 'bg-blue-600 text-white shadow-xs' 
                   : 'text-blue-200 hover:text-white'
@@ -238,22 +281,62 @@ export const PropostaPrintView: React.FC = () => {
             </button>
           </div>
 
-          {/* Native Print / Save to PDF Button */}
+          {/* Direct PDF Download Button */}
           <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={gerandoPdf}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1565D8] hover:bg-[#1976D2] text-white text-xs font-bold rounded-lg shadow-md transition active:scale-95 disabled:opacity-60 cursor-pointer"
+          >
+            {gerandoPdf ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Gerando PDF...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 text-[#D4AF37]" />
+                <span>Baixar PDF (.pdf)</span>
+              </>
+            )}
+          </button>
+
+          {/* Native Print Button */}
+          <button
+            type="button"
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-lg shadow-md transition transform active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md transition active:scale-95 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Imprimir / Salvar em PDF</span>
+            <span>Imprimir</span>
           </button>
         </div>
       </header>
+
+      {/* Non-blocking PDF feedback banner */}
+      {(erroPdf || sucessoPdf) && (
+        <div className={`no-print px-4 py-2.5 text-xs font-semibold flex items-center justify-between border-b ${
+          erroPdf ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        }`}>
+          <span className="flex items-center gap-2">
+            {erroPdf ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+            <span>{erroPdf || sucessoPdf}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => { setErroPdf(null); setSucessoPdf(null); }}
+            className="p-1 rounded hover:bg-black/10 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Embedded High-Fidelity CSS exactly matching the approved prototype */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap');
 
-        :root {
+        .proposta-print-wrapper {
           --ink: #0B1E3D;
           --blue: #1565D8;
           --amber: #D4AF37;
@@ -842,7 +925,7 @@ export const PropostaPrintView: React.FC = () => {
       `}</style>
 
       {/* Main Pages Container */}
-      <div className="proposta-container">
+      <div className="proposta-container" ref={printContainerRef}>
         
         {/* ============================ FOLHA 1: CAPA ============================ */}
         <section className="sheet cover" id="p1">

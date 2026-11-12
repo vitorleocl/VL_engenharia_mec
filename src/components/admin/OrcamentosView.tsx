@@ -30,7 +30,8 @@ import {
   gerarSecoesPadraoOrcamento, 
   gerarSecoesPadraoOrcamentoV2, 
   DADOS_VL_PADRAO, 
-  calcularValidadeAte 
+  calcularValidadeAte,
+  obterTituloLaudoProposta
 } from '../../lib/orcamentoTemplatePadrao';
 
 export const OrcamentosView: React.FC = () => {
@@ -38,6 +39,7 @@ export const OrcamentosView: React.FC = () => {
     orcamentos, 
     clientes, 
     adicionarOrcamento, 
+    atualizarOrcamento,
     atualizarStatusOrcamento,
     removerOrcamento 
   } = useData();
@@ -47,6 +49,8 @@ export const OrcamentosView: React.FC = () => {
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
   const [propostaModalOrcamento, setPropostaModalOrcamento] = useState<Orcamento | null>(null);
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
+  const [editandoTituloId, setEditandoTituloId] = useState<string | null>(null);
+  const [tituloEditado, setTituloEditado] = useState('');
   const [busca, setBusca] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroClienteId, setFiltroClienteId] = useState('');
@@ -280,24 +284,119 @@ export const OrcamentosView: React.FC = () => {
   const colRecusados = orcamentosFiltrados.filter(o => o.status === 'recusado');
   const colFaturados = orcamentosFiltrados.filter(o => o.status === 'faturado');
 
+  const handleIniciarEdicaoTitulo = (orcamento: Orcamento, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditandoTituloId(orcamento.id);
+    setTituloEditado(orcamento.servico || '');
+  };
+
+  const handleSalvarTitulo = (orcamento: Orcamento, e?: React.MouseEvent | React.FormEvent) => {
+    if (e) e.stopPropagation();
+    const novoTitulo = tituloEditado.trim();
+    if (!novoTitulo) {
+      setEditandoTituloId(null);
+      return;
+    }
+
+    const tituloAnterior = orcamento.servico || '';
+    const novoSubtituloCapa = obterTituloLaudoProposta({ ...orcamento, servico: novoTitulo });
+    const novasSecoes = orcamento.secoes?.map((s) =>
+      s.id === 'capa' || s.numero === 1 ? { ...s, subtitulo: novoSubtituloCapa } : s
+    );
+
+    const novosItens =
+      orcamento.itensCalculo &&
+      orcamento.itensCalculo.length === 1 &&
+      (!orcamento.itensCalculo[0].descricao || orcamento.itensCalculo[0].descricao === tituloAnterior)
+        ? [{ ...orcamento.itensCalculo[0], descricao: novoTitulo }]
+        : orcamento.itensCalculo;
+
+    atualizarOrcamento(orcamento.id, {
+      servico: novoTitulo,
+      ...(novasSecoes ? { secoes: novasSecoes } : {}),
+      ...(novosItens ? { itensCalculo: novosItens } : {}),
+    });
+
+    setEditandoTituloId(null);
+  };
+
   const renderOrcamentoCard = (orcamento: Orcamento) => {
     const cliente = clientes.find(c => c.id === orcamento.clienteId);
     const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orcamento.valor || 0);
+    const estaEditandoTitulo = editandoTituloId === orcamento.id;
 
     return (
       <div 
         key={orcamento.id}
         className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-3.5 space-y-2.5 shadow-xs hover:border-[var(--blue)] transition-colors cursor-pointer group min-w-0 overflow-hidden"
-        onClick={() => setPropostaModalOrcamento(orcamento)}
+        onClick={() => {
+          if (!estaEditandoTitulo) {
+            setPropostaModalOrcamento(orcamento);
+          }
+        }}
       >
         <div className="flex items-start justify-between gap-2 min-w-0">
           <div className="min-w-0 flex-1">
-            <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-[#1565D8]/10 text-[#1565D8] border border-[#1565D8]/20 mb-1">
-              {orcamento.codigoProposta || orcamento.id}
-            </span>
-            <b className="font-[family-name:var(--d)] font-bold text-[14px] text-[var(--ink)] block leading-snug break-words">
-              {orcamento.servico || 'Proposta Técnica'}
-            </b>
+            <div className="flex items-center justify-between gap-1.5 mb-1">
+              <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-[#1565D8]/10 text-[#1565D8] border border-[#1565D8]/20">
+                {orcamento.codigoProposta || orcamento.id}
+              </span>
+              {!estaEditandoTitulo && (
+                <button
+                  type="button"
+                  onClick={(e) => handleIniciarEdicaoTitulo(orcamento, e)}
+                  className="p-1 rounded-md text-[var(--muted)] hover:text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors cursor-pointer shrink-0"
+                  title="Editar título deste orçamento"
+                >
+                  <Edit className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {estaEditandoTitulo ? (
+              <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={tituloEditado}
+                  onChange={(e) => setTituloEditado(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSalvarTitulo(orcamento);
+                    } else if (e.key === 'Escape') {
+                      setEditandoTituloId(null);
+                    }
+                  }}
+                  autoFocus
+                  placeholder="Título do orçamento..."
+                  className="w-full px-2 py-1 text-[13px] font-semibold border border-[#1565D8] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none"
+                />
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditandoTituloId(null);
+                    }}
+                    className="px-2 py-0.5 rounded text-[11px] font-semibold text-[var(--muted)] hover:bg-[var(--line)]/40 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleSalvarTitulo(orcamento, e)}
+                    className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#1565D8] text-white hover:bg-[#0b4fb8] flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Salvar</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <b className="font-[family-name:var(--d)] font-bold text-[14px] text-[var(--ink)] block leading-snug break-words">
+                {orcamento.servico || 'Proposta Técnica'}
+              </b>
+            )}
           </div>
         </div>
 
@@ -326,19 +425,18 @@ export const OrcamentosView: React.FC = () => {
               type="button"
               onClick={() => setPropostaModalOrcamento(orcamento)}
               className="p-1.5 rounded-lg text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors cursor-pointer"
-              title="Visualizar Proposta no Novo Layout A4"
+              title="Visualizar Proposta e Baixar PDF A4"
             >
               <Eye className="w-3.5 h-3.5" />
             </button>
-            <a
-              href={`/admin/orcamentos/${orcamento.id}/imprimir?auto=1`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-              title="Imprimir / Exportar PDF Vetorial A4 Direto"
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/orcamentos/${orcamento.id}/imprimir`)}
+              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+              title="Abrir Visualização A4 / Exportar PDF"
             >
               <Printer className="w-3.5 h-3.5" />
-            </a>
+            </button>
             <button
               type="button"
               onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
@@ -891,8 +989,9 @@ export const OrcamentosView: React.FC = () => {
       {propostaModalOrcamento && (
         <PropostaViewerModal
           isOpen={true}
-          orcamento={propostaModalOrcamento}
+          orcamento={orcamentos.find(o => o.id === propostaModalOrcamento.id) || propostaModalOrcamento}
           onClose={() => setPropostaModalOrcamento(null)}
+          onStatusChange={(id, novoStatus) => atualizarStatusOrcamento(id, novoStatus)}
           onEditarProposta={(orc) => {
             setPropostaModalOrcamento(null);
             navigate(`/admin/orcamentos/${orc.id}`);

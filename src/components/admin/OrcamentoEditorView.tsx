@@ -40,7 +40,9 @@ import {
   MoreVertical,
   Copy,
   Sun,
-  Moon
+  Moon,
+  Edit3,
+  X
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -146,6 +148,9 @@ export const OrcamentoEditorView: React.FC = () => {
   const [modoVisualizacao, setModoVisualizacao] = useState<'folha_clara' | 'escuro'>('folha_clara');
   const [qrCodeSvgPix, setQrCodeSvgPix] = useState<string>('');
   const [copiadoPix, setCopiadoPix] = useState(false);
+  const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const [editandoTituloTopo, setEditandoTituloTopo] = useState(false);
+  const [tituloTopoDigitado, setTituloTopoDigitado] = useState('');
   const menuMaisRef = useRef<HTMLDivElement>(null);
   const nfsOriginalRef = useRef<boolean>(orcamentoOriginal?.incluiNotaFiscal !== false);
 
@@ -602,7 +607,7 @@ export const OrcamentoEditorView: React.FC = () => {
       agendarAutoSave(atualizado, 'Foto de capa atualizada');
     } catch (err: any) {
       console.error('Erro ao processar imagem de capa:', err);
-      alert('Erro ao carregar imagem: ' + err.message);
+      setErroAcao('Erro ao carregar imagem: ' + (err?.message || 'arquivo inválido'));
     } finally {
       e.target.value = '';
     }
@@ -656,10 +661,39 @@ export const OrcamentoEditorView: React.FC = () => {
         secoes: novasSecoes,
       }, `Foto inserida na seção ${secaoAtiva.titulo}`);
     } catch (err: any) {
-      alert('Falha ao inserir imagem: ' + err.message);
+      setErroAcao('Falha ao inserir imagem: ' + (err?.message || 'arquivo inválido'));
     } finally {
       e.target.value = '';
     }
+  };
+
+  // Atualizar o título do orçamento (servico) e propagar para Capa e item padrão
+  const handleAtualizarTituloOrcamento = (novoTituloBruto: string) => {
+    if (!orcamentoState) return;
+    const tituloAnterior = orcamentoState.servico || '';
+    const novoTitulo = novoTituloBruto;
+    const novoSubtituloCapa = obterTituloLaudoProposta({ ...orcamentoState, servico: novoTitulo });
+
+    const novasSecoes = (orcamentoState.secoes || []).map((s) =>
+      s.id === 'capa' || s.numero === 1 ? { ...s, subtitulo: novoSubtituloCapa } : s
+    );
+
+    const novosItens =
+      orcamentoState.itensCalculo &&
+      orcamentoState.itensCalculo.length === 1 &&
+      (!orcamentoState.itensCalculo[0].descricao || orcamentoState.itensCalculo[0].descricao === tituloAnterior)
+        ? [{ ...orcamentoState.itensCalculo[0], descricao: novoTitulo }]
+        : orcamentoState.itensCalculo;
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      servico: novoTitulo,
+      secoes: novasSecoes,
+      itensCalculo: novosItens,
+    };
+
+    setOrcamentoState(atualizado);
+    agendarAutoSave(atualizado, 'Título do orçamento atualizado');
   };
 
   // Atualizar dados cadastrais do cliente na Capa da Proposta
@@ -1428,7 +1462,64 @@ export const OrcamentoEditorView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
             <span>Cliente: <strong className="text-slate-900">{orcamentoState.clienteNome || 'Cliente Corporativo'}</strong></span>
             <span>•</span>
-            <span>Serviço: <strong className="text-slate-900">{orcamentoState.servico}</strong></span>
+            {editandoTituloTopo ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold">Título:</span>
+                <input
+                  type="text"
+                  value={tituloTopoDigitado}
+                  onChange={(e) => setTituloTopoDigitado(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (tituloTopoDigitado.trim()) {
+                        handleAtualizarTituloOrcamento(tituloTopoDigitado.trim());
+                      }
+                      setEditandoTituloTopo(false);
+                    } else if (e.key === 'Escape') {
+                      setEditandoTituloTopo(false);
+                    }
+                  }}
+                  autoFocus
+                  className="px-2.5 py-1 rounded-lg border border-[#1565D8] bg-white text-slate-900 font-bold text-xs min-w-[240px] max-w-md focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (tituloTopoDigitado.trim()) {
+                      handleAtualizarTituloOrcamento(tituloTopoDigitado.trim());
+                    }
+                    setEditandoTituloTopo(false);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-[#1565D8] text-white font-bold text-[11px] cursor-pointer"
+                >
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditandoTituloTopo(false)}
+                  className="px-2 py-1 rounded-lg bg-slate-200 text-slate-700 font-semibold text-[11px] cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <span>Serviço: <strong className="text-slate-900">{orcamentoState.servico}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTituloTopoDigitado(orcamentoState.servico || '');
+                    setEditandoTituloTopo(true);
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Editar o título deste orçamento"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Editar Título</span>
+                </button>
+              </span>
+            )}
             <span>•</span>
             <div className="flex items-center gap-1.5">
               <span>Valor Total:</span>
@@ -1531,19 +1622,22 @@ export const OrcamentoEditorView: React.FC = () => {
             )}
           </div>
 
-          {/* AÇÃO PRINCIPAL: Baixar PDF Direto (Regra A1 e A9) */}
+          {/* AÇÃO PRINCIPAL: Baixar PDF Direto (navegação in-app, sem window.open bloqueado) */}
           <button
             type="button"
             onClick={() => {
               const valorTotal = orcamentoState.valor ?? 0;
               if (valorTotal <= 0) {
-                alert('Exportação bloqueada: O valor total da proposta está zerado (R$ 0,00). Preencha o valor unitário no Memorial de Cálculo da Etapa 3 antes de baixar o PDF.');
+                setErroAcao('Exportação bloqueada: O valor total da proposta está zerado (R$ 0,00). Preencha o valor unitário no Memorial de Cálculo da Etapa 3 antes de baixar o PDF.');
+                setSecaoAtivaId('etapa3');
                 return;
               }
-              window.open(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`, '_blank');
+              setErroAcao(null);
+              salvarImediato(orcamentoState, 'Salvo antes da exportação em PDF');
+              navigate(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=pdf`);
             }}
             className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-            title="Gerar e baixar PDF vetorial em 1 clique"
+            title="Gerar e baixar PDF A4 em 1 clique"
           >
             <Download className="w-4 h-4 text-[#D4AF37]" />
             <span>Baixar PDF ({secoesVisiveisCount} fls)</span>
@@ -1576,13 +1670,15 @@ export const OrcamentoEditorView: React.FC = () => {
                 </button>
 
                 <Link
-                  to={`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`}
-                  target="_blank"
-                  onClick={() => setMenuMaisAberto(false)}
+                  to={`/admin/orcamentos/${orcamentoState.id}/imprimir`}
+                  onClick={() => {
+                    setMenuMaisAberto(false);
+                    salvarImediato(orcamentoState, 'Salvo antes de abrir A4');
+                  }}
                   className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer font-medium"
                 >
                   <Printer className="w-4 h-4 text-slate-600" />
-                  <span>Imprimir Direto (Chromium @page)</span>
+                  <span>Abrir Folha A4 / Imprimir</span>
                 </Link>
 
                 <button
@@ -1643,6 +1739,23 @@ export const OrcamentoEditorView: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Non-blocking inline alert banner */}
+      {erroAcao && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 text-xs font-semibold">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{erroAcao}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setErroAcao(null)}
+            className="p-1 rounded hover:bg-rose-100 text-rose-600 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Notice of Instance Isolation (Regra Crítica 1.1 e A5 - sem colisão com o contador) */}
       <div className="bg-blue-50/70 border border-blue-200 rounded-xl px-4 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-blue-900">
@@ -1975,6 +2088,19 @@ export const OrcamentoEditorView: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Título do Orçamento / Proposta Comercial
+                      </label>
+                      <input
+                        type="text"
+                        value={orcamentoState.servico || ''}
+                        onChange={(e) => handleAtualizarTituloOrcamento(e.target.value)}
+                        placeholder="Ex: Laudo Técnico de Conformidade NR-12"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Razão Social / Nome do Cliente

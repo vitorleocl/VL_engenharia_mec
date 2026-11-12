@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Download, 
@@ -44,6 +45,7 @@ import {
   calcularValidadeAte
 } from '../../lib/orcamentoTemplatePadrao';
 import { gerarPixCopiaECola, validarPixCrc } from '../../lib/pixEmv';
+import { exportarPropostaParaPdf } from '../../lib/propostaPdfExport';
 
 interface PropostaViewerModalProps {
   orcamento: Orcamento;
@@ -108,16 +110,30 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
   onGerarLaudo,
   onEditarProposta,
 }) => {
-  const { atualizarOrcamento, removerOrcamento, clientes, ativos } = useData();
+  const { orcamentos, atualizarOrcamento, removerOrcamento, clientes, ativos } = useData();
+  const navigate = useNavigate();
+  const orcamentoAtual = useMemo(
+    () => orcamentos.find(o => o.id === orcamento.id) || orcamento,
+    [orcamentos, orcamento]
+  );
   const documentRef = useRef<HTMLDivElement>(null);
+  const exportContainerRef = useRef<HTMLDivElement>(null);
   const [paginaAtual, setPaginaAtual] = useState<number>(1);
   const [modoVisualizacao, setModoVisualizacao] = useState<'pagina' | 'continua'>('continua');
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
+  const [sucessoPdf, setSucessoPdf] = useState<string | null>(null);
   const [painelSelecaoAberto, setPainelSelecaoAberto] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
-  const [modoExportacao, setModoExportacao] = useState<'completa' | 'executiva'>(orcamento.modoExportacaoPdf || 'executiva');
+  const [modoExportacao, setModoExportacao] = useState<'completa' | 'executiva'>(orcamentoAtual.modoExportacaoPdf || 'executiva');
   const [modalValidacaoAberto, setModalValidacaoAberto] = useState(false);
   const [pendenciasValidacao, setPendenciasValidacao] = useState<{ tipo: 'erro' | 'aviso'; mensagem: string; detalhe?: string }[]>([]);
+  const [editandoTitulo, setEditandoTitulo] = useState(false);
+  const [tituloEditado, setTituloEditado] = useState(orcamentoAtual.servico || '');
+
+  useEffect(() => {
+    setTituloEditado(orcamentoAtual.servico || '');
+  }, [orcamentoAtual.id, orcamentoAtual.servico]);
 
   // 6 Folhas A4 oficiais do modelo aprovado
   const folhasDisponiveis = useMemo(() => {
@@ -467,21 +483,67 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     return pendencias;
   };
 
-  const executarExportacaoPdf = (modoEscolhido: 'completa' | 'executiva' = modoExportacao) => {
-    setGerandoPdf(true);
-    // Salva a preferência de modo no orçamento
-    atualizarOrcamento(orcamento.id, { modoExportacaoPdf: modoEscolhido });
-
-    // Abre a rota de impressão vetorial nativa em nova janela para exportação direta
-    const url = `/admin/orcamentos/${orcamento.id}/imprimir?auto=1&modo=${modoEscolhido}`;
-    const win = window.open(url, '_blank');
-    if (!win) {
-      window.location.href = url;
+  const handleSalvarTitulo = () => {
+    const novoTitulo = tituloEditado.trim();
+    if (!novoTitulo) {
+      setEditandoTitulo(false);
+      setTituloEditado(orcamentoAtual.servico || '');
+      return;
     }
-    setTimeout(() => {
-      setGerandoPdf(false);
+    const tituloAnterior = orcamentoAtual.servico || '';
+    const novoSubtituloCapa = obterTituloLaudoProposta({ ...orcamentoAtual, servico: novoTitulo });
+    const novasSecoes = orcamentoAtual.secoes?.map((s) =>
+      s.id === 'capa' || s.numero === 1 ? { ...s, subtitulo: novoSubtituloCapa } : s
+    );
+    const novosItens =
+      orcamentoAtual.itensCalculo &&
+      orcamentoAtual.itensCalculo.length === 1 &&
+      (!orcamentoAtual.itensCalculo[0].descricao || orcamentoAtual.itensCalculo[0].descricao === tituloAnterior)
+        ? [{ ...orcamentoAtual.itensCalculo[0], descricao: novoTitulo }]
+        : orcamentoAtual.itensCalculo;
+
+    atualizarOrcamento(orcamentoAtual.id, {
+      servico: novoTitulo,
+      ...(novasSecoes ? { secoes: novasSecoes } : {}),
+      ...(novosItens ? { itensCalculo: novosItens } : {}),
+    });
+    setEditandoTitulo(false);
+  };
+
+  const executarExportacaoPdf = async (modoEscolhido: 'completa' | 'executiva' = modoExportacao) => {
+    setGerandoPdf(true);
+    setErroPdf(null);
+    setSucessoPdf(null);
+
+    if (modoEscolhido !== modoExportacao) {
+      setModoExportacao(modoEscolhido);
+    }
+    atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: modoEscolhido });
+
+    try {
+      // Aguarda renderização das folhas off-screen no modo escolhido
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 150)));
+      const container = exportContainerRef.current;
+      if (!container) {
+        throw new Error('Área de impressão não inicializada.');
+      }
+
+      const nomeArquivo = await exportarPropostaParaPdf(container, {
+        codigo: orcamentoAtual.codigoProposta || orcamentoAtual.id,
+        clienteNome: orcamentoAtual.clienteNome,
+        revisao: orcamentoAtual.revisao,
+      });
+
+      setSucessoPdf(`PDF "${nomeArquivo}" gerado com sucesso.`);
       setModalValidacaoAberto(false);
-    }, 1000);
+      setTimeout(() => setSucessoPdf(null), 4000);
+    } catch (err: any) {
+      console.error('Erro ao gerar PDF do orçamento:', err);
+      setErroPdf(err?.message || 'Não foi possível gerar o PDF diretamente. Abra a visualização A4 para imprimir.');
+      setModalValidacaoAberto(false);
+    } finally {
+      setGerandoPdf(false);
+    }
   };
 
   const handleIniciarExportacao = () => {
@@ -494,8 +556,14 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     }
   };
 
+  const handleAbrirA4 = () => {
+    atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: modoExportacao });
+    onClose();
+    navigate(`/admin/orcamentos/${orcamentoAtual.id}/imprimir?modo=${modoExportacao}`);
+  };
+
   const handlePrintNative = () => {
-    handleIniciarExportacao();
+    handleAbrirA4();
   };
 
   return (
@@ -503,15 +571,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden">
         
         {/* Top Header Controls */}
-        <div className="px-4 sm:px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[#1565D8]/20 border border-[#1565D8]/30">
+        <div className="px-4 sm:px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-[#1565D8]/20 border border-[#1565D8]/30 shrink-0">
               <FileSpreadsheet className="w-5 h-5 text-[#1565D8]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-sm sm:text-base leading-tight">
-                  Proposta Oficial • {orcamento.codigoProposta || orcamento.id}
+                  Proposta Oficial • {orcamentoAtual.codigoProposta || orcamentoAtual.id}
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
                   {totalPaginas} Folhas A4 • Layout Oficial Aprovado
@@ -522,13 +590,57 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400">
-                {orcamento.clienteNome} • {orcamento.servico}
-              </p>
+              {editandoTitulo ? (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <input
+                    type="text"
+                    value={tituloEditado}
+                    onChange={(e) => setTituloEditado(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSalvarTitulo();
+                      if (e.key === 'Escape') {
+                        setEditandoTitulo(false);
+                        setTituloEditado(orcamentoAtual.servico || '');
+                      }
+                    }}
+                    autoFocus
+                    className="px-2 py-0.5 text-xs rounded bg-slate-800 text-white border border-blue-400 focus:outline-none min-w-[220px] max-w-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSalvarTitulo}
+                    className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold cursor-pointer"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditandoTitulo(false);
+                      setTituloEditado(orcamentoAtual.servico || '');
+                    }}
+                    className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[11px] cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
+                  <span className="truncate">{orcamentoAtual.clienteNome} • {orcamentoAtual.servico}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditandoTitulo(true)}
+                    className="p-0.5 rounded text-slate-400 hover:text-amber-300 transition-colors cursor-pointer shrink-0"
+                    title="Editar título deste orçamento"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Page Selection Button for PDF */}
             <button
               onClick={() => setPainelSelecaoAberto(prev => !prev)}
@@ -576,7 +688,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 type="button"
                 onClick={() => {
                   setModoExportacao('completa');
-                  atualizarOrcamento(orcamento.id, { modoExportacaoPdf: 'completa' });
+                  atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: 'completa' });
                 }}
                 className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
                   modoExportacao === 'completa' 
@@ -591,7 +703,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 type="button"
                 onClick={() => {
                   setModoExportacao('executiva');
-                  atualizarOrcamento(orcamento.id, { modoExportacaoPdf: 'executiva' });
+                  atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: 'executiva' });
                 }}
                 className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
                   modoExportacao === 'executiva' 
@@ -607,7 +719,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             {/* Editar Proposta button */}
             {onEditarProposta && (
               <button
-                onClick={() => onEditarProposta(orcamento)}
+                onClick={() => onEditarProposta(orcamentoAtual)}
                 className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 border border-amber-500 cursor-pointer"
                 title="Editar seções e capa no editor rico"
               >
@@ -616,27 +728,27 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               </button>
             )}
 
-            {/* Print button */}
+            {/* Print / A4 button (in-app navigation, no window.open) */}
             <button
+              type="button"
               onClick={handlePrintNative}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
-              title="Visualizar e Imprimir Proposta Vetorial (A4)"
+              title="Abrir Visualização A4 para Impressão"
             >
               <Printer className="w-4 h-4" />
               <span className="hidden md:inline">Imprimir</span>
             </button>
 
-            {/* Direct Vector Print Route Link */}
-            <a
-              href={`/admin/orcamentos/${orcamento.id}/imprimir?auto=1&modo=${modoExportacao}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Direct A4 View Button (in-app, no target="_blank") */}
+            <button
+              type="button"
+              onClick={handleAbrirA4}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
-              title="Abrir Rota de Impressão A4 Nativa (PDF Vetorial < 500 KB)"
+              title="Abrir Folha A4 Completa em Tela Cheia"
             >
               <ExternalLink className="w-4 h-4" />
               <span className="hidden lg:inline">A4 Direto</span>
-            </a>
+            </button>
 
             {/* PDF Download Button (1-click Vector PDF) */}
             <button
@@ -784,18 +896,73 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
           )}
         </div>
 
+        {/* Inline Feedback Banners for PDF export */}
+        {(erroPdf || sucessoPdf) && (
+          <div className={`px-4 sm:px-6 py-2 text-xs font-semibold flex items-center justify-between shrink-0 border-b ${
+            erroPdf
+              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-900'
+              : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900'
+          }`}>
+            <span className="flex items-center gap-2">
+              {erroPdf ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+              <span>{erroPdf || sucessoPdf}</span>
+            </span>
+            <div className="flex items-center gap-2">
+              {erroPdf && (
+                <button
+                  type="button"
+                  onClick={handleAbrirA4}
+                  className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold cursor-pointer"
+                >
+                  Abrir A4 Direto
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setErroPdf(null); setSucessoPdf(null); }}
+                className="p-0.5 rounded hover:bg-black/10 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Document Scroll Canvas - Renderiza as Folhas Oficiais A4 do Modelo Aprovado */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200 dark:bg-slate-900 flex justify-center">
           <div ref={documentRef} className="w-full max-w-[210mm] space-y-6">
             <PropostaDocSheets
-              orcamento={orcamento}
-              cliente={clientes.find(c => c.id === orcamento.clienteId)}
-              ativo={ativos?.find(a => a.id === orcamento.ativoId)}
+              orcamento={orcamentoAtual}
+              cliente={clientes.find(c => c.id === orcamentoAtual.clienteId)}
+              ativo={ativos?.find(a => a.id === orcamentoAtual.ativoId)}
               modo={modoExportacao}
               folhaEspecifica={modoVisualizacao === 'pagina' ? paginaAtual : undefined}
               embutidoNoModal={true}
             />
           </div>
+        </div>
+
+        {/* Container off-screen completo para compilar todas as folhas A4 no PDF sem cortes */}
+        <div
+          ref={exportContainerRef}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: '-12000px',
+            top: 0,
+            width: '210mm',
+            pointerEvents: 'none',
+            zIndex: -1,
+            background: '#ffffff',
+          }}
+        >
+          <PropostaDocSheets
+            orcamento={orcamentoAtual}
+            cliente={clientes.find(c => c.id === orcamentoAtual.clienteId)}
+            ativo={ativos?.find(a => a.id === orcamentoAtual.ativoId)}
+            modo={modoExportacao}
+            embutidoNoModal={false}
+          />
         </div>
 
 
