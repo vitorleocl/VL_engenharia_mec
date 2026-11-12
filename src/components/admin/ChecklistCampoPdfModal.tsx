@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { ChecklistCampo } from '../../types';
+import { DADOS_VL_PADRAO } from '../../lib/orcamentoTemplatePadrao';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -208,7 +209,7 @@ atendimento@vlengenhariamecanica.com.br
                   Engenharia Mecânica, Segurança do Trabalho e Perícias Técnicas
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  CREA-PE 1822299490 • CNPJ 12.345.678/0001-00 • Recife / PE
+                  CREA-PE {DADOS_VL_PADRAO.crea} • CNPJ {DADOS_VL_PADRAO.cnpj} • {DADOS_VL_PADRAO.sede}
                 </p>
               </div>
 
@@ -306,18 +307,29 @@ atendimento@vlengenhariamecanica.com.br
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {todosItens.map((item, idx) => (
-                    <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
+                  {todosItens.map((item, idx) => {
+                    const fotos = item.fotos && item.fotos.length > 0
+                      ? item.fotos.map((f, i) => ({ url: f.url, legenda: f.legenda || f.titulo || `Foto ${i + 1}` }))
+                      : item.fotosUrls && item.fotosUrls.length > 0
+                      ? item.fotosUrls.map((url, i) => ({ url, legenda: `Foto ${i + 1}` }))
+                      : item.fotoUrl
+                      ? [{ url: item.fotoUrl, legenda: item.fotoNome || 'Evidência' }]
+                      : [];
+                    const valorMedido = item.medicao?.valorEncontrado ?? item.valorResposta;
+                    const unidadeMedida = item.medicao?.unidade || (item.unidade && item.unidade !== 'texto' ? item.unidade : '');
+
+                    return (
+                    <tr key={`${item.id || 'row'}-${idx}`} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
                       <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[11px]">
-                        {idx + 1}
+                        {item.numero || idx + 1}
                       </td>
                       <td className="py-2.5 px-3 font-medium text-slate-800 leading-snug">
                         <p>{item.descricao}</p>
-                        {(item.valorResposta || item.criterioReferencia) && (
+                        {(valorMedido !== undefined && valorMedido !== '' || item.criterioReferencia) && (
                           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
-                            {item.valorResposta && (
+                            {valorMedido !== undefined && valorMedido !== '' && (
                               <span className="bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-bold">
-                                Apurado: {item.valorResposta} {item.unidade && item.unidade !== 'texto' ? item.unidade : ''}
+                                Medição: {valorMedido} {unidadeMedida}
                               </span>
                             )}
                             {item.criterioReferencia && (
@@ -342,24 +354,37 @@ atendimento@vlengenhariamecanica.com.br
                             ? 'Conforme'
                             : item.status === 'nao_conforme'
                             ? 'Não Conf.'
-                            : 'N/A'}
+                            : item.status === 'nao_aplicavel'
+                            ? 'N/A'
+                            : 'Pendente'}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-slate-600 leading-snug">
                         <p>{item.observacao || '—'}</p>
-                        {item.fotoUrl && (
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <img
-                              src={item.fotoUrl}
-                              alt="Evidência in loco"
-                              className="w-16 h-12 object-cover rounded border border-slate-300"
-                            />
-                            <span className="text-[10px] text-slate-500 italic">Evidência anexada</span>
+                        {item.acaoRecomendada && item.status === 'nao_conforme' && (
+                          <p className="mt-1 text-[10.5px] text-rose-800">
+                            <strong>Ação:</strong> {item.acaoRecomendada}
+                          </p>
+                        )}
+                        {fotos.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-2">
+                            {fotos.map((ft, fIdx) => (
+                              <div key={fIdx} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded p-1">
+                                <img
+                                  src={ft.url}
+                                  alt={ft.legenda}
+                                  className="w-12 h-10 object-cover rounded border border-slate-300"
+                                />
+                                <span className="text-[9.5px] text-slate-600 max-w-[110px] leading-tight">
+                                  {ft.legenda}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </table>
             </div>

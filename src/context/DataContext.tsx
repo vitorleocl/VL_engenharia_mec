@@ -13,9 +13,23 @@ import {
   CategoriaLaudoDef,
   TipoLaudoDef,
   ChecklistCampo,
+  ChecklistModeloServico,
   SolicitacaoAcesso,
   UserRole
 } from '../types';
+import { CHECKLIST_MODELOS_PADRAO } from '../lib/checklistModelosPadrao';
+import { montarDadosLaudoDeChecklist } from '../lib/checklistToLaudo';
+import {
+  OfflineSyncConflict,
+  countPendingSyncItems,
+  enqueueSync,
+  getConflicts,
+  getPendingQueue,
+  recordConflict,
+  removeDraftOffline,
+  removeFromQueue,
+  resolveConflictInStore,
+} from '../lib/offlineChecklistStore';
 import { 
   CLIENTES_INICIAIS, 
   ATIVOS_INICIAIS, 
@@ -49,6 +63,7 @@ import {
   setDoc, 
   deleteDoc, 
   collection, 
+  getDoc,
   getDocs, 
   onSnapshot, 
   getDocFromServer 
@@ -133,13 +148,25 @@ interface DataContextType {
   registrarUsoIA: (tipoOuQtd?: string | number, quantidade?: number) => void;
   atualizarLimiteIA: (novoLimite: number) => void;
 
-  // Checklist de Campo Actions
+  // Checklist de Campo & Modelos Editáveis Actions
   checklistsCampo: ChecklistCampo[];
+  checklistModelos: ChecklistModeloServico[];
+  atualizarChecklistModelos: (modelos: ChecklistModeloServico[]) => void;
+  resetarChecklistModelos: () => void;
   adicionarChecklistCampo: (dados: Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'>) => string;
   atualizarChecklistCampo: (id: string, dados: Partial<ChecklistCampo>) => void;
   removerChecklistCampo: (id: string) => void;
   finalizarChecklistCampo: (id: string, rubricaUrl?: string) => void;
+  gerarOuAtualizarLaudoDeChecklist: (checklistInput: ChecklistCampo) => { laudoId: string; atualizado: boolean };
   alternarPermitePreenchimentoPreliminar: (tipoId: string, permite: boolean) => void;
+
+  // Offline Sync Status & Conflict Resolution
+  pendingSyncCount: number;
+  syncConflicts: OfflineSyncConflict[];
+  sincronizandoOffline: boolean;
+  sincronizarChecklistsOffline: () => Promise<void>;
+  resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
+  atualizarContagemSync: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -161,8 +188,53 @@ function saveStorage<T>(key: string, data: T) {
   }
 }
 
+function normalizarChecklistsCampo(lista: ChecklistCampo[]): ChecklistCampo[] {
+  if (!Array.isArray(lista)) return [];
+  const porId = new Map<string, ChecklistCampo>();
+
+  lista.forEach((chk, idx) => {
+    if (!chk || typeof chk !== 'object') return;
+    const idLimpo = chk.id && String(chk.id).trim() ? String(chk.id) : `chk-legacy-${idx}`;
+
+    const normalizarItens = (arr: any[] | undefined, prefixo: string) => {
+      if (!Array.isArray(arr)) return [];
+      const vistos = new Set<string>();
+      return arr.map((it, itIdx) => {
+        let itemId = it?.id && String(it.id).trim() ? String(it.id) : `${prefixo}-${idLimpo}-${itIdx + 1}`;
+        if (vistos.has(itemId)) {
+          itemId = `${itemId}-${itIdx + 1}`;
+        }
+        vistos.add(itemId);
+        return { ...it, id: itemId };
+      });
+    };
+
+    const itensNorm = normalizarItens(chk.itens, 'it');
+    const extrasNorm = normalizarItens(chk.itensExtras, 'extra');
+    const candidato: ChecklistCampo = {
+      ...chk,
+      id: idLimpo,
+      itens: itensNorm,
+      itensExtras: extrasNorm,
+    };
+
+    const existente = porId.get(idLimpo);
+    if (!existente) {
+      porId.set(idLimpo, candidato);
+    } else {
+      const tExist = new Date(existente.atualizadoEm || existente.criadoEm || 0).getTime();
+      const tCand = new Date(candidato.atualizadoEm || candidato.criadoEm || 0).getTime();
+      if (tCand >= tExist) {
+        porId.set(idLimpo, candidato);
+      }
+    }
+  });
+
+  return Array.from(porId.values());
+}
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, firebaseUser } = useAuth();
+  const { currentUser, firebaseUser, isOnline } = useAuth();
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
     let loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
@@ -605,9 +677,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return loaded.filter(l => !removidosSet.has(l.id));
   });
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
-  const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => 
-    loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS)
+  const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() =>
+    normalizarChecklistsCampo(loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS))
   );
+  const [checklistModelos, setChecklistModelos] = useState<ChecklistModeloServico[]>(() =>
+    loadStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO)
+  );
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+  const [syncConflicts, setSyncConflicts] = useState<OfflineSyncConflict[]>([]);
+  const [sincronizandoOffline, setSincronizandoOffline] = useState<boolean>(false);
   const [categoriasLaudo, setCategoriasLaudo] = useState<CategoriaLaudoDef[]>(() => {
     const loaded = loadStorage('vl_taxonomia_categorias', CATEGORIAS_LAUDOS_TAXONOMIA);
     const cat1Atualizada = CATEGORIAS_LAUDOS_TAXONOMIA.find(c => c.id === 'cat-1');
@@ -740,6 +818,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_laudos', laudos), [laudos]);
   useEffect(() => saveStorage('vl_templates', templates), [templates]);
   useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
+  useEffect(() => saveStorage('vl_checklist_modelos', checklistModelos), [checklistModelos]);
   useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
@@ -910,7 +989,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
         if (!snapshot.empty) {
-          const docs = snapshot.docs.map(d => d.data() as ChecklistCampo);
+          const docs = normalizarChecklistsCampo(snapshot.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
           setChecklistsCampo(docs);
           saveStorage('vl_checklists_campo', docs);
         }
@@ -1094,6 +1173,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
             saveStorage('vl_laudos', merged);
+            return merged;
+          });
+        }
+
+        if (Array.isArray(data.checklistsCampo) && data.checklistsCampo.length > 0) {
+          setChecklistsCampo(prev => {
+            const remotosNorm = normalizarChecklistsCampo(data.checklistsCampo);
+            const locaisNorm = normalizarChecklistsCampo(prev);
+            const serverMap = new Map<string, ChecklistCampo>(
+              remotosNorm.map((c: ChecklistCampo) => [c.id, c])
+            );
+            const atualizados = locaisNorm.map(localChk => {
+              const remoteChk = serverMap.get(localChk.id);
+              if (!remoteChk) return localChk;
+              const localTime = new Date(localChk.atualizadoEm || localChk.criadoEm || 0).getTime();
+              const remoteTime = new Date(remoteChk.atualizadoEm || remoteChk.criadoEm || 0).getTime();
+              return localTime >= remoteTime ? localChk : remoteChk;
+            });
+            const prevIds = new Set(locaisNorm.map(c => c.id));
+            const novos = remotosNorm.filter((c: ChecklistCampo) => !prevIds.has(c.id));
+            const merged = normalizarChecklistsCampo([...novos, ...atualizados]);
+            saveStorage('vl_checklists_campo', merged);
             return merged;
           });
         }
@@ -2044,7 +2145,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.bairro ? cliente.endereco.bairro + ' - ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`.trim()
       : '');
 
+    const agora = new Date().toISOString();
     const novo: Laudo = {
+      ...dados,
       id,
       numero,
       tipo: dados.tipo,
@@ -2057,12 +2160,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clienteContatoEmail: dados.clienteContatoEmail || cliente?.contatos?.[0]?.email || '',
       clienteEndereco: enderecoFormatado,
       ativoId: dados.ativoId,
-      ativoIdentificacao: ativo?.identificacao || 'Equipamento',
-      status: 'rascunho',
+      ativoIdentificacao: dados.ativoIdentificacao || ativo?.identificacao || 'Equipamento',
+      ativoFabricante: dados.ativoFabricante || ativo?.fabricante,
+      ativoModelo: dados.ativoModelo || ativo?.modelo,
+      ativoNumeroSerie: dados.ativoNumeroSerie || ativo?.numeroSerie || ativo?.chassi,
+      ativoCapacidade: dados.ativoCapacidade || ativo?.capacidade,
+      status: dados.status || 'rascunho',
       artNumero: dados.artNumero || '',
-      dataInspecao: dados.dataInspecao || new Date().toISOString().slice(0, 10),
-      responsavelNome: 'Eng. Vitor Leonardo Cordeiro Linhares',
-      responsavelCrea: 'CREA-PE 182229949-0',
+      dataInspecao: dados.dataInspecao || agora.slice(0, 10),
+      responsavelNome: dados.responsavelNome || 'Eng. Vitor Leonardo Cordeiro Linhares',
+      responsavelCrea: dados.responsavelCrea || 'CREA-PE 182229949-0',
       resumoExecutivo: dados.resumoExecutivo || `Inspeção e apreciação técnica de ${dados.tipo}.`,
       normasReferencia: dados.normasReferencia || 'ABNT NBR / Normas Regulamentadoras',
       apresentacao: dados.apresentacao || 'O presente laudo técnico pericial tem por finalidade aferir a conformidade estrutural e operacional do equipamento.',
@@ -2071,9 +2178,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tabelaNaoConformidades: dados.tabelaNaoConformidades || [],
       conclusao: dados.conclusao || 'O equipamento cumpre as exigências fundamentais das normas de segurança vigentes.',
       secoes: dados.secoes || [],
-      usoIA: { chamadas: 0 },
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString(),
+      usoIA: dados.usoIA || { chamadas: 0 },
+      criadoEm: agora,
+      atualizadoEm: agora,
     };
 
     setLaudos(prev => [novo, ...prev]);
@@ -2373,6 +2480,164 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsoIA(prev => ({ ...prev, limiteMensal: novoLimite }));
   };
 
+  // Checklist Modelos Editáveis (Configurações B4)
+  const atualizarChecklistModelos = (modelos: ChecklistModeloServico[]) => {
+    const agora = new Date().toISOString();
+    const comTimestamp = modelos.map(m => ({ ...m, atualizadoEm: agora }));
+    setChecklistModelos(comTimestamp);
+    saveStorage('vl_checklist_modelos', comTimestamp);
+    registrarLog('configuracoes', 'checklistModelos', 'editar', `Modelos de checklist atualizados (${comTimestamp.length} modelos)`);
+    if (db && auth?.currentUser) {
+      setDoc(doc(db, 'configuracoes', 'checklistModelos'), { modelos: comTimestamp, atualizadoEm: agora }, { merge: true }).catch(err => {
+        console.warn('[Firestore] Erro ao salvar checklistModelos:', err);
+      });
+    }
+  };
+
+  const resetarChecklistModelos = () => {
+    setChecklistModelos(CHECKLIST_MODELOS_PADRAO);
+    saveStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO);
+    registrarLog('configuracoes', 'checklistModelos', 'editar', 'Modelos de checklist restaurados para o padrão VL Engenharia');
+  };
+
+  // Offline Sync Count & Queue Runner (B6)
+  const atualizarContagemSync = useCallback(async () => {
+    const [count, conflictsList] = await Promise.all([
+      countPendingSyncItems(),
+      getConflicts(),
+    ]);
+    setPendingSyncCount(count);
+    setSyncConflicts(conflictsList);
+  }, []);
+
+  const sincronizarChecklistsOffline = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      await atualizarContagemSync();
+      return;
+    }
+
+    const queue = await getPendingQueue();
+    if (queue.length === 0) {
+      await atualizarContagemSync();
+      return;
+    }
+
+    setSincronizandoOffline(true);
+    try {
+      for (const item of queue) {
+        try {
+          // Verifica possível conflito no Firestore quando autenticado
+          let conflitoDetectado = false;
+          let versaoRemotaConflitante: ChecklistCampo | null = null;
+
+          if (db && auth?.currentUser && item.action !== 'create') {
+            try {
+              const snap = await getDocFromServer(doc(db, 'checklistsCampo', item.checklistId)).catch(() =>
+                getDoc(doc(db, 'checklistsCampo', item.checklistId))
+              );
+              if (snap.exists()) {
+                const remoteData = snap.data() as ChecklistCampo;
+                const remoteTs = new Date(remoteData.atualizadoEm || remoteData.criadoEm || 0).getTime();
+                const baseTs = item.baseUpdatedAt ? new Date(item.baseUpdatedAt).getTime() : 0;
+                if (baseTs > 0 && remoteTs > baseTs && JSON.stringify(remoteData.itens) !== JSON.stringify(item.payload.itens)) {
+                  conflitoDetectado = true;
+                  versaoRemotaConflitante = remoteData;
+                }
+              }
+            } catch {
+              // Sem acesso remoto imediato, segue tentativa padrão
+            }
+          }
+
+          if (conflitoDetectado && versaoRemotaConflitante) {
+            // Preserva ambas as versões e registra aviso visível
+            await recordConflict({
+              id: `conf-${item.checklistId}-${Date.now()}`,
+              checklistId: item.checklistId,
+              numero: item.payload.numero || item.checklistId,
+              detectedAt: new Date().toISOString(),
+              localVersion: item.payload,
+              remoteVersion: versaoRemotaConflitante,
+              resolved: false,
+            });
+            await removeFromQueue(item.id);
+            continue;
+          }
+
+          // Envia para /api/app-data e Firestore
+          if (db && auth?.currentUser) {
+            await setDoc(doc(db, 'checklistsCampo', item.checklistId), item.payload, { merge: true });
+          }
+
+          await fetch('/api/app-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checklistsCampo: checklistsCampo.map(c => c.id === item.checklistId ? item.payload : c) }),
+          }).catch(() => undefined);
+
+          await removeFromQueue(item.id);
+          await removeDraftOffline(item.checklistId);
+        } catch (err) {
+          console.warn('[OfflineSync] Falha ao sincronizar item da fila:', item.checklistId, err);
+        }
+      }
+    } finally {
+      setSincronizandoOffline(false);
+      await atualizarContagemSync();
+    }
+  }, [atualizarContagemSync, checklistsCampo]);
+
+  const resolverConflitoChecklist = async (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => {
+    const conflito = syncConflicts.find(c => c.id === conflictId);
+    if (!conflito) return;
+
+    const agora = new Date().toISOString();
+    if (escolha === 'local') {
+      const atualizado = { ...conflito.localVersion, atualizadoEm: agora };
+      setChecklistsCampo(prev => prev.map(c => (c.id === atualizado.id ? atualizado : c)));
+      if (db && auth?.currentUser) {
+        await setDoc(doc(db, 'checklistsCampo', atualizado.id), atualizado, { merge: true }).catch(() => undefined);
+      }
+    } else if (escolha === 'remoto') {
+      setChecklistsCampo(prev => prev.map(c => (c.id === conflito.remoteVersion.id ? conflito.remoteVersion : c)));
+    } else {
+      // 'ambos': mantém remota no ID original e cria cópia da versão local
+      const copiaId = `chk-${Date.now()}`;
+      const copiaNumero = `${conflito.localVersion.numero || conflito.checklistId}-OFF`;
+      const copiaLocal: ChecklistCampo = {
+        ...conflito.localVersion,
+        id: copiaId,
+        numero: copiaNumero,
+        vinculadoALaudoId: null,
+        criadoEm: agora,
+        atualizadoEm: agora,
+      };
+      setChecklistsCampo(prev => [
+        copiaLocal,
+        ...prev.map(c => (c.id === conflito.remoteVersion.id ? conflito.remoteVersion : c)),
+      ]);
+      if (db && auth?.currentUser) {
+        await setDoc(doc(db, 'checklistsCampo', copiaId), copiaLocal, { merge: true }).catch(() => undefined);
+      }
+    }
+
+    await resolveConflictInStore(conflictId);
+    await removeDraftOffline(conflito.checklistId);
+    await atualizarContagemSync();
+  };
+
+  useEffect(() => {
+    atualizarContagemSync();
+  }, [atualizarContagemSync]);
+
+  useEffect(() => {
+    if (isOnline) {
+      sincronizarChecklistsOffline();
+    } else {
+      atualizarContagemSync();
+    }
+  }, [isOnline]);
+
   // Checklist de Campo Handlers
   const gerarNumeroChecklistCampo = (): string => {
     const anoAtual = new Date().getFullYear();
@@ -2390,7 +2655,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const adicionarChecklistCampo = (dados: Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'>): string => {
-    const id = `chk-${Date.now()}`;
+    const id = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const numero = gerarNumeroChecklistCampo();
     const agora = new Date().toISOString();
     const novo: ChecklistCampo = {
@@ -2403,10 +2668,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChecklistsCampo(prev => [novo, ...prev]);
     registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
 
-    if (db && auth?.currentUser) {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (offline) {
+      enqueueSync({
+        id: `sync-${id}-${Date.now()}`,
+        checklistId: id,
+        action: 'create',
+        payload: novo,
+        enqueuedAt: agora,
+      }).then(() => atualizarContagemSync());
+    } else if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), novo).catch(err => {
-          console.warn('Sync Firestore checklistCampo:', err);
+          console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
+          enqueueSync({
+            id: `sync-${id}-${Date.now()}`,
+            checklistId: id,
+            action: 'create',
+            payload: novo,
+            enqueuedAt: agora,
+          }).then(() => atualizarContagemSync());
         });
       } catch (e) {
         console.warn('Firestore write error:', e);
@@ -2417,13 +2698,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const atualizarChecklistCampo = (id: string, dados: Partial<ChecklistCampo>) => {
     const agora = new Date().toISOString();
+    const existente = checklistsCampo.find(c => c.id === id);
+    const atualizado: ChecklistCampo | undefined = existente ? { ...existente, ...dados, atualizadoEm: agora } : undefined;
+
     setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dados, atualizadoEm: agora } : c));
     registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
 
-    if (db && auth?.currentUser) {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (offline && atualizado) {
+      enqueueSync({
+        id: `sync-${id}-${Date.now()}`,
+        checklistId: id,
+        action: 'update',
+        payload: atualizado,
+        baseUpdatedAt: existente?.atualizadoEm,
+        enqueuedAt: agora,
+      }).then(() => atualizarContagemSync());
+    } else if (db && auth?.currentUser) {
       try {
         setDoc(doc(db, 'checklistsCampo', id), { ...dados, atualizadoEm: agora }, { merge: true }).catch(err => {
-          console.warn('Sync Firestore checklistCampo:', err);
+          console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
+          if (atualizado) {
+            enqueueSync({
+              id: `sync-${id}-${Date.now()}`,
+              checklistId: id,
+              action: 'update',
+              payload: atualizado,
+              baseUpdatedAt: existente?.atualizadoEm,
+              enqueuedAt: agora,
+            }).then(() => atualizarContagemSync());
+          }
         });
       } catch (e) {
         console.warn('Firestore write error:', e);
@@ -2438,30 +2742,89 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const finalizarChecklistCampo = (id: string, rubricaUrl?: string) => {
     const agora = new Date().toISOString();
-    setChecklistsCampo(prev => prev.map(c => {
-      if (c.id === id) {
-        return {
-          ...c,
-          status: 'finalizado',
-          rubricaUrl: rubricaUrl || c.rubricaUrl,
-          rubricaTimestamp: rubricaUrl ? agora : c.rubricaTimestamp,
-          atualizadoEm: agora
-        };
-      }
-      return c;
-    }));
-    registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado com assinatura de rubrica: ${id}`);
-    if (db && auth?.currentUser) {
+    const existente = checklistsCampo.find(c => c.id === id);
+    const dadosFinais: Partial<ChecklistCampo> = {
+      status: 'finalizado',
+      concluidaEm: agora,
+      ...(rubricaUrl ? { rubricaUrl, rubricaTimestamp: agora } : {}),
+      atualizadoEm: agora,
+    };
+
+    setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dadosFinais } : c));
+    registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado: ${id}`);
+
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (offline && existente) {
+      enqueueSync({
+        id: `sync-${id}-${Date.now()}`,
+        checklistId: id,
+        action: 'finalize',
+        payload: { ...existente, ...dadosFinais },
+        baseUpdatedAt: existente.atualizadoEm,
+        enqueuedAt: agora,
+      }).then(() => atualizarContagemSync());
+    } else if (db && auth?.currentUser) {
       try {
-        setDoc(doc(db, 'checklistsCampo', id), {
-          status: 'finalizado',
-          ...(rubricaUrl ? { rubricaUrl, rubricaTimestamp: agora } : {}),
-          atualizadoEm: agora
-        }, { merge: true }).catch(err => console.warn('Firestore sync err:', err));
+        setDoc(doc(db, 'checklistsCampo', id), dadosFinais, { merge: true }).catch(err => {
+          console.warn('Firestore sync err (enfileirando offline):', err);
+          if (existente) {
+            enqueueSync({
+              id: `sync-${id}-${Date.now()}`,
+              checklistId: id,
+              action: 'finalize',
+              payload: { ...existente, ...dadosFinais },
+              baseUpdatedAt: existente.atualizadoEm,
+              enqueuedAt: agora,
+            }).then(() => atualizarContagemSync());
+          }
+        });
       } catch (e) {
         console.warn('Firestore err:', e);
       }
     }
+  };
+
+  // B7: Idempotent "Gerar laudo a partir desta vistoria" (cria ou atualiza rascunho sem duplicar)
+  const gerarOuAtualizarLaudoDeChecklist = (checklistInput: ChecklistCampo): { laudoId: string; atualizado: boolean } => {
+    const cliente = clientes.find(c => c.id === checklistInput.clienteId);
+    const ativo = ativos.find(a => a.id === checklistInput.ativoId);
+    const orcamento = orcamentos.find(o => o.id === checklistInput.vinculadoAOrcamentoId);
+    const modelo = checklistModelos.find(m => m.id === checklistInput.modeloId || m.id === checklistInput.tipoLaudoId.replace('laudo-', ''));
+
+    const dadosMapeados = montarDadosLaudoDeChecklist({
+      checklist: checklistInput,
+      cliente,
+      ativo,
+      orcamento,
+      modelo,
+    });
+
+    const laudoExistente = laudos.find(
+      l => l.id === checklistInput.vinculadoALaudoId || l.checklistCampoOrigemId === checklistInput.id
+    );
+
+    if (laudoExistente) {
+      if (laudoExistente.revisaoCongelada || laudoExistente.status === 'finalizado') {
+        if (checklistInput.vinculadoALaudoId !== laudoExistente.id) {
+          atualizarChecklistCampo(checklistInput.id, { vinculadoALaudoId: laudoExistente.id });
+        }
+        return { laudoId: laudoExistente.id, atualizado: false };
+      }
+
+      atualizarLaudo(laudoExistente.id, {
+        ...dadosMapeados,
+        numero: laudoExistente.numero,
+        artNumero: laudoExistente.artNumero || '',
+      });
+      if (checklistInput.vinculadoALaudoId !== laudoExistente.id) {
+        atualizarChecklistCampo(checklistInput.id, { vinculadoALaudoId: laudoExistente.id });
+      }
+      return { laudoId: laudoExistente.id, atualizado: true };
+    }
+
+    const novoLaudoId = criarNovoLaudo(dadosMapeados);
+    atualizarChecklistCampo(checklistInput.id, { vinculadoALaudoId: novoLaudoId });
+    return { laudoId: novoLaudoId, atualizado: false };
   };
 
   const alternarPermitePreenchimentoPreliminar = (tipoId: string, permite: boolean) => {
@@ -2527,11 +2890,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registrarUsoIA,
         atualizarLimiteIA,
         checklistsCampo,
+        checklistModelos,
+        atualizarChecklistModelos,
+        resetarChecklistModelos,
         adicionarChecklistCampo,
         atualizarChecklistCampo,
         removerChecklistCampo,
         finalizarChecklistCampo,
+        gerarOuAtualizarLaudoDeChecklist,
         alternarPermitePreenchimentoPreliminar,
+        pendingSyncCount,
+        syncConflicts,
+        sincronizandoOffline,
+        sincronizarChecklistsOffline,
+        resolverConflitoChecklist,
+        atualizarContagemSync,
       }}
     >
       {children}

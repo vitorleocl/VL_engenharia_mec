@@ -1,60 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ClipboardCheck, 
-  Plus, 
-  Search, 
-  Camera, 
-  CheckCircle2, 
-  Wifi, 
-  WifiOff, 
-  Download, 
-  Share2, 
-  FileText,
-  Upload,
-  ArrowRight,
-  Layers,
-  Clock,
+import {
+  Plus,
+  Search,
+  Sliders,
+  RefreshCw,
   AlertTriangle,
-  Building,
-  ExternalLink,
-  ChevronRight,
-  Eye,
-  Check,
-  Edit3
+  FileText,
+  Edit3,
+  X,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { ChecklistCampoFormModal } from './ChecklistCampoFormModal';
 import { ChecklistCampoPdfModal } from './ChecklistCampoPdfModal';
+import { ChecklistModelosEditor } from './ChecklistModelosEditor';
 import { ChecklistCampo } from '../../types';
 
+function extrairTagCurta(identificacao?: string): string {
+  if (!identificacao) return 'Ativo';
+  const match = identificacao.match(/^([^(]+)/);
+  return (match ? match[1] : identificacao).trim();
+}
+
 export const ChecklistCampoView: React.FC = () => {
-  const { checklistsCampo, clientes, ativos, orcamentos, laudos } = useData();
-  const { currentUser, isOnline } = useAuth();
+  const {
+    checklistsCampo,
+    clientes,
+    ativos,
+    orcamentos,
+    laudos,
+    pendingSyncCount,
+    syncConflicts,
+    sincronizandoOffline,
+    sincronizarChecklistsOffline,
+    resolverConflitoChecklist,
+    gerarOuAtualizarLaudoDeChecklist,
+  } = useData();
+  const { isOnline } = useAuth();
   const navigate = useNavigate();
 
   const [modalFormAberto, setModalFormAberto] = useState(false);
   const [checklistParaEditar, setChecklistParaEditar] = useState<ChecklistCampo | null>(null);
   const [checklistVisualizandoPdf, setChecklistVisualizandoPdf] = useState<ChecklistCampo | null>(null);
+  const [modalModelosAberto, setModalModelosAberto] = useState(false);
   const [buscaTexto, setBuscaTexto] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'finalizado' | 'rascunho'>('todos');
+  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'rascunho' | 'finalizado'>('todos');
 
-  // Filtro de checklists
-  const checklistsFiltrados = checklistsCampo.filter(chk => {
-    if (filtroStatus !== 'todos' && chk.status !== filtroStatus) return false;
-    if (buscaTexto.trim()) {
-      const termo = buscaTexto.toLowerCase();
-      const cli = clientes.find(c => c.id === chk.clienteId);
-      const atv = ativos.find(a => a.id === chk.ativoId);
-      const matchNumero = (chk.numero || '').toLowerCase().includes(termo);
-      const matchTipo = (chk.tipoLaudoNome || chk.categoriaLaudo || '').toLowerCase().includes(termo);
-      const matchCli = (cli?.razaoSocial || cli?.nomeFantasia || '').toLowerCase().includes(termo);
-      const matchAtv = (atv?.identificacao || '').toLowerCase().includes(termo);
-      return matchNumero || matchTipo || matchCli || matchAtv;
-    }
-    return true;
-  });
+  // Ordenar mais recentes primeiro e filtrar
+  const checklistsFiltrados = useMemo(() => {
+    return [...checklistsCampo]
+      .sort((a, b) => {
+        const ta = new Date(a.dataPreenchimento || a.criadoEm || 0).getTime();
+        const tb = new Date(b.dataPreenchimento || b.criadoEm || 0).getTime();
+        return tb - ta;
+      })
+      .filter((chk) => {
+        if (filtroStatus !== 'todos' && chk.status !== filtroStatus) return false;
+        if (buscaTexto.trim()) {
+          const termo = buscaTexto.toLowerCase();
+          const cli = clientes.find((c) => c.id === chk.clienteId);
+          const atv = ativos.find((a) => a.id === chk.ativoId);
+          const orc = orcamentos.find((o) => o.id === chk.vinculadoAOrcamentoId);
+          return (
+            (chk.numero || '').toLowerCase().includes(termo) ||
+            (chk.tipoLaudoNome || chk.categoriaLaudo || '').toLowerCase().includes(termo) ||
+            (cli?.razaoSocial || cli?.nomeFantasia || chk.clienteNome || '').toLowerCase().includes(termo) ||
+            (atv?.identificacao || chk.ativoIdentificacao || '').toLowerCase().includes(termo) ||
+            (orc?.codigoProposta || '').toLowerCase().includes(termo)
+          );
+        }
+        return true;
+      });
+  }, [checklistsCampo, filtroStatus, buscaTexto, clientes, ativos, orcamentos]);
 
   const abrirNovoChecklist = () => {
     setChecklistParaEditar(null);
@@ -66,258 +85,369 @@ export const ChecklistCampoView: React.FC = () => {
     setModalFormAberto(true);
   };
 
+  const handleGerarOuAbrirLaudo = (chk: ChecklistCampo) => {
+    const { laudoId } = gerarOuAtualizarLaudoDeChecklist(chk);
+    navigate(`/admin/laudos/${laudoId}`);
+  };
+
   return (
-    <div className="space-y-6 max-w-[1300px]">
-      
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 max-w-[920px] mx-auto">
+      {/* Cabeçalho estilo mobile/painel VL Engenharia */}
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-black text-[#0B1E3D] tracking-tight">
-              Checklists de Campo & Vistorias
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-[#1565D8] border border-blue-200">
-              Tablet & Mobile Touch
-            </span>
-          </div>
-          <p className="text-sm text-slate-500">
-            Coleta estruturada de dados técnicos in loco com fotos, medições e geração direta do Laudo Técnico.
+          <h1 className="text-[26px] sm:text-[30px] font-bold tracking-tight text-[var(--adm-text)] leading-tight">
+            Checklists
+          </h1>
+          <p className="text-[13.5px] sm:text-[14.5px] text-[var(--adm-mut)] mt-0.5">
+            Vistorias de campo ligadas ao orçamento e ao laudo.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Status de Sincronização Offline */}
-          {isOnline ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-300">
-              <Wifi className="w-4 h-4 text-emerald-600" />
-              <span>Sincronizado (0 pendentes)</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-300 animate-pulse">
-              <WifiOff className="w-4 h-4 text-amber-600" />
-              <span>Modo Offline Ativo</span>
-            </span>
-          )}
-
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {/* Indicador de Sincronização B6 */}
           <button
             type="button"
-            onClick={abrirNovoChecklist}
-            className="px-4 py-2.5 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-black flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+            onClick={() => sincronizarChecklistsOffline()}
+            disabled={sincronizandoOffline}
+            title={
+              isOnline
+                ? pendingSyncCount > 0
+                  ? 'Clique para sincronizar itens pendentes'
+                  : 'Todos os checklists estão sincronizados'
+                : 'Sem conexão — alterações salvas localmente no IndexedDB'
+            }
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
+              !isOnline
+                ? 'bg-[var(--adm-card)] border-amber-500/45 text-amber-500'
+                : pendingSyncCount > 0
+                ? 'bg-[var(--adm-card)] border-[var(--adm-blue-soft,#6ea1ff)]/50 text-[var(--adm-blue-soft,#6ea1ff)]'
+                : 'bg-[var(--adm-card)] border-[var(--adm-line)] text-[var(--adm-text)]'
+            }`}
           >
-            <Plus className="w-4 h-4 text-[#D4AF37]" />
-            <span>Nova Vistoria de Campo</span>
+            {sincronizandoOffline ? (
+              <RefreshCw className="w-3 h-3 animate-spin text-[var(--adm-blue-soft)]" />
+            ) : (
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  !isOnline
+                    ? 'bg-amber-400'
+                    : pendingSyncCount > 0
+                    ? 'bg-[var(--adm-blue-soft,#6ea1ff)]'
+                    : 'bg-emerald-500'
+                }`}
+              />
+            )}
+            <span>
+              {!isOnline
+                ? pendingSyncCount > 0
+                  ? `Offline · ${pendingSyncCount} pendente${pendingSyncCount > 1 ? 's' : ''}`
+                  : 'Offline'
+                : sincronizandoOffline
+                ? 'Sincronizando...'
+                : pendingSyncCount > 0
+                ? `${pendingSyncCount} ite${pendingSyncCount > 1 ? 'ns' : 'm'} pendente${pendingSyncCount > 1 ? 's' : ''}`
+                : 'Sincronizado'}
+            </span>
+          </button>
+
+          {/* Atalho Configurações de Modelos B4 */}
+          <button
+            type="button"
+            onClick={() => setModalModelosAberto(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:border-[var(--adm-blue-soft)] transition cursor-pointer"
+            title="Configurar modelos de checklist por tipo de serviço"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Modelos</span>
           </button>
         </div>
       </div>
 
-      {/* Barra de Filtros e Busca */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar por TAG, cliente, proposta ou número..."
-            value={buscaTexto}
-            onChange={(e) => setBuscaTexto(e.target.value)}
-            className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      {/* Botão Primário + Nova vistoria */}
+      <button
+        type="button"
+        onClick={abrirNovoChecklist}
+        className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+      >
+        <Plus className="w-4 h-4" />
+        <span>Nova vistoria</span>
+      </button>
+
+      {/* Avisos de Conflito Offline B6 */}
+      {syncConflicts.length > 0 && (
+        <div className="space-y-2.5">
+          {syncConflicts.map((conf, cIdx) => (
+            <div
+              key={conf.id ? `${conf.id}-${cIdx}` : `conf-${cIdx}`}
+              className="p-4 rounded-2xl border border-amber-500/50 bg-amber-500/10 space-y-2.5"
+            >
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <strong className="text-[var(--adm-text)] block text-sm">
+                    Conflito de sincronização detectado em {conf.numero}
+                  </strong>
+                  <span className="text-[var(--adm-mut)]">
+                    Este checklist foi alterado offline no aparelho e também no servidor. Ambas as versões foram preservadas. Escolha como resolver:
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => resolverConflitoChecklist(conf.id, 'ambos')}
+                  className="px-3 py-1.5 rounded-lg bg-[var(--adm-blue,#2160db)] text-white text-xs font-semibold cursor-pointer"
+                >
+                  Manter ambas (criar cópia)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolverConflitoChecklist(conf.id, 'local')}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--adm-line)] bg-[var(--adm-card)] text-[var(--adm-text)] text-xs font-semibold cursor-pointer"
+                >
+                  Usar versão deste aparelho
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolverConflitoChecklist(conf.id, 'remoto')}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--adm-line)] bg-[var(--adm-card)] text-[var(--adm-mut)] text-xs font-semibold cursor-pointer"
+                >
+                  Usar versão da nuvem
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filtros (Todas | Em andamento | Concluídas) e Busca */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+        <div className="inline-flex items-center gap-1.5 flex-wrap">
+          {(
+            [
+              { id: 'todos', label: 'Todas' },
+              { id: 'rascunho', label: 'Em andamento' },
+              { id: 'finalizado', label: 'Concluídas' },
+            ] as const
+          ).map((tab) => {
+            const ativo = filtroStatus === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFiltroStatus(tab.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                  ativo
+                    ? 'bg-[var(--adm-blue,#2160db)] text-white border-[var(--adm-blue,#2160db)]'
+                    : 'bg-[var(--adm-card)] text-[var(--adm-mut)] border-[var(--adm-line)] hover:text-[var(--adm-text)]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-bold text-slate-500">Filtrar:</span>
-          {(['todos', 'finalizado', 'rascunho'] as const).map(st => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => setFiltroStatus(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                filtroStatus === st
-                  ? 'bg-blue-600 text-white shadow-2xs font-black'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
-            >
-              {st === 'todos' ? 'Todos' : st === 'finalizado' ? 'Concluídos' : 'Rascunhos'}
-            </button>
-          ))}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-[var(--adm-mut)] absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
+            placeholder="Buscar TAG, cliente, número..."
+            className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-text)] placeholder:text-[var(--adm-mut)] focus:outline-none focus:border-[var(--adm-blue-soft)]"
+          />
         </div>
       </div>
 
-      {/* B8: Tabela / Lista de Vistorias Realizadas por Equipamento */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-2">
-              <ClipboardCheck className="w-4 h-4 text-[#1565D8]" />
-              <span>Histórico de Vistorias por Equipamento & Laudos Gerados</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Rastreabilidade total: Orçamento vinculado → Checklist in loco → Laudo técnico emitido.
-            </p>
-          </div>
-          <span className="text-xs font-bold font-mono text-slate-600">
-            {checklistsFiltrados.length} vistoria(s) encontrada(s)
-          </span>
+      {/* Lista de Cartões de Vistoria (B8 + Screenshots Dark/Light) */}
+      {checklistsFiltrados.length === 0 ? (
+        <div className="bg-[var(--adm-card)] border border-[var(--adm-line)] rounded-2xl p-10 text-center space-y-3">
+          <ClipboardCheck className="w-10 h-10 text-[var(--adm-mut)] mx-auto opacity-50" />
+          <h3 className="text-sm font-bold text-[var(--adm-text)]">
+            Nenhuma vistoria encontrada
+          </h3>
+          <p className="text-xs text-[var(--adm-mut)] max-w-sm mx-auto">
+            Inicie uma nova vistoria técnica ligada a um orçamento aprovado e equipamento.
+          </p>
+          <button
+            type="button"
+            onClick={abrirNovoChecklist}
+            className="px-4 py-2 rounded-xl bg-[var(--adm-blue,#2160db)] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova vistoria</span>
+          </button>
         </div>
+      ) : (
+        <div className="space-y-3.5">
+          {checklistsFiltrados.map((chk, chkIdx) => {
+            const cliente = clientes.find((c) => c.id === chk.clienteId);
+            const ativo = ativos.find((a) => a.id === chk.ativoId);
+            const orcamento = orcamentos.find((o) => o.id === chk.vinculadoAOrcamentoId);
+            const laudoVinculado = laudos.find(
+              (l) => l.checklistCampoOrigemId === chk.id || l.id === chk.vinculadoALaudoId
+            );
 
-        {checklistsFiltrados.length === 0 ? (
-          <div className="p-10 text-center space-y-3">
-            <ClipboardCheck className="w-12 h-12 text-slate-300 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-700">Nenhum checklist de campo encontrado</h4>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Inicie uma nova vistoria técnica clicando no botão "Nova Vistoria de Campo" acima.
-            </p>
-            <button
-              type="button"
-              onClick={abrirNovoChecklist}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Criar Primeiro Checklist</span>
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {checklistsFiltrados.map((chk) => {
-              const cliente = clientes.find(c => c.id === chk.clienteId);
-              const ativo = ativos.find(a => a.id === chk.ativoId);
-              const orcamento = orcamentos.find(o => o.id === chk.vinculadoAOrcamentoId);
-              const laudoVinculado = laudos.find(l => l.checklistCampoOrigemId === chk.id || l.id === chk.vinculadoALaudoId);
+            const todosItens = [...(chk.itens || []), ...(chk.itensExtras || [])];
+            const total = todosItens.length;
+            const conformes = todosItens.filter((i) => i.status === 'conforme').length;
+            const naoConformes = todosItens.filter((i) => i.status === 'nao_conforme').length;
+            const respondidos = todosItens.filter((i) => i.status && i.status !== 'pendente').length;
 
-              const itensTotal = (chk.itens || []).length + (chk.itensExtras || []).length;
-              const itensConformes = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'conforme').length;
-              const itensNaoConformes = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'nao_conforme').length;
-              const itensNA = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'nao_aplicavel').length;
+            const emAndamento = chk.status !== 'finalizado';
+            const tagAtivo = extrairTagCurta(ativo?.identificacao || chk.ativoIdentificacao);
+            const nomeCliente =
+              cliente?.razaoSocial || cliente?.nomeFantasia || chk.clienteNome || 'Cliente';
+            const dataBr = new Date(
+              chk.dataPreenchimento || chk.criadoEm || Date.now()
+            ).toLocaleDateString('pt-BR');
 
-              return (
-                <div 
-                  key={chk.id}
-                  className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-black text-[#0B1E3D] bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
-                        {chk.numero || chk.id}
+            return (
+              <article
+                key={chk.id ? `${chk.id}-${chkIdx}` : `chk-${chkIdx}`}
+                className="bg-[var(--adm-card)] border border-[var(--adm-line)] rounded-2xl p-4 sm:p-5 space-y-3 transition-colors"
+              >
+                {/* Linha superior: Código · ● Status */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 text-xs text-[var(--adm-mut)] flex-wrap">
+                    <span className="font-mono font-semibold text-[var(--adm-text)]">
+                      {chk.numero || chk.id}
+                    </span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1.5 font-medium">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          emAndamento ? 'bg-amber-400' : 'bg-emerald-500'
+                        }`}
+                      />
+                      <span className={emAndamento ? 'text-amber-500' : 'text-emerald-500'}>
+                        {emAndamento ? 'Em andamento' : 'Concluída'}
                       </span>
-                      <span className="text-xs font-black text-slate-900">
-                        {chk.tipoLaudoNome || chk.categoriaLaudo}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        chk.status === 'finalizado'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-amber-100 text-amber-800 border border-amber-300'
-                      }`}>
-                        {chk.status === 'finalizado' ? '✓ Vistoria Concluída' : '⏳ Rascunho / Em Andamento'}
-                      </span>
-                      {chk.geolocalizacao && (
-                        <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                          📍 GPS Registrado
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                      <span>
-                        <strong>Cliente:</strong> {cliente?.razaoSocial || chk.clienteNome || 'Cliente'}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        <strong>Equipamento / TAG:</strong> <span className="font-mono font-bold text-slate-800">{ativo?.identificacao || chk.ativoIdentificacao || 'Ativo'}</span> ({ativo?.tipo || 'Industrial'})
-                      </span>
-                      <span>•</span>
-                      <span>
-                        <strong>Data:</strong> {new Date(chk.dataPreenchimento || chk.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
-                      </span>
-                      {orcamento && (
-                        <>
-                          <span>•</span>
-                          <span className="text-blue-700 font-semibold">
-                            Orçamento: {orcamento.codigoProposta || orcamento.id}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Chips de Resultados da Inspeção */}
-                    <div className="flex items-center gap-2 pt-1 text-[11px] font-bold">
-                      <span className="text-slate-500">
-                        {itensTotal} itens avaliados:
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        {itensConformes} Conformes
-                      </span>
-                      {itensNaoConformes > 0 ? (
-                        <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
-                          ⚠ {itensNaoConformes} Não Conforme(s)
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                          0 NC
-                        </span>
-                      )}
-                      {itensNA > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {itensNA} N.A.
-                        </span>
-                      )}
-                    </div>
+                    </span>
                   </div>
 
-                  {/* Ações por Vistoria */}
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                    {/* Botão Ver PDF Preliminar */}
-                    <button
-                      type="button"
-                      onClick={() => setChecklistVisualizandoPdf(chk)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                      title="Visualizar folha de checklist preliminar"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Ver Vistoria</span>
-                    </button>
-
-                    {/* Botão Continuar / Editar Vistoria */}
-                    <button
-                      type="button"
-                      onClick={() => abrirEditarChecklist(chk)}
-                      className="px-3 py-1.5 rounded-lg border border-blue-300 bg-blue-50/60 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                      title="Editar ou complementar vistoria técnica"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Editar</span>
-                    </button>
-
-                    {/* B7 / B8: Atalho para o Laudo Técnico Gerado */}
-                    {laudoVinculado ? (
+                  {/* Vínculos compactos (Orçamento / Laudo) */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {orcamento && (
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[var(--adm-bg)] border border-[var(--adm-line)] text-[var(--adm-mut)]">
+                        {orcamento.codigoProposta || orcamento.id}
+                      </span>
+                    )}
+                    {laudoVinculado && (
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/laudos/${laudoVinculado.id}`)}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                        title="Abrir o laudo técnico gerado a partir desta vistoria"
+                        className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/35 text-emerald-500 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        title="Abrir laudo vinculado"
                       >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Abrir Laudo ({laudoVinculado.numero})</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => abrirEditarChecklist(chk)}
-                        className="px-3.5 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                        title="Concluir e gerar o laudo técnico"
-                      >
-                        <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        <span>Gerar Laudo</span>
+                        <FileText className="w-3 h-3" />
+                        <span>{laudoVinculado.numero}</span>
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarChecklist(chk)}
+                      className="p-1.5 rounded-lg text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-bg)] transition cursor-pointer"
+                      title="Editar / continuar vistoria"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
-      {/* Modais de Formulário e PDF */}
+                {/* Título e Subtítulo */}
+                <div className="space-y-1">
+                  <h2 className="text-[15.5px] sm:text-[17px] font-bold text-[var(--adm-text)] leading-snug">
+                    {chk.tipoLaudoNome || chk.categoriaLaudo}
+                  </h2>
+                  <p className="text-xs sm:text-[13px] text-[var(--adm-mut)]">
+                    {tagAtivo} · {nomeCliente}
+                  </p>
+                </div>
+
+                {/* Barra de Progresso Segmentada por Item */}
+                {total > 0 && (
+                  <div
+                    className="flex items-center gap-1.5 pt-0.5"
+                    aria-label={`${respondidos} de ${total} itens verificados`}
+                  >
+                    {todosItens.map((it, itIdx) => {
+                      const corSegmento =
+                        it.status === 'conforme'
+                          ? 'bg-emerald-500'
+                          : it.status === 'nao_conforme'
+                          ? 'bg-rose-500'
+                          : it.status === 'nao_aplicavel'
+                          ? 'bg-slate-400/55'
+                          : 'bg-slate-500/25';
+                      return (
+                        <span
+                          key={`${it.id || 'item'}-${itIdx}`}
+                          className={`h-[5px] flex-1 rounded-full ${corSegmento}`}
+                          title={`${it.numero ? `${it.numero} ` : ''}${it.descricao}: ${it.status}`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Resumo numérico + Data */}
+                <p className="text-xs text-[var(--adm-mut)]">
+                  {emAndamento ? (
+                    <>
+                      {respondidos} de {total} itens · {naoConformes}{' '}
+                      {naoConformes === 1 ? 'não conforme' : 'não conformes'} · {dataBr}
+                    </>
+                  ) : (
+                    <>
+                      {total} itens · {conformes} {conformes === 1 ? 'conforme' : 'conformes'} ·{' '}
+                      {naoConformes} {naoConformes === 1 ? 'não conforme' : 'não conformes'} ·{' '}
+                      {dataBr}
+                    </>
+                  )}
+                </p>
+
+                {/* Botões de Ação */}
+                {emAndamento ? (
+                  <button
+                    type="button"
+                    onClick={() => abrirEditarChecklist(chk)}
+                    className="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white text-xs sm:text-sm font-semibold transition cursor-pointer"
+                  >
+                    Continuar
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setChecklistVisualizandoPdf(chk)}
+                      className="min-h-[42px] py-2.5 px-4 rounded-xl border border-[var(--adm-line)] bg-transparent hover:border-[var(--adm-blue-soft)] text-[var(--adm-text)] text-xs sm:text-sm font-semibold transition cursor-pointer"
+                    >
+                      Ver
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleGerarOuAbrirLaudo(chk)}
+                      className="min-h-[42px] py-2.5 px-4 rounded-xl border border-[var(--adm-line)] bg-transparent hover:border-[var(--adm-blue-soft)] text-[var(--adm-text)] text-xs sm:text-sm font-semibold transition cursor-pointer"
+                      title={
+                        laudoVinculado
+                          ? `Abrir ou atualizar o laudo ${laudoVinculado.numero} sem duplicar`
+                          : 'Gerar rascunho de laudo preenchido a partir desta vistoria'
+                      }
+                    >
+                      {laudoVinculado ? 'Abrir laudo' : 'Gerar laudo'}
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal de Formulário da Vistoria */}
       {modalFormAberto && (
         <ChecklistCampoFormModal
           checklistParaEditar={checklistParaEditar}
@@ -332,6 +462,7 @@ export const ChecklistCampoView: React.FC = () => {
         />
       )}
 
+      {/* Modal de Visualização Preliminar */}
       {checklistVisualizandoPdf && (
         <ChecklistCampoPdfModal
           checklist={checklistVisualizandoPdf}
@@ -339,6 +470,28 @@ export const ChecklistCampoView: React.FC = () => {
         />
       )}
 
+      {/* Modal de Configuração de Modelos de Checklist (B4) */}
+      {modalModelosAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-2 sm:p-5 overflow-y-auto">
+          <div className="bg-[var(--adm-bg)] text-[var(--adm-text)] border border-[var(--adm-line)] rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl my-auto">
+            <div className="px-5 py-3.5 border-b border-[var(--adm-line)] bg-[var(--adm-card)] flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--adm-mut)]">
+                Configurações · Modelos de Checklist
+              </span>
+              <button
+                type="button"
+                onClick={() => setModalModelosAberto(false)}
+                className="p-1.5 rounded-lg text-[var(--adm-mut)] hover:text-[var(--adm-text)] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <ChecklistModelosEditor />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

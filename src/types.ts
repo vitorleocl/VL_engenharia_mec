@@ -661,8 +661,10 @@ export interface ChecklistFotoVinculada {
 
 export interface ChecklistCampoItem {
   id: string;
+  numero?: string;             // Ex: '1.1', '1.2'
   codigoItem?: string;
   descricao: string;
+  secaoLaudo?: string;         // Item/seção do laudo ao qual pertence
   tipoResposta?: TipoRespostaChecklist;
   unidade?: string;            // apenas para tipo 'medida' (ex.: 'mm', 'bar', 'dB(A)', 'HRN', 'h', 'm/s²')
   opcoes?: string[];           // apenas para tipo 'multipla_escolha'
@@ -692,6 +694,26 @@ export interface ChecklistCampoItem {
   acaoRecomendada?: string;
   fotos?: EvidenciaFoto[];
   fotosVinculadas?: ChecklistFotoVinculada[];
+}
+
+export interface ChecklistModeloItemDef {
+  id: string;
+  numero: string;
+  texto: string;
+  norma: string;
+  secaoLaudo: string;
+  tipoResposta?: TipoRespostaChecklist;
+  unidade?: string;
+}
+
+export interface ChecklistModeloServico {
+  id: string;
+  nome: string;
+  subtitulo?: string;
+  norma: string;
+  secoesLaudoPadrao?: string[];
+  itens: ChecklistModeloItemDef[];
+  atualizadoEm?: string;
 }
 
 export interface PerigoApreciacaoRiscoNR12 {
@@ -746,6 +768,7 @@ export interface ChecklistCampo {
   ativoIdentificacao?: string;
   categoriaLaudo: string;
   subcategoriaLaudo?: string;
+  modeloId?: string;
   tipoLaudoId: string;
   tipoLaudoNome?: string;
   tipoAtivo?: string;
@@ -758,6 +781,7 @@ export interface ChecklistCampo {
   responsavelNome?: string;
   responsavelCrea?: string;
   dataPreenchimento: string;
+  concluidaEm?: string;
   geolocalizacao?: {
     lat: number;
     lng: number;
