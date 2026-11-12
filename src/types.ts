@@ -480,6 +480,11 @@ export interface LaudoSecao {
   recomendacoes?: string[];
   itens?: LaudoItemChecklist[];
   fotos?: EvidenciaFoto[];
+  resultado?: 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'liberado_restricoes';
+  criterioReferencia?: string;
+  ncCodigo?: string;
+  medicoes?: { componente: string; condicao: string; parecer: string }[];
+  origemChecklistItem?: number | string;
   isFixa?: boolean;
   isObrigatoria?: boolean;
   ocultaNoPdf?: boolean;
@@ -552,11 +557,60 @@ export interface Laudo {
   checklistCampoOrigemId?: string;
   orcamentoOrigemId?: string;
   orcamentoNumero?: string;
+  // Campos estruturados do novo layout (Parte C, D, E)
+  layoutVersao?: 'classico' | 'novo' | 'novo-2026';
+  revisao?: string; // ex: '00'
+  revisaoCongelada?: boolean;
+  emitidoEm?: string;
+  codigoVerificacao?: string; // ex: 'LAR-2026-001-7K4Q'
+  hashPdf?: string;
+  parecer?: 'liberado' | 'liberado_restricoes' | 'nao_liberado';
+  justificativaParecer?: string;
+  localVistoria?: string;
+  acompanhanteVistoria?: string;
+  acompanhanteCargo?: string;
+  metodo?: string;
+  normasLista?: (string | { norma: string; titulo: string; edicao?: string })[];
+  instrumentos?: {
+    id?: string;
+    nome: string;
+    tag?: string;
+    serie?: string;
+    certificado?: string;
+    certificadoNumero?: string;
+    validadeCalibracao?: string;
+    calibracaoValidade?: string;
+  }[];
+  proximaInspecaoData?: string;
+  premissasLimitacoes?: string;
+  ativoFabricante?: string;
+  ativoModelo?: string;
+  ativoNumeroSerie?: string;
+  ativoCapacidade?: string;
+  ativoAno?: number;
+  naoConformidadesEstruturadas?: {
+    id: string; // NC-01, NC-02...
+    codigo?: string;
+    titulo?: string;
+    item?: string;
+    descricao?: string;
+    risco?: 'baixo' | 'medio' | 'alto' | 'critico';
+    classificacaoRisco?: 'baixo' | 'medio' | 'alto' | 'critico';
+    acaoRecomendada?: string;
+    prazo?: string;
+    prazoAdequacao?: string;
+    responsavel?: string;
+    itemRef?: string;
+    fotoRef?: string;
+  }[];
+  trechosIaPendentes?: { secaoId: string; revisado: boolean }[] | number;
   criadoEm: string;
   atualizadoEm: string;
 }
 
-export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'nao_evidenciado' | 'medicao';
+export type VistoriaInspecao = ChecklistCampo;
+
+export type ChecklistCampoItemStatus = 'conforme' | 'nao_conforme' | 'nao_aplicavel' | 'nao_evidenciado' | 'medicao' | 'pendente';
 
 export type ChecklistCriticidade = 'critica' | 'alta' | 'media' | 'baixa' | 'observacao';
 
@@ -635,6 +689,8 @@ export interface ChecklistCampoItem {
   tipoEvidencia?: ChecklistTipoEvidencia;
   medicao?: ChecklistMedicaoDetalhada;
   naoConformidade?: ChecklistNaoConformidadeDetalhada;
+  acaoRecomendada?: string;
+  fotos?: EvidenciaFoto[];
   fotosVinculadas?: ChecklistFotoVinculada[];
 }
 

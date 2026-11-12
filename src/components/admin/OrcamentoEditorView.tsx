@@ -36,7 +36,11 @@ import {
   ArrowDown,
   Sliders,
   Lock,
-  DollarSign
+  DollarSign,
+  MoreVertical,
+  Copy,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -47,7 +51,13 @@ import { redimensionarImagemArquivo } from '../../lib/imageUtils';
 import { 
   CHAVE_PIX_FORMATADA_PADRAO, 
   TITULAR_PIX_PADRAO, 
-  QR_CODE_PIX_PADRAO_BASE64 
+  CIDADE_PIX_PADRAO,
+  QR_CODE_PIX_PADRAO_BASE64,
+  gerarPayloadPix,
+  gerarQrCodePixSvg,
+  gerarQrCodePixDataUrl,
+  validarCrcPix,
+  testarConformidadeBrCodePix
 } from '../../lib/pixUtils';
 import { 
   SECOES_PROPOSTA_DEFINICAO, 
@@ -127,11 +137,17 @@ export const OrcamentoEditorView: React.FC = () => {
   // Estado para o input genérico de Valor Total Cheio da proposta
   const [valorCheioDigitado, setValorCheioDigitado] = useState<string>('');
   
-  // Modals & Drawers
+  // Modals, Drawers & Menus
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
   const [drawerHistoricoAberto, setDrawerHistoricoAberto] = useState(false);
   const [modalModeloPadraoAberto, setModalModeloPadraoAberto] = useState(false);
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
+  const [menuMaisAberto, setMenuMaisAberto] = useState(false);
+  const [modoVisualizacao, setModoVisualizacao] = useState<'folha_clara' | 'escuro'>('folha_clara');
+  const [qrCodeSvgPix, setQrCodeSvgPix] = useState<string>('');
+  const [copiadoPix, setCopiadoPix] = useState(false);
+  const menuMaisRef = useRef<HTMLDivElement>(null);
+  const nfsOriginalRef = useRef<boolean>(orcamentoOriginal?.incluiNotaFiscal !== false);
 
   // File Inputs
   const capaFileInputRef = useRef<HTMLInputElement>(null);
@@ -140,19 +156,61 @@ export const OrcamentoEditorView: React.FC = () => {
   const autoSaveTimerRef = useRef<any>(null);
   const carregarIdRef = useRef<string | null>(null);
 
-  // Initialize orcamentoState with editable 13 sections
+  // Fechar menu Mais ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuMaisRef.current && !menuMaisRef.current.contains(e.target as Node)) {
+        setMenuMaisAberto(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Payload BR Code oficial BACEN (EMV) e geração dinâmica de SVG com zona de silêncio de 4 módulos
+  const pixBrCodePayload = useMemo(() => {
+    return gerarPayloadPix({
+      chave: '10287093409',
+      nomeRecebedor: 'VITOR LEONARDO CORDEIRO L',
+      cidadeRecebedor: 'RECIFE',
+      valor: undefined,
+      txid: '***'
+    });
+  }, []);
+
+  useEffect(() => {
+    if (pixBrCodePayload) {
+      gerarQrCodePixSvg(pixBrCodePayload).then((svg) => {
+        if (svg) setQrCodeSvgPix(svg);
+      });
+    }
+  }, [pixBrCodePayload]);
+
+  const handleCopiarPix = useCallback(() => {
+    if (!pixBrCodePayload) return;
+    navigator.clipboard.writeText(pixBrCodePayload);
+    setCopiadoPix(true);
+    setTimeout(() => setCopiadoPix(false), 2500);
+  }, [pixBrCodePayload]);
+
+  // Initialize orcamentoState with editable 6 sections
   useEffect(() => {
     if (!orcamentoOriginal) return;
 
-    // Se já carregamos este orçamento no estado local e ele não mudou de rota/ID,
-    // não sobrescrever o orcamentoState enquanto o usuário digita ou edita!
     if (carregarIdRef.current === orcamentoOriginal.id && orcamentoState) {
       return;
     }
     carregarIdRef.current = orcamentoOriginal.id;
+    nfsOriginalRef.current = orcamentoOriginal.incluiNotaFiscal !== false;
 
-    // Default memorial calculation items fallback
-    const itensCalculoBase: OrcamentoItemCalculo[] = (orcamentoOriginal.itensCalculo && orcamentoOriginal.itensCalculo.length > 0)
+    // Detecção específica do orçamento PROP-2026/002 para restaurar unitário de R$ 380,00 e total R$ 2.280,00
+    const isProp2026_002 = orcamentoOriginal.id === 'orc-2026-002' ||
+      orcamentoOriginal.codigoProposta?.includes('2026-002') ||
+      orcamentoOriginal.codigoProposta?.includes('2026/002') ||
+      orcamentoOriginal.id?.includes('2026-002') ||
+      orcamentoOriginal.id?.includes('2026/002');
+
+    let itensCalculoBase: OrcamentoItemCalculo[] = (orcamentoOriginal.itensCalculo && orcamentoOriginal.itensCalculo.length > 0)
       ? orcamentoOriginal.itensCalculo
       : [
           {
@@ -164,16 +222,41 @@ export const OrcamentoEditorView: React.FC = () => {
           }
         ];
 
+    let valorOriginalAjustado = orcamentoOriginal.valor || 0;
+
+    // Correção A1: Restaurar PROP-2026/002 de R$ 0,00 para R$ 2.280,00 (6 × R$ 380,00)
+    if (isProp2026_002 && (valorOriginalAjustado <= 0 || (itensCalculoBase[0]?.valorUnitario === 0 && itensCalculoBase[0]?.quantidade === 6))) {
+      itensCalculoBase = [
+        {
+          id: 'item-1',
+          descricao: 'Análise espectral de vibração (FFT) com acelerômetro triaxial em pontos de mancais (motor e bomba) e emissão de Laudo Técnico Pericial com ART CREA-PE',
+          quantidade: 6,
+          valorUnitario: 380,
+          valorTotal: 2280,
+          modoCalculo: 'unitario'
+        }
+      ];
+      valorOriginalAjustado = 2280;
+    }
+
     // Se o orçamento for legado (13 seções antigas) ou ainda não estiver na versão V2 aprovada,
     // converte automaticamente para o modelo base V2 (6 folhas A4)
     if (orcamentoOriginal.layoutVersao !== 'v2' || !orcamentoOriginal.secoes || orcamentoOriginal.secoes.length > 6) {
-      const orcamentoMigrado = converterOrcamentoLegadoParaV2(orcamentoOriginal, { cliente, ativo });
+      const orcamentoMigrado = converterOrcamentoLegadoParaV2({
+        ...orcamentoOriginal,
+        valor: valorOriginalAjustado,
+        valorFormatado: valorOriginalAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      }, { cliente, ativo });
+
       const inicializado: Orcamento = {
         ...orcamentoMigrado,
+        valor: valorOriginalAjustado,
+        valorFormatado: valorOriginalAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
         itensCalculo: itensCalculoBase,
       };
       setOrcamentoState(inicializado);
+      setValorCheioDigitado(valorOriginalAjustado > 0 ? valorOriginalAjustado.toFixed(2).replace('.', ',') : '');
       return;
     }
 
@@ -321,12 +404,15 @@ export const OrcamentoEditorView: React.FC = () => {
 
       const orcamentoCarregado: Orcamento = {
         ...orcamentoOriginal,
+        valor: valorOriginalAjustado,
+        valorFormatado: valorOriginalAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
         itensCalculo: itensCalculoBase,
         secoes: secoesAtualizadas,
       };
 
       setOrcamentoState(orcamentoCarregado);
+      setValorCheioDigitado(valorOriginalAjustado > 0 ? valorOriginalAjustado.toFixed(2).replace('.', ',') : '');
       return;
     }
 
@@ -335,11 +421,14 @@ export const OrcamentoEditorView: React.FC = () => {
       const secoesConvertidas = converterPaginasParaSecoes(orcamentoOriginal.paginasProposta, orcamentoOriginal);
       const inicializado: Orcamento = {
         ...orcamentoOriginal,
+        valor: valorOriginalAjustado,
+        valorFormatado: valorOriginalAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
         itensCalculo: itensCalculoBase,
         secoes: secoesConvertidas,
       };
       setOrcamentoState(inicializado);
+      setValorCheioDigitado(valorOriginalAjustado > 0 ? valorOriginalAjustado.toFixed(2).replace('.', ',') : '');
       return;
     }
 
@@ -347,13 +436,36 @@ export const OrcamentoEditorView: React.FC = () => {
     const secoesPadrao = gerarSecoesPadraoOrcamentoV2(orcamentoOriginal, { cliente, ativo });
     const inicializado: Orcamento = {
       ...orcamentoOriginal,
+      valor: valorOriginalAjustado,
+      valorFormatado: valorOriginalAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       layoutVersao: orcamentoOriginal.layoutVersao || 'v2',
       incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
       itensCalculo: itensCalculoBase,
       secoes: secoesPadrao,
     };
     setOrcamentoState(inicializado);
+    setValorCheioDigitado(valorOriginalAjustado > 0 ? valorOriginalAjustado.toFixed(2).replace('.', ',') : '');
   }, [orcamentoOriginal?.id, cliente, ativo]);
+
+  // Geração do QR Code SVG em tempo real com zona de silêncio de 4 módulos (EMV BR Code padrão Bacen)
+  useEffect(() => {
+    if (!orcamentoState) return;
+    const primeiraParcelaValor = (orcamentoState.parcelas && orcamentoState.parcelas[0]?.valor)
+      ? orcamentoState.parcelas[0].valor
+      : ((orcamentoState.valor || 2280) / 2);
+
+    const payload = gerarPayloadPix({
+      chave: orcamentoState.chavePix || CHAVE_PIX_FORMATADA_PADRAO.replace(/[^\d]/g, ''),
+      nomeRecebedor: TITULAR_PIX_PADRAO,
+      cidadeRecebedor: CIDADE_PIX_PADRAO,
+      valor: primeiraParcelaValor,
+      txid: (orcamentoState.codigoProposta || orcamentoState.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 20) || 'PROP2026'
+    });
+
+    gerarQrCodePixDataUrl(payload).then(url => {
+      if (url) setQrCodeSvgPix(url);
+    });
+  }, [orcamentoState?.chavePix, orcamentoState?.valor, orcamentoState?.parcelas, orcamentoState?.codigoProposta, orcamentoState?.id]);
 
   // Active section helper
   const secaoAtiva = useMemo(() => {
@@ -370,11 +482,25 @@ export const OrcamentoEditorView: React.FC = () => {
     };
   }, []);
 
-  // Immediate Save helper - passes the full updated budget to atualizarOrcamento
+  // Immediate Save helper - passes the full updated budget to atualizarOrcamento with NFS-e divergence check
   const salvarImediato = useCallback((novoOrcamento: Orcamento, resumoAlteracao = 'Alterações salvas') => {
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
+
+    // Regra A8: Aviso e confirmação se o status da Nota Fiscal divergir da versão anterior
+    const nfsNovo = novoOrcamento.incluiNotaFiscal !== false;
+    if (nfsOriginalRef.current !== nfsNovo) {
+      const msg = nfsNovo 
+        ? 'Atenção: O orçamento foi alterado para emitir com NOTA FISCAL (NFS-e), divergindo da versão anterior. Deseja confirmar?' 
+        : 'Atenção: O orçamento foi alterado para SEM NOTA FISCAL (Recibo + ART), divergindo da versão anterior. Deseja confirmar?';
+      if (!window.confirm(msg)) {
+        setStatusSalvo('alterado');
+        return;
+      }
+      nfsOriginalRef.current = nfsNovo;
+    }
+
     setOrcamentoState(novoOrcamento);
     setStatusSalvo('salvando');
 
@@ -1337,9 +1463,33 @@ export const OrcamentoEditorView: React.FC = () => {
           </div>
         </div>
 
-        {/* Status indicator & Right Action Buttons */}
+        {/* Status indicator & Right Action Buttons (Agrupados conforme A9) */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           
+          {/* Alternar modo de visualização: Folha clara (como no PDF) vs Tema escuro (A6) */}
+          <button
+            type="button"
+            onClick={() => setModoVisualizacao(prev => prev === 'folha_clara' ? 'escuro' : 'folha_clara')}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              modoVisualizacao === 'folha_clara'
+                ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                : 'bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-700'
+            }`}
+            title="Alternar entre folha clara (como no PDF impresso) e tema escuro do painel"
+          >
+            {modoVisualizacao === 'folha_clara' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Folha Clara (PDF)</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden sm:inline">Tema Escuro</span>
+              </>
+            )}
+          </button>
+
           {/* Botão Salvar Proposta Manual Imediato */}
           <button
             type="button"
@@ -1349,114 +1499,158 @@ export const OrcamentoEditorView: React.FC = () => {
             title="Salvar todas as alterações da proposta agora"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{statusSalvo === 'salvando' ? 'Salvando...' : 'Salvar Proposta'}</span>
+            <span>{statusSalvo === 'salvando' ? 'Salvando...' : 'Salvar'}</span>
           </button>
 
           {/* Autosave Status Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
             {statusSalvo === 'salvando' ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                <span className="text-blue-700 font-semibold">Salvando no Firestore...</span>
+                <span className="text-blue-700 font-semibold">Salvando...</span>
               </>
             ) : statusSalvo === 'alterado' ? (
               <>
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-amber-700 font-semibold">Alterações pendentes</span>
+                <span className="text-amber-700 font-semibold">Alterado</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span className="text-slate-600 font-medium">
-                  Salvo {horarioUltimoSalvo ? `às ${horarioUltimoSalvo}` : 'automaticamente'}
+                  {horarioUltimoSalvo ? `Salvo ${horarioUltimoSalvo}` : 'Salvo'}
                 </span>
               </>
             )}
           </div>
 
-          {/* History Button */}
+          {/* AÇÃO PRINCIPAL: Baixar PDF Direto (Regra A1 e A9) */}
           <button
-            onClick={() => setDrawerHistoricoAberto(true)}
-            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Ver histórico de alterações"
+            type="button"
+            onClick={() => {
+              const valorTotal = orcamentoState.valor ?? 0;
+              if (valorTotal <= 0) {
+                alert('Exportação bloqueada: O valor total da proposta está zerado (R$ 0,00). Preencha o valor unitário no Memorial de Cálculo da Etapa 3 antes de baixar o PDF.');
+                return;
+              }
+              window.open(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`, '_blank');
+            }}
+            className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+            title="Gerar e baixar PDF vetorial em 1 clique"
           >
-            <History className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline">Histórico</span>
+            <Download className="w-4 h-4 text-[#D4AF37]" />
+            <span>Baixar PDF ({secoesVisiveisCount} fls)</span>
           </button>
 
-          {/* Master Rule 1.1: Template reference button */}
-          <button
-            onClick={() => setModalModeloPadraoAberto(true)}
-            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Consultar modelo padrão institucional (intocado)"
-          >
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
-            <span className="hidden md:inline">Modelo Base</span>
-          </button>
-
-          {/* Convert to V2 button or V2 active badge */}
-          {orcamentoState.layoutVersao !== 'v2' ? (
+          {/* MENU MAIS AÇÕES (Agrupamento A9) */}
+          <div className="relative" ref={menuMaisRef}>
             <button
-              onClick={handleConverterParaV2}
-              className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-              title="Converter para o novo layout aprovado da VL Engenharia (6 folhas A4)"
+              type="button"
+              onClick={() => setMenuMaisAberto(prev => !prev)}
+              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Mais ações do orçamento"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Converter p/ Novo Modelo (6 fls)</span>
+              <span>Mais</span>
+              <MoreVertical className="w-4 h-4 text-slate-500" />
             </button>
-          ) : (
-            <span className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Modelo Aprovado (6 Folhas A4)</span>
-              <span className="sm:hidden">6 Folhas</span>
-            </span>
-          )}
 
-          {/* Direct Print / Export Route Link */}
-          <Link
-            to={`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`}
-            target="_blank"
-            className="p-2 rounded-xl border border-blue-200 hover:bg-blue-50 text-[#1565D8] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Abrir impressão nativa direta em nova aba"
-          >
-            <Printer className="w-4 h-4 text-[#1565D8]" />
-            <span className="hidden lg:inline">Imprimir Direto</span>
-          </Link>
+            {menuMaisAberto && (
+              <div className="absolute right-0 mt-1.5 w-60 rounded-xl bg-white border border-slate-200 shadow-xl py-1.5 z-50 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuMaisAberto(false);
+                    setModalPdfAberto(true);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <Eye className="w-4 h-4 text-blue-600" />
+                  <span>Pré-visualizar Documento</span>
+                </button>
 
-          {/* View / Export PDF Button */}
-          <button
-            onClick={() => setModalPdfAberto(true)}
-            className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-          >
-            <Eye className="w-4 h-4 text-[#D4AF37]" />
-            <span>Exportar / Imprimir PDF ({secoesVisiveisCount} págs)</span>
-          </button>
+                <Link
+                  to={`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=1`}
+                  target="_blank"
+                  onClick={() => setMenuMaisAberto(false)}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <Printer className="w-4 h-4 text-slate-600" />
+                  <span>Imprimir Direto (Chromium @page)</span>
+                </Link>
 
-          {/* Excluir Orçamento */}
-          <button
-            onClick={() => setModalExcluirAberto(true)}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 hover:border-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Excluir este orçamento definitivamente"
-          >
-            <Trash2 className="w-4 h-4 text-rose-500" />
-            <span className="hidden sm:inline">Excluir</span>
-          </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuMaisAberto(false);
+                    setDrawerHistoricoAberto(true);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <History className="w-4 h-4 text-slate-500" />
+                  <span>Histórico de Alterações</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuMaisAberto(false);
+                    setModalModeloPadraoAberto(true);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer font-medium"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Consultar Modelo Base</span>
+                </button>
+
+                {orcamentoState.layoutVersao !== 'v2' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuMaisAberto(false);
+                      handleConverterParaV2();
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-900 font-bold flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>Converter p/ Modelo A4 (6 fls)</span>
+                  </button>
+                )}
+
+                <div className="border-t border-slate-100 my-1" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuMaisAberto(false);
+                    setModalExcluirAberto(true);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-600 font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-500" />
+                  <span>Excluir Orçamento</span>
+                </button>
+              </div>
+            )}
+          </div>
 
         </div>
 
       </div>
 
-      {/* Notice of Instance Isolation (Regra Crítica 1.1) */}
-      <div className="bg-blue-50/70 border border-blue-200 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-blue-900">
-        <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-blue-600 shrink-0" />
-          <p>
+      {/* Notice of Instance Isolation (Regra Crítica 1.1 e A5 - sem colisão com o contador) */}
+      <div className="bg-blue-50/70 border border-blue-200 rounded-xl px-4 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-blue-900">
+        <div className="flex items-start sm:items-center gap-2.5 flex-1">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5 sm:mt-0" />
+          <p className="leading-relaxed">
             <strong>Edição de Instância Isolada:</strong> As alterações feitas nesta tela aplicam-se exclusivamente a este orçamento. O modelo padrão da VL Engenharia e as credenciais fixas permanecem preservados para novos orçamentos.
           </p>
         </div>
-        <span className="hidden lg:inline text-[11px] font-mono text-blue-700">
-          {secoesVisiveisCount} de {totalSecoes} páginas ativas no PDF
-        </span>
+        <div className="shrink-0 text-right md:border-l md:border-blue-200 md:pl-3">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-blue-800 bg-white/90 border border-blue-200 px-2.5 py-1 rounded-lg shadow-2xs whitespace-nowrap">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            {secoesVisiveisCount} de {totalSecoes} páginas ativas no PDF
+          </span>
+        </div>
       </div>
 
       {/* Main Workspace: Left Sidebar (13 Sections) + Right Editor Canvas */}
@@ -1558,36 +1752,17 @@ export const OrcamentoEditorView: React.FC = () => {
             })}
           </div>
 
-          {/* Quick Pagination footer */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-            <button
-              onClick={() => navegarSecaoRelativa('ant')}
-              className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-30"
-              disabled={orcamentoState.secoes?.findIndex(s => s.id === secaoAtivaId) === 0}
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Anterior</span>
-            </button>
-            <span className="text-[11px] text-slate-400 font-mono">
-              Página {secaoAtiva?.numero} de {orcamentoState.secoes?.length || 13}
-            </span>
-            <button
-              onClick={() => navegarSecaoRelativa('prox')}
-              className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-30"
-              disabled={orcamentoState.secoes?.findIndex(s => s.id === secaoAtivaId) === (orcamentoState.secoes?.length || 13) - 1}
-            >
-              <span>Próxima</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
         </div>
 
         {/* Main Editor Section (8 cols on lg) */}
         <div className="lg:col-span-8 space-y-4">
           
           {/* Section Header Card */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+          <div className={`rounded-2xl p-5 border shadow-xs space-y-4 transition-colors ${
+            modoVisualizacao === 'folha_clara' 
+              ? 'bg-[#FCFDFF] border-slate-300 text-slate-900 shadow-sm ring-1 ring-slate-900/5' 
+              : 'bg-white border-slate-200 text-slate-900'
+          }`}>
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -1596,7 +1771,7 @@ export const OrcamentoEditorView: React.FC = () => {
                 </span>
                 <div>
                   <span className="text-[10px] font-mono uppercase font-bold text-[#1565D8] tracking-wider">
-                    SEÇÃO {secaoAtiva?.numero} DE 13 • PROPOSTA COMERCIAL
+                    SEÇÃO {secaoAtiva?.numero} DE {totalSecoes} • PROPOSTA COMERCIAL
                   </span>
                   <h2 className="text-base sm:text-lg font-black text-[#0B1E3D]">
                     {secaoAtiva?.titulo}
@@ -2356,46 +2531,71 @@ export const OrcamentoEditorView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bloco de Faturamento PIX & Nota Fiscal */}
-                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      {/* QR Code thumbnail com preview e botão de troca */}
-                      <div className="relative group bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 text-center">
-                        <img 
-                          src={orcamentoState.qrCodePixUrl || QR_CODE_PIX_PADRAO_BASE64} 
-                          alt="QR Code PIX CPF" 
-                          className="w-14 h-14 block object-contain mx-auto" 
-                        />
-                        <span className="text-[7.5px] font-bold text-emerald-800 font-mono block mt-0.5">
-                          {orcamentoState.qrCodePixUrl ? 'QR CUSTOM' : 'QR OFICIAL'}
+                {/* Bloco de Faturamento PIX Oficial BACEN & Nota Fiscal */}
+                <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/70 space-y-3 shadow-2xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-3">
+                      {/* QR Code Dinâmico SVG Padrão BACEN EMV (zona de silêncio 4 módulos) */}
+                      <div className="bg-white p-2 rounded-xl border-2 border-emerald-400 shadow-xs shrink-0 text-center">
+                        {qrCodeSvgPix ? (
+                          <div 
+                            className="w-16 h-16 [&>svg]:w-full [&>svg]:h-full"
+                            dangerouslySetInnerHTML={{ __html: qrCodeSvgPix }}
+                          />
+                        ) : (
+                          <img 
+                            src={QR_CODE_PIX_PADRAO_BASE64} 
+                            alt="QR Code PIX CPF" 
+                            className="w-16 h-16 block object-contain mx-auto" 
+                          />
+                        )}
+                        <span className="text-[7.5px] font-black text-emerald-800 font-mono block mt-1 tracking-wider uppercase">
+                          EMV BR-CODE
                         </span>
                       </div>
 
-                      <div>
-                        <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>Chave PIX & Nota Fiscal da Proposta</span>
-                        </h4>
-                        <p className="text-[11px] text-slate-600 mt-0.5">
-                          Chave PIX (CPF): <strong className="font-mono text-emerald-950 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200">{CHAVE_PIX_FORMATADA_PADRAO}</strong>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Chave PIX & Nota Fiscal da Proposta</span>
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                            ✓ Padrão BACEN (CRC16 0x1021)
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700">
+                          Chave PIX (CPF): <strong className="font-mono text-emerald-950 font-black bg-white px-2 py-0.5 rounded border border-emerald-300 select-all">{CHAVE_PIX_FORMATADA_PADRAO}</strong>
                         </p>
-                        <p className="text-[10px] text-slate-500">
-                          Titular: {TITULAR_PIX_PADRAO}
+                        <p className="text-[11px] text-slate-600">
+                          Titular: <strong className="text-slate-800">{TITULAR_PIX_PADRAO}</strong> • Cidade: <strong>RECIFE/PE</strong>
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Botão para carregar/trocar imagem do QR Code do PIX */}
+                      {/* Botão Copiar Código PIX (Copia e Cola) */}
                       <button
                         type="button"
-                        onClick={() => pixQrCodeInputRef.current?.click()}
-                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-                        title="Clique para selecionar a imagem do seu QR Code PIX (PNG/JPG)"
+                        onClick={handleCopiarPix}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all ${
+                          copiadoPix
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-white hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                        }`}
+                        title="Copiar código PIX no formato padrão BACEN (EMV Copia e Cola) para transferência bancária"
                       >
-                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{orcamentoState.qrCodePixUrl ? 'Substituir Imagem QR' : 'Inserir Imagem do QR Code'}</span>
+                        {copiadoPix ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Código PIX Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Copiar Código PIX</span>
+                          </>
+                        )}
                       </button>
 
                       {/* Nota Fiscal Selectable Toggle */}

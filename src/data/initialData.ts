@@ -409,6 +409,81 @@ export const ORCAMENTOS_INICIAIS: Orcamento[] = [
     status: 'aprovado',
     laudoGeradoId: 'lau-2026-002-duster',
     criadoEm: '2026-03-20T11:00:00Z',
+  },
+  {
+    id: 'orc-2026-002',
+    codigoProposta: 'PROP-2026/002',
+    clienteId: 'cli-03',
+    clienteNome: 'Indústria Metalmecânica do Agreste Ltda.',
+    cnpjCliente: '44.555.666/0001-22',
+    representanteNome: 'Roberto Simões',
+    representanteCargo: 'Diretor Industrial',
+    emailCliente: 'roberto@metalagreste.ind.br',
+    telefoneCliente: '(81) 99654-8899',
+    localidadeServico: 'Caruaru - PE',
+    servico: 'Laudo de Análise Preditiva de Vibração Espectral (FFT)',
+    descricaoEscopo: 'Medição e análise espectral de vibração mecânica global e em frequência (FFT) em conjunto de 06 moto-bombas industriais de água gelada (BAG), diagnóstico preditivo de desbalanceamento, desalinhamento, folgas mecânicas e severidade de vibração com recolhimento de ART CREA-PE.',
+    normasTecnicas: 'ABNT NBR ISO 10816-3, ISO 20816-1, NR-12 e diretrizes técnicas do fabricante.',
+    ativoIdentificacao: '06 Moto-Bombas de Água Gelada (BAG 01 a 06)',
+    valor: 2280,
+    valorFormatado: 'R$ 2.280,00',
+    itensCalculo: [
+      {
+        id: 'item-1',
+        descricao: 'Análise espectral de vibração (FFT) com acelerômetro triaxial em pontos de mancais (motor e bomba) e emissão de Laudo Técnico Pericial com ART CREA-PE',
+        quantidade: 6,
+        valorUnitario: 380,
+        valorTotal: 2280,
+        modoCalculo: 'unitario'
+      }
+    ],
+    prazoDias: 7,
+    prazoEntrega: '7 dias úteis após a vistoria técnica',
+    validadeDias: 15,
+    condicoesPagamento: '50% na aprovação e 50% após entrega do laudo pericial conclusivo e ART.',
+    incluiNotaFiscal: true,
+    chavePix: '10287093409',
+    chavePixTipo: 'cpf',
+    pixChave: '10287093409',
+    pixTitular: 'VITOR LEONARDO CORDEIRO L',
+    pixCidade: 'RECIFE',
+    parcelas: [
+      {
+        parcela: '1ª Parcela',
+        gatilho: 'Na aprovação formal desta proposta técnica',
+        percentual: 50,
+        valor: 1140
+      },
+      {
+        parcela: '2ª Parcela',
+        gatilho: 'Após entrega do laudo pericial conclusivo e registro da ART no CREA-PE',
+        percentual: 50,
+        valor: 1140
+      }
+    ],
+    cronograma: [
+      { marco: 'Aprovação', prazo: 'Dia 0', descricao: 'Aprovação da proposta técnica e mobilização inicial' },
+      { marco: 'Mobilização', prazo: 'Até 48 h úteis', descricao: 'Agendamento e alinhamento de segurança' },
+      { marco: 'Vistoria In Loco', prazo: 'Data agendada', descricao: 'Coleta de dados e medições de vibração em campo' },
+      { marco: 'Laudo e ART', prazo: 'Até 7 dias úteis', descricao: 'Processamento espectral, elaboração de laudo e registro da ART' }
+    ],
+    incluso: [
+      'Visita técnica presencial de engenheiro mecânico legalmente habilitado',
+      'Medições instrumentadas de vibração em 06 equipamentos',
+      'Processamento dos espectros de velocidade (mm/s RMS) e aceleração (g)',
+      'Emissão de Laudo Técnico Pericial Conclusivo em PDF vetorial',
+      'Recolhimento e emissão de Anotação de Responsabilidade Técnica (ART) CREA-PE'
+    ],
+    foraDoEscopo: [
+      'Intervenções mecânicas, balanceamento dinâmico em campo ou desmontagem de máquinas',
+      'Fornecimento de sobressalentes, rolamentos, acoplamentos ou vedações',
+      'Instalação de sensores permanentes de monitoramento contínuo'
+    ],
+    status: 'aprovado',
+    layoutVersao: 'v2',
+    emitidaEm: '2026-03-22',
+    revisao: '00',
+    criadoEm: '2026-03-22T08:00:00Z',
   }
 ];
 
@@ -552,7 +627,131 @@ export const LAUDOS_INICIAIS: Laudo[] = [
     criadoEm: '2026-02-20T08:00:00Z',
     atualizadoEm: '2026-02-20T18:00:00Z',
   },
-  LAUDO_DUSTER_COMPLETO
+  LAUDO_DUSTER_COMPLETO,
+  {
+    id: 'lau-2026-001',
+    numero: 'LAR-2026-001',
+    revisao: '00',
+    layoutVersao: 'novo',
+    tipo: 'Laudo de liberação e conformidade NR-11 / NR-12',
+    tipoLaudoId: 'nr-11',
+    clienteId: 'cli-adf',
+    clienteNome: 'Adf Auto Pecas LTDA',
+    clienteCnpj: '24.417.065/0001-03',
+    clienteContato: 'Thiago Cunha',
+    clienteContatoCargo: 'Contato Técnico',
+    clienteContatoTelefone: '(81) 3721-0000',
+    clienteContatoEmail: 'adfcentroautomotivo@gmail.com',
+    clienteEndereco: 'Avenida Jose Pinheiro dos Santos, 20 - Pinheiropolis, Caruaru - PE',
+    localVistoria: 'Avenida Jose Pinheiro dos Santos, 20 - Caruaru, PE',
+    acompanhanteVistoria: 'Thiago Cunha',
+    acompanhanteCargo: 'Gerente Operacional',
+    ativoId: 'atv-pgx7098',
+    ativoIdentificacao: 'PGX-9708',
+    ativoFabricante: 'Renault / Randon Munck',
+    ativoModelo: 'Guindaste Articulado 12t',
+    ativoNumeroSerie: '093YHSRAF500GJ3983670',
+    ativoCapacidade: '12 toneladas / 45.000 kgm',
+    ativoAno: 2016,
+    status: 'em_revisao',
+    artNumero: 'PE20261621255',
+    artArquivoUrl: 'data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgNTk1IDg0Ml0vUmVzb3VyY2VzPDw+Pj4+ZW5kb2JqCnRyYWlsZXI8PC9Sb290IDEgMCBSPj4KJSVFT0YK',
+    artNomeArquivo: 'ART_PE20261621255_Homologada.pdf',
+    dataInspecao: '2026-10-30',
+    emitidoEm: '2026-11-11',
+    proximaInspecaoData: '2027-10-30',
+    codigoVerificacao: 'LAR-2026-001-7K4Q',
+    hashPdf: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    parecer: 'liberado_restricoes',
+    justificativaParecer: '1 não conformidade de risco médio em 6 itens verificados. A liberação para operação em obras e indústrias fica condicionada ao plano de ação da folha 6.',
+    metodo: 'Inspeções visuais, verificações dimensionais e análise de conformidade frente às normas técnicas da ABNT e às Normas Regulamentadoras vigentes.',
+    premissasLimitacoes: 'Este laudo refere-se exclusivamente às condições observadas no ativo e no local na data da vistoria. Itens não acessíveis, não energizados ou não disponibilizados pelo cliente não foram avaliados e estão indicados como não aplicáveis. Alterações, reparos ou mudanças de uso posteriores à vistoria exigem nova avaliação.',
+    normasLista: [
+      { norma: 'NR-11', titulo: 'Transporte, movimentação, armazenagem e manuseio de materiais', edicao: 'Vigente (Portaria MTP)' },
+      { norma: 'NR-12', titulo: 'Segurança no trabalho em máquinas e equipamentos', edicao: 'Vigente (Portaria MTP)' },
+      { norma: 'ABNT NBR 8400', titulo: 'Cálculo de equipamento para levantamento e movimentação de cargas', edicao: 'Edição 2019' }
+    ],
+    instrumentos: [
+      { nome: 'Paquímetro Digital Mitutoyo 150mm', serie: 'MIT-449102', certificado: 'CAL-2026/8841-RBC', validadeCalibracao: '2027-04-15' },
+      { nome: 'Trena Laser Bosch GLM 50C', serie: 'BOS-99120', certificado: 'CAL-2025/1102-RBC', validadeCalibracao: '2026-12-10' }
+    ],
+    naoConformidadesEstruturadas: [
+      {
+        id: 'NC-01',
+        titulo: 'Sinalização de segurança e advertências de risco residual sem a visibilidade exigida.',
+        risco: 'medio',
+        acaoRecomendada: 'Substituir ou recompor a sinalização no ativo e confirmar a correção ao responsável técnico.',
+        prazo: '30 dias',
+        itemRef: 'Item 3 (Checklist item 5)',
+        fotoRef: 'Foto 3'
+      }
+    ],
+    checklist: [
+      { id: 'chk-1', campo: 'Plaqueta', descricao: 'Plaqueta de identificação do fabricante e número de série legíveis', status: 'conforme', observacao: 'Plaqueta metálica fixada e legível no chassi.', criterioReferencia: 'NR-11 / NBR 8400' },
+      { id: 'chk-2', campo: 'Proteções', descricao: 'Proteções fixas e móveis instaladas e devidamente parafusadas', status: 'conforme', observacao: 'Todas as proteções de partes móveis instaladas.', criterioReferencia: 'NR-12' },
+      { id: 'chk-3', campo: 'Intertravamento', descricao: 'Intertravamento de segurança com bloqueio e chave de ruptura positiva funcionando', status: 'conforme', observacao: 'Atuação comprovada nos testes em vazio.', criterioReferencia: 'NR-12' },
+      { id: 'chk-4', campo: 'Parada de emergência', descricao: 'Botões de parada de emergência acessíveis e desarmando o comando de força', status: 'conforme', observacao: 'Desarme instantâneo do circuito de potência verificado.', criterioReferencia: 'NR-12' },
+      { id: 'chk-5', campo: 'Sinalização', descricao: 'Sinalização de segurança, advertências de riscos residuais e diagramas visíveis', status: 'nao_conforme', observacao: 'Ver NC-01, folha 6.', criterioReferencia: 'NR-12.11 / NR-26' },
+      { id: 'chk-6', campo: 'Aterramento e fotos', descricao: 'Fotos de todas as faces do equipamento e registro do aterramento elétrico', status: 'conforme', observacao: 'Aterramento conferido com continuidade comprovada.', criterioReferencia: 'NR-10 / NR-12' }
+    ],
+    secoes: [
+      {
+        id: 'sec-1',
+        ordem: 1,
+        titulo: 'Verificação dos estabilizadores e chassi de montagem',
+        resultado: 'conforme',
+        criterioReferencia: 'NR-11 · NBR 8400',
+        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708 do cliente Adf Auto Pecas LTDA. Foi realizada a checagem das sapatas estabilizadoras hidráulicas dianteiras e traseiras, cilindros de extensão e fixação ao sobrechassi por grampos reforçados. Estrutura sem trincas, vazamentos ou deformações permanentes.</p>',
+        fotos: [
+          { id: 'f-1', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 1. Estabilizadores estendidos com travas operacionais e cilindros estanques.' },
+          { id: 'f-2', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 2. Detalhe da fixação do chassi de montagem às longarinas do veículo.' }
+        ]
+      },
+      {
+        id: 'sec-2',
+        ordem: 2,
+        titulo: 'Exame dos acessórios de içamento (ganchos, cabos, moitões)',
+        resultado: 'conforme',
+        criterioReferencia: 'NR-11 · NBR 8400',
+        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708 do cliente Adf Auto Pecas LTDA. Gancho principal com trava de segurança em perfeito estado, sem abertura excessiva de garganta (abertura medida: 42,1 mm conforme padrão de fábrica). Cabos de aço e terminais sem arames rompidos ou desgastes corrosivos.</p>',
+        fotos: [
+          { id: 'f-3', url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 3. Gancho forjado com trava de segurança tipo mola operante e gravação de capacidade legível.' },
+          { id: 'f-4', url: 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 4. Moitão e polias de direcionamento de cabo sem folgas axiais.' }
+        ]
+      },
+      {
+        id: 'sec-3',
+        ordem: 3,
+        titulo: 'Inspeção do posto de comando e alavancas',
+        resultado: 'nao_conforme',
+        ncCodigo: 'NC-01',
+        criterioReferencia: 'NR-11 · NBR 8400 · Origem: checklist, item 5',
+        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708. Foi registrada a não conformidade NC-01 (sinalização de segurança e advertência de risco residual sem visibilidade adequada). As alavancas possuem funcionamento mecânico regular com retorno automático ao centro neutro, porém as placas adesivas indicativas de movimentos e diagramas de carga encontram-se desgastadas pela ação solar e intempéries.</p>',
+        fotos: [
+          { id: 'f-5', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 5. Posto de comando bilateral com desgaste nas etiquetas indicativas de comando.' },
+          { id: 'f-6', url: 'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 6. Detalhe da placa de advertência com desgaste superficial a ser reposta.' }
+        ]
+      },
+      {
+        id: 'sec-4',
+        ordem: 4,
+        titulo: 'Parecer de liberação para obras e indústrias',
+        resultado: 'liberado_restricoes',
+        criterioReferencia: 'NR-11 · NR-12 · CONFEA/CREA',
+        conteudoHtml: '<p>O ativo PGX-9708 é considerado liberado com restrições para operação em obras e indústrias, nos termos do parecer conclusivo da folha 6. O uso normal fica condicionado ao cumprimento do plano de ação da NC-01 dentro do prazo indicado (até 30 dias a partir da data da vistoria).</p>',
+        fotos: [
+          { id: 'f-7', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 7. Vista geral do ativo em teste de operação.' },
+          { id: 'f-8', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 8. Placa de identificação e chassi verificados.' },
+          { id: 'f-9', url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80', legenda: 'Foto 9. Registro do ponto de aterramento elétrico de proteção.' }
+        ]
+      }
+    ],
+    responsavelNome: 'Eng. Vitor Leonardo C. Linhares',
+    responsavelCrea: 'CREA-PE 182229949-0',
+    usoIA: { chamadas: 0 },
+    criadoEm: '2026-10-30T10:00:00Z',
+    atualizadoEm: '2026-11-11T16:00:00Z'
+  }
 ];
 
 export const TEMPLATES_INICIAIS: LaudoTemplate[] = [

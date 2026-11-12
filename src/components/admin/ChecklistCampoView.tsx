@@ -12,7 +12,16 @@ import {
   Share2, 
   FileText,
   Upload,
-  ArrowRight
+  ArrowRight,
+  Layers,
+  Clock,
+  AlertTriangle,
+  Building,
+  ExternalLink,
+  ChevronRight,
+  Eye,
+  Check,
+  Edit3
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -20,238 +29,306 @@ import { ChecklistCampoFormModal } from './ChecklistCampoFormModal';
 import { ChecklistCampoPdfModal } from './ChecklistCampoPdfModal';
 import { ChecklistCampo } from '../../types';
 
-const ITENS_PADRAO_VISTORIA = [
-  'Plaqueta de identificação do fabricante e número de série legíveis',
-  'Proteções fixas e móveis instaladas e devidamente parafusadas',
-  'Intertravamento de segurança com bloqueio e chave de ruptura positiva funcionando',
-  'Botões de parada de emergência acessíveis e desarmando o comando de força',
-  'Sinalização de segurança, advertências de riscos residuais e diagramas visíveis',
-  'Fotos de todas as faces do equipamento e registro do aterramento elétrico'
-];
-
 export const ChecklistCampoView: React.FC = () => {
-  const { checklistsCampo, clientes, ativos } = useData();
+  const { checklistsCampo, clientes, ativos, orcamentos, laudos } = useData();
   const { currentUser, isOnline } = useAuth();
   const navigate = useNavigate();
 
-  const [itensMarcados, setItensMarcados] = useState<Record<number, boolean>>({});
-  const [fotosAnexadas, setFotosAnexadas] = useState<string[]>([]);
-  const [toastMensagem, setToastMensagem] = useState<string | null>(null);
   const [modalFormAberto, setModalFormAberto] = useState(false);
+  const [checklistParaEditar, setChecklistParaEditar] = useState<ChecklistCampo | null>(null);
   const [checklistVisualizandoPdf, setChecklistVisualizandoPdf] = useState<ChecklistCampo | null>(null);
+  const [buscaTexto, setBuscaTexto] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'finalizado' | 'rascunho'>('todos');
 
-  const showToast = (msg: string) => {
-    setToastMensagem(msg);
-    setTimeout(() => setToastMensagem(null), 2500);
+  // Filtro de checklists
+  const checklistsFiltrados = checklistsCampo.filter(chk => {
+    if (filtroStatus !== 'todos' && chk.status !== filtroStatus) return false;
+    if (buscaTexto.trim()) {
+      const termo = buscaTexto.toLowerCase();
+      const cli = clientes.find(c => c.id === chk.clienteId);
+      const atv = ativos.find(a => a.id === chk.ativoId);
+      const matchNumero = (chk.numero || '').toLowerCase().includes(termo);
+      const matchTipo = (chk.tipoLaudoNome || chk.categoriaLaudo || '').toLowerCase().includes(termo);
+      const matchCli = (cli?.razaoSocial || cli?.nomeFantasia || '').toLowerCase().includes(termo);
+      const matchAtv = (atv?.identificacao || '').toLowerCase().includes(termo);
+      return matchNumero || matchTipo || matchCli || matchAtv;
+    }
+    return true;
+  });
+
+  const abrirNovoChecklist = () => {
+    setChecklistParaEditar(null);
+    setModalFormAberto(true);
   };
 
-  const totalItens = ITENS_PADRAO_VISTORIA.length;
-  const concluidos = Object.values(itensMarcados).filter(Boolean).length;
-  const porcentagem = Math.round((concluidos / totalItens) * 100);
-
-  const toggleItem = (idx: number) => {
-    setItensMarcados(prev => ({
-      ...prev,
-      [idx]: !prev[idx]
-    }));
-  };
-
-  const handleAnexarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFotosAnexadas(prev => [...prev, reader.result as string]);
-      showToast('Foto do equipamento anexada com sucesso!');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleEnviarAoLaudo = () => {
-    showToast('Checklist e fotos sincronizados e enviados para elaboração do laudo!');
+  const abrirEditarChecklist = (chk: ChecklistCampo) => {
+    setChecklistParaEditar(chk);
+    setModalFormAberto(true);
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px]">
+    <div className="space-y-6 max-w-[1300px]">
       
-      {/* Toast Notification */}
-      {toastMensagem && (
-        <div 
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[var(--ink)] text-[var(--paper)] px-5 py-2.5 rounded-lg font-semibold text-sm shadow-xl flex items-center gap-2"
-          role="status"
-        >
-          <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />
-          <span>{toastMensagem}</span>
-        </div>
-      )}
-
-      {/* Header bar */}
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
-              Checklist de campo
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#0B1E3D] tracking-tight">
+              Checklists de Campo & Vistorias
             </h1>
-            <span className="tag-tech bl">
-              Prensa hidráulica · Metalúrgica Recife
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-[#1565D8] border border-blue-200">
+              Tablet & Mobile Touch
             </span>
           </div>
-          <p className="text-[var(--muted)] text-[15px] sm:text-[16px]">
-            Marque cada item durante a vistoria. Funciona sem internet e sincroniza automaticamente.
+          <p className="text-sm text-slate-500">
+            Coleta estruturada de dados técnicos in loco com fotos, medições e geração direta do Laudo Técnico.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Status de Sincronização Offline */}
           {isOnline ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--green)] bg-[var(--card)] px-2.5 py-1 rounded-md border border-[var(--line)]">
-              <Wifi className="w-3.5 h-3.5" />
-              <span>Online sincronizado</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-300">
+              <Wifi className="w-4 h-4 text-emerald-600" />
+              <span>Sincronizado (0 pendentes)</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--warn)] bg-[var(--card)] px-2.5 py-1 rounded-md border border-[var(--line)]">
-              <WifiOff className="w-3.5 h-3.5" />
-              <span>Modo offline ativo</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-300 animate-pulse">
+              <WifiOff className="w-4 h-4 text-amber-600" />
+              <span>Modo Offline Ativo</span>
             </span>
           )}
 
           <button
             type="button"
-            onClick={() => setModalFormAberto(true)}
-            className="btn-tech pri text-[14.5px] px-4 py-2"
+            onClick={abrirNovoChecklist}
+            className="px-4 py-2.5 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-black flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 mr-1.5" />
-            <span>Novo checklist</span>
+            <Plus className="w-4 h-4 text-[#D4AF37]" />
+            <span>Nova Vistoria de Campo</span>
           </button>
         </div>
       </div>
 
-      {/* Active Field Inspection Panel */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-5 sm:p-7 max-w-3xl space-y-5">
-        
-        {/* Progress Bar & Counter */}
-        <div>
-          <div className="flex items-center justify-between text-sm font-bold mb-2">
-            <span className="text-[var(--ink)]">
-              {concluidos} de {totalItens} itens verificados
-            </span>
-            <span className="text-[var(--blue)] font-[family-name:var(--d)]">
-              {porcentagem}% concluído
-            </span>
-          </div>
-          <div className="h-2.5 bg-[var(--line)] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[var(--blue)] transition-all duration-300 rounded-full"
-              style={{ width: `${porcentagem}%` }}
-            />
-          </div>
+      {/* Barra de Filtros e Busca */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Buscar por TAG, cliente, proposta ou número..."
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
+            className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
-        {/* Checkable Inspection Items */}
-        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
-          {ITENS_PADRAO_VISTORIA.map((texto, idx) => (
-            <label 
-              key={idx}
-              className="flex items-start gap-3.5 py-3.5 cursor-pointer hover:bg-[var(--paper)] px-2 rounded-md transition-colors select-none"
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-bold text-slate-500">Filtrar:</span>
+          {(['todos', 'finalizado', 'rascunho'] as const).map(st => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => setFiltroStatus(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                filtroStatus === st
+                  ? 'bg-blue-600 text-white shadow-2xs font-black'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
             >
-              <input
-                type="checkbox"
-                checked={!!itensMarcados[idx]}
-                onChange={() => toggleItem(idx)}
-                className="w-5 h-5 mt-0.5 rounded border-[var(--line)] text-[var(--blue)] focus:ring-[var(--blue)] cursor-pointer"
-              />
-              <span className={`text-[15px] font-[family-name:var(--b)] leading-snug ${
-                itensMarcados[idx] ? 'line-through text-[var(--muted)] opacity-75' : 'text-[var(--ink)]'
-              }`}>
-                {texto}
-              </span>
-            </label>
+              {st === 'todos' ? 'Todos' : st === 'finalizado' ? 'Concluídos' : 'Rascunhos'}
+            </button>
           ))}
         </div>
+      </div>
 
-        {/* Attached Photos Preview */}
-        {fotosAnexadas.length > 0 && (
-          <div className="space-y-2 pt-2">
-            <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider block">
-              Fotos anexadas ({fotosAnexadas.length})
-            </span>
-            <div className="flex flex-wrap gap-2.5">
-              {fotosAnexadas.map((foto, fIdx) => (
+      {/* B8: Tabela / Lista de Vistorias Realizadas por Equipamento */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-black text-[#0B1E3D] uppercase tracking-wider flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4 text-[#1565D8]" />
+              <span>Histórico de Vistorias por Equipamento & Laudos Gerados</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Rastreabilidade total: Orçamento vinculado → Checklist in loco → Laudo técnico emitido.
+            </p>
+          </div>
+          <span className="text-xs font-bold font-mono text-slate-600">
+            {checklistsFiltrados.length} vistoria(s) encontrada(s)
+          </span>
+        </div>
+
+        {checklistsFiltrados.length === 0 ? (
+          <div className="p-10 text-center space-y-3">
+            <ClipboardCheck className="w-12 h-12 text-slate-300 mx-auto" />
+            <h4 className="text-sm font-bold text-slate-700">Nenhum checklist de campo encontrado</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Inicie uma nova vistoria técnica clicando no botão "Nova Vistoria de Campo" acima.
+            </p>
+            <button
+              type="button"
+              onClick={abrirNovoChecklist}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Criar Primeiro Checklist</span>
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {checklistsFiltrados.map((chk) => {
+              const cliente = clientes.find(c => c.id === chk.clienteId);
+              const ativo = ativos.find(a => a.id === chk.ativoId);
+              const orcamento = orcamentos.find(o => o.id === chk.vinculadoAOrcamentoId);
+              const laudoVinculado = laudos.find(l => l.checklistCampoOrigemId === chk.id || l.id === chk.vinculadoALaudoId);
+
+              const itensTotal = (chk.itens || []).length + (chk.itensExtras || []).length;
+              const itensConformes = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'conforme').length;
+              const itensNaoConformes = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'nao_conforme').length;
+              const itensNA = [...(chk.itens || []), ...(chk.itensExtras || [])].filter(i => i.status === 'nao_aplicavel').length;
+
+              return (
                 <div 
-                  key={fIdx}
-                  className="w-20 h-20 rounded-lg border border-[var(--line)] bg-cover bg-center overflow-hidden shadow-xs"
-                  style={{ backgroundImage: `url(${foto})` }}
-                />
-              ))}
-            </div>
+                  key={chk.id}
+                  className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                >
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-black text-[#0B1E3D] bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
+                        {chk.numero || chk.id}
+                      </span>
+                      <span className="text-xs font-black text-slate-900">
+                        {chk.tipoLaudoNome || chk.categoriaLaudo}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        chk.status === 'finalizado'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {chk.status === 'finalizado' ? '✓ Vistoria Concluída' : '⏳ Rascunho / Em Andamento'}
+                      </span>
+                      {chk.geolocalizacao && (
+                        <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                          📍 GPS Registrado
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                      <span>
+                        <strong>Cliente:</strong> {cliente?.razaoSocial || chk.clienteNome || 'Cliente'}
+                      </span>
+                      <span>•</span>
+                      <span>
+                        <strong>Equipamento / TAG:</strong> <span className="font-mono font-bold text-slate-800">{ativo?.identificacao || chk.ativoIdentificacao || 'Ativo'}</span> ({ativo?.tipo || 'Industrial'})
+                      </span>
+                      <span>•</span>
+                      <span>
+                        <strong>Data:</strong> {new Date(chk.dataPreenchimento || chk.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
+                      </span>
+                      {orcamento && (
+                        <>
+                          <span>•</span>
+                          <span className="text-blue-700 font-semibold">
+                            Orçamento: {orcamento.codigoProposta || orcamento.id}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Chips de Resultados da Inspeção */}
+                    <div className="flex items-center gap-2 pt-1 text-[11px] font-bold">
+                      <span className="text-slate-500">
+                        {itensTotal} itens avaliados:
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        {itensConformes} Conformes
+                      </span>
+                      {itensNaoConformes > 0 ? (
+                        <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                          ⚠ {itensNaoConformes} Não Conforme(s)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          0 NC
+                        </span>
+                      )}
+                      {itensNA > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {itensNA} N.A.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ações por Vistoria */}
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                    {/* Botão Ver PDF Preliminar */}
+                    <button
+                      type="button"
+                      onClick={() => setChecklistVisualizandoPdf(chk)}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Visualizar folha de checklist preliminar"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Ver Vistoria</span>
+                    </button>
+
+                    {/* Botão Continuar / Editar Vistoria */}
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarChecklist(chk)}
+                      className="px-3 py-1.5 rounded-lg border border-blue-300 bg-blue-50/60 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Editar ou complementar vistoria técnica"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Editar</span>
+                    </button>
+
+                    {/* B7 / B8: Atalho para o Laudo Técnico Gerado */}
+                    {laudoVinculado ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/laudos/${laudoVinculado.id}`)}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                        title="Abrir o laudo técnico gerado a partir desta vistoria"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Abrir Laudo ({laudoVinculado.numero})</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => abrirEditarChecklist(chk)}
+                        className="px-3.5 py-1.5 rounded-lg bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                        title="Concluir e gerar o laudo técnico"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span>Gerar Laudo</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3 pt-3">
-          <label className="btn-tech text-[14.5px] cursor-pointer inline-flex items-center">
-            <Camera className="w-4 h-4 mr-1.5 opacity-70" />
-            <span>Anexar foto</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAnexarFoto}
-              className="sr-only"
-            />
-          </label>
-
-          <button
-            type="button"
-            onClick={handleEnviarAoLaudo}
-            className="btn-tech pri text-[14.5px] px-5"
-          >
-            <span>Enviar ao laudo</span>
-            <ArrowRight className="w-4 h-4 ml-1.5" />
-          </button>
-        </div>
-
       </div>
 
-      {/* Historical Checklists List */}
-      <div className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-5 max-w-3xl">
-        <h2 className="text-[18px] font-bold mb-3">Histórico de vistorias em campo</h2>
-        <div className="space-y-2">
-          {checklistsCampo.map((chk) => {
-            const cliente = clientes.find(c => c.id === chk.clienteId);
-            return (
-              <div 
-                key={chk.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-[var(--line)] hover:bg-[var(--paper)] transition-colors text-sm"
-              >
-                <div>
-                  <b className="block text-[var(--ink)] font-semibold">{chk.numero} · {chk.tipoLaudoNome || chk.categoriaLaudo}</b>
-                  <span className="text-[var(--muted)] text-xs">
-                    {cliente?.nomeFantasia || 'Cliente'} · {new Date(chk.dataPreenchimento || chk.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`tag-tech ${chk.status === 'finalizado' ? 'ok' : 'bl'}`}>
-                    {chk.status === 'finalizado' ? 'Concluído' : 'Em andamento'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setChecklistVisualizandoPdf(chk)}
-                    className="btn-tech sm text-xs"
-                  >
-                    Ver
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* PDF and Form Modals */}
+      {/* Modais de Formulário e PDF */}
       {modalFormAberto && (
         <ChecklistCampoFormModal
-          onSaved={() => setModalFormAberto(false)}
-          onClose={() => setModalFormAberto(false)}
+          checklistParaEditar={checklistParaEditar}
+          onSaved={() => {
+            setModalFormAberto(false);
+            setChecklistParaEditar(null);
+          }}
+          onClose={() => {
+            setModalFormAberto(false);
+            setChecklistParaEditar(null);
+          }}
         />
       )}
 

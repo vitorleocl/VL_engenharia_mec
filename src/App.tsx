@@ -27,6 +27,8 @@ import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { ChecklistCampoView } from './components/admin/ChecklistCampoView';
 import { GestaoView } from './components/admin/GestaoView';
 import { PropostaPrintView } from './components/admin/PropostaPrintView';
+import { LaudoPrintView } from './components/admin/LaudoPrintView';
+import { VerificacaoPublicaView } from './components/public/VerificacaoPublicaView';
 
 function FloatingContactHelper() {
   const location = useLocation();
@@ -85,6 +87,10 @@ export default function App() {
                   </>
                 }
               />
+
+              {/* Public Report Verification Portal */}
+              <Route path="/verificar/:codigo" element={<VerificacaoPublicaView />} />
+              <Route path="/verificar" element={<VerificacaoPublicaView />} />
 
               {/* Login Routes */}
               <Route path="/login" element={<LoginView />} />
@@ -168,6 +174,10 @@ export default function App() {
                     <LaudoEditorView />
                   </AdminLayout>
                 }
+              />
+              <Route
+                path="/admin/laudos/:id/imprimir"
+                element={<LaudoPrintView />}
               />
               <Route
                 path="/admin/checklists-campo"

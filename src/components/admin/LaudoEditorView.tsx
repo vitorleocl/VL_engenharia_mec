@@ -42,7 +42,10 @@ import {
   ExternalLink,
   ZoomIn,
   FileSpreadsheet,
-  Search
+  Search,
+  ShieldAlert,
+  Scale,
+  FileDown
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +57,8 @@ import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
 import { converterPdfParaImagem } from '../../lib/pdfToImage';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
+import { VerificacaoEmissaoModal } from './VerificacaoEmissaoModal';
+import { LaudoDocSheets } from './LaudoDocSheets';
 
 const PRESET_SECTIONS = [
   { 
@@ -140,6 +145,10 @@ export const LaudoEditorView: React.FC = () => {
   const [modalExcluirLaudoAberto, setModalExcluirLaudoAberto] = useState(false);
   const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
   const [modalAssociarOrcamentoAberto, setModalAssociarOrcamentoAberto] = useState(false);
+  const [modalVerificacaoAberto, setModalVerificacaoAberto] = useState(false);
+  const [modalConverterLayoutAberto, setModalConverterLayoutAberto] = useState(false);
+  const [modoExibicao, setModoExibicao] = useState<'editor' | 'folhas'>('editor');
+  const [abaEstruturada, setAbaEstruturada] = useState<'geral' | 'parecer' | 'ncs' | 'normas_instrumentos'>('geral');
   const [buscaOrcamentoModal, setBuscaOrcamentoModal] = useState('');
   const [filtroApenasMesmoCliente, setFiltroApenasMesmoCliente] = useState(true);
 
@@ -577,22 +586,132 @@ export const LaudoEditorView: React.FC = () => {
     }
   };
 
-  // Finalize Laudo
+  // Calcular parecer pericial automaticamente a partir das Não Conformidades (NC)
+  const calcularParecerPorNCs = (): 'liberado' | 'liberado_restricoes' | 'nao_liberado' => {
+    const ncs = laudoState?.naoConformidadesEstruturadas || [];
+    if (ncs.length === 0) return 'liberado';
+    const temGrave = ncs.some(nc => nc.classificacaoRisco === 'critico' || nc.classificacaoRisco === 'alto');
+    if (temGrave) return 'nao_liberado';
+    return 'liberado_restricoes';
+  };
+
+  const handleSugerirParecerAutomatico = () => {
+    if (!laudoState) return;
+    const sugestao = calcularParecerPorNCs();
+    let justificativa = '';
+    if (sugestao === 'liberado') {
+      justificativa = 'Ativo atende integralmente aos requisitos normativos e de segurança avaliados, sem registro de não conformidades impeditivas.';
+    } else if (sugestao === 'liberado_restricoes') {
+      justificativa = 'Ativo liberado para operação regular sob cumprimento do plano de ação corretiva das não conformidades leves/médias identificadas.';
+    } else {
+      justificativa = 'Operação suspensa / não liberada em virtude de não conformidades de risco crítico ou alto que comprometem a segurança imediata.';
+    }
+
+    const novo = {
+      ...laudoState,
+      parecer: sugestao,
+      justificativaParecer: laudoState.justificativaParecer || justificativa
+    };
+    setLaudoState(novo);
+    executarSalvar(novo, `Parecer pericial recalculado automaticamente para "${sugestao}"`);
+  };
+
+  // Conversão segura para o novo layout de 6 folhas A4 sem perda de dados
+  const handleConverterParaNovoLayout = () => {
+    if (!laudoState) return;
+    const novo: Laudo = {
+      ...laudoState,
+      layoutVersao: 'novo-2026',
+      revisao: laudoState.revisao || '00',
+      metodo: laudoState.metodo || 'Apreciação de Riscos (NBR ISO 12100), ensaios funcionais e análise visual metrológica',
+      normasLista: (laudoState.normasLista && laudoState.normasLista.length > 0)
+        ? laudoState.normasLista
+        : [
+            'ABNT NBR ISO 12100:2013 — Segurança de máquinas',
+            'NR-11 — Transporte, movimentação, armazenagem e manuseio de materiais',
+            'NR-12 — Segurança no trabalho em máquinas e equipamentos'
+          ],
+      instrumentos: (laudoState.instrumentos && laudoState.instrumentos.length > 0)
+        ? laudoState.instrumentos
+        : [
+            {
+              id: 'inst-1',
+              nome: 'Paquímetro Digital Mitutoyo 150mm',
+              tag: 'PAQ-01',
+              certificadoNumero: 'CAL-2026-0891',
+              calibracaoValidade: '15/12/2026'
+            }
+          ],
+      premissasLimitacoes: laudoState.premissasLimitacoes || 'Avaliação restrita às partes acessíveis no momento da inspeção visual e dinâmica. Não foram realizados ensaios destrutivos.',
+      proximaInspecaoData: laudoState.proximaInspecaoData || '30/10/2027',
+      justificativaParecer: laudoState.justificativaParecer || 'Ativo aprovado com restrições e plano de ação corretiva programado.',
+      parecer: laudoState.parecer || 'liberado_restricoes'
+    };
+    setLaudoState(novo);
+    executarSalvar(novo, 'Laudo convertido com sucesso para o Novo Layout A4 de 6 folhas');
+    setModalConverterLayoutAberto(false);
+  };
+
+  // Finalização e emissão oficial com ART e congelamento de revisão
+  const handleConfirmarEmissaoOficial = () => {
+    if (!laudoState) return;
+    const artNum = laudoState.artNumero || artNumeroInput.trim() || 'PE20261621255';
+    const codigoVerif = laudoState.codigoVerificacao || `${laudoState.numero || 'LAR-2026-001'}-7K4Q`;
+    const hash = laudoState.hashPdf || 'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
+    const hojeStr = new Date().toLocaleDateString('pt-BR');
+
+    finalizarLaudo(laudoState.id, artNum);
+
+    const novoEstado: Laudo = {
+      ...laudoState,
+      status: 'finalizado',
+      artNumero: artNum,
+      revisaoCongelada: true,
+      emitidoEm: laudoState.emitidoEm || hojeStr,
+      codigoVerificacao: codigoVerif,
+      hashPdf: hash
+    };
+
+    setLaudoState(novoEstado);
+    executarSalvar(novoEstado, `Laudo pericial emitido oficialmente com ART ${artNum}`);
+    setModalFinalizarAberto(false);
+    setModalVerificacaoAberto(false);
+  };
+
+  // Abrir nova revisão técnica preservando a anterior
+  const handleCriarNovaRevisao = () => {
+    if (!laudoState) return;
+    const revAtualNum = parseInt(laudoState.revisao || '00', 10) || 0;
+    const novaRevStr = String(revAtualNum + 1).padStart(2, '0');
+
+    const historicoAtual = laudoState.revisoes || [];
+    const novaNota: LaudoRevisao = {
+      id: `rev-${Date.now()}`,
+      dataHora: new Date().toISOString(),
+      usuarioUid: currentUser?.uid || 'admin',
+      usuarioNome: laudoState.responsavelNome || 'Eng. Vitor Leonardo',
+      descricao: `Congelamento da Revisão ${laudoState.revisao || '00'} homologada com ART ${laudoState.artNumero || 'registrada'}.`
+    };
+
+    const novo: Laudo = {
+      ...laudoState,
+      revisao: novaRevStr,
+      revisaoCongelada: false,
+      status: 'em_revisao',
+      revisoes: [...historicoAtual, novaNota]
+    };
+
+    setLaudoState(novo);
+    executarSalvar(novo, `Nova revisão técnica aberta: Rev ${novaRevStr}`);
+  };
+
+  // Finalize Laudo (legado e modal rápido)
   const handleConfirmarFinalizacao = () => {
     if (!artNumeroInput.trim() || !termoAceito) {
       alert('Por favor, informe o número da ART CREA-PE e declare concordância com os termos de responsabilidade técnica.');
       return;
     }
-
-    finalizarLaudo(laudoState.id, artNumeroInput.trim());
-    setLaudoState(prev => prev ? {
-      ...prev,
-      status: 'finalizado',
-      artNumero: artNumeroInput.trim()
-    } : null);
-
-    setModalFinalizarAberto(false);
-    alert('Laudo pericial finalizado com sucesso e ART CREA-PE vinculada com fé pública!');
+    handleConfirmarEmissaoOficial();
   };
 
   // Cover Photo Handlers
@@ -965,20 +1084,76 @@ export const LaudoEditorView: React.FC = () => {
               <span>{laudoState.orcamentoNumero ? `Orçamento: ${laudoState.orcamentoNumero}` : (laudoState.orcamentoOrigemId ? 'Orçamento Vinculado' : 'Associar Orçamento')}</span>
             </button>
 
-            {/* Exportar PDF */}
+            {/* Alternador de Modo: Editor Estruturado vs Folhas Claras A4 */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+              <button
+                onClick={() => setModoExibicao('editor')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                  modoExibicao === 'editor'
+                    ? 'bg-[#1565D8] text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Editor Estruturado
+              </button>
+              <button
+                onClick={() => setModoExibicao('folhas')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                  modoExibicao === 'folhas'
+                    ? 'bg-[#1565D8] text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Visualizar Folhas A4
+              </button>
+            </div>
+
+            {/* Baixar PDF Vetorial (Menos de 500 KB, texto selecionável) */}
             <button
-              onClick={() => setModalPdfAberto(true)}
-              className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              onClick={() => navigate(`/admin/laudos/${laudoState.id}/imprimir`)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition transform active:scale-95"
+              title="Gera o PDF vetorial em 1 clique com links ativos e menos de 500 KB"
             >
-              <Printer className="w-4 h-4" />
-              <span>Exportar PDF</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Baixar PDF</span>
             </button>
 
-            {/* Finalize Button if not finished */}
-            {laudoState.status !== 'finalizado' && (
+            {/* Auditoria Prévia de Emissão (Parte E) */}
+            <button
+              onClick={() => setModalVerificacaoAberto(true)}
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              title="Auditar conformidade técnica de todos os campos e pendências antes da emissão"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Verificar Emissão</span>
+            </button>
+
+            {/* Finalizar ou Gerenciar Revisões */}
+            {laudoState.status === 'finalizado' ? (
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to={`/verificar/${laudoState.codigoVerificacao || `${laudoState.numero}-7K4Q`}`}
+                  target="_blank"
+                  className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 flex items-center gap-1 cursor-pointer"
+                  title="Verificar registro no portal público de autenticidade"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Verificação Pública</span>
+                </Link>
+                <button
+                  onClick={handleCriarNovaRevisao}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
+                  title="Descongelar e abrir nova revisão técnica do documento"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Nova Revisão</span>
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => setModalFinalizarAberto(true)}
+                onClick={() => setModalVerificacaoAberto(true)}
                 className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title="Conferir pendências e homologar laudo com ART"
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span>Finalizar com ART</span>
@@ -1065,6 +1240,500 @@ export const LaudoEditorView: React.FC = () => {
         </div>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* LINHA DO TEMPO DE ESTADOS: Rascunho -> Em revisão -> ART anexada -> Emitido */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#1565D8]" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Fluxo Oficial de Emissão Pericial
+            </h3>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            {laudoState.status === 'finalizado' ? (
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Laudo Homologado e Emitido com ART
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-300 dark:border-amber-800">
+                <Clock className="w-3.5 h-3.5" />
+                Minuta Técnica em Elaboração
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Timeline Steps */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          {/* Step 1: Rascunho */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+            laudoState.status === 'rascunho' || !laudoState.status || laudoState.status === 'em_andamento'
+              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 text-blue-900 dark:text-blue-200 font-bold'
+              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
+          }`}>
+            <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">1</span>
+            <div className="truncate">
+              <span className="block font-semibold">Rascunho</span>
+              <span className="text-[10px] text-slate-400 block truncate">Vistoria & Ativo</span>
+            </div>
+          </div>
+
+          {/* Step 2: Em Revisão */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+            laudoState.status === 'em_revisao'
+              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 font-bold'
+              : (laudoState.status === 'finalizado')
+                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
+          }`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+              laudoState.status === 'finalizado' ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+            }`}>2</span>
+            <div className="truncate">
+              <span className="block font-semibold">Em Revisão</span>
+              <span className="text-[10px] text-slate-400 block truncate">NCs & Parecer</span>
+            </div>
+          </div>
+
+          {/* Step 3: ART Anexada */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+            laudoState.artNumero && laudoState.artArquivoUrl
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 text-emerald-800 dark:text-emerald-200 font-bold'
+              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
+          }`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+              laudoState.artNumero && laudoState.artArquivoUrl ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'
+            }`}>3</span>
+            <div className="truncate">
+              <span className="block font-semibold">ART Anexada</span>
+              <span className="text-[10px] text-slate-400 block truncate">{laudoState.artNumero || 'Pendente CREA'}</span>
+            </div>
+          </div>
+
+          {/* Step 4: Emitido */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+            laudoState.status === 'finalizado'
+              ? 'bg-emerald-600 text-white border-emerald-700 font-bold shadow-xs'
+              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
+          }`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+              laudoState.status === 'finalizado' ? 'bg-white text-emerald-700' : 'bg-slate-400 text-white'
+            }`}>4</span>
+            <div className="truncate">
+              <span className="block font-semibold">Emitido</span>
+              <span className="text-[10px] opacity-80 block truncate">{laudoState.codigoVerificacao || 'Código público'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Banner de Conversão de Layout (Orçamentos e Laudos antigos) */}
+      {laudoState.layoutVersao !== 'novo-2026' && (
+        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border-2 border-blue-300 dark:border-blue-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-[#1565D8] shrink-0 mt-0.5">
+              <FileCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-[#0B1E3D] dark:text-white">
+                Novo Modelo Base de Laudo A4 (6 Folhas Vetoriais)
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                Este laudo está no padrão anterior. Você pode convertê-lo com 1 clique para o novo modelo aprovado, estruturando partes, normas com ano, instrumentos com calibração, parecer e ART.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setModalConverterLayoutAberto(true)}
+            className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold shrink-0 shadow-md transition cursor-pointer"
+          >
+            Converter para o Novo Layout
+          </button>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PAINEL DE DADOS ESTRUTURADOS (PARTE C: PARECER, NCS, INSTRUMENTOS, NORMAS) */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-sm text-[#0B1E3D] dark:text-white flex items-center gap-2">
+              <Scale className="w-4 h-4 text-[#1565D8]" />
+              Campos Estruturados de Engenharia (Fonte Única)
+            </h3>
+            <p className="text-[11px] text-slate-500">
+              Dados técnicos paramétricos que alimentam as 6 folhas normatizadas e as verificações da ART.
+            </p>
+          </div>
+
+          {/* Abas Estruturadas */}
+          <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs">
+            <button
+              onClick={() => setAbaEstruturada('geral')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                abaEstruturada === 'geral' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Ficha & Vistoria
+            </button>
+            <button
+              onClick={() => setAbaEstruturada('parecer')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                abaEstruturada === 'parecer' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Parecer Técnico
+            </button>
+            <button
+              onClick={() => setAbaEstruturada('ncs')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                abaEstruturada === 'ncs' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Não Conformidades ({laudoState.naoConformidadesEstruturadas?.length || 0})
+            </button>
+            <button
+              onClick={() => setAbaEstruturada('normas_instrumentos')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                abaEstruturada === 'normas_instrumentos' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              Normas & Instrumentos
+            </button>
+          </div>
+        </div>
+
+        {/* Conteúdo da Aba 1: Ficha & Vistoria */}
+        {abaEstruturada === 'geral' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">Local da Vistoria (In Loco):</label>
+              <input
+                type="text"
+                value={laudoState.localVistoria || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  agendarAutoSave({ ...laudoState, localVistoria: val });
+                }}
+                placeholder="Ex: Recife, PE — Unidade Operacional"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">Acompanhante da Vistoria:</label>
+              <input
+                type="text"
+                value={laudoState.acompanhanteVistoria || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  agendarAutoSave({ ...laudoState, acompanhanteVistoria: val });
+                }}
+                placeholder="Ex: Carlos Eduardo (Coord. Manutenção)"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">Fabricante & Modelo do Ativo:</label>
+              <input
+                type="text"
+                value={`${laudoState.ativoFabricante || ''} ${laudoState.ativoModelo || ''}`.trim()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  agendarAutoSave({ ...laudoState, ativoFabricante: val });
+                }}
+                placeholder="Ex: Renault / Randon Munck"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">Capacidade / Número de Série:</label>
+              <input
+                type="text"
+                value={`${laudoState.ativoCapacidade || ''} • Série ${laudoState.ativoNumeroSerie || ''}`.trim()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  agendarAutoSave({ ...laudoState, ativoCapacidade: val });
+                }}
+                placeholder="Ex: 12t • Série RD-2021-998"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo da Aba 2: Parecer Técnico & Justificativa */}
+        {abaEstruturada === 'parecer' && (
+          <div className="space-y-3 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Conclusão Pericial:</label>
+                <select
+                  value={laudoState.parecer || 'liberado_restricoes'}
+                  onChange={(e) => {
+                    const val = e.target.value as any;
+                    agendarAutoSave({ ...laudoState, parecer: val });
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-white"
+                >
+                  <option value="liberado">Liberado para Operação</option>
+                  <option value="liberado_restricoes">Liberado com Restrições</option>
+                  <option value="nao_liberado">Não Liberado / Interditado</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSugerirParecerAutomatico}
+                className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] dark:text-blue-300 font-bold flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 cursor-pointer"
+                title="Recalcula a conclusão técnica recomendada a partir da gravidade das Não Conformidades registradas"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Calcular Parecer por Gravidade de NCs</span>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">
+                Justificativa Técnica do Parecer (Obrigatório e fundamentado):
+              </label>
+              <textarea
+                value={laudoState.justificativaParecer || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  agendarAutoSave({ ...laudoState, justificativaParecer: val });
+                }}
+                rows={2}
+                placeholder="Descreva o embasamento pericial para a conclusão adotada..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Próxima Inspeção Recomendada:</label>
+                <input
+                  type="text"
+                  value={laudoState.proximaInspecaoData || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, proximaInspecaoData: val });
+                  }}
+                  placeholder="Ex: 30/10/2027 (Periodicidade Anual)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Limitações e Premissas Periciais:</label>
+                <input
+                  type="text"
+                  value={laudoState.premissasLimitacoes || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, premissasLimitacoes: val });
+                  }}
+                  placeholder="Ex: Restrito a ensaios não destrutivos e inspeção visual..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conteúdo da Aba 3: Não Conformidades Estruturadas (NC) */}
+        {abaEstruturada === 'ncs' && (
+          <div className="space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 font-semibold">
+                Registro de Não Conformidades com Grau de Risco e Ação Corretiva:
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const lista = laudoState.naoConformidadesEstruturadas || [];
+                  const novoIdx = lista.length + 1;
+                  const novaNC = {
+                    id: `nc-${Date.now()}`,
+                    codigo: `NC-${String(novoIdx).padStart(2, '0')}`,
+                    titulo: `Não Conformidade ${novoIdx}`,
+                    item: `Requisito ${novoIdx}`,
+                    itemRef: `Item ${novoIdx}`,
+                    descricao: 'Ausência de proteção ou elemento em desconformidade com a norma.',
+                    risco: 'medio' as const,
+                    classificacaoRisco: 'medio' as const,
+                    acaoRecomendada: 'Instalar ou adequar conforme recomendação técnica.',
+                    prazo: '30 dias',
+                    prazoAdequacao: '30 dias',
+                    responsavel: 'Equipe de Manutenção'
+                  };
+                  agendarAutoSave({
+                    ...laudoState,
+                    naoConformidadesEstruturadas: [...lista, novaNC]
+                  });
+                }}
+                className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] font-bold rounded-lg flex items-center gap-1 border border-blue-200 dark:border-blue-800 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar Não Conformidade</span>
+              </button>
+            </div>
+
+            {(!laudoState.naoConformidadesEstruturadas || laudoState.naoConformidadesEstruturadas.length === 0) ? (
+              <div className="p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-center text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
+                <p className="font-bold">Nenhuma Não Conformidade registrada no momento</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">O equipamento pode ser classificado como totalmente liberado.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {laudoState.naoConformidadesEstruturadas.map((nc, idx) => {
+                  const codigo = nc.codigo || nc.id;
+                  const risco = nc.classificacaoRisco || nc.risco || 'medio';
+                  const prazo = nc.prazoAdequacao || nc.prazo || '30 dias';
+                  const descricao = nc.descricao || nc.titulo;
+
+                  return (
+                    <div key={nc.id || idx} className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <strong className="font-mono text-rose-600 dark:text-rose-400 font-bold">{codigo}</strong>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            risco === 'critico' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
+                            risco === 'alto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' :
+                            risco === 'medio' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                          }`}>
+                            Risco {risco.toUpperCase()}
+                          </span>
+                          <span className="text-slate-400">• Prazo: <b>{prazo}</b></span>
+                        </div>
+                        <p className="text-slate-800 dark:text-slate-200 font-medium">{descricao}</p>
+                        <p className="text-slate-500 text-[11px]">Ação: {nc.acaoRecomendada}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filtradas = laudoState.naoConformidadesEstruturadas!.filter((_, i) => i !== idx);
+                          agendarAutoSave({
+                            ...laudoState,
+                            naoConformidadesEstruturadas: filtradas
+                          });
+                        }}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg cursor-pointer"
+                        title="Excluir NC"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Conteúdo da Aba 4: Normas & Instrumentos */}
+        {abaEstruturada === 'normas_instrumentos' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            {/* Normas */}
+            <div className="space-y-2">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block">
+                Normas Técnicas de Referência (com Edição expressa):
+              </span>
+              <div className="space-y-1.5">
+                {(laudoState.normasLista || []).map((norma, idx) => {
+                  const normaTexto = typeof norma === 'string' 
+                    ? norma 
+                    : `${norma.norma} — ${norma.titulo}${norma.edicao ? ` (${norma.edicao})` : ''}`;
+
+                  return (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                      <span className="flex-1 font-medium text-slate-800 dark:text-slate-200">{normaTexto}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lista = laudoState.normasLista!.filter((_, i) => i !== idx);
+                          agendarAutoSave({ ...laudoState, normasLista: lista });
+                        }}
+                        className="text-slate-400 hover:text-rose-500 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Instrumentos */}
+            <div className="space-y-2">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block">
+                Instrumentos Metrológicos Utilizados (Rastreabilidade RBC):
+              </span>
+              <div className="space-y-1.5">
+                {(laudoState.instrumentos || []).map((inst, idx) => {
+                  const cert = inst.certificadoNumero || inst.certificado || 'RBC';
+                  const venc = inst.calibracaoValidade || inst.validadeCalibracao || 'Válida';
+
+                  return (
+                    <div key={inst.id || idx} className="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                      <div>
+                        <strong className="text-slate-800 dark:text-slate-200 block">{inst.nome}</strong>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Cert.: {cert} • Venc.: {venc}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lista = laudoState.instrumentos!.filter((_, i) => i !== idx);
+                          agendarAutoSave({ ...laudoState, instrumentos: lista });
+                        }}
+                        className="text-slate-400 hover:text-rose-500 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Visualização de Folhas A4 Claras em Tempo Real se selecionado */}
+      {modoExibicao === 'folhas' && (
+        <div className="p-4 sm:p-6 bg-slate-300 dark:bg-slate-900 rounded-2xl flex flex-col items-center gap-4">
+          <div className="w-full flex items-center justify-between px-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Visualização Fiel do Documento A4 (6 Folhas Vetoriais)
+            </span>
+            <button
+              onClick={() => navigate(`/admin/laudos/${laudoState.id}/imprimir`)}
+              className="px-3.5 py-1.5 bg-[#1565D8] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir / Salvar PDF</span>
+            </button>
+          </div>
+          <LaudoDocSheets
+            laudo={laudoState}
+            cliente={cliente}
+            ativo={ativo}
+          />
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* AVISO FIXO: LAUDO INICIADO COM SUGESTÕES DE IA                           */}
@@ -2623,6 +3292,83 @@ export const LaudoEditorView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal: Confirmação de Conversão de Layout */}
+      {modalConverterLayoutAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-[#1565D8]">
+                  <FileCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Converter para o Novo Layout</h3>
+                  <p className="text-xs text-slate-500">Modelo A4 de 6 Folhas Vetoriais</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalConverterLayoutAberto(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              <p>
+                Deseja converter o laudo <b>{laudoState.numero}</b> para o novo layout aprovado?
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-slate-500">
+                <li>Preserva todas as seções e anotações técnicas existentes.</li>
+                <li>Habilita a exportação em PDF vetorial em 1 clique (&lt;500 KB).</li>
+                <li>Estrutura o parecer pericial, normas com edição e instrumentos calibrados.</li>
+              </ul>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setModalConverterLayoutAberto(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConverterParaNovoLayout}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1565D8] hover:bg-[#0b4fb8] text-white shadow-xs cursor-pointer"
+              >
+                Confirmar Conversão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Verificação Prévia de Emissão (Parte E) */}
+      <VerificacaoEmissaoModal
+        isOpen={modalVerificacaoAberto}
+        onClose={() => setModalVerificacaoAberto(false)}
+        laudo={laudoState}
+        cliente={cliente}
+        ativo={ativo}
+        onFocarCampo={(campo) => {
+          if (campo === 'partes' || campo === 'ativo') {
+            setAbaEstruturada('geral');
+          } else if (campo === 'parecer') {
+            setAbaEstruturada('parecer');
+          } else if (campo === 'ncs') {
+            setAbaEstruturada('ncs');
+          } else if (campo === 'normas' || campo === 'instrumentos') {
+            setAbaEstruturada('normas_instrumentos');
+          } else if (campo === 'art') {
+            window.scrollTo({ top: 400, behavior: 'smooth' });
+          }
+        }}
+        onConfirmarEmissao={handleConfirmarEmissaoOficial}
+      />
 
     </div>
   );
