@@ -25,6 +25,7 @@ import { AnexarLaudoAssinadoModal } from './AnexarLaudoAssinadoModal';
 import { PublicarNoSiteModal } from './PublicarNoSiteModal';
 import { Laudo, TrabalhoPublicadoSite } from '../../types';
 import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
+import { resolverUrlPdfVisualizacao } from '../../lib/pdfStorage';
 
 export const LaudosCentralView: React.FC = () => {
   const { 
@@ -52,6 +53,8 @@ export const LaudosCentralView: React.FC = () => {
   const [modalPdfAssinadoAberto, setModalPdfAssinadoAberto] = useState(false);
   const [laudoParaAnexarPdf, setLaudoParaAnexarPdf] = useState<Laudo | null>(null);
   const [laudoVisualizandoPdfAssinado, setLaudoVisualizandoPdfAssinado] = useState<Laudo | null>(null);
+  const [pdfPreviewSrc, setPdfPreviewSrc] = useState<string | null>(null);
+  const [pdfPreviewErro, setPdfPreviewErro] = useState<string | null>(null);
   const [laudoParaPublicar, setLaudoParaPublicar] = useState<Laudo | null>(null);
   const [publicacoesMap, setPublicacoesMap] = useState<Record<string, TrabalhoPublicadoSite>>(() => {
     const mapa: Record<string, TrabalhoPublicadoSite> = {};
@@ -142,6 +145,43 @@ export const LaudosCentralView: React.FC = () => {
       ativo = false;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+    let blobUrlToRevoke: string | null = null;
+    setPdfPreviewErro(null);
+
+    if (!laudoVisualizandoPdfAssinado?.laudoAssinadoPdfUrl) {
+      setPdfPreviewSrc(null);
+      return;
+    }
+
+    resolverUrlPdfVisualizacao(
+      laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl,
+      laudoVisualizandoPdfAssinado.id
+    )
+      .then(({ src, isBlobUrl }) => {
+        if (cancelado) {
+          if (isBlobUrl) URL.revokeObjectURL(src);
+          return;
+        }
+        if (isBlobUrl) blobUrlToRevoke = src;
+        setPdfPreviewSrc(src);
+      })
+      .catch((err) => {
+        if (!cancelado) {
+          setPdfPreviewSrc(null);
+          setPdfPreviewErro(err?.message || 'Não foi possível carregar o PDF.');
+        }
+      });
+
+    return () => {
+      cancelado = true;
+      if (blobUrlToRevoke) {
+        URL.revokeObjectURL(blobUrlToRevoke);
+      }
+    };
+  }, [laudoVisualizandoPdfAssinado]);
 
   const showToast = (msg: string) => {
     setToastMensagem(msg);
@@ -1095,16 +1135,26 @@ export const LaudosCentralView: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={`${laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl}?download=1&nome=${encodeURIComponent(
-                    laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`
-                  )}`}
-                  download={laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`}
-                  className="btn-tech pri sm text-xs py-1.5 px-3 inline-flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Baixar PDF</span>
-                </a>
+                {pdfPreviewSrc && (
+                  <a
+                    href={
+                      pdfPreviewSrc.startsWith('blob:')
+                        ? pdfPreviewSrc
+                        : pdfPreviewSrc.includes('/api/')
+                          ? `${pdfPreviewSrc}${pdfPreviewSrc.includes('?') ? '&' : '?'}download=1&nome=${encodeURIComponent(
+                              laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`
+                            )}`
+                          : pdfPreviewSrc
+                    }
+                    download={laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`}
+                    target={pdfPreviewSrc.startsWith('http') ? '_blank' : undefined}
+                    rel={pdfPreviewSrc.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    className="btn-tech pri sm text-xs py-1.5 px-3 inline-flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Baixar PDF</span>
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1129,12 +1179,20 @@ export const LaudosCentralView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 bg-slate-900/10">
-              <iframe
-                src={laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl}
-                title={`PDF Assinado ${laudoVisualizandoPdfAssinado.numero}`}
-                className="w-full h-full border-0"
-              />
+            <div className="flex-1 bg-slate-900/10 flex items-center justify-center">
+              {pdfPreviewErro ? (
+                <div className="p-6 text-center text-sm text-rose-500 font-semibold">
+                  {pdfPreviewErro}
+                </div>
+              ) : pdfPreviewSrc ? (
+                <iframe
+                  src={pdfPreviewSrc}
+                  title={`PDF Assinado ${laudoVisualizandoPdfAssinado.numero}`}
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="p-6 text-sm text-[var(--muted)]">Carregando PDF...</div>
+              )}
             </div>
           </div>
         </div>

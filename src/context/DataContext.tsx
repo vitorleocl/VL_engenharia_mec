@@ -38,6 +38,7 @@ import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { db, auth } from '../lib/firebase';
+import { removerPdfIndexedDb } from '../lib/pdfStorage';
 import { 
   doc, 
   setDoc, 
@@ -2313,7 +2314,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ removerId: id }),
     }).catch(() => {});
+    fetch(`/api/laudo-pdf-assinado?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
     fetch(`/api/laudos/${encodeURIComponent(id)}/pdf-assinado`, { method: 'DELETE' }).catch(() => {});
+    removerPdfIndexedDb(id).catch(() => {});
 
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };

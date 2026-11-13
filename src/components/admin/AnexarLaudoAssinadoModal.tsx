@@ -14,6 +14,12 @@ import {
 import { Cliente, Ativo, Laudo } from '../../types';
 import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
 
+import {
+  salvarPdfIndexedDb,
+  removerPdfIndexedDb,
+  tentarUploadFirebaseStorage,
+} from '../../lib/pdfStorage';
+
 interface AnexarLaudoAssinadoModalProps {
   isOpen: boolean;
   laudoExistente?: Laudo | null;
@@ -135,7 +141,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
     setArquivoSelecionado(file);
   };
 
-  const enviarPdfEmPartes = async (targetId: string, file: File) => {
+  const tentarEndpointEmPartes = async (endpoint: string, targetId: string, file: File) => {
     const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE_BYTES));
     const uploadId = `up-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     let respostaFinal: any = null;
@@ -151,10 +157,11 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       const slice = file.slice(start, end);
       const chunkData = await blobParaBase64(slice);
 
-      const resp = await fetch(`/api/laudos/${encodeURIComponent(targetId)}/pdf-assinado`, {
+      const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          laudoId: targetId,
           chunkData,
           chunkIndex: idx,
           totalChunks,
@@ -172,9 +179,11 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       }
 
       if (!resp.ok) {
-        throw new Error(
+        const err: any = new Error(
           json?.error || `Erro HTTP ${resp.status} ao enviar o PDF assinado para o servidor.`
         );
+        err.status = resp.status;
+        throw err;
       }
 
       respostaFinal = json;
@@ -185,6 +194,49 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
     }
 
     return respostaFinal;
+  };
+
+  const enviarPdfComFallback = async (targetId: string, file: File) => {
+    const endpoints = [
+      '/api/laudo-pdf-assinado',
+      `/api/laudos/${encodeURIComponent(targetId)}/pdf-assinado`,
+    ];
+
+    let ultimoErro: any = null;
+    for (const ep of endpoints) {
+      try {
+        return await tentarEndpointEmPartes(ep, targetId, file);
+      } catch (err: any) {
+        ultimoErro = err;
+        if (err?.status !== 404) {
+          throw err;
+        }
+      }
+    }
+
+    // Se todas as rotas /api/* retornaram 404 (ex.: hospedagem estática), tenta Firebase Storage
+    setProgressoEnvio('Salvando PDF na nuvem...');
+    const firebaseUrl = await tentarUploadFirebaseStorage(targetId, file);
+    if (firebaseUrl) {
+      return {
+        url: firebaseUrl,
+        nomeArquivo: file.name,
+        tamanhoBytes: file.size,
+      };
+    }
+
+    // Último recurso garantido: armazenamento local em IndexedDB no navegador
+    setProgressoEnvio('Salvando PDF localmente...');
+    const idbUrl = await salvarPdfIndexedDb(targetId, file);
+    if (idbUrl) {
+      return {
+        url: idbUrl,
+        nomeArquivo: file.name,
+        tamanhoBytes: file.size,
+      };
+    }
+
+    throw ultimoErro || new Error('Não foi possível salvar o PDF.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,7 +273,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       } = {};
 
       if (arquivoSelecionado) {
-        const json = await enviarPdfEmPartes(targetId, arquivoSelecionado);
+        const json = await enviarPdfComFallback(targetId, arquivoSelecionado);
         pdfMeta = {
           laudoAssinadoPdfUrl: json.url,
           laudoAssinadoPdfNome: json.nomeArquivo || arquivoSelecionado.name,
@@ -302,9 +354,13 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
     setSalvando(true);
     setErro(null);
     try {
+      await fetch(`/api/laudo-pdf-assinado?id=${encodeURIComponent(laudoExistente.id)}`, {
+        method: 'DELETE',
+      }).catch(() => {});
       await fetch(`/api/laudos/${encodeURIComponent(laudoExistente.id)}/pdf-assinado`, {
         method: 'DELETE',
       }).catch(() => {});
+      await removerPdfIndexedDb(laudoExistente.id);
 
       onAtualizarLaudoPdf(laudoExistente.id, {
         laudoAssinadoPdfUrl: null,
@@ -319,6 +375,39 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
     } finally {
       setSalvando(false);
     }
+  };
+
+  const handleDownloadExistente = async () => {
+    if (!laudoExistente?.laudoAssinadoPdfUrl) return;
+    const url = laudoExistente.laudoAssinadoPdfUrl;
+    const fileName = laudoExistente.laudoAssinadoPdfNome || `${laudoExistente.numero}-assinado.pdf`;
+    if (url.startsWith('idb://')) {
+      const { resolverUrlPdfVisualizacao } = await import('../../lib/pdfStorage');
+      try {
+        const resolved = await resolverUrlPdfVisualizacao(url, laudoExistente.id);
+        const a = document.createElement('a');
+        a.href = resolved.src;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(resolved.src), 1500);
+      } catch (err: any) {
+        setErro(err?.message || 'Não foi possível baixar o PDF local.');
+      }
+      return;
+    }
+    const downloadUrl = url.includes('/api/')
+      ? `${url}${url.includes('?') ? '&' : '?'}download=1&nome=${encodeURIComponent(fileName)}`
+      : url;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = fileName;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -497,16 +586,14 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
               </div>
 
               <div className="flex items-center gap-2">
-                <a
-                  href={`${laudoExistente.laudoAssinadoPdfUrl}?download=1&nome=${encodeURIComponent(
-                    laudoExistente.laudoAssinadoPdfNome || `${laudoExistente.numero}-assinado.pdf`
-                  )}`}
-                  download={laudoExistente.laudoAssinadoPdfNome || `${laudoExistente.numero}-assinado.pdf`}
-                  className="btn-tech sm text-xs py-1.5 px-2.5 inline-flex items-center gap-1"
+                <button
+                  type="button"
+                  onClick={handleDownloadExistente}
+                  className="btn-tech sm text-xs py-1.5 px-2.5 inline-flex items-center gap-1 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Baixar</span>
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={handleRemoverPdfExistente}

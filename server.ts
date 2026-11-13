@@ -359,9 +359,10 @@ app.get("/api/trabalhos-publicados/imagem/:filename", (req, res) => {
   }
 });
 
-app.post("/api/laudos/:id/pdf-assinado", (req, res) => {
+const handleUploadPdfAssinado = (req: express.Request, res: express.Response) => {
   try {
-    const safeId = sanitizeSafeId(req.params.id);
+    const rawId = req.params.id || req.body?.laudoId || req.query?.id || "";
+    const safeId = sanitizeSafeId(String(rawId));
     if (!safeId) {
       return res.status(400).json({ error: "Identificador do laudo inválido." });
     }
@@ -456,11 +457,12 @@ app.post("/api/laudos/:id/pdf-assinado", (req, res) => {
     console.error("Erro ao salvar PDF assinado do laudo:", err);
     return res.status(500).json({ error: err.message || "Falha ao salvar PDF assinado." });
   }
-});
+};
 
-app.get("/api/laudos/:id/pdf-assinado", (req, res) => {
+const handleGetPdfAssinado = (req: express.Request, res: express.Response) => {
   try {
-    const safeId = sanitizeSafeId(req.params.id);
+    const rawId = req.params.id || req.query?.id || "";
+    const safeId = sanitizeSafeId(String(rawId));
     if (!safeId) {
       return res.status(400).json({ error: "Identificador inválido." });
     }
@@ -476,11 +478,12 @@ app.get("/api/laudos/:id/pdf-assinado", (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
-});
+};
 
-app.delete("/api/laudos/:id/pdf-assinado", (req, res) => {
+const handleDeletePdfAssinado = (req: express.Request, res: express.Response) => {
   try {
-    const safeId = sanitizeSafeId(req.params.id);
+    const rawId = req.params.id || req.query?.id || req.body?.laudoId || "";
+    const safeId = sanitizeSafeId(String(rawId));
     if (!safeId) {
       return res.status(400).json({ error: "Identificador inválido." });
     }
@@ -492,7 +495,15 @@ app.delete("/api/laudos/:id/pdf-assinado", (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
-});
+};
+
+app.post("/api/laudo-pdf-assinado", handleUploadPdfAssinado);
+app.get("/api/laudo-pdf-assinado", handleGetPdfAssinado);
+app.delete("/api/laudo-pdf-assinado", handleDeletePdfAssinado);
+
+app.post("/api/laudos/:id/pdf-assinado", handleUploadPdfAssinado);
+app.get("/api/laudos/:id/pdf-assinado", handleGetPdfAssinado);
+app.delete("/api/laudos/:id/pdf-assinado", handleDeletePdfAssinado);
 
 // In-memory / server state fallback for AI usage
 let monthlyAICalls = 0;
