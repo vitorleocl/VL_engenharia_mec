@@ -1,0 +1,88 @@
+/*! VL Site Motion v1 — camada de movimento para vlengenhariamecanica.com.br
+   Não altera conteúdo, cores nem layout. Só anima o que já existe.
+   Regras: só opacity/translate/scale/transform; animações com fill "backwards"
+   (não travam hover); nada oculto sem a classe html.vlm (que o JS só põe se
+   o visitante aceita movimento). */
+
+:root{
+  --vm-e:cubic-bezier(.22,1,.36,1);
+  --vm-io:cubic-bezier(.65,0,.35,1);
+  --vm-d:640ms;
+}
+html{ scroll-behavior:smooth; scroll-padding-top:84px }
+
+/* ---------- 1. Entrada no scroll (uma vez) ---------- */
+html.vlm [data-vr]:not([data-in]):not([data-vr="holder"]){ opacity:0 }
+html.vlm [data-vr][data-in]:not([data-vr="holder"]){ animation:vm-up var(--vm-d) var(--vm-e) var(--vd,0ms) backwards }
+html.vlm [data-vr="left"][data-in]{ animation-name:vm-left }
+html.vlm [data-vr="right"][data-in]{ animation-name:vm-right }
+html.vlm [data-vr="scale"][data-in]{ animation-name:vm-scale; animation-duration:900ms }
+html.vlm [data-vr="title"][data-in]{ animation-name:vm-title; animation-duration:900ms }
+html.vlm [data-vr="fade"][data-in]{ animation-name:vm-fade }
+html.vlm [data-vr="pop"][data-in]{ animation-name:vm-pop; animation-duration:560ms }
+@keyframes vm-up{ from{ opacity:0; translate:0 18px } }
+@keyframes vm-left{ from{ opacity:0; translate:-24px 0 } }
+@keyframes vm-right{ from{ opacity:0; translate:24px 0 } }
+@keyframes vm-scale{ from{ opacity:0; scale:.96; translate:0 16px } }
+@keyframes vm-title{ from{ opacity:0; translate:0 28px } }
+@keyframes vm-fade{ from{ opacity:0 } }
+@keyframes vm-pop{ 0%{ opacity:0; scale:.55 } 60%{ scale:1.12 } 100%{ opacity:1; scale:1 } }
+
+/* estrelas das avaliações */
+html.vlm .stars:not([data-in]) svg{ opacity:0 }
+html.vlm .stars[data-in] svg{ animation:vm-pop 520ms var(--vm-e) backwards }
+html.vlm .stars[data-in] svg:nth-child(1){ animation-delay:250ms }
+html.vlm .stars[data-in] svg:nth-child(2){ animation-delay:330ms }
+html.vlm .stars[data-in] svg:nth-child(3){ animation-delay:410ms }
+html.vlm .stars[data-in] svg:nth-child(4){ animation-delay:490ms }
+html.vlm .stars[data-in] svg:nth-child(5){ animation-delay:570ms }
+.big{ font-variant-numeric:tabular-nums }
+
+/* ---------- 2. Cabeçalho, progresso, menu ---------- */
+header.top{ transition:box-shadow 280ms var(--vm-e) }
+header.top[data-stuck]{ box-shadow:0 10px 30px -22px rgba(11,31,58,.55) }
+html.dark header.top[data-stuck]{ box-shadow:0 10px 30px -22px rgba(0,0,0,.9) }
+.vm-progress{ position:fixed; left:0; right:0; top:0; height:2px; z-index:60; background:var(--blue,#1E5BD8); transform:scaleX(var(--p,0)); transform-origin:0 50%; pointer-events:none }
+.vm-ind{ position:fixed; left:0; top:0; width:1px; height:2px; z-index:45; background:var(--blue,#1E5BD8); transform-origin:0 50%; opacity:0; pointer-events:none;
+  transition:transform 320ms var(--vm-e), opacity 200ms linear }
+.vm-ind[data-on]{ opacity:1 }
+html nav.main button[data-active]{ color:var(--ink,#0B1F3A) }
+
+/* ---------- 3. Toque e passar o mouse (sem tirar nada do que já existe) ---------- */
+.btn-tech{ transition:translate 220ms var(--vm-e), scale 140ms var(--vm-e), background-color 220ms var(--vm-e), border-color 220ms var(--vm-e), color 220ms var(--vm-e), box-shadow 220ms var(--vm-e) }
+.btn-tech:active{ scale:.97 }
+@media (hover:hover){ .btn-tech:hover{ translate:0 -1px } }
+.wk{ transition:translate 280ms var(--vm-e), box-shadow 280ms var(--vm-e), border-color 280ms var(--vm-e) }
+@media (hover:hover){ .wk:hover{ translate:0 -4px; box-shadow:0 20px 40px -26px rgba(11,31,58,.5) } }
+.wph{ overflow:hidden }
+.wph img{ transition:transform 800ms var(--vm-e)!important }
+:focus-visible{ outline:2px solid var(--blue,#1E5BD8); outline-offset:3px }
+input,select,textarea{ transition:border-color 220ms var(--vm-e), box-shadow 220ms var(--vm-e) }
+input:focus,select:focus,textarea:focus{ box-shadow:0 0 0 3px color-mix(in srgb,var(--blue,#1E5BD8) 18%,transparent) }
+
+/* ---------- 4. Acordeões: o conteúdo aparece junto com a abertura ---------- */
+div[style*="grid-template-rows: 1fr"]>.overflow-hidden>*{ animation:vm-up 380ms var(--vm-e) 60ms backwards }
+
+/* ---------- 5. WhatsApp flutuante ---------- */
+html.vlm .wa-fab{ animation:vm-pop 700ms var(--vm-e) 1200ms backwards }
+
+/* ---------- 6. Troca de página (rotas internas) ---------- */
+main[data-enter]{ animation:vm-up 460ms var(--vm-e) backwards }
+@view-transition{ navigation:auto }
+::view-transition-old(root){ animation:vm-out 160ms var(--vm-io) both }
+::view-transition-new(root){ animation:vm-in 380ms var(--vm-e) 60ms both }
+@keyframes vm-out{ to{ opacity:0 } }
+@keyframes vm-in{ from{ opacity:0 } }
+
+/* ---------- 7. Troca de tema: fusão de cores ---------- */
+html.vm-theming *,html.vm-theming *::before,html.vm-theming *::after{
+  transition:background-color 380ms var(--vm-io), color 380ms var(--vm-io), border-color 380ms var(--vm-io), fill 380ms var(--vm-io), stroke 380ms var(--vm-io), box-shadow 380ms var(--vm-io)!important;
+}
+
+/* ---------- 8. Movimento reduzido ---------- */
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto }
+  *,*::before,*::after{ animation:none!important; transition-duration:.01ms!important }
+  @view-transition{ navigation:none }
+  html.vlm [data-vr]:not([data-in]){ opacity:1 }
+}

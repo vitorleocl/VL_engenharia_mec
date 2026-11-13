@@ -438,7 +438,7 @@ export const LandingPage: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {work.badge && (
-                  <span className="absolute top-2.5 left-2.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                  <span className="absolute top-2.5 left-2.5 z-10 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
                     {work.badge}
                   </span>
@@ -475,7 +475,7 @@ export const LandingPage: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {work.badge && (
-                  <span className="absolute top-2.5 left-2.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                  <span className="absolute top-2.5 left-2.5 z-10 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
                     {work.badge}
                   </span>
@@ -517,7 +517,7 @@ export const LandingPage: React.FC = () => {
                 className="w-full h-full object-cover"
               />
               {modalTrabalho.item.badge && (
-                <span className="absolute top-3.5 left-3.5 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[12px] font-bold px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-md">
+                <span className="absolute top-3.5 left-3.5 z-10 bg-[rgba(5,14,28,0.85)] text-[#3DD27A] backdrop-blur-xs text-[12px] font-bold px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] inline-block"></span>
                   {modalTrabalho.item.badge}
                 </span>
