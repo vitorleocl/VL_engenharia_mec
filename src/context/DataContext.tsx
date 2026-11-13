@@ -31,16 +31,9 @@ import {
   resolveConflictInStore,
 } from '../lib/offlineChecklistStore';
 import { 
-  CLIENTES_INICIAIS, 
-  ATIVOS_INICIAIS, 
-  ORCAMENTOS_INICIAIS, 
-  AGENDA_INICIAL, 
-  LAUDOS_INICIAIS, 
   TEMPLATES_INICIAIS,
-  CHECKLISTS_CAMPO_INICIAIS,
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
-import { LAUDO_DUSTER_COMPLETO } from '../data/laudoDusterCompleto';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
@@ -181,6 +174,68 @@ function saveStorage<T>(key: string, data: T) {
   }
 }
 
+const FICTITIOUS_IDS = {
+  clientes: new Set(['cli-01', 'cli-02', 'cli-03']),
+  ativos: new Set(['atv-01', 'atv-02', 'atv-03', 'atv-pgx7098']),
+  orcamentos: new Set(['orc-01', 'orc-02', 'orc-03', 'orc-2026-002', 'orc-adf-pgx7098', 'orc-1789155592909']),
+  laudos: new Set(['lau-2025-045', 'lau-2026-003', 'lau-2026-001']),
+  checklistsCampo: new Set(['chk-01', 'chk-02']),
+  agenda: new Set(['ag-01', 'ag-02']),
+  usuarios: new Set(['usr-colab-1', 'usr-cli-1']),
+  logs: new Set(['log-01']),
+  contatos: new Set(['cnt-01']),
+};
+
+function getTimestampMs(item: any): number {
+  const raw = item?.atualizadoEm || item?.criadoEm || 0;
+  const t = new Date(raw).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function addTombstone(storageKey: string, id: string): string[] {
+  const current: string[] = loadStorage(storageKey, []);
+  const next = Array.from(new Set([...current, id]));
+  saveStorage(storageKey, next);
+  return next;
+}
+
+function mesclarColecaoPorId<T extends Record<string, any>>(
+  locais: T[],
+  remotos: T[],
+  removidosSet: Set<string>,
+  fictitiousSet: Set<string>,
+  idField: 'id' | 'uid' = 'id',
+  preferRemoteOnTie = false
+): T[] {
+  const map = new Map<string, T>();
+
+  if (Array.isArray(locais)) {
+    for (const item of locais) {
+      const id = item?.[idField];
+      if (!id || removidosSet.has(id) || fictitiousSet.has(id)) continue;
+      map.set(id, item);
+    }
+  }
+
+  if (Array.isArray(remotos)) {
+    for (const remote of remotos) {
+      const id = remote?.[idField];
+      if (!id || removidosSet.has(id) || fictitiousSet.has(id)) continue;
+      const local = map.get(id);
+      if (!local) {
+        map.set(id, remote);
+      } else {
+        const tLocal = getTimestampMs(local);
+        const tRemote = getTimestampMs(remote);
+        const remoteWins = preferRemoteOnTie ? tRemote >= tLocal : tRemote > tLocal;
+        map.set(id, remoteWins ? ({ ...local, ...remote } as T) : ({ ...remote, ...local } as T));
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 function normalizarChecklistsCampo(lista: ChecklistCampo[]): ChecklistCampo[] {
   if (!Array.isArray(lista)) return [];
   const porId = new Map<string, ChecklistCampo>();
@@ -236,15 +291,15 @@ function normalizarNumeroLaudoPadrao(numero?: string): string {
 function normalizarLaudoPadrao(l: Laudo, clientesLista: Cliente[]): Laudo {
   let atualizado = l;
   const numNorm = normalizarNumeroLaudoPadrao(l.numero);
-  const mudouNumero = numNorm && numNorm !== l.numero;
+  const mudouNumero = Boolean(numNorm && numNorm !== l.numero);
 
   const nomeTrim = (l.clienteNome || '').trim();
   const nomeGenerico = !nomeTrim || /^cliente(\s+contratante|\s+corporativo)?$/i.test(nomeTrim);
-  const clienteIdAlvo = l.clienteId || (l.id === 'lau-2026-001' ? 'cli-adf' : '');
-  const clienteRef = clientesLista.find(c => c.id === clienteIdAlvo) ||
-    (l.id === 'lau-2026-001' ? clientesLista.find(c => c.id === 'cli-adf') : undefined);
+  const clienteRef = l.clienteId ? clientesLista.find(c => c.id === l.clienteId) : undefined;
+  const ativoIdCorrigido = l.ativoId === 'atv-pgx7098' ? 'atv-1790444362907' : l.ativoId;
+  const mudouAtivo = ativoIdCorrigido !== l.ativoId;
 
-  if (mudouNumero || nomeGenerico || (l.id === 'lau-2026-001' && !l.clienteId)) {
+  if (mudouNumero || nomeGenerico || mudouAtivo) {
     const secoesAtualizadas = mudouNumero && Array.isArray(l.secoes)
       ? l.secoes.map(sec =>
           sec.conteudoHtml && sec.conteudoHtml.includes('LAU-2026/002')
@@ -256,9 +311,10 @@ function normalizarLaudoPadrao(l: Laudo, clientesLista: Cliente[]): Laudo {
     atualizado = {
       ...l,
       numero: numNorm || l.numero,
-      clienteId: clienteRef?.id || clienteIdAlvo || l.clienteId,
+      ativoId: ativoIdCorrigido,
+      clienteId: clienteRef?.id || l.clienteId,
       clienteNome: nomeGenerico
-        ? (clienteRef?.nomeFantasia || clienteRef?.razaoSocial || (l.id === 'lau-2026-001' ? 'Adf Auto Pecas LTDA' : l.clienteNome))
+        ? (clienteRef?.nomeFantasia || clienteRef?.razaoSocial || l.clienteNome)
         : l.clienteNome,
       secoes: secoesAtualizadas,
     };
@@ -270,83 +326,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { currentUser, firebaseUser, isOnline } = useAuth();
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
-    let loaded = loadStorage('vl_clientes', CLIENTES_INICIAIS);
-    // Remove resquício de teste artificial apenas se presente
-    loaded = loaded.map(c => {
-      if (c.razaoSocial.includes('ADF Comércio e Serviços')) {
-        return {
-          ...c,
-          id: 'cli-adf',
-          razaoSocial: 'ADF',
-          nomeFantasia: 'ADF',
-        };
-      }
-      return c;
-    });
-    const temAdf = loaded.some((c: Cliente) => c.id === 'cli-adf');
-    if (!temAdf) {
-      const cliAdf = CLIENTES_INICIAIS.find(c => c.id === 'cli-adf');
-      if (cliAdf) {
-        const atualizados = [cliAdf, ...loaded];
-        saveStorage('vl_clientes', atualizados);
-        return atualizados;
-      }
+    const removidosSet = new Set<string>(loadStorage('vl_clientes_removidos_ids', []));
+    const loaded: Cliente[] = loadStorage('vl_clientes', []);
+    const limpos = (Array.isArray(loaded) ? loaded : []).filter(
+      c => c?.id && !removidosSet.has(c.id) && !FICTITIOUS_IDS.clientes.has(c.id)
+    );
+    if (limpos.length !== loaded.length) {
+      saveStorage('vl_clientes', limpos);
     }
-    return loaded;
+    return limpos;
   });
 
   const [ativos, setAtivos] = useState<Ativo[]>(() => {
-    let loaded = loadStorage('vl_ativos', ATIVOS_INICIAIS);
-    loaded = loaded.map(a => {
-      if (a.id === 'atv-pgx7098' || a.identificacao?.includes('9708') || a.placa === 'PGX-9708') {
-        return {
-          ...a,
-          proprietario: 'Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)',
-        };
-      }
-      if (a.clienteNome?.includes('ADF Comércio')) {
-        return {
-          ...a,
-          clienteNome: 'ADF',
-        };
-      }
-      return a;
-    });
-    const temPgx = loaded.some((a: Ativo) => a.id === 'atv-pgx7098');
-    if (!temPgx) {
-      const atvPgx = ATIVOS_INICIAIS.find(a => a.id === 'atv-pgx7098');
-      if (atvPgx) {
-        const atualizados = [atvPgx, ...loaded];
-        saveStorage('vl_ativos', atualizados);
-        return atualizados;
-      }
+    const removidosSet = new Set<string>(loadStorage('vl_ativos_removidos_ids', []));
+    const loaded: Ativo[] = loadStorage('vl_ativos', []);
+    const limpos = (Array.isArray(loaded) ? loaded : []).filter(
+      a => a?.id && !removidosSet.has(a.id) && !FICTITIOUS_IDS.ativos.has(a.id)
+    );
+    if (limpos.length !== loaded.length) {
+      saveStorage('vl_ativos', limpos);
     }
-    return loaded;
+    return limpos;
   });
 
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => {
-    const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
-    const removidosSet = new Set(removidos);
-    let loaded: Orcamento[] = loadStorage('vl_orcamentos', ORCAMENTOS_INICIAIS);
-    let alterouStorage = false;
-
-    // Remover qualquer orc-adf-pgx7098 e garantir o orc-1790444416499 real
-    if (loaded.some(o => o.id === 'orc-adf-pgx7098')) {
-      loaded = loaded.filter(o => o.id !== 'orc-adf-pgx7098');
-      alterouStorage = true;
-    }
-
-    const temOrcAdf = loaded.some((o: Orcamento) => o.id === 'orc-1790444416499');
-    if (!temOrcAdf && !removidosSet.has('orc-1790444416499')) {
-      const orcAdf = ORCAMENTOS_INICIAIS.find(o => o.id === 'orc-1790444416499');
-      if (orcAdf) {
-        loaded.unshift(orcAdf);
-        alterouStorage = true;
-      }
-    }
-
-    // Filtrar removidos
-    loaded = loaded.filter(o => !removidosSet.has(o.id));
+    const removidosSet = new Set<string>(loadStorage('vl_orcamentos_removidos_ids', []));
+    let loaded: Orcamento[] = loadStorage('vl_orcamentos', []);
+    const antesLen = Array.isArray(loaded) ? loaded.length : 0;
+    loaded = (Array.isArray(loaded) ? loaded : []).filter(
+      o => o?.id && !removidosSet.has(o.id) && !FICTITIOUS_IDS.orcamentos.has(o.id)
+    );
+    let alterouStorage = loaded.length !== antesLen;
 
     const migrados = loaded.map((orc: Orcamento) => {
       let orcAtualizado = { ...orc };
@@ -642,79 +652,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return migrados;
   });
-  const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => loadStorage('vl_agenda', AGENDA_INICIAL));
+  const [agenda, setAgenda] = useState<AgendaVistoria[]>(() => {
+    const removidosSet = new Set<string>(loadStorage('vl_agenda_removidos_ids', []));
+    const loaded: AgendaVistoria[] = loadStorage('vl_agenda', []);
+    const limpos = (Array.isArray(loaded) ? loaded : []).filter(
+      a => a?.id && !removidosSet.has(a.id) && !FICTITIOUS_IDS.agenda.has(a.id)
+    );
+    if (limpos.length !== loaded.length) saveStorage('vl_agenda', limpos);
+    return limpos;
+  });
+
   const [laudos, setLaudos] = useState<Laudo[]>(() => {
-    const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-    const removidosSet = new Set(removidos);
-    let loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
-    let alterouStorage = false;
+    const removidosSet = new Set<string>(loadStorage('vl_laudos_removidos_ids', []));
+    let loaded: Laudo[] = loadStorage('vl_laudos', []);
+    const antesLen = Array.isArray(loaded) ? loaded.length : 0;
+    loaded = (Array.isArray(loaded) ? loaded : []).filter(
+      l => l?.id && !removidosSet.has(l.id) && !FICTITIOUS_IDS.laudos.has(l.id)
+    );
+    let alterouStorage = loaded.length !== antesLen;
 
-    // Garantir que todos os laudos padrão de LAUDOS_INICIAIS (especialmente LAR-2026-002 Duster) estejam presentes
-    for (const laudoPadrao of LAUDOS_INICIAIS) {
-      const idxExistente = loaded.findIndex((l: Laudo) => l.id === laudoPadrao.id || normalizarNumeroLaudoPadrao(l.numero) === normalizarNumeroLaudoPadrao(laudoPadrao.numero));
-      if (idxExistente === -1 && !removidosSet.has(laudoPadrao.id)) {
-        loaded.unshift(laudoPadrao);
-        alterouStorage = true;
-      } else if (idxExistente >= 0) {
-        const lAtual = loaded[idxExistente];
-        if (laudoPadrao.id === 'lau-2026-002-duster') {
-          // Garante a versão completa restaurada com capa, registros fotográficos reais (7 fotos), diagrama e ART
-          if (!lAtual.capaFotoUrl || !lAtual.artArquivoUrl || (lAtual.anexosFotos?.length || 0) < 7 || (lAtual.secoes?.[7]?.fotos?.length || 0) < 7 || (lAtual.secoes?.length || 0) < 12 || lAtual.numero === 'LAU-2026/002') {
-            loaded[idxExistente] = {
-              ...LAUDO_DUSTER_COMPLETO,
-              orcamentoOrigemId: lAtual.orcamentoOrigemId || 'orc-1790444416499',
-              orcamentoNumero: lAtual.orcamentoNumero || 'PROP-1790444416499',
-            };
-            alterouStorage = true;
-          }
-        }
-        if (laudoPadrao.orcamentoOrigemId && (!lAtual.orcamentoOrigemId || lAtual.orcamentoOrigemId !== laudoPadrao.orcamentoOrigemId)) {
-          loaded[idxExistente] = {
-            ...loaded[idxExistente],
-            orcamentoOrigemId: laudoPadrao.orcamentoOrigemId,
-            orcamentoNumero: laudoPadrao.orcamentoNumero || loaded[idxExistente].orcamentoNumero || 'PROP-1790444416499',
-          };
-          alterouStorage = true;
-        }
-      }
-    }
-
-    // Sanitiza seções de Dados do Veículo e normaliza códigos e nomes de clientes
     loaded = loaded.map((l: Laudo) => {
       const norm = normalizarLaudoPadrao(l, clientes);
       if (norm !== l) alterouStorage = true;
-      let mod = false;
-      const novasSecoes = (norm.secoes || []).map(sec => {
-        if (sec.conteudoHtml && /propriet[aá]rio/i.test(sec.conteudoHtml) && /adf\s*auto|adf\s*caruaru|adf\s*com[eé]rcio/i.test(sec.conteudoHtml)) {
-          const corrigido = sec.conteudoHtml.replace(
-            /(<td[^>]*>Propriet[aá]rio:?<\/td>\s*<td[^>]*>)([^<]*Adf[^<]*)(<\/td>)/gi,
-            '$1Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)$3'
-          );
-          if (corrigido !== sec.conteudoHtml) {
-            mod = true;
-            return { ...sec, conteudoHtml: corrigido };
-          }
-        }
-        return sec;
-      });
-
-      if (mod) {
-        alterouStorage = true;
-        return { ...norm, secoes: novasSecoes };
-      }
       return norm;
     });
 
     if (alterouStorage) {
       saveStorage('vl_laudos', loaded);
     }
-
-    return loaded.filter(l => !removidosSet.has(l.id));
+    return loaded;
   });
+
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
-  const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() =>
-    normalizarChecklistsCampo(loadStorage('vl_checklists_campo', CHECKLISTS_CAMPO_INICIAIS))
-  );
+  const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => {
+    const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+    const loaded: ChecklistCampo[] = loadStorage('vl_checklists_campo', []);
+    const limpos = normalizarChecklistsCampo(loaded).filter(
+      c => c?.id && !removidosSet.has(c.id) && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
+    );
+    if (limpos.length !== loaded.length) saveStorage('vl_checklists_campo', limpos);
+    return limpos;
+  });
   const [checklistModelos, setChecklistModelos] = useState<ChecklistModeloServico[]>(() =>
     loadStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO)
   );
@@ -749,73 +727,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return cat;
     });
   });
-  const defaultLogs: LogAuditoria[] = [
-    {
-      id: 'log-01',
-      colecaoAfetada: 'laudos',
-      documentoId: 'lau-2026-003',
-      acao: 'finalizar',
-      usuarioUid: 'master-vitor',
-      usuarioNome: 'Eng. Vitor Leonardo',
-      usuarioEmail: 'vlengenhariamec@gmail.com',
-      timestamp: '2026-02-20T18:00:00Z',
-      detalhes: 'Laudo LAR-2026-003 concluído e ART PE2026-0104882 vinculada.'
-    }
-  ];
   const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => {
-    const loaded: LogAuditoria[] = loadStorage('vl_logs', defaultLogs);
-    return loaded.map((l) => l.usuarioEmail === 'vitorleonardocl@gmail.com' ? { ...l, usuarioEmail: 'vlengenhariamec@gmail.com' } : l);
+    const loaded: LogAuditoria[] = loadStorage('vl_logs', []);
+    return (Array.isArray(loaded) ? loaded : [])
+      .filter(l => l?.id && !FICTITIOUS_IDS.logs.has(l.id))
+      .map((l) => l.usuarioEmail === 'vitorleonardocl@gmail.com' ? { ...l, usuarioEmail: 'vlengenhariamec@gmail.com' } : l);
   });
-  const [contatos, setContatos] = useState<ContatoFormulario[]>(() => loadStorage('vl_contatos', [
-    {
-      id: 'cnt-01',
-      nome: 'Juliana Mendes',
-      email: 'juliana.mendes@agroindustria.com.br',
-      telefone: '(81) 98877-3344',
-      servicoInteresse: 'Adequação à NR-12',
-      mensagem: 'Precisamos de orçamento urgente para laudo NR-12 em 6 esteiras transportadoras e caldeira industrial.',
-      criadoEm: '2026-09-06T15:20:00Z',
-      respondido: false,
-    }
-  ]));
-  const defaultUsuarios: Usuario[] = [
-    {
-      uid: 'master-vitor-leonardo',
-      nome: 'Eng. Vitor Leonardo',
-      email: 'vitorleonardocl@gmail.com',
-      role: 'master',
-      cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
-      crea: '1822299490',
-      ativo: true,
-      criadoEm: '2025-01-01T00:00:00Z',
-    },
-    {
-      uid: 'usr-colab-1',
-      nome: 'Lucas Silveira',
-      email: 'lucas.inspetor@vlengenharia.com',
-      role: 'colaborador',
-      cargo: 'Técnico em Mecânica / Inspetor',
-      ativo: true,
-      criadoEm: '2026-01-10T10:00:00Z',
-    },
-    {
-      uid: 'usr-cli-1',
-      nome: 'Carlos Eduardo (Suape Eng.)',
-      email: 'carlos@suapeeng.com.br',
-      role: 'cliente',
-      clienteId: 'cli-01',
-      cargo: 'Gerente de Manutenção',
-      ativo: true,
-      criadoEm: '2026-01-15T11:00:00Z',
-    }
-  ];
+
+  const [contatos, setContatos] = useState<ContatoFormulario[]>(() => {
+    const loaded: ContatoFormulario[] = loadStorage('vl_contatos', []);
+    return (Array.isArray(loaded) ? loaded : []).filter(c => c?.id && !FICTITIOUS_IDS.contatos.has(c.id));
+  });
+
+  const masterVitor: Usuario = {
+    uid: 'master-vitor-leonardo',
+    nome: 'Eng. Vitor Leonardo',
+    email: 'vitorleonardocl@gmail.com',
+    role: 'master',
+    cargo: 'Responsável Técnico / Fundador (CREA-PE 1822299490)',
+    crea: '1822299490',
+    ativo: true,
+    criadoEm: '2025-01-01T00:00:00Z',
+  };
+
   const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
-    const loaded: Usuario[] = loadStorage('vl_usuarios', defaultUsuarios);
-    const temMaster = loaded.some(u => u.email.toLowerCase() === 'vitorleonardocl@gmail.com');
-    if (!temMaster) {
-      return [defaultUsuarios[0], ...loaded];
+    const removidosSet = new Set<string>(loadStorage('vl_usuarios_removidos_ids', []));
+    const loaded: Usuario[] = loadStorage('vl_usuarios', [masterVitor]);
+    const limpos = (Array.isArray(loaded) ? loaded : []).filter(
+      u => u?.uid && !removidosSet.has(u.uid) && !FICTITIOUS_IDS.usuarios.has(u.uid)
+    );
+    const temMaster = limpos.some(u => u.email?.toLowerCase() === 'vitorleonardocl@gmail.com');
+    const resultado = !temMaster
+      ? [masterVitor, ...limpos]
+      : limpos.map(u => u.email?.toLowerCase() === 'vitorleonardocl@gmail.com' ? { ...u, role: 'master' as const, ativo: true } : u);
+    if (resultado.length !== loaded.length) {
+      saveStorage('vl_usuarios', resultado);
     }
-    return loaded.map(u => u.email.toLowerCase() === 'vitorleonardocl@gmail.com' ? { ...u, role: 'master' as const, ativo: true } : u);
+    return resultado;
   });
 
   const [solicitacoesAcesso, setSolicitacoesAcesso] = useState<SolicitacaoAcesso[]>(() => {
@@ -824,14 +772,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [usoIA, setUsoIA] = useState<UsoIAMetricas>(() => {
     const defaultData: UsoIAMetricas = {
-      totalChamadas: 18,
+      totalChamadas: 0,
       limiteMensal: 500,
       mesAno: new Date().toISOString().slice(0, 7),
       mesReferencia: 'Setembro/2026',
-      custoEstimadoUSD: 0.05,
+      custoEstimadoUSD: 0,
     };
     const loaded = loadStorage('vl_uso_ia', defaultData);
-    const chamadas = loaded?.totalChamadas ?? defaultData.totalChamadas;
+    const chamadas = loaded?.totalChamadas ?? 0;
     return {
       ...defaultData,
       ...loaded,
@@ -862,7 +810,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
 
   const isHydratedRef = useRef(false);
-  const dusterSyncAttemptedRef = useRef(false);
 
   const salvarServidorDireto = useCallback((parcial: { 
     clientes?: Cliente[]; 
@@ -872,8 +819,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checklistsCampo?: ChecklistCampo[];
     agenda?: AgendaVistoria[];
     usuarios?: Usuario[];
+    clientesRemovidosIds?: string[];
+    ativosRemovidosIds?: string[];
     orcamentosRemovidosIds?: string[];
     laudosRemovidosIds?: string[];
+    checklistsRemovidosIds?: string[];
+    agendaRemovidosIds?: string[];
+    usuariosRemovidosIds?: string[];
   }) => {
     fetch('/api/app-data', {
       method: 'POST',
@@ -892,56 +844,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let cancelado = false;
 
-    // Test connection to Firestore
-    getDocFromServer(doc(db, 'test', 'connection')).catch(error => {
-      if (error instanceof Error && error.message.includes('the client is offline')) {
-        console.warn('Firestore offline fallback:', error);
-      }
-    });
-
     const initAndListenFirestore = async () => {
-      try {
-        // Se a nuvem estiver vazia, faz o seed inicial dos dados canônicos uma única vez
-        const clientesSnap = await getDocs(collection(db, 'clientes'));
-        if (clientesSnap.empty && !cancelado && !isFirestoreWriteQuotaBlocked()) {
-          console.log('[Firestore] Inicializando coleções na nuvem com dados canônicos...');
-          const seedEntries: Array<{ col: string; id: string; data: unknown }> = [
-            ...clientes.map(c => ({ col: 'clientes', id: c.id, data: c })),
-            ...ativos.map(a => ({ col: 'ativos', id: a.id, data: a })),
-            ...laudos.map(l => ({ col: 'laudos', id: l.id, data: l })),
-            ...orcamentos.map(o => ({ col: 'orcamentos', id: o.id, data: o })),
-            ...checklistsCampo.map(ck => ({ col: 'checklistsCampo', id: ck.id, data: ck })),
-            ...agenda.map(ag => ({ col: 'agendaVistorias', id: ag.id, data: ag })),
-            ...usuarios.map(u => ({ col: 'usuarios', id: u.uid, data: u })),
-          ];
-          for (const entry of seedEntries) {
-            if (cancelado || isFirestoreWriteQuotaBlocked()) break;
-            try {
-              await setDoc(doc(db, entry.col, entry.id), entry.data as Record<string, unknown>, { merge: true });
-            } catch (seedErr) {
-              if (isQuotaExceededError(seedErr)) {
-                markFirestoreWriteQuotaBlocked();
-                break;
-              }
-              throw seedErr;
-            }
-          }
-          console.log('[Firestore] Dados canônicos unificados na nuvem com sucesso!');
+      // Test connection to Firestore sem gravações automáticas
+      getDocFromServer(doc(db, 'test', 'connection')).catch(error => {
+        if (error instanceof Error && error.message.includes('the client is offline')) {
+          console.warn('Firestore offline fallback:', error);
         }
-      } catch (err) {
-        if (isQuotaExceededError(err)) {
-          markFirestoreWriteQuotaBlocked();
-        } else {
-          console.warn('[Firestore] Verificação inicial em modo tolerante:', err);
-        }
-      }
+      });
 
-      // Listeners em tempo real para sincronização instantânea entre múltiplos dispositivos
+      if (cancelado) return;
+
+      // Listeners em tempo real mesclando sem sobrescrever edições locais ou registros não sincronizados
       const unsubClientes = onSnapshot(collection(db, 'clientes'), (snapshot) => {
         if (!snapshot.empty) {
+          const removidosSet = new Set<string>(loadStorage('vl_clientes_removidos_ids', []));
           const docs = snapshot.docs.map(d => d.data() as Cliente);
-          setClientes(docs);
-          saveStorage('vl_clientes', docs);
+          setClientes(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.clientes, 'id');
+            saveStorage('vl_clientes', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'clientes');
@@ -949,9 +871,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubAtivos = onSnapshot(collection(db, 'ativos'), (snapshot) => {
         if (!snapshot.empty) {
+          const removidosSet = new Set<string>(loadStorage('vl_ativos_removidos_ids', []));
           const docs = snapshot.docs.map(d => d.data() as Ativo);
-          setAtivos(docs);
-          saveStorage('vl_ativos', docs);
+          setAtivos(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.ativos, 'id');
+            saveStorage('vl_ativos', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'ativos');
@@ -959,20 +885,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubOrcamentos = onSnapshot(collection(db, 'orcamentos'), (snapshot) => {
         if (!snapshot.empty) {
-          const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
-          const removidosSet = new Set(removidos);
-          const docs = snapshot.docs
-            .map(d => d.data() as Orcamento)
-            .filter(o => o.id !== 'orc-adf-pgx7098' && !removidosSet.has(o.id));
-          const docIds = new Set(docs.map(d => d.id));
-          const docsMerged = [...docs];
-          for (const padrao of ORCAMENTOS_INICIAIS) {
-            if (!docIds.has(padrao.id) && !removidosSet.has(padrao.id)) {
-              docsMerged.push(padrao);
-            }
-          }
-          setOrcamentos(docsMerged);
-          saveStorage('vl_orcamentos', docsMerged);
+          const removidosSet = new Set<string>(loadStorage('vl_orcamentos_removidos_ids', []));
+          const docs = snapshot.docs.map(d => d.data() as Orcamento);
+          setOrcamentos(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.orcamentos, 'id');
+            saveStorage('vl_orcamentos', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'orcamentos');
@@ -980,49 +899,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubLaudos = onSnapshot(collection(db, 'laudos'), (snapshot) => {
         if (!snapshot.empty) {
-          const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-          const removidosSet = new Set(laudosRemovidos);
-          const docs = snapshot.docs.map(d => d.data() as Laudo).filter(d => !removidosSet.has(d.id));
-
-          // Preserva sempre os laudos padrão canônicos (especialmente LAR-2026-002) se não estiverem no snapshot
-          const docIds = new Set(docs.map(d => d.id));
-          const docNums = new Set(docs.map(d => normalizarNumeroLaudoPadrao(d.numero)));
-          const docsMerged = docs.map(d => normalizarLaudoPadrao(d, clientes));
-
-          for (const padrao of LAUDOS_INICIAIS) {
-            if (!removidosSet.has(padrao.id) && !docIds.has(padrao.id) && !docNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
-              docsMerged.unshift(padrao);
-            }
-          }
-
-          // Garantir que o laudo do Duster tenha o orçamento vinculado e a versão canônica completa com fotos e ART
-          const dusterIdx = docsMerged.findIndex(l => l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002');
-          if (dusterIdx >= 0) {
-            const duster = docsMerged[dusterIdx];
-            if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12 || duster.numero === 'LAU-2026/002') {
-              const dusterCompleto: Laudo = {
-                ...LAUDO_DUSTER_COMPLETO,
-                orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',
-                orcamentoNumero: duster.orcamentoNumero || 'PROP-1790444416499'
-              };
-              docsMerged[dusterIdx] = dusterCompleto;
-              if (db && auth?.currentUser && !dusterSyncAttemptedRef.current && !isFirestoreWriteQuotaBlocked()) {
-                dusterSyncAttemptedRef.current = true;
-                setDoc(doc(db, 'laudos', 'lau-2026-002-duster'), dusterCompleto, { merge: true }).catch(err => {
-                  handleFirestoreError(err, OperationType.WRITE, 'laudos/lau-2026-002-duster');
-                });
-              }
-            } else if (!duster.orcamentoOrigemId) {
-              docsMerged[dusterIdx] = {
-                ...duster,
-                orcamentoOrigemId: 'orc-1790444416499',
-                orcamentoNumero: 'PROP-1790444416499'
-              };
-            }
-          }
-
-          setLaudos(docsMerged);
-          saveStorage('vl_laudos', docsMerged);
+          const removidosSet = new Set<string>(loadStorage('vl_laudos_removidos_ids', []));
+          const docs = snapshot.docs.map(d => normalizarLaudoPadrao(d.data() as Laudo, clientes));
+          setLaudos(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.laudos, 'id');
+            saveStorage('vl_laudos', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'laudos');
@@ -1030,9 +913,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
         if (!snapshot.empty) {
+          const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
           const docs = normalizarChecklistsCampo(snapshot.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
-          setChecklistsCampo(docs);
-          saveStorage('vl_checklists_campo', docs);
+          setChecklistsCampo(prev => {
+            const merged = normalizarChecklistsCampo(
+              mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
+            );
+            saveStorage('vl_checklists_campo', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'checklistsCampo');
@@ -1040,9 +929,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubAgenda = onSnapshot(collection(db, 'agendaVistorias'), (snapshot) => {
         if (!snapshot.empty) {
+          const removidosSet = new Set<string>(loadStorage('vl_agenda_removidos_ids', []));
           const docs = snapshot.docs.map(d => d.data() as AgendaVistoria);
-          setAgenda(docs);
-          saveStorage('vl_agenda', docs);
+          setAgenda(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.agenda, 'id');
+            saveStorage('vl_agenda', merged);
+            return merged;
+          });
         }
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'agendaVistorias');
@@ -1050,9 +943,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const unsubUsuarios = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
         if (!snapshot.empty) {
+          const removidosSet = new Set<string>(loadStorage('vl_usuarios_removidos_ids', []));
           const docs = snapshot.docs.map(d => d.data() as Usuario);
-          setUsuarios(docs);
-          saveStorage('vl_usuarios', docs);
+          setUsuarios(prev => {
+            const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.usuarios, 'uid');
+            saveStorage('vl_usuarios', merged);
+            return merged;
+          });
         }
       }, (error) => {
         console.warn('[Firestore] Erro listener usuarios:', error);
@@ -1083,7 +980,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [firebaseUser, currentUser?.role, currentUser?.uid]);
 
-  // Sincronização com persistência do servidor para evitar perda de dados entre URLs (ais-dev e ais-pre)
+  // Sincronização com persistência do servidor (/api/app-data)
   useEffect(() => {
     fetch('/api/app-data')
       .then(res => res.ok ? res.json() : null)
@@ -1093,151 +990,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        if (Array.isArray(data.clientes) && data.clientes.length > 0) {
+        const mergeRemovidos = (storageKey: string, serverIds?: unknown) => {
+          const localIds: string[] = loadStorage(storageKey, []);
+          const combined = Array.from(new Set([
+            ...(Array.isArray(localIds) ? localIds : []),
+            ...(Array.isArray(serverIds) ? serverIds : []),
+          ]));
+          if (combined.length > 0) saveStorage(storageKey, combined);
+          return new Set<string>(combined);
+        };
+
+        const cliRem = mergeRemovidos('vl_clientes_removidos_ids', data.clientesRemovidosIds);
+        const atvRem = mergeRemovidos('vl_ativos_removidos_ids', data.ativosRemovidosIds);
+        const orcRem = mergeRemovidos('vl_orcamentos_removidos_ids', data.orcamentosRemovidosIds);
+        const lauRem = mergeRemovidos('vl_laudos_removidos_ids', data.laudosRemovidosIds);
+        const chkRem = mergeRemovidos('vl_checklists_removidos_ids', data.checklistsRemovidosIds);
+        const agRem = mergeRemovidos('vl_agenda_removidos_ids', data.agendaRemovidosIds);
+        const usrRem = mergeRemovidos('vl_usuarios_removidos_ids', data.usuariosRemovidosIds);
+
+        if (Array.isArray(data.clientes)) {
           setClientes(prev => {
-            const serverMap = new Map<string, Cliente>(data.clientes.map((c: Cliente) => [c.id, c]));
-            const atualizados = prev.map(c => {
-              const fromServer = serverMap.get(c.id);
-              if (fromServer) {
-                return { ...c, ...fromServer };
-              }
-              return c;
-            });
-            const prevIds = new Set(prev.map(c => c.id));
-            const novos = data.clientes.filter((c: Cliente) => !prevIds.has(c.id));
-            const merged = [...novos, ...atualizados];
+            const merged = mesclarColecaoPorId(prev, data.clientes, cliRem, FICTITIOUS_IDS.clientes, 'id', true);
             saveStorage('vl_clientes', merged);
             return merged;
           });
         }
 
-        if (Array.isArray(data.ativos) && data.ativos.length > 0) {
+        if (Array.isArray(data.ativos)) {
           setAtivos(prev => {
-            const serverMap = new Map<string, Ativo>(data.ativos.map((a: Ativo) => [a.id, a]));
-            const atualizados = prev.map(a => {
-              const fromServer = serverMap.get(a.id);
-              if (fromServer) {
-                return { ...a, ...fromServer };
-              }
-              return a;
-            });
-            const prevIds = new Set(prev.map(a => a.id));
-            const novos = data.ativos.filter((a: Ativo) => !prevIds.has(a.id));
-            const merged = [...novos, ...atualizados];
+            const merged = mesclarColecaoPorId(prev, data.ativos, atvRem, FICTITIOUS_IDS.ativos, 'id', true);
             saveStorage('vl_ativos', merged);
             return merged;
           });
         }
 
-        const orcRemovidosLocal: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
-        const orcRemovidosSet = new Set([
-          ...orcRemovidosLocal,
-          ...(Array.isArray(data.orcamentosRemovidosIds) ? data.orcamentosRemovidosIds : [])
-        ]);
-
-        if (Array.isArray(data.orcamentos) && data.orcamentos.length > 0) {
+        if (Array.isArray(data.orcamentos)) {
           setOrcamentos(prev => {
-            const serverOrcamentos = data.orcamentos.filter((o: Orcamento) => o.id !== 'orc-adf-pgx7098' && !orcRemovidosSet.has(o.id));
-            const serverMap = new Map<string, Orcamento>(serverOrcamentos.map((o: Orcamento) => [o.id, o]));
-            const limpos = prev.filter(o => o.id !== 'orc-adf-pgx7098' && !orcRemovidosSet.has(o.id));
-            const atualizados = limpos.map(o => {
-              const fromServer = serverMap.get(o.id);
-              if (fromServer) {
-                // Preserva edições locais do usuário (como status e campos modificados recentemente)
-                return { ...fromServer, ...o };
-              }
-              return o;
-            });
-            const prevIds = new Set(limpos.map(o => o.id));
-            const novos = serverOrcamentos.filter((o: Orcamento) => !prevIds.has(o.id) && !orcRemovidosSet.has(o.id));
-            const merged = [...novos, ...atualizados].filter(o => !orcRemovidosSet.has(o.id));
+            const merged = mesclarColecaoPorId(prev, data.orcamentos, orcRem, FICTITIOUS_IDS.orcamentos, 'id', false);
             saveStorage('vl_orcamentos', merged);
             return merged;
           });
         }
 
-        const laudosRemovidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-        const removidosSet = new Set(laudosRemovidos);
-
-        if (Array.isArray(data.laudos) && data.laudos.length > 0) {
+        if (Array.isArray(data.laudos)) {
           setLaudos(prev => {
-            const limpos = prev.filter(l => !removidosSet.has(l.id));
-            const serverMap = new Map<string, Laudo>(data.laudos.filter((l: Laudo) => !removidosSet.has(l.id)).map((l: Laudo) => [l.id, l]));
-            const atualizados = limpos.map(l => {
-              if (l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002') {
-                const fromServer = serverMap.get(l.id);
-                return {
-                  ...LAUDO_DUSTER_COMPLETO,
-                  orcamentoOrigemId: l.orcamentoOrigemId || fromServer?.orcamentoOrigemId || 'orc-1790444416499',
-                  orcamentoNumero: l.orcamentoNumero || fromServer?.orcamentoNumero || 'PROP-1790444416499',
-                };
-              }
-              const fromServer = serverMap.get(l.id);
-              if (fromServer) {
-                return normalizarLaudoPadrao({ ...fromServer, ...l }, clientes);
-              }
-              return normalizarLaudoPadrao(l, clientes);
-            });
-            const prevIds = new Set(limpos.map(l => l.id));
-            const novos = data.laudos
-              .filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id))
-              .map((l: Laudo) => normalizarLaudoPadrao(l, clientes));
-            let merged = [...novos, ...atualizados];
-            const mergedIds = new Set(merged.map(m => m.id));
-            const mergedNums = new Set(merged.map(m => normalizarNumeroLaudoPadrao(m.numero)));
-            for (const padrao of LAUDOS_INICIAIS) {
-              if (!removidosSet.has(padrao.id) && !mergedIds.has(padrao.id) && !mergedNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
-                merged.unshift(padrao);
-              }
-            }
-            saveStorage('vl_laudos', merged);
-            return merged;
-          });
-        } else {
-          setLaudos(prev => {
-            const limpos = prev.filter(l => !removidosSet.has(l.id)).map(l => normalizarLaudoPadrao(l, clientes));
-            const limposIds = new Set(limpos.map(l => l.id));
-            const limposNums = new Set(limpos.map(l => normalizarNumeroLaudoPadrao(l.numero)));
-            const merged = [...limpos];
-            for (const padrao of LAUDOS_INICIAIS) {
-              if (!removidosSet.has(padrao.id) && !limposIds.has(padrao.id) && !limposNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
-                merged.unshift(padrao);
-              }
-            }
-            for (let i = 0; i < merged.length; i++) {
-              if (merged[i].id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(merged[i].numero) === 'LAR-2026-002') {
-                if (!merged[i].capaFotoUrl || (merged[i].anexosFotos?.length || 0) < 7 || (merged[i].secoes?.length || 0) < 12 || merged[i].numero === 'LAU-2026/002') {
-                  merged[i] = {
-                    ...LAUDO_DUSTER_COMPLETO,
-                    orcamentoOrigemId: merged[i].orcamentoOrigemId || 'orc-1790444416499',
-                    orcamentoNumero: merged[i].orcamentoNumero || 'PROP-1790444416499',
-                  };
-                }
-              }
-            }
+            const remotosNorm = data.laudos.map((l: Laudo) => normalizarLaudoPadrao(l, clientes));
+            const locaisNorm = prev.map(l => normalizarLaudoPadrao(l, clientes));
+            const merged = mesclarColecaoPorId(locaisNorm, remotosNorm, lauRem, FICTITIOUS_IDS.laudos, 'id', false);
             saveStorage('vl_laudos', merged);
             return merged;
           });
         }
 
-        if (Array.isArray(data.checklistsCampo) && data.checklistsCampo.length > 0) {
+        if (Array.isArray(data.checklistsCampo)) {
           setChecklistsCampo(prev => {
             const remotosNorm = normalizarChecklistsCampo(data.checklistsCampo);
             const locaisNorm = normalizarChecklistsCampo(prev);
-            const serverMap = new Map<string, ChecklistCampo>(
-              remotosNorm.map((c: ChecklistCampo) => [c.id, c])
+            const merged = normalizarChecklistsCampo(
+              mesclarColecaoPorId(locaisNorm, remotosNorm, chkRem, FICTITIOUS_IDS.checklistsCampo, 'id', false)
             );
-            const atualizados = locaisNorm.map(localChk => {
-              const remoteChk = serverMap.get(localChk.id);
-              if (!remoteChk) return localChk;
-              const localTime = new Date(localChk.atualizadoEm || localChk.criadoEm || 0).getTime();
-              const remoteTime = new Date(remoteChk.atualizadoEm || remoteChk.criadoEm || 0).getTime();
-              return localTime >= remoteTime ? localChk : remoteChk;
-            });
-            const prevIds = new Set(locaisNorm.map(c => c.id));
-            const novos = remotosNorm.filter((c: ChecklistCampo) => !prevIds.has(c.id));
-            const merged = normalizarChecklistsCampo([...novos, ...atualizados]);
             saveStorage('vl_checklists_campo', merged);
+            return merged;
+          });
+        }
+
+        if (Array.isArray(data.agenda)) {
+          setAgenda(prev => {
+            const merged = mesclarColecaoPorId(prev, data.agenda, agRem, FICTITIOUS_IDS.agenda, 'id', false);
+            saveStorage('vl_agenda', merged);
+            return merged;
+          });
+        }
+
+        if (Array.isArray(data.usuarios)) {
+          setUsuarios(prev => {
+            const merged = mesclarColecaoPorId(prev, data.usuarios, usrRem, FICTITIOUS_IDS.usuarios, 'uid', true);
+            saveStorage('vl_usuarios', merged);
             return merged;
           });
         }
@@ -1258,7 +1086,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetch('/api/app-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios })
+        body: JSON.stringify({
+          clientes,
+          ativos,
+          orcamentos,
+          laudos,
+          checklistsCampo,
+          agenda,
+          usuarios,
+          clientesRemovidosIds: loadStorage('vl_clientes_removidos_ids', []),
+          ativosRemovidosIds: loadStorage('vl_ativos_removidos_ids', []),
+          orcamentosRemovidosIds: loadStorage('vl_orcamentos_removidos_ids', []),
+          laudosRemovidosIds: loadStorage('vl_laudos_removidos_ids', []),
+          checklistsRemovidosIds: loadStorage('vl_checklists_removidos_ids', []),
+          agendaRemovidosIds: loadStorage('vl_agenda_removidos_ids', []),
+          usuariosRemovidosIds: loadStorage('vl_usuarios_removidos_ids', []),
+        })
       }).catch(e => {
         console.warn('[Sync Servidor] Aviso ao persistir dados:', e);
       });
@@ -1340,10 +1183,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarCliente = (id: string, dados: Partial<Cliente>) => {
+    const agora = new Date().toISOString();
     const cnpjUniforme = dados.cpfCnpj || dados.cnpj;
     const dadosTratados: Partial<Cliente> = {
       ...dados,
-      ...(cnpjUniforme ? { cpfCnpj: cnpjUniforme, cnpj: cnpjUniforme } : {})
+      ...(cnpjUniforme ? { cpfCnpj: cnpjUniforme, cnpj: cnpjUniforme } : {}),
+      atualizadoEm: agora,
     };
 
     setClientes(prev => {
@@ -1378,6 +1223,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const atualizados = prev.map(a => a.clienteId === id ? {
         ...a,
         clienteNome: dados.nomeFantasia || dados.razaoSocial || a.clienteNome,
+        atualizadoEm: agora,
       } : a);
       saveStorage('vl_ativos', atualizados);
       salvarServidorDireto({ ativos: atualizados });
@@ -1419,7 +1265,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           telefoneCliente: primContato?.telefone || o.telefoneCliente,
           emailCliente: primContato?.email || o.emailCliente,
           localidadeServico: loc,
-          secoes: novasSecoes || o.secoes
+          secoes: novasSecoes || o.secoes,
+          atualizadoEm: agora,
         };
       });
       saveStorage('vl_orcamentos', atualizados);
@@ -1439,6 +1286,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clienteContatoTelefone: primContato?.telefone || l.clienteContatoTelefone,
           clienteContatoEmail: primContato?.email || l.clienteContatoEmail,
           clienteEndereco: enderecoStr || l.clienteEndereco,
+          atualizadoEm: agora,
         };
       });
       saveStorage('vl_laudos', atualizados);
@@ -1450,10 +1298,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerCliente = (id: string) => {
+    const novosRemovidos = addTombstone('vl_clientes_removidos_ids', id);
     setClientes(prev => {
       const filtrados = prev.filter(c => c.id !== id);
       saveStorage('vl_clientes', filtrados);
-      salvarServidorDireto({ clientes: filtrados });
+      salvarServidorDireto({ clientes: filtrados, clientesRemovidosIds: novosRemovidos });
       return filtrados;
     });
 
@@ -1470,12 +1319,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adicionarAtivo = (dados: Omit<Ativo, 'id' | 'criadoEm' | 'historico'>): string => {
     const id = `atv-${Date.now()}`;
     const cliente = clientes.find(c => c.id === dados.clienteId);
+    const agora = new Date().toISOString();
     const novo: Ativo = {
       ...dados,
       id,
       clienteNome: cliente?.razaoSocial || dados.clienteNome,
       historico: [],
-      criadoEm: new Date().toISOString(),
+      criadoEm: agora,
+      atualizadoEm: agora,
     };
     setAtivos(prev => {
       const lista = [novo, ...prev];
@@ -1495,10 +1346,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarAtivo = (id: string, dados: Partial<Ativo>) => {
+    const agora = new Date().toISOString();
     const clienteRel = dados.clienteId ? clientes.find(c => c.id === dados.clienteId) : undefined;
-    const dadosAtualizados: Partial<Ativo> = clienteRel
-      ? { ...dados, clienteNome: clienteRel.nomeFantasia || clienteRel.razaoSocial }
-      : dados;
+    const dadosAtualizados: Partial<Ativo> = {
+      ...dados,
+      ...(clienteRel ? { clienteNome: clienteRel.nomeFantasia || clienteRel.razaoSocial } : {}),
+      atualizadoEm: agora,
+    };
 
     setAtivos(prev => {
       const atualizados = prev.map(a => a.id === id ? { ...a, ...dadosAtualizados } : a);
@@ -1517,10 +1371,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerAtivo = (id: string) => {
+    const novosRemovidos = addTombstone('vl_ativos_removidos_ids', id);
     setAtivos(prev => {
       const filtrados = prev.filter(a => a.id !== id);
       saveStorage('vl_ativos', filtrados);
-      salvarServidorDireto({ ativos: filtrados });
+      salvarServidorDireto({ ativos: filtrados, ativosRemovidosIds: novosRemovidos });
       return filtrados;
     });
 
@@ -1661,7 +1516,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // 5. Deleta do Firestore se disponível
-    if (db && !isFirestoreWriteQuotaBlocked()) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'orcamentos', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `orcamentos/${id}`);
       });
@@ -1758,10 +1613,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       atualizadoEm: new Date().toISOString(),
     };
 
-    setLaudos(prev => [novoLaudo, ...prev]);
+    setLaudos(prev => {
+      const lista = [novoLaudo, ...prev];
+      saveStorage('vl_laudos', lista);
+      salvarServidorDireto({ laudos: lista });
+      return lista;
+    });
+
+    const patchOrc = {
+      status: 'aprovado' as const,
+      laudoGeradoId: novoLaudoId,
+      laudoGeradoNumero: numero,
+      atualizadoEm: new Date().toISOString(),
+    };
 
     // Link budget to report
-    setOrcamentos(prev => prev.map(o => o.id === orcamentoId ? { ...o, status: 'aprovado', laudoGeradoId: novoLaudoId } : o));
+    setOrcamentos(prev => {
+      const lista = prev.map(o => o.id === orcamentoId ? { ...o, ...patchOrc } : o);
+      saveStorage('vl_orcamentos', lista);
+      salvarServidorDireto({ orcamentos: lista });
+      return lista;
+    });
+
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'laudos', novoLaudoId), novoLaudo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `laudos/${novoLaudoId}`);
+      });
+      setDoc(doc(db, 'orcamentos', orcamentoId), patchOrc, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${orcamentoId}`);
+      });
+    }
 
     registrarLog('laudos', novoLaudoId, 'criar', `Laudo ${numero} gerado a partir do orçamento ${orcamentoId}`);
     return novoLaudoId;
@@ -1861,19 +1742,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Agenda
   const adicionarVistoria = (dados: Omit<AgendaVistoria, 'id' | 'criadoEm'>): string => {
     const id = `ag-${Date.now()}`;
-    const novo: AgendaVistoria = { ...dados, id, criadoEm: new Date().toISOString() };
-    setAgenda(prev => [novo, ...prev]);
+    const agora = new Date().toISOString();
+    const novo: AgendaVistoria = { ...dados, id, criadoEm: agora };
+    setAgenda(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_agenda', lista);
+      salvarServidorDireto({ agenda: lista });
+      return lista;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'agendaVistorias', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `agendaVistorias/${id}`);
+      });
+    }
     registrarLog('agendaVistorias', id, 'criar', `Vistoria agendada para ${dados.dataHora}`);
     return id;
   };
 
   const atualizarStatusVistoria = (id: string, status: AgendaVistoria['status']) => {
-    setAgenda(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    setAgenda(prev => {
+      const lista = prev.map(a => a.id === id ? { ...a, status } : a);
+      saveStorage('vl_agenda', lista);
+      salvarServidorDireto({ agenda: lista });
+      return lista;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'agendaVistorias', id), { status }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `agendaVistorias/${id}`);
+      });
+    }
     registrarLog('agendaVistorias', id, 'editar', `Vistoria ${id} marcada como: ${status}`);
   };
 
   const removerVistoria = (id: string) => {
-    setAgenda(prev => prev.filter(a => a.id !== id));
+    const novosRemovidos = addTombstone('vl_agenda_removidos_ids', id);
+    setAgenda(prev => {
+      const filtrados = prev.filter(a => a.id !== id);
+      saveStorage('vl_agenda', filtrados);
+      salvarServidorDireto({ agenda: filtrados, agendaRemovidosIds: novosRemovidos });
+      return filtrados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      deleteDoc(doc(db, 'agendaVistorias', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `agendaVistorias/${id}`);
+      });
+    }
     registrarLog('agendaVistorias', id, 'excluir', `Vistoria removida: ${id}`);
   };
 
@@ -2006,22 +1919,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       secoes: ((tipoLaudoId === 'laudo-pericia-causa-raiz-automotiva' || prefixo === 'VEIC-CAUSA-RAIZ') && ehModoIA)
         ? gerarLaudoCausaRaizOffline({
             ativo: {
-              marca: ativo?.marca || 'Volkswagen',
-              modelo: ativo?.modelo || 'Gol 1.0 MPI Flex',
-              anoModelo: ativo?.anoFabricacao ? `${ativo.anoFabricacao}/${ativo.anoFabricacao}` : '2021/2022',
-              placa: ativo?.placa || 'PGX-7098',
-              renavam: ativo?.renavam || '01248920192',
-              chassi: ativo?.chassi || '9BWCA05U0NT001824',
-              kmAtual: ativo?.horimetroOuKm || 82450,
-              kmIntervencaoPrevia: 59800
+              marca: ativo?.marca || '',
+              modelo: ativo?.modelo || '',
+              anoModelo: ativo?.anoFabricacao ? `${ativo.anoFabricacao}/${ativo.anoFabricacao}` : '',
+              placa: ativo?.placa || '',
+              renavam: ativo?.renavam || '',
+              chassi: ativo?.chassi || '',
+              kmAtual: ativo?.horimetroOuKm || 0,
+              kmIntervencaoPrevia: 0
             },
             contexto: {
               dataPane: dataInspecao,
-              dataIntervencaoPrevia: '2025-11-10',
+              dataIntervencaoPrevia: '',
               historicoManutencao: 'Substituição preventiva do conjunto de correias e tensores do motor em oficina mecânica terceirizada credenciada',
-              oficinaTerceirizada: 'Auto Mecânica Terceirizada Frota Ltda',
+              oficinaTerceirizada: 'Oficina Mecânica Terceirizada',
               restricaoConfidencialidade: true,
-              kmIntervalo: 22650
+              kmIntervalo: 0
             },
             evidencias: {
               descricaoAvarias: 'Ruptura catastrófica da correia dentada sincronizadora com cisalhamento de dentes por fadiga de material. Empenamento severo de válvulas por interferência com pistões.',
@@ -2098,13 +2011,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       atualizadoEm: new Date().toISOString(),
     };
 
-    setLaudos(prev => [novo, ...prev]);
+    setLaudos(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_laudos', lista);
+      salvarServidorDireto({ laudos: lista });
+      return lista;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'laudos', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `laudos/${id}`);
+      });
+    }
     registrarLog('laudos', id, 'criar', `Novo laudo técnico criado via taxonomia: ${numero} (${tipoEncontrado?.nome})`);
     return id;
   };
 
   const criarNovoLaudo = (dados: Partial<Laudo> & { tipo: string; clienteId: string; ativoId: string }): string => {
-    const id = `lau-${Date.now()}`;
+    const id = dados.id || `lau-${Date.now()}`;
     const numero = dados.numero || gerarNumeroLaudo();
     const cliente = clientes.find(c => c.id === dados.clienteId);
     const ativo = ativos.find(a => a.id === dados.ativoId);
@@ -2147,48 +2070,63 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       conclusao: dados.conclusao || 'O equipamento cumpre as exigências fundamentais das normas de segurança vigentes.',
       secoes: dados.secoes || [],
       usoIA: dados.usoIA || { chamadas: 0 },
-      criadoEm: agora,
+      criadoEm: dados.criadoEm || agora,
       atualizadoEm: agora,
     };
 
-    setLaudos(prev => [novo, ...prev]);
+    setLaudos(prev => {
+      const lista = [novo, ...prev.filter(l => l.id !== id)];
+      saveStorage('vl_laudos', lista);
+      salvarServidorDireto({ laudos: lista });
+      return lista;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'laudos', id), novo).catch(err => {
+        handleFirestoreError(err, OperationType.CREATE, `laudos/${id}`);
+      });
+    }
     registrarLog('laudos', id, 'criar', `Novo laudo técnico criado: ${numero}`);
     return id;
   };
 
   const atualizarLaudo = (id: string, dados: Partial<Laudo>) => {
+    const agora = new Date().toISOString();
+    const patch = { ...dados, atualizadoEm: agora };
     setLaudos(prev => {
-      const atualizados = prev.map(l => l.id === id ? { ...l, ...dados, atualizadoEm: new Date().toISOString() } : l);
+      const atualizados = prev.map(l => l.id === id ? { ...l, ...patch } : l);
       saveStorage('vl_laudos', atualizados);
-      fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ laudos: atualizados })
-      }).catch(err => console.warn('Aviso sincronizacao laudos:', err));
+      salvarServidorDireto({ laudos: atualizados });
       return atualizados;
     });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'laudos', id), patch, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `laudos/${id}`);
+      });
+    }
     registrarLog('laudos', id, 'editar', `Laudo atualizado: ${dados.numero || id}`);
   };
 
   const finalizarLaudo = (id: string, artNumero: string, assinaturaUrl?: string) => {
-    setLaudos(prev => prev.map(l => {
-      if (l.id === id) {
-        const atualizado: Laudo = {
-          ...l,
-          status: 'finalizado',
-          artNumero,
-          assinaturaUrl: assinaturaUrl || l.assinaturaUrl,
-          atualizadoEm: new Date().toISOString(),
-        };
+    const agora = new Date().toISOString();
+    let ativoParaAtualizar: { ativoId: string; historicoItem: any } | null = null;
 
-        // Also append to active equipment history
-        if (l.ativoId) {
-          setAtivos(atvList => atvList.map(a => {
-            if (a.id === l.ativoId) {
-              const naoConf = l.secoes.reduce((acc, sec) => 
-                acc + sec.itens.filter(it => it.status === 'nao_conforme').length, 0);
-              
-              const historicoItem = {
+    setLaudos(prev => {
+      const atualizados = prev.map(l => {
+        if (l.id === id) {
+          const atualizado: Laudo = {
+            ...l,
+            status: 'finalizado',
+            artNumero,
+            assinaturaUrl: assinaturaUrl || l.assinaturaUrl,
+            atualizadoEm: agora,
+          };
+
+          if (l.ativoId) {
+            const naoConf = (l.secoes || []).reduce((acc, sec) =>
+              acc + (sec.itens || []).filter(it => it.status === 'nao_conforme').length, 0);
+            ativoParaAtualizar = {
+              ativoId: l.ativoId,
+              historicoItem: {
                 laudoId: l.id,
                 numeroLaudo: l.numero,
                 data: l.dataInspecao,
@@ -2197,41 +2135,56 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 resultado: naoConf === 0 ? 'Aprovado' as const : 'Aprovado com Restrições' as const,
                 hrnNivel: l.hrnCalculoGeral?.nivel || 'Baixo',
                 totalNaoConformidades: naoConf,
-              };
+              },
+            };
+          }
 
-              return {
-                ...a,
-                historico: [historicoItem, ...(a.historico || [])]
-              };
-            }
-            return a;
-          }));
+          return atualizado;
         }
+        return l;
+      });
+      saveStorage('vl_laudos', atualizados);
+      salvarServidorDireto({ laudos: atualizados });
+      return atualizados;
+    });
 
-        return atualizado;
-      }
-      return l;
-    }));
+    if (ativoParaAtualizar) {
+      const { ativoId: alvoId, historicoItem } = ativoParaAtualizar;
+      setAtivos(atvList => {
+        const atualizados = atvList.map(a => a.id === alvoId ? {
+          ...a,
+          historico: [historicoItem, ...(a.historico || [])],
+          atualizadoEm: agora,
+        } : a);
+        saveStorage('vl_ativos', atualizados);
+        salvarServidorDireto({ ativos: atualizados });
+        return atualizados;
+      });
+    }
+
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'laudos', id), {
+        status: 'finalizado',
+        artNumero,
+        ...(assinaturaUrl ? { assinaturaUrl } : {}),
+        atualizadoEm: agora,
+      }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.UPDATE, `laudos/${id}`);
+      });
+    }
 
     registrarLog('laudos', id, 'finalizar', `Laudo concluído com sucesso e ART vinculada: ${artNumero}`);
   };
 
   const removerLaudo = (id: string) => {
+    const novosRemovidos = addTombstone('vl_laudos_removidos_ids', id);
+
     setLaudos(prev => {
       const filtrados = prev.filter(l => l.id !== id);
       saveStorage('vl_laudos', filtrados);
-      salvarServidorDireto({ laudos: filtrados });
+      salvarServidorDireto({ laudos: filtrados, laudosRemovidosIds: novosRemovidos });
       return filtrados;
     });
-
-    try {
-      const removidos: string[] = loadStorage('vl_laudos_removidos_ids', []);
-      if (!removidos.includes(id)) {
-        saveStorage('vl_laudos_removidos_ids', [...removidos, id]);
-      }
-    } catch (e) {
-      console.warn('Erro ao salvar ID de laudo removido:', e);
-    }
 
     // Desvincula de qualquer orçamento que aponte para este laudo gerado
     setOrcamentos(prev => {
@@ -2246,10 +2199,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return o;
       });
       saveStorage('vl_orcamentos', atualizados);
+      salvarServidorDireto({ orcamentos: atualizados });
       return atualizados;
     });
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'laudos', id)).catch(err => {
         handleFirestoreError(err, OperationType.DELETE, `laudos/${id}`);
       });
@@ -2273,8 +2227,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Usuários
   const atualizarUsuario = (uid: string, dados: Partial<Usuario>) => {
-    setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, ...dados } : u));
-    if (db && auth?.currentUser) {
+    setUsuarios(prev => {
+      const atualizados = prev.map(u => u.uid === uid ? { ...u, ...dados } : u);
+      saveStorage('vl_usuarios', atualizados);
+      salvarServidorDireto({ usuarios: atualizados });
+      return atualizados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'usuarios', uid), dados, { merge: true }).catch(err => {
         console.warn('[Firestore] Erro ao atualizar usuário:', err);
       });
@@ -2284,8 +2243,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removerUsuario = (uid: string) => {
     const alvo = usuarios.find(u => u.uid === uid);
-    setUsuarios(prev => prev.filter(u => u.uid !== uid));
-    if (db && auth?.currentUser) {
+    const novosRemovidos = addTombstone('vl_usuarios_removidos_ids', uid);
+    setUsuarios(prev => {
+      const filtrados = prev.filter(u => u.uid !== uid);
+      saveStorage('vl_usuarios', filtrados);
+      salvarServidorDireto({ usuarios: filtrados, usuariosRemovidosIds: novosRemovidos });
+      return filtrados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'usuarios', uid)).catch(err => {
         console.warn('[Firestore] Erro ao remover usuário:', err);
       });
@@ -2294,8 +2259,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarPapelUsuario = (uid: string, novoRole: Usuario['role'], clienteId?: string) => {
-    setUsuarios(prev => prev.map(u => u.uid === uid ? { ...u, role: novoRole, clienteId: clienteId || u.clienteId } : u));
-    if (db && auth?.currentUser) {
+    setUsuarios(prev => {
+      const atualizados = prev.map(u => u.uid === uid ? { ...u, role: novoRole, clienteId: clienteId || u.clienteId } : u);
+      saveStorage('vl_usuarios', atualizados);
+      salvarServidorDireto({ usuarios: atualizados });
+      return atualizados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'usuarios', uid), { role: novoRole, clienteId: clienteId || null }, { merge: true }).catch(err => {
         console.warn('[Firestore] Erro ao atualizar papel:', err);
       });
@@ -2306,8 +2276,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adicionarUsuarioConvidado = (dados: Omit<Usuario, 'uid' | 'criadoEm'>) => {
     const uid = `usr-${Date.now()}`;
     const novo: Usuario = { ...dados, uid, criadoEm: new Date().toISOString() };
-    setUsuarios(prev => [novo, ...prev]);
-    if (db && auth?.currentUser) {
+    setUsuarios(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_usuarios', lista);
+      salvarServidorDireto({ usuarios: lista });
+      return lista;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       setDoc(doc(db, 'usuarios', uid), novo, { merge: true }).catch(err => {
         console.warn('[Firestore] Erro ao gravar usuário:', err);
       });
@@ -2330,10 +2305,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       criadoEm: new Date().toISOString()
     };
 
-    setUsuarios(prev => [novoUsuario, ...prev.filter(u => u.uid !== id)]);
+    setUsuarios(prev => {
+      const lista = [novoUsuario, ...prev.filter(u => u.uid !== id)];
+      saveStorage('vl_usuarios', lista);
+      salvarServidorDireto({ usuarios: lista });
+      return lista;
+    });
     setSolicitacoesAcesso(prev => prev.map(s => s.id === id ? { ...s, status: 'aprovado' as const } : s));
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       try {
         await setDoc(doc(db, 'usuarios', id), novoUsuario, { merge: true });
         await setDoc(doc(db, 'solicitacoesAcesso', id), { status: 'aprovado' }, { merge: true });
@@ -2349,7 +2329,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const solicitacao = solicitacoesAcesso.find(s => s.id === id);
     setSolicitacoesAcesso(prev => prev.map(s => s.id === id ? { ...s, status: 'recusado' as const } : s));
 
-    if (db && auth?.currentUser) {
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       try {
         await setDoc(doc(db, 'solicitacoesAcesso', id), { status: 'recusado' }, { merge: true });
       } catch (err) {
@@ -2367,47 +2347,70 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     try {
       console.log('[Firestore] Forçando sincronização completa dos dados da nuvem...');
-      const [snapCli, snapAtv, snapOrc, snapLau] = await Promise.all([
+      const [snapCli, snapAtv, snapOrc, snapLau, snapChk, snapAg] = await Promise.all([
         getDocs(collection(db, 'clientes')),
         getDocs(collection(db, 'ativos')),
         getDocs(collection(db, 'orcamentos')),
         getDocs(collection(db, 'laudos')),
+        getDocs(collection(db, 'checklistsCampo')),
+        getDocs(collection(db, 'agendaVistorias')),
       ]);
 
       if (!snapCli.empty) {
+        const removidosSet = new Set<string>(loadStorage('vl_clientes_removidos_ids', []));
         const docs = snapCli.docs.map(d => d.data() as Cliente);
-        setClientes(docs);
-        saveStorage('vl_clientes', docs);
+        setClientes(prev => {
+          const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.clientes, 'id');
+          saveStorage('vl_clientes', merged);
+          return merged;
+        });
       }
       if (!snapAtv.empty) {
+        const removidosSet = new Set<string>(loadStorage('vl_ativos_removidos_ids', []));
         const docs = snapAtv.docs.map(d => d.data() as Ativo);
-        setAtivos(docs);
-        saveStorage('vl_ativos', docs);
+        setAtivos(prev => {
+          const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.ativos, 'id');
+          saveStorage('vl_ativos', merged);
+          return merged;
+        });
       }
       if (!snapOrc.empty) {
-        const removidos: string[] = loadStorage('vl_orcamentos_removidos_ids', []);
-        const removidosSet = new Set(removidos);
-        const docs = snapOrc.docs
-          .map(d => d.data() as Orcamento)
-          .filter(o => o.id !== 'orc-adf-pgx7098' && !removidosSet.has(o.id));
-        setOrcamentos(docs);
-        saveStorage('vl_orcamentos', docs);
+        const removidosSet = new Set<string>(loadStorage('vl_orcamentos_removidos_ids', []));
+        const docs = snapOrc.docs.map(d => d.data() as Orcamento);
+        setOrcamentos(prev => {
+          const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.orcamentos, 'id');
+          saveStorage('vl_orcamentos', merged);
+          return merged;
+        });
       }
       if (!snapLau.empty) {
-        let docs = snapLau.docs.map(d => normalizarLaudoPadrao(d.data() as Laudo, clientes));
-        const dusterIdx = docs.findIndex(l => l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002');
-        if (dusterIdx >= 0) {
-          const duster = docs[dusterIdx];
-          if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12 || duster.numero === 'LAU-2026/002') {
-            docs[dusterIdx] = {
-              ...LAUDO_DUSTER_COMPLETO,
-              orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',
-              orcamentoNumero: duster.orcamentoNumero || 'PROP-1790444416499'
-            };
-          }
-        }
-        setLaudos(docs);
-        saveStorage('vl_laudos', docs);
+        const removidosSet = new Set<string>(loadStorage('vl_laudos_removidos_ids', []));
+        const docs = snapLau.docs.map(d => normalizarLaudoPadrao(d.data() as Laudo, clientes));
+        setLaudos(prev => {
+          const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.laudos, 'id');
+          saveStorage('vl_laudos', merged);
+          return merged;
+        });
+      }
+      if (!snapChk.empty) {
+        const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+        const docs = normalizarChecklistsCampo(snapChk.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
+        setChecklistsCampo(prev => {
+          const merged = normalizarChecklistsCampo(
+            mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
+          );
+          saveStorage('vl_checklists_campo', merged);
+          return merged;
+        });
+      }
+      if (!snapAg.empty) {
+        const removidosSet = new Set<string>(loadStorage('vl_agenda_removidos_ids', []));
+        const docs = snapAg.docs.map(d => d.data() as AgendaVistoria);
+        setAgenda(prev => {
+          const merged = mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.agenda, 'id');
+          saveStorage('vl_agenda', merged);
+          return merged;
+        });
       }
     } catch (err) {
       console.warn('[Firestore] Erro na sincronização forçada:', err);
@@ -2640,7 +2643,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       criadoEm: agora,
       atualizadoEm: agora,
     };
-    setChecklistsCampo(prev => [novo, ...prev]);
+    setChecklistsCampo(prev => {
+      const lista = [novo, ...prev];
+      saveStorage('vl_checklists_campo', lista);
+      salvarServidorDireto({ checklistsCampo: lista });
+      return lista;
+    });
     registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
@@ -2677,7 +2685,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const existente = checklistsCampo.find(c => c.id === id);
     const atualizado: ChecklistCampo | undefined = existente ? { ...existente, ...dados, atualizadoEm: agora } : undefined;
 
-    setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dados, atualizadoEm: agora } : c));
+    setChecklistsCampo(prev => {
+      const lista = prev.map(c => c.id === id ? { ...c, ...dados, atualizadoEm: agora } : c);
+      saveStorage('vl_checklists_campo', lista);
+      salvarServidorDireto({ checklistsCampo: lista });
+      return lista;
+    });
     registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
@@ -2713,7 +2726,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removerChecklistCampo = (id: string) => {
-    setChecklistsCampo(prev => prev.filter(c => c.id !== id));
+    const novosRemovidos = addTombstone('vl_checklists_removidos_ids', id);
+    setChecklistsCampo(prev => {
+      const filtrados = prev.filter(c => c.id !== id);
+      saveStorage('vl_checklists_campo', filtrados);
+      salvarServidorDireto({ checklistsCampo: filtrados, checklistsRemovidosIds: novosRemovidos });
+      return filtrados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      deleteDoc(doc(db, 'checklistsCampo', id)).catch(err => {
+        handleFirestoreError(err, OperationType.DELETE, `checklistsCampo/${id}`);
+      });
+    }
     registrarLog('checklistsCampo', id, 'excluir', `Checklist de Campo excluído: ${id}`);
   };
 
@@ -2727,7 +2751,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       atualizadoEm: agora,
     };
 
-    setChecklistsCampo(prev => prev.map(c => c.id === id ? { ...c, ...dadosFinais } : c));
+    setChecklistsCampo(prev => {
+      const lista = prev.map(c => c.id === id ? { ...c, ...dadosFinais } : c);
+      saveStorage('vl_checklists_campo', lista);
+      salvarServidorDireto({ checklistsCampo: lista });
+      return lista;
+    });
     registrarLog('checklistsCampo', id, 'finalizar', `Checklist de Campo finalizado: ${id}`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;

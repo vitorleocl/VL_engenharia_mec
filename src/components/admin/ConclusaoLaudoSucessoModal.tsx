@@ -116,7 +116,7 @@ export const ConclusaoLaudoSucessoModal: React.FC<ConclusaoLaudoSucessoModalProp
 
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-2">
             <span className="text-slate-500">ART CREA-PE Vinculada:</span>
-            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{laudo.artNumero || 'PE2026-0104882'}</span>
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{laudo.artNumero || 'Aguardando emissão'}</span>
           </div>
 
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-2">

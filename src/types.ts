@@ -51,6 +51,7 @@ export interface Cliente {
   contatos: ClienteContato[];
   endereco: ClienteEndereco;
   criadoEm: string;
+  atualizadoEm?: string;
 }
 
 export interface AtivoHistoricoItem {
@@ -85,6 +86,7 @@ export interface Ativo {
   localizacao?: string;
   historico: AtivoHistoricoItem[];
   criadoEm: string;
+  atualizadoEm?: string;
 }
 
 export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado' | 'faturado';
@@ -246,6 +248,7 @@ export interface Orcamento {
   };
   checklistCampoOrigemId?: string;
   criadoEm: string;
+  atualizadoEm?: string;
 }
 
 export type VistoriaStatus = 'agendada' | 'em_andamento' | 'concluida' | 'remarcada';

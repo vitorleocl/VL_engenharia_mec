@@ -48,24 +48,24 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
   }, [urlVerificacao]);
 
   // Cliente e Ativo (fonte única com fallback)
-  const clienteNome = laudo.clienteNome || cliente?.razaoSocial || cliente?.nomeFantasia || 'Adf Auto Pecas LTDA';
+  const clienteNome = laudo.clienteNome || cliente?.razaoSocial || cliente?.nomeFantasia || 'Não informado';
   const cnpjCliente = laudo.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || '';
   const primeiroContato = cliente?.contatos?.[0];
   const contatoCliente = laudo.clienteContato || primeiroContato?.nome || '';
   const localVistoria = laudo.localVistoria || (cliente?.endereco?.cidade ? `${cliente.endereco.logradouro || ''}, ${cliente.endereco.cidade} - ${cliente.endereco.estado || 'PE'}` : '');
   const acompanhante = laudo.acompanhanteVistoria || primeiroContato?.nome || '';
 
-  const ativoTag = laudo.ativoIdentificacao || ativo?.identificacao || ativo?.placa || 'PGX-9708';
-  const ativoFabricante = laudo.ativoFabricante || ativo?.fabricante || 'Renault / Randon Munck';
-  const ativoModelo = laudo.ativoModelo || ativo?.modelo || 'Guindaste Articulado 12t';
-  const ativoSerie = laudo.ativoNumeroSerie || ativo?.numeroSerie || ativo?.chassi || '093YHSRAF500GJ3983670';
-  const ativoCapacidade = laudo.ativoCapacidade || ativo?.capacidade || '12 toneladas / 45.000 kgm';
+  const ativoTag = laudo.ativoIdentificacao || ativo?.identificacao || ativo?.placa || 'Não informado';
+  const ativoFabricante = laudo.ativoFabricante || ativo?.fabricante || '—';
+  const ativoModelo = laudo.ativoModelo || ativo?.modelo || '—';
+  const ativoSerie = laudo.ativoNumeroSerie || ativo?.numeroSerie || ativo?.chassi || '—';
+  const ativoCapacidade = laudo.ativoCapacidade || ativo?.capacidade || '—';
   const ativoDetalhes = `${ativoFabricante} · ${ativoModelo} · Série: ${ativoSerie} · Cap: ${ativoCapacidade}`;
 
-  const tipoLaudoTitulo = laudo.tipo || 'Laudo de liberação e conformidade NR-11 / NR-12';
+  const tipoLaudoTitulo = laudo.tipo || 'Laudo Técnico Pericial';
   const parecer = laudo.parecer || 'liberado_restricoes';
-  const justificativaParecer = laudo.justificativaParecer || '1 não conformidade de risco médio em 6 itens verificados. A liberação para operação em obras e indústrias fica condicionada ao plano de ação da folha 6.';
-  const proximaInspecao = laudo.proximaInspecaoData || '30/10/2027';
+  const justificativaParecer = laudo.justificativaParecer || '';
+  const proximaInspecao = laudo.proximaInspecaoData || '—';
 
   // Itens do checklist e contadores
   const itensChecklist = useMemo(() => {
@@ -109,61 +109,7 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
 
   // Seções de constatações
   const secoesConstatacoes = useMemo(() => {
-    if (laudo.secoes && laudo.secoes.length > 0) {
-      return laudo.secoes;
-    }
-    return [
-      {
-        id: 'sec-1',
-        ordem: 1,
-        titulo: 'Verificação dos estabilizadores e chassi de montagem',
-        resultado: 'conforme' as const,
-        criterioReferencia: 'NR-11 · NBR 8400',
-        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708 do cliente Adf Auto Pecas LTDA. Foi realizada a checagem das sapatas estabilizadoras hidráulicas dianteiras e traseiras, cilindros de extensão e fixação ao sobrechassi por grampos reforçados. Estrutura sem trincas, vazamentos ou deformações permanentes.</p>',
-        fotos: [
-          { id: 'f-1', url: '', legenda: 'Foto 1. Estabilizadores estendidos com travas operacionais e cilindros estanques.' },
-          { id: 'f-2', url: '', legenda: 'Foto 2. Detalhe da fixação do chassi de montagem às longarinas do veículo.' }
-        ]
-      },
-      {
-        id: 'sec-2',
-        ordem: 2,
-        titulo: 'Exame dos acessórios de içamento (ganchos, cabos, moitões)',
-        resultado: 'conforme' as const,
-        criterioReferencia: 'NR-11 · NBR 8400',
-        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708 do cliente Adf Auto Pecas LTDA. Gancho principal com trava de segurança em perfeito estado, sem abertura excessiva de garganta. Cabos de aço e terminais sem arames rompidos ou desgastes corrosivos.</p>',
-        fotos: [
-          { id: 'f-3', url: '', legenda: 'Foto 3. Gancho forjado com trava de segurança tipo mola operante e gravação de capacidade legível.' },
-          { id: 'f-4', url: '', legenda: 'Foto 4. Moitão e polias de direcionamento de cabo sem folgas axiais.' }
-        ]
-      },
-      {
-        id: 'sec-3',
-        ordem: 3,
-        titulo: 'Inspeção do posto de comando e alavancas',
-        resultado: 'nao_conforme' as const,
-        ncCodigo: 'NC-01',
-        criterioReferencia: 'NR-11 · NBR 8400 · Origem: checklist, item 5',
-        conteudoHtml: '<p>Verificação técnica pericial realizada em conformidade com as diretrizes da norma NR-11 · NBR 8400, no ativo PGX-9708. Foi registrada a não conformidade NC-01 (sinalização de segurança e advertência de risco residual sem visibilidade adequada). As alavancas possuem funcionamento mecânico regular com retorno automático ao centro neutro, porém as placas adesivas indicativas de movimentos e diagramas de carga encontram-se desgastadas pela ação solar e intempéries.</p>',
-        fotos: [
-          { id: 'f-5', url: '', legenda: 'Foto 5. Posto de comando bilateral com desgaste nas etiquetas indicativas de comando.' },
-          { id: 'f-6', url: '', legenda: 'Foto 6. Detalhe da placa de advertência com desgaste superficial a ser reposta.' }
-        ]
-      },
-      {
-        id: 'sec-4',
-        ordem: 4,
-        titulo: 'Parecer de liberação para obras e indústrias',
-        resultado: 'liberado_restricoes' as const,
-        criterioReferencia: 'NR-11 · NR-12 · CONFEA/CREA',
-        conteudoHtml: '<p>O ativo PGX-9708 é considerado liberado com restrições para operação em obras e indústrias, nos termos do parecer conclusivo da folha 6. O uso normal fica condicionado ao cumprimento do plano de ação da NC-01 dentro do prazo indicado (até 30 dias a partir da data da vistoria).</p>',
-        fotos: [
-          { id: 'f-7', url: '', legenda: 'Foto 7. Vista geral do ativo em teste de operação.' },
-          { id: 'f-8', url: '', legenda: 'Foto 8. Placa de identificação e chassi verificados.' },
-          { id: 'f-9', url: '', legenda: 'Foto 9. Registro do ponto de aterramento elétrico de proteção.' }
-        ]
-      }
-    ];
+    return Array.isArray(laudo.secoes) ? laudo.secoes : [];
   }, [laudo.secoes]);
 
   // Normas e Instrumentos

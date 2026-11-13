@@ -20,19 +20,92 @@ app.use(express.json({ limit: "25mb" }));
 
 const DATA_FILE = path.join(process.cwd(), "data", "app_storage.json");
 
+const FICTITIOUS_IDS = {
+  clientes: new Set(["cli-01", "cli-02", "cli-03"]),
+  ativos: new Set(["atv-01", "atv-02", "atv-03", "atv-pgx7098"]),
+  orcamentos: new Set(["orc-01", "orc-02", "orc-03", "orc-2026-002", "orc-adf-pgx7098", "orc-1789155592909"]),
+  laudos: new Set(["lau-2025-045", "lau-2026-003", "lau-2026-001"]),
+  checklistsCampo: new Set(["chk-01", "chk-02"]),
+  agenda: new Set(["ag-01", "ag-02"]),
+  usuarios: new Set(["usr-colab-1", "usr-cli-1"]),
+};
+
+function getItemTimestamp(item: any): number {
+  const raw = item?.atualizadoEm || item?.criadoEm || 0;
+  const t = new Date(raw).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function mergeCollectionSafely(
+  currentList: any[],
+  incomingList: any[] | undefined,
+  removedSet: Set<string>,
+  fictitiousSet: Set<string>,
+  idField: "id" | "uid" = "id"
+): any[] {
+  const map = new Map<string, any>();
+
+  if (Array.isArray(currentList)) {
+    for (const item of currentList) {
+      const id = item?.[idField];
+      if (!id || removedSet.has(id) || fictitiousSet.has(id)) continue;
+      map.set(id, item);
+    }
+  }
+
+  if (Array.isArray(incomingList)) {
+    for (const item of incomingList) {
+      const id = item?.[idField];
+      if (!id || removedSet.has(id) || fictitiousSet.has(id)) continue;
+      const existing = map.get(id);
+      if (!existing) {
+        map.set(id, item);
+      } else {
+        const tExisting = getItemTimestamp(existing);
+        const tIncoming = getItemTimestamp(item);
+        // Prefer incoming if newer or equal (allows deliberate edits even without updatedAt bump)
+        map.set(id, tIncoming >= tExisting ? { ...existing, ...item } : existing);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 // Persistent App Data endpoints (guarantees data persistence across sessions, origins and browser reloads)
 app.get("/api/app-data", (req, res) => {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, "utf-8");
       const data = JSON.parse(content);
-      const orcRemovidos = new Set(data.orcamentosRemovidosIds || []);
-      const lauRemovidos = new Set(data.laudosRemovidosIds || []);
+      const cliRem = new Set<string>(data.clientesRemovidosIds || []);
+      const atvRem = new Set<string>(data.ativosRemovidosIds || []);
+      const orcRem = new Set<string>(data.orcamentosRemovidosIds || []);
+      const lauRem = new Set<string>(data.laudosRemovidosIds || []);
+      const chkRem = new Set<string>(data.checklistsRemovidosIds || []);
+      const agRem = new Set<string>(data.agendaRemovidosIds || []);
+      const usrRem = new Set<string>(data.usuariosRemovidosIds || []);
+
+      if (Array.isArray(data.clientes)) {
+        data.clientes = data.clientes.filter((c: any) => !cliRem.has(c.id) && !FICTITIOUS_IDS.clientes.has(c.id));
+      }
+      if (Array.isArray(data.ativos)) {
+        data.ativos = data.ativos.filter((a: any) => !atvRem.has(a.id) && !FICTITIOUS_IDS.ativos.has(a.id));
+      }
       if (Array.isArray(data.orcamentos)) {
-        data.orcamentos = data.orcamentos.filter((o: any) => !orcRemovidos.has(o.id) && o.id !== 'orc-adf-pgx7098');
+        data.orcamentos = data.orcamentos.filter((o: any) => !orcRem.has(o.id) && !FICTITIOUS_IDS.orcamentos.has(o.id));
       }
       if (Array.isArray(data.laudos)) {
-        data.laudos = data.laudos.filter((l: any) => !lauRemovidos.has(l.id));
+        data.laudos = data.laudos.filter((l: any) => !lauRem.has(l.id) && !FICTITIOUS_IDS.laudos.has(l.id));
+      }
+      if (Array.isArray(data.checklistsCampo)) {
+        data.checklistsCampo = data.checklistsCampo.filter((ck: any) => !chkRem.has(ck.id) && !FICTITIOUS_IDS.checklistsCampo.has(ck.id));
+      }
+      if (Array.isArray(data.agenda)) {
+        data.agenda = data.agenda.filter((ag: any) => !agRem.has(ag.id) && !FICTITIOUS_IDS.agenda.has(ag.id));
+      }
+      if (Array.isArray(data.usuarios)) {
+        data.usuarios = data.usuarios.filter((u: any) => !usrRem.has(u.uid) && !FICTITIOUS_IDS.usuarios.has(u.uid));
       }
       return res.json(data);
     }
@@ -49,33 +122,74 @@ app.post("/api/app-data", (req, res) => {
       fs.mkdirSync(dir, { recursive: true });
     }
     const currentData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")) : {};
-    
-    // Combine removed IDs lists
-    const orcamentosRemovidosIds = Array.from(new Set([
-      ...(currentData.orcamentosRemovidosIds || []),
-      ...(req.body.orcamentosRemovidosIds || [])
-    ]));
-    const laudosRemovidosIds = Array.from(new Set([
-      ...(currentData.laudosRemovidosIds || []),
-      ...(req.body.laudosRemovidosIds || [])
-    ]));
 
-    const merged = { 
-      ...currentData, 
-      ...req.body, 
+    const combineRemoved = (key: string) =>
+      Array.from(new Set<string>([...(currentData[key] || []), ...(req.body[key] || [])]));
+
+    const clientesRemovidosIds = combineRemoved("clientesRemovidosIds");
+    const ativosRemovidosIds = combineRemoved("ativosRemovidosIds");
+    const orcamentosRemovidosIds = combineRemoved("orcamentosRemovidosIds");
+    const laudosRemovidosIds = combineRemoved("laudosRemovidosIds");
+    const checklistsRemovidosIds = combineRemoved("checklistsRemovidosIds");
+    const agendaRemovidosIds = combineRemoved("agendaRemovidosIds");
+    const usuariosRemovidosIds = combineRemoved("usuariosRemovidosIds");
+
+    const merged: Record<string, any> = {
+      ...currentData,
+      ...req.body,
+      clientesRemovidosIds,
+      ativosRemovidosIds,
       orcamentosRemovidosIds,
       laudosRemovidosIds,
-      updatedAt: new Date().toISOString() 
+      checklistsRemovidosIds,
+      agendaRemovidosIds,
+      usuariosRemovidosIds,
+      updatedAt: new Date().toISOString(),
     };
 
-    const orcRemovidos = new Set(orcamentosRemovidosIds);
-    if (Array.isArray(merged.orcamentos)) {
-      merged.orcamentos = merged.orcamentos.filter((o: any) => !orcRemovidos.has(o.id) && o.id !== 'orc-adf-pgx7098');
-    }
-    if (Array.isArray(merged.laudos)) {
-      const lauRemovidos = new Set(laudosRemovidosIds);
-      merged.laudos = merged.laudos.filter((l: any) => !lauRemovidos.has(l.id));
-    }
+    merged.clientes = mergeCollectionSafely(
+      currentData.clientes,
+      req.body.clientes,
+      new Set(clientesRemovidosIds),
+      FICTITIOUS_IDS.clientes
+    );
+    merged.ativos = mergeCollectionSafely(
+      currentData.ativos,
+      req.body.ativos,
+      new Set(ativosRemovidosIds),
+      FICTITIOUS_IDS.ativos
+    );
+    merged.orcamentos = mergeCollectionSafely(
+      currentData.orcamentos,
+      req.body.orcamentos,
+      new Set(orcamentosRemovidosIds),
+      FICTITIOUS_IDS.orcamentos
+    );
+    merged.laudos = mergeCollectionSafely(
+      currentData.laudos,
+      req.body.laudos,
+      new Set(laudosRemovidosIds),
+      FICTITIOUS_IDS.laudos
+    );
+    merged.checklistsCampo = mergeCollectionSafely(
+      currentData.checklistsCampo,
+      req.body.checklistsCampo,
+      new Set(checklistsRemovidosIds),
+      FICTITIOUS_IDS.checklistsCampo
+    );
+    merged.agenda = mergeCollectionSafely(
+      currentData.agenda,
+      req.body.agenda,
+      new Set(agendaRemovidosIds),
+      FICTITIOUS_IDS.agenda
+    );
+    merged.usuarios = mergeCollectionSafely(
+      currentData.usuarios,
+      req.body.usuarios,
+      new Set(usuariosRemovidosIds),
+      FICTITIOUS_IDS.usuarios,
+      "uid"
+    );
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2), "utf-8");
     return res.json({ success: true, savedAt: merged.updatedAt });

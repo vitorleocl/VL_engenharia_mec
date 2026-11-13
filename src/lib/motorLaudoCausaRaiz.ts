@@ -138,7 +138,7 @@ ${dados.escopo.quesitosEspecificos ? `- Quesitos Específicos do Contratante: "$
 DADOS DA EMISSÃO:
 - Cliente / Contratante: ${dados.clienteNome || 'Cliente Corporativo'} (${dados.clienteCnpj || 'CNPJ sob consulta'})
 - Laudo Número: ${dados.laudoNumero || `LAR-${new Date().getFullYear()}-001`}
-- ART CREA-PE Vinculada: ${dados.artNumero || 'PE2026-0104882'}
+- ART CREA-PE Vinculada: ${dados.artNumero || 'Pendente de registro'}
 - Perito: Eng. Vitor Leonardo (CREA-PE 1822299490)
 
 Retorne estritamente um JSON estruturado com os campos:
@@ -175,7 +175,7 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
   const veiculoDesc = `${dados.ativo.marca || 'Veículo'} ${dados.ativo.modelo || ''} (Ano: ${dados.ativo.anoModelo || 'N/I'}, Placa: ${dados.ativo.placa || 'N/I'})`;
   const clienteNome = dados.clienteNome || 'Cliente Corporativo';
   const laudoNumero = dados.laudoNumero || `LAR-${new Date().getFullYear()}-001`;
-  const artNumero = dados.artNumero || 'PE2026-0104882';
+  const artNumero = dados.artNumero || 'Pendente de registro';
   const dataHoje = dados.dataEmissao || new Date().toLocaleDateString('pt-BR');
 
   const causaRaiz = 'Dessincronismo mecânico por colapso e ruptura da correia sincronizadora dentada decorrente de fadiga de material e decurso de ciclo de vida útil, induzindo colisão catastrófica entre o prato das válvulas e o topo dos pistões.';
@@ -237,12 +237,8 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
             <td class="border border-slate-300 p-2 text-slate-900 font-semibold">${clienteNome}</td>
           </tr>
           <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Endereço Operacional:</td>
-            <td class="border border-slate-300 p-2 text-slate-900">Avenida Jose Pinheiro dos Santos, 20, - Pinheiropolis, Caruaru/PE</td>
-          </tr>
-          <tr>
-            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Contato Técnico:</td>
-            <td class="border border-slate-300 p-2 text-slate-900 font-semibold">Thiago Cunha (adfcentroautomotivo@gmail.com)</td>
+            <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">CNPJ / CPF:</td>
+            <td class="border border-slate-300 p-2 text-slate-900">${dados.clienteCnpj || 'Não informado'}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2 font-bold text-slate-700">Perito Responsável:</td>
@@ -287,33 +283,33 @@ export function gerarLaudoCausaRaizOffline(dados: DadosEntradaCausaRaiz): Result
         <tbody>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Proprietário:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">Ministério Público de Pernambuco (CNPJ: 24.417.065/0001-03)</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${clienteNome}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Marca:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.marca || 'Renault'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.marca || 'Não informado'}</td>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700 w-1/4">Modelo:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.modelo || 'Duster'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 w-1/4 font-semibold">${dados.ativo.modelo || 'Não informado'}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Espécie / Tipo:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900">Passageiro / Utilitário</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900">Veículo Automotor</td>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Placa:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-bold text-xs text-[#0B1E3D]">${dados.ativo.placa || 'PGX-9708'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-bold text-xs text-[#0B1E3D]">${dados.ativo.placa || 'Não informada'}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Chassi N.º:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${dados.ativo.chassi || '093YHSRAF500GJ3983670'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-mono font-medium tracking-wider" colspan="3">${dados.ativo.chassi || 'Não informado'}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Ano Fab. / Modelo:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold">${dados.ativo.anoModelo || '2016 / 2016'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold">${dados.ativo.anoModelo || 'Não informado'}</td>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Aferida:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-bold">${kmAtual ? `${kmAtual} (Atual - Agosto de 2026)` : '152.530 km (Atual - Agosto de 2026)'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-bold">${kmAtual}</td>
           </tr>
           <tr>
             <td class="border border-slate-300 bg-slate-50 p-2.5 font-bold text-slate-700">Quilometragem Anterior:</td>
-            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${dados.ativo.kmIntervencaoPrevia ? `${dados.ativo.kmIntervencaoPrevia} km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km` : '149.908 km (Registrada em Dezembro de 2025) — Intervalo percorrido: 2.622 km'}</td>
+            <td class="border border-slate-300 p-2.5 text-slate-900 font-semibold" colspan="3">${kmPrevia} — Intervalo percorrido: ${kmIntervalo}</td>
           </tr>
         </tbody>
       </table>`

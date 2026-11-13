@@ -56,7 +56,7 @@ export const GeradorLaudoCausaRaizModal: React.FC<GeradorLaudoCausaRaizModalProp
   onLaudoAtualizado,
   onFinalizacaoSucesso
 }) => {
-  const { clientes, ativos, laudos, atualizarLaudo, registrarUsoIA } = useData();
+  const { clientes, ativos, laudos, criarNovoLaudo, atualizarLaudo, registrarUsoIA } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -203,7 +203,7 @@ export const GeradorLaudoCausaRaizModal: React.FC<GeradorLaudoCausaRaizModalProp
   const [laudoNumero, setLaudoNumero] = useState(
     laudoAtual?.numero || `LAR-${new Date().getFullYear()}-${String(Math.floor(1 + Math.random() * 999)).padStart(3, '0')}`
   );
-  const [artNumero, setArtNumero] = useState(laudoAtual?.artNumero || 'PE2026-0104882');
+  const [artNumero, setArtNumero] = useState(laudoAtual?.artNumero || '');
 
   // Cálculos dinâmicos
   const kmIntervaloCalc = useMemo(() => {
@@ -415,13 +415,7 @@ export const GeradorLaudoCausaRaizModal: React.FC<GeradorLaudoCausaRaizModalProp
       atualizarLaudo(laudoExistenteId, laudoConstruido);
       if (onLaudoAtualizado) onLaudoAtualizado(laudoConstruido);
     } else {
-      const laudosNovos = [laudoConstruido, ...laudos];
-      localStorage.setItem('vl_laudos', JSON.stringify(laudosNovos));
-      fetch('/api/app-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ laudos: laudosNovos })
-      }).catch(console.warn);
+      criarNovoLaudo(laudoConstruido);
     }
 
     if (onFinalizacaoSucesso) {
