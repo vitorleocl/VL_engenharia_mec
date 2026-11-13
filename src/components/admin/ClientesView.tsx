@@ -10,6 +10,8 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Cliente } from '../../types';
@@ -66,11 +68,12 @@ function titleCasePtBr(texto?: string | null): string {
 }
 
 export const ClientesView: React.FC = () => {
-  const { clientes, ativos, laudos, adicionarCliente, atualizarCliente } = useData();
+  const { clientes, ativos, laudos, orcamentos, adicionarCliente, atualizarCliente, removerCliente } = useData();
 
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
+  const [clienteExcluindo, setClienteExcluindo] = useState<Cliente | null>(null);
 
   // Tipo de Pessoa (CNPJ vs CPF)
   const [tipoPessoa, setTipoPessoa] = useState<'juridica' | 'fisica'>('juridica');
@@ -460,16 +463,28 @@ export const ClientesView: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 align-top text-right space-x-1">
-                      <button
-                        type="button"
-                        onClick={() => abrirEdicao(cliente)}
-                        className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1 cursor-pointer"
-                        title="Editar cliente"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>Editar</span>
-                      </button>
+                    <td className="py-3.5 px-4 align-top text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => abrirEdicao(cliente)}
+                          className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1 cursor-pointer"
+                          title="Editar cliente"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClienteExcluindo(cliente)}
+                          className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                          title="Excluir cliente"
+                          aria-label={`Excluir cliente ${cliente.nomeFantasia || cliente.razaoSocial}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Excluir</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -885,25 +900,138 @@ export const ClientesView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[var(--line)]">
-                <button
-                  type="button"
-                  onClick={() => setModalAberto(false)}
-                  className="btn-tech text-sm cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn-tech pri text-sm px-6 font-bold cursor-pointer"
-                >
-                  Salvar cadastro do cliente
-                </button>
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line)]">
+                <div>
+                  {clienteEditando && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const alvo = clienteEditando;
+                        setModalAberto(false);
+                        setClienteExcluindo(alvo);
+                      }}
+                      className="btn-tech text-sm inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Excluir cliente</span>
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setModalAberto(false)}
+                    className="btn-tech text-sm cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-tech pri text-sm px-6 font-bold cursor-pointer"
+                  >
+                    Salvar cadastro do cliente
+                  </button>
+                </div>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão de Cliente */}
+      {clienteExcluindo && (() => {
+        const ativosVinculados = ativos.filter((a) => a.clienteId === clienteExcluindo.id).length;
+        const laudosVinculados = laudos.filter((l) => l.clienteId === clienteExcluindo.id).length;
+        const orcamentosVinculados = orcamentos.filter((o) => o.clienteId === clienteExcluindo.id).length;
+        const temVinculos = ativosVinculados > 0 || laudosVinculados > 0 || orcamentosVinculados > 0;
+        const docCliente = clienteExcluindo.cpfCnpj || clienteExcluindo.cnpj;
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.75)] backdrop-blur-xs"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-excluir-cliente"
+          >
+            <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-md p-5 sm:p-6 space-y-4 shadow-2xl">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 id="titulo-excluir-cliente" className="text-[18px] font-bold text-[var(--ink)]">
+                      Excluir cliente?
+                    </h2>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      Esta ação removerá o cadastro do cliente do sistema.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClienteExcluindo(null)}
+                  className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)] transition-colors cursor-pointer"
+                  aria-label="Fechar confirmação"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[var(--paper)] border border-[var(--line)] space-y-1">
+                <div className="font-bold text-sm text-[var(--ink)]">
+                  {clienteExcluindo.nomeFantasia || clienteExcluindo.razaoSocial}
+                </div>
+                {clienteExcluindo.nomeFantasia &&
+                  clienteExcluindo.razaoSocial &&
+                  clienteExcluindo.nomeFantasia !== clienteExcluindo.razaoSocial && (
+                    <div className="text-xs text-[var(--muted)]">{clienteExcluindo.razaoSocial}</div>
+                  )}
+                {docCliente && (
+                  <div className="text-xs font-mono text-[var(--muted)] pt-0.5">{docCliente}</div>
+                )}
+              </div>
+
+              {temVinculos && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                  <div className="font-bold">Registros vinculados encontrados:</div>
+                  <p>
+                    {[
+                      ativosVinculados > 0 ? `${ativosVinculados} equipamento(s)` : '',
+                      laudosVinculados > 0 ? `${laudosVinculados} laudo(s)` : '',
+                      orcamentosVinculados > 0 ? `${orcamentosVinculados} orçamento(s)` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                    . Os documentos já emitidos permanecem no histórico, mas este cliente não aparecerá mais no cadastro.
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[var(--line)]">
+                <button
+                  type="button"
+                  onClick={() => setClienteExcluindo(null)}
+                  className="btn-tech text-sm cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    removerCliente(clienteExcluindo.id);
+                    setClienteExcluindo(null);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Excluir cliente</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
