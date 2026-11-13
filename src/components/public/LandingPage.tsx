@@ -178,19 +178,30 @@ function resolverFotoTrabalho(raw: any): string {
   return imgNr12;
 }
 
+function limparCodigoInternoPublico(texto: string): string {
+  return texto
+    .replace(/\s*[·•\-–]\s*(?:LAR|VL|NR\d+|VEIC(?:-[A-Z]+)?|LAU)-\d{4}-\d+\s*$/i, '')
+    .trim();
+}
+
 function normalizarTrabalhoPublicado(raw: any): TrabalhoRealizado | null {
   if (!raw || !raw.titulo) return null;
   const id = String(raw.id || raw.laudoId || raw.titulo);
+  const tituloLimpo = limparCodigoInternoPublico(String(raw.titulo));
+  const escopoBruto = String(
+    raw.escopo || (raw.local ? `Atendimento técnico em ${raw.local}` : 'Laudo técnico com ART registrada no CREA-PE')
+  );
+  const escopoLimpo = escopoBruto.replace(/^Laudo\s+[A-Z0-9-]+\s*·\s*/i, '').trim() || escopoBruto;
   return {
     id,
-    titulo: String(raw.titulo),
+    titulo: tituloLimpo || String(raw.titulo),
     badge: String(raw.badge || raw.resultado || 'Laudo Emitido'),
     norma: String(raw.norma || 'CREA-PE'),
-    escopo: String(raw.escopo || (raw.local ? `Atendimento técnico em ${raw.local}` : 'Laudo técnico com ART registrada no CREA-PE')),
+    escopo: escopoLimpo,
     prazo: String(raw.prazo || 'ART emitida'),
     resumo: String(raw.resumo || 'Inspeção técnica e emissão de laudo de conformidade com ART registrada no CREA-PE.'),
     foto: resolverFotoTrabalho(raw),
-    whatsappMsg: raw.whatsappMsg || `Olá, Eng. Vitor Leonardo! Gostaria de um orçamento similar ao trabalho: ${raw.titulo}.`,
+    whatsappMsg: raw.whatsappMsg || `Olá, Eng. Vitor Leonardo! Gostaria de um orçamento similar ao trabalho: ${tituloLimpo}.`,
   };
 }
 
@@ -248,11 +259,13 @@ export const LandingPage: React.FC = () => {
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (!ativo || !json || !Array.isArray(json.trabalhos)) return;
-        setTrabalhos(combinarTrabalhosPublicados(json.trabalhos));
-        try {
-          localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
-        } catch {
-          // ignore
+        if (json.trabalhos.length > 0) {
+          setTrabalhos(combinarTrabalhosPublicados(json.trabalhos));
+          try {
+            localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
+          } catch {
+            // ignore
+          }
         }
       })
       .catch(() => {});

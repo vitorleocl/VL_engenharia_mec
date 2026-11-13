@@ -22,33 +22,9 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { AnexarLaudoAssinadoModal } from './AnexarLaudoAssinadoModal';
+import { PublicarNoSiteModal } from './PublicarNoSiteModal';
 import { Laudo, TrabalhoPublicadoSite } from '../../types';
 import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
-
-const inferirCategoriaTrabalhoSite = (
-  texto: string
-): { categoriaFoto: TrabalhoPublicadoSite['categoriaFoto']; badge: string; normaPadrao: string } => {
-  const t = texto.toLowerCase();
-  if (t.includes('munck') || t.includes('guindaste') || t.includes('guindauto') || t.includes('ponte rolante') || t.includes('eleva')) {
-    return { categoriaFoto: 'munck', badge: 'Içamento & Carga', normaPadrao: 'NR-11 · NBR 14768' };
-  }
-  if (t.includes('pmoc') || t.includes('climatiza') || t.includes('ar-condicionado') || t.includes('hvac') || t.includes('exaust')) {
-    return { categoriaFoto: 'pmoc', badge: 'Climatização Legal', normaPadrao: 'Lei 13.589/2018 · NBR 16401' };
-  }
-  if (t.includes('playground') || t.includes('brinquedo') || t.includes('parque infantil') || t.includes('16071')) {
-    return { categoriaFoto: 'playground', badge: 'Segurança Infantil', normaPadrao: 'ABNT NBR 16071' };
-  }
-  if (t.includes('perícia') || t.includes('pericia') || t.includes('veicular') || t.includes('automot') || t.includes('monta') || t.includes('causa raiz') || t.includes('sinistr')) {
-    return { categoriaFoto: 'pericia', badge: 'Perícia Técnica', normaPadrao: 'CONTRAN · ABNT' };
-  }
-  if (t.includes('escavadeira') || t.includes('pá carregadeira') || t.includes('retroescavadeira') || t.includes('trator') || t.includes('pesad') || t.includes('linha amarela') || t.includes('empilhadeira')) {
-    return { categoriaFoto: 'maquinas', badge: 'Linha Amarela', normaPadrao: 'NR-11 · NR-12' };
-  }
-  if (t.includes('manuten') || t.includes('pcm') || t.includes('caldeira') || t.includes('vaso de press') || t.includes('nr-13') || t.includes('gás') || t.includes('glp')) {
-    return { categoriaFoto: 'manutencao', badge: 'Inspeção & PCM', normaPadrao: 'NR-13 · CONFEA' };
-  }
-  return { categoriaFoto: 'nr12', badge: 'Conformidade NR-12', normaPadrao: 'NR-12 · CREA-PE' };
-};
 
 export const LaudosCentralView: React.FC = () => {
   const { 
@@ -76,6 +52,23 @@ export const LaudosCentralView: React.FC = () => {
   const [modalPdfAssinadoAberto, setModalPdfAssinadoAberto] = useState(false);
   const [laudoParaAnexarPdf, setLaudoParaAnexarPdf] = useState<Laudo | null>(null);
   const [laudoVisualizandoPdfAssinado, setLaudoVisualizandoPdfAssinado] = useState<Laudo | null>(null);
+  const [laudoParaPublicar, setLaudoParaPublicar] = useState<Laudo | null>(null);
+  const [publicacoesMap, setPublicacoesMap] = useState<Record<string, TrabalhoPublicadoSite>>(() => {
+    const mapa: Record<string, TrabalhoPublicadoSite> = {};
+    try {
+      const raw = localStorage.getItem('vl-publicados');
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        parsed.forEach((w: any) => {
+          const key = String(w?.laudoId || w?.id || '');
+          if (key) mapa[key] = w;
+        });
+      }
+    } catch {
+      // ignore
+    }
+    return mapa;
+  });
   const [publicadosIds, setPublicadosIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem('vl-publicados');
@@ -125,15 +118,23 @@ export const LaudosCentralView: React.FC = () => {
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         if (!ativo || !json || !Array.isArray(json.trabalhos)) return;
-        const ids = new Set<string>(
-          json.trabalhos.map((w: any) => String(w?.laudoId || w?.id || '')).filter(Boolean)
-        );
-        setPublicadosIds(ids);
-        try {
-          localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
-          window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
-        } catch {
-          // ignore
+        if (json.trabalhos.length > 0) {
+          const ids = new Set<string>(
+            json.trabalhos.map((w: any) => String(w?.laudoId || w?.id || '')).filter(Boolean)
+          );
+          const mapa: Record<string, TrabalhoPublicadoSite> = {};
+          json.trabalhos.forEach((w: any) => {
+            const k = String(w?.laudoId || w?.id || '');
+            if (k) mapa[k] = w;
+          });
+          setPublicadosIds(ids);
+          setPublicacoesMap(mapa);
+          try {
+            localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
+            window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
+          } catch {
+            // ignore
+          }
         }
       })
       .catch(() => {});
@@ -186,49 +187,17 @@ export const LaudosCentralView: React.FC = () => {
     });
   }, [laudos, clientes, busca, statusFiltro]);
 
-  // Publish to site handler
-  const handlePublicarNoSite = async (laudo: Laudo) => {
-    const cliente = clientes.find(c => c.id === laudo.clienteId);
-    const cidade = cliente?.endereco?.cidade || 'Recife';
-    const estado = cliente?.endereco?.estado || 'PE';
-    const nomeCliente =
-      cliente?.nomeFantasia ||
-      cliente?.razaoSocial ||
-      (laudo.clienteNome && !/^cliente$/i.test(laudo.clienteNome.trim()) ? laudo.clienteNome : 'Cliente corporativo');
-    const infoCat = inferirCategoriaTrabalhoSite(`${laudo.tipo || ''} ${laudo.normasReferencia || ''}`);
-    const fotoReal =
-      laudo.capaFotoUrl ||
-      laudo.anexosFotos?.[0]?.url ||
-      (laudo.secoes || []).flatMap(s => s.fotos || []).find(f => f?.url)?.url ||
-      undefined;
-    const agora = new Date().toISOString();
-
-    const novoTrabalho: TrabalhoPublicadoSite = {
-      id: laudo.id,
-      laudoId: laudo.id,
-      titulo: laudo.ativoIdentificacao && laudo.ativoIdentificacao !== laudo.tipo
-        ? `${laudo.tipo} · ${laudo.ativoIdentificacao}`
-        : `${laudo.tipo} · ${laudo.numero}`,
-      badge: infoCat.badge,
-      norma: laudo.normasReferencia || infoCat.normaPadrao,
-      escopo: `Laudo ${laudo.numero} · ${nomeCliente} (${cidade}/${estado})`,
-      prazo: laudo.artNumero ? `ART ${laudo.artNumero}` : 'ART emitida · CREA-PE',
-      resumo:
-        laudo.resumoExecutivo ||
-        `Laudo técnico com ART registrada no CREA-PE para ${nomeCliente} (${cidade}/${estado}). Conformidade e segurança operacional validadas.`,
-      local: `${cidade} · ${estado}`,
-      ...(fotoReal ? { foto: fotoReal } : {}),
-      categoriaFoto: infoCat.categoriaFoto,
-      whatsappMsg: `Olá, Eng. Vitor Leonardo! Vi o trabalho "${laudo.tipo}" (${laudo.numero}) no site e gostaria de um orçamento similar.`,
-      publicadoEm: agora,
-    };
+  // Publish to site handler (called after confirming modal with chosen photo & title)
+  const handleConfirmarPublicarNoSite = async (novoTrabalho: TrabalhoPublicadoSite) => {
+    const laudoId = novoTrabalho.laudoId || novoTrabalho.id;
+    const agora = novoTrabalho.publicadoEm || new Date().toISOString();
 
     try {
       const existingRaw = localStorage.getItem('vl-publicados');
       const existing = existingRaw ? JSON.parse(existingRaw) : [];
       const updated = [
         novoTrabalho,
-        ...(Array.isArray(existing) ? existing.filter((w: any) => w?.id !== laudo.id && w?.laudoId !== laudo.id) : []),
+        ...(Array.isArray(existing) ? existing.filter((w: any) => w?.id !== laudoId && w?.laudoId !== laudoId) : []),
       ];
       localStorage.setItem('vl-publicados', JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
@@ -236,8 +205,9 @@ export const LaudosCentralView: React.FC = () => {
       // ignore storage errors
     }
 
-    setPublicadosIds(prev => new Set(prev).add(laudo.id));
-    atualizarLaudo(laudo.id, { publicadoNoSite: true, publicadoNoSiteEm: agora });
+    setPublicadosIds(prev => new Set(prev).add(laudoId));
+    setPublicacoesMap(prev => ({ ...prev, [laudoId]: novoTrabalho }));
+    atualizarLaudo(laudoId, { publicadoNoSite: true, publicadoNoSiteEm: agora });
 
     try {
       await fetch('/api/trabalhos-publicados', {
@@ -269,6 +239,11 @@ export const LaudosCentralView: React.FC = () => {
       const next = new Set(prev);
       next.delete(laudo.id);
       return next;
+    });
+    setPublicacoesMap(prev => {
+      const copy = { ...prev };
+      delete copy[laudo.id];
+      return copy;
     });
     atualizarLaudo(laudo.id, { publicadoNoSite: false, publicadoNoSiteEm: null });
 
@@ -593,20 +568,29 @@ export const LaudosCentralView: React.FC = () => {
                               <Globe className="w-3 h-3" />
                               <span>Publicado ✓</span>
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => handleDespublicarDoSite(laudo)}
-                              className="text-[11px] font-semibold text-[var(--muted)] hover:text-rose-600 underline cursor-pointer"
-                            >
-                              Remover do site
-                            </button>
+                            <div className="flex items-center gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => setLaudoParaPublicar(laudo)}
+                                className="text-[11px] font-semibold text-[var(--blue)] hover:underline cursor-pointer"
+                              >
+                                Editar foto/título
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDespublicarDoSite(laudo)}
+                                className="text-[11px] font-semibold text-[var(--muted)] hover:text-rose-600 underline cursor-pointer"
+                              >
+                                Remover
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handlePublicarNoSite(laudo)}
+                            onClick={() => setLaudoParaPublicar(laudo)}
                             className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1"
-                            title="Exibir este trabalho na página inicial pública"
+                            title="Escolher foto e publicar este trabalho na página inicial pública"
                           >
                             <Globe className="w-3 h-3" />
                             <span>Publicar no site</span>
@@ -1155,6 +1139,16 @@ export const LaudosCentralView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal: Publicar no site com escolha de foto e título */}
+      <PublicarNoSiteModal
+        isOpen={Boolean(laudoParaPublicar)}
+        laudo={laudoParaPublicar}
+        cliente={clientes.find(c => c.id === laudoParaPublicar?.clienteId)}
+        publicacaoExistente={laudoParaPublicar ? publicacoesMap[laudoParaPublicar.id] : null}
+        onClose={() => setLaudoParaPublicar(null)}
+        onConfirm={handleConfirmarPublicarNoSite}
+      />
 
     </div>
   );

@@ -308,13 +308,123 @@ app.post("/api/trabalhos-publicados", (req, res) => {
   }
 });
 
+const TRABALHOS_IMG_DIR = path.join(process.cwd(), "data", "uploads", "trabalhos");
+
+app.post("/api/trabalhos-publicados/imagem", (req, res) => {
+  try {
+    const { dataUrl, nomeArquivo, trabalhoId } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== "string") {
+      return res.status(400).json({ error: "Imagem não enviada." });
+    }
+    const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
+    if (!match) {
+      return res.status(400).json({ error: "Formato de imagem inválido. Utilize JPG, PNG ou WebP." });
+    }
+    const extRaw = match[1].toLowerCase();
+    const ext = extRaw === "jpeg" ? "jpg" : extRaw;
+    const buffer = Buffer.from(match[2], "base64");
+    if (!buffer.length || buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: "A imagem deve ter no máximo 10 MB." });
+    }
+    if (!fs.existsSync(TRABALHOS_IMG_DIR)) {
+      fs.mkdirSync(TRABALHOS_IMG_DIR, { recursive: true });
+    }
+    const safeId = sanitizeSafeId(trabalhoId || `trab-${Date.now()}`) || `trab-${Date.now()}`;
+    const filename = `${safeId}-${Date.now()}.${ext}`;
+    fs.writeFileSync(path.join(TRABALHOS_IMG_DIR, filename), buffer);
+    return res.json({
+      success: true,
+      url: `/api/trabalhos-publicados/imagem/${filename}`,
+      nomeArquivo: String(nomeArquivo || filename),
+    });
+  } catch (err: any) {
+    console.error("Erro ao salvar imagem de trabalho publicado:", err);
+    return res.status(500).json({ error: err.message || "Falha ao salvar imagem." });
+  }
+});
+
+app.get("/api/trabalhos-publicados/imagem/:filename", (req, res) => {
+  try {
+    const safeName = path.basename(String(req.params.filename || "")).replace(/[^a-zA-Z0-9_.-]/g, "");
+    if (!safeName) {
+      return res.status(400).json({ error: "Nome de arquivo inválido." });
+    }
+    const filePath = path.join(TRABALHOS_IMG_DIR, safeName);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Imagem não encontrada." });
+    }
+    return res.sendFile(filePath);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/laudos/:id/pdf-assinado", (req, res) => {
   try {
     const safeId = sanitizeSafeId(req.params.id);
     if (!safeId) {
       return res.status(400).json({ error: "Identificador do laudo inválido." });
     }
-    const { dataUrl, nomeArquivo } = req.body || {};
+
+    if (!fs.existsSync(LAUDOS_PDF_DIR)) {
+      fs.mkdirSync(LAUDOS_PDF_DIR, { recursive: true });
+    }
+
+    const { dataUrl, nomeArquivo, chunkData, chunkIndex, totalChunks, uploadId } = req.body || {};
+    const safeFileName = String(nomeArquivo || `${safeId}-assinado.pdf`)
+      .replace(/[^\w.\-() ]+/g, "_")
+      .slice(0, 140);
+
+    // Modo em partes (chunked) — evita limites de payload de proxy/servidor
+    if (chunkData !== undefined && chunkIndex !== undefined && totalChunks !== undefined) {
+      const idx = Number(chunkIndex);
+      const total = Number(totalChunks);
+      if (!Number.isInteger(idx) || !Number.isInteger(total) || idx < 0 || total <= 0 || idx >= total) {
+        return res.status(400).json({ error: "Parâmetros de envio em partes inválidos." });
+      }
+      const safeUploadId = sanitizeSafeId(uploadId || "default") || "default";
+      const partPath = path.join(LAUDOS_PDF_DIR, `${safeId}.${safeUploadId}.part`);
+      const cleanB64 = String(chunkData).replace(/^data:[^;]+;base64,/, "");
+      const chunkBuf = Buffer.from(cleanB64, "base64");
+
+      if (idx === 0) {
+        fs.writeFileSync(partPath, chunkBuf);
+      } else {
+        if (!fs.existsSync(partPath)) {
+          return res.status(400).json({ error: "Sessão de upload interrompida. Tente enviar novamente." });
+        }
+        fs.appendFileSync(partPath, chunkBuf);
+      }
+
+      const stats = fs.statSync(partPath);
+      if (stats.size > 30 * 1024 * 1024) {
+        fs.unlinkSync(partPath);
+        return res.status(413).json({ error: "O arquivo PDF excede o limite de 30 MB." });
+      }
+
+      if (idx < total - 1) {
+        return res.json({ success: true, partial: true, chunkIndex: idx, bytesRecebidos: stats.size });
+      }
+
+      const finalBuffer = fs.readFileSync(partPath);
+      const headerSample = finalBuffer.subarray(0, 1024).toString("latin1");
+      if (!finalBuffer.length || !headerSample.includes("%PDF")) {
+        fs.unlinkSync(partPath);
+        return res.status(400).json({ error: "O arquivo enviado não possui cabeçalho PDF válido." });
+      }
+
+      const finalPath = path.join(LAUDOS_PDF_DIR, `${safeId}.pdf`);
+      fs.renameSync(partPath, finalPath);
+
+      return res.json({
+        success: true,
+        url: `/api/laudos/${safeId}/pdf-assinado`,
+        nomeArquivo: safeFileName,
+        tamanhoBytes: finalBuffer.length,
+      });
+    }
+
+    // Modo envio único (compatibilidade)
     if (!dataUrl || typeof dataUrl !== "string") {
       return res.status(400).json({ error: "Arquivo PDF não enviado." });
     }
@@ -326,23 +436,15 @@ app.post("/api/laudos/:id/pdf-assinado", (req, res) => {
     if (!buffer.length) {
       return res.status(400).json({ error: "Arquivo PDF vazio ou inválido." });
     }
-    if (buffer.length > 18 * 1024 * 1024) {
-      return res.status(413).json({ error: "O arquivo PDF excede o limite de 18 MB." });
+    if (buffer.length > 30 * 1024 * 1024) {
+      return res.status(413).json({ error: "O arquivo PDF excede o limite de 30 MB." });
     }
-    if (buffer.subarray(0, 4).toString("utf-8") !== "%PDF") {
+    if (!buffer.subarray(0, 1024).toString("latin1").includes("%PDF")) {
       return res.status(400).json({ error: "O arquivo enviado não possui cabeçalho PDF válido." });
-    }
-
-    if (!fs.existsSync(LAUDOS_PDF_DIR)) {
-      fs.mkdirSync(LAUDOS_PDF_DIR, { recursive: true });
     }
 
     const filePath = path.join(LAUDOS_PDF_DIR, `${safeId}.pdf`);
     fs.writeFileSync(filePath, buffer);
-
-    const safeFileName = String(nomeArquivo || `${safeId}-assinado.pdf`)
-      .replace(/[^\w.\-() ]+/g, "_")
-      .slice(0, 140);
 
     return res.json({
       success: true,
@@ -1632,6 +1734,18 @@ Retorne estritamente um objeto JSON com as 13 páginas contendo o texto HTML ric
       error: "Falha na geração da proposta: " + (err?.message || "Erro desconhecido"),
     });
   }
+});
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith("/api/")) {
+    const status = err?.status || err?.statusCode || (err?.type === "entity.too.large" ? 413 : 500);
+    const msg =
+      status === 413
+        ? "Arquivo muito grande para envio direto."
+        : err?.message || "Erro interno no servidor.";
+    return res.status(status).json({ error: msg });
+  }
+  return next(err);
 });
 
 async function startServer() {

@@ -26,12 +26,27 @@ interface AnexarLaudoAssinadoModalProps {
   onSuccessToast: (msg: string) => void;
 }
 
+const CHUNK_SIZE_BYTES = 700 * 1024; // ~700 KB binário -> ~933 KB em base64 (seguro contra limites de proxy)
+
 const formatBytes = (bytes?: number) => {
   if (!bytes || bytes <= 0) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
+
+function blobParaBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = typeof reader.result === 'string' ? reader.result : '';
+      const idx = res.indexOf('base64,');
+      resolve(idx >= 0 ? res.slice(idx + 7) : res);
+    };
+    reader.onerror = () => reject(new Error('Falha ao ler trecho do arquivo PDF.'));
+    reader.readAsDataURL(blob);
+  });
+}
 
 export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> = ({
   isOpen,
@@ -55,11 +70,8 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
   const [dataInspecao, setDataInspecao] = useState(new Date().toISOString().split('T')[0]);
   const [marcarFinalizado, setMarcarFinalizado] = useState(true);
 
-  const [arquivoSelecionado, setArquivoSelecionado] = useState<{
-    nome: string;
-    tamanho: number;
-    dataUrl: string;
-  } | null>(null);
+  const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
+  const [progressoEnvio, setProgressoEnvio] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -67,6 +79,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
     if (!isOpen) return;
     setErro(null);
     setArquivoSelecionado(null);
+    setProgressoEnvio(null);
     setSalvando(false);
 
     if (laudoExistente) {
@@ -107,29 +120,71 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       return;
     }
 
-    if (file.size > 18 * 1024 * 1024) {
-      setErro('O arquivo PDF excede o limite de 18 MB.');
+    if (file.size === 0) {
+      setErro('O arquivo PDF selecionado está vazio.');
       e.target.value = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      if (!result) {
-        setErro('Não foi possível ler o arquivo PDF selecionado.');
-        return;
-      }
-      setArquivoSelecionado({
-        nome: file.name,
-        tamanho: file.size,
-        dataUrl: result,
+    if (file.size > 30 * 1024 * 1024) {
+      setErro('O arquivo PDF excede o limite de 30 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setArquivoSelecionado(file);
+  };
+
+  const enviarPdfEmPartes = async (targetId: string, file: File) => {
+    const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE_BYTES));
+    const uploadId = `up-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let respostaFinal: any = null;
+
+    for (let idx = 0; idx < totalChunks; idx++) {
+      setProgressoEnvio(
+        totalChunks > 1
+          ? `Enviando parte ${idx + 1} de ${totalChunks}...`
+          : 'Enviando PDF...'
+      );
+      const start = idx * CHUNK_SIZE_BYTES;
+      const end = Math.min(file.size, start + CHUNK_SIZE_BYTES);
+      const slice = file.slice(start, end);
+      const chunkData = await blobParaBase64(slice);
+
+      const resp = await fetch(`/api/laudos/${encodeURIComponent(targetId)}/pdf-assinado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chunkData,
+          chunkIndex: idx,
+          totalChunks,
+          uploadId,
+          nomeArquivo: file.name,
+        }),
       });
-    };
-    reader.onerror = () => {
-      setErro('Erro ao ler o arquivo PDF. Tente novamente.');
-    };
-    reader.readAsDataURL(file);
+
+      const rawText = await resp.text();
+      let json: any = {};
+      try {
+        json = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        json = {};
+      }
+
+      if (!resp.ok) {
+        throw new Error(
+          json?.error || `Erro HTTP ${resp.status} ao enviar o PDF assinado para o servidor.`
+        );
+      }
+
+      respostaFinal = json;
+    }
+
+    if (!respostaFinal?.url) {
+      throw new Error('O servidor não retornou a URL do PDF salvo.');
+    }
+
+    return respostaFinal;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,24 +221,12 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       } = {};
 
       if (arquivoSelecionado) {
-        const resp = await fetch(`/api/laudos/${encodeURIComponent(targetId)}/pdf-assinado`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dataUrl: arquivoSelecionado.dataUrl,
-            nomeArquivo: arquivoSelecionado.nome,
-          }),
-        });
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok || !json.url) {
-          throw new Error(json.error || 'Falha ao enviar o PDF assinado para o servidor.');
-        }
-
+        const json = await enviarPdfEmPartes(targetId, arquivoSelecionado);
         pdfMeta = {
           laudoAssinadoPdfUrl: json.url,
-          laudoAssinadoPdfNome: json.nomeArquivo || arquivoSelecionado.nome,
+          laudoAssinadoPdfNome: json.nomeArquivo || arquivoSelecionado.name,
           laudoAssinadoEm: new Date().toISOString(),
-          laudoAssinadoTamanho: json.tamanhoBytes || arquivoSelecionado.tamanho,
+          laudoAssinadoTamanho: json.tamanhoBytes || arquivoSelecionado.size,
         };
       }
 
@@ -250,6 +293,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       setErro(err?.message || 'Erro ao salvar o laudo assinado em PDF.');
     } finally {
       setSalvando(false);
+      setProgressoEnvio(null);
     }
   };
 
@@ -432,7 +476,6 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
             )}
           </div>
 
-          {/* Arquivo existente (quando já há PDF assinado vinculado) */}
           {isEditingExisting && laudoExistente?.laudoAssinadoPdfUrl && !arquivoSelecionado && (
             <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -477,7 +520,6 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
             </div>
           )}
 
-          {/* Área de upload */}
           <div className="space-y-2">
             <span className="block text-sm font-semibold">
               {isEditingExisting && laudoExistente?.laudoAssinadoPdfUrl
@@ -494,6 +536,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              disabled={salvando}
               className="w-full p-5 rounded-xl border-2 border-dashed border-[var(--line)] hover:border-[var(--blue)] bg-[var(--paper)] transition-colors flex flex-col items-center justify-center gap-2 text-center cursor-pointer"
             >
               <Upload className="w-6 h-6 text-[var(--blue)]" />
@@ -501,10 +544,10 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
                 <>
                   <span className="text-sm font-bold text-[var(--ink)] flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    {arquivoSelecionado.nome}
+                    {arquivoSelecionado.name}
                   </span>
                   <span className="text-xs text-[var(--muted)]">
-                    {formatBytes(arquivoSelecionado.tamanho)} · Clique para escolher outro PDF
+                    {formatBytes(arquivoSelecionado.size)} · Clique para escolher outro PDF
                   </span>
                 </>
               ) : (
@@ -513,7 +556,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
                     Clique para selecionar o PDF assinado
                   </span>
                   <span className="text-xs text-[var(--muted)]">
-                    Apenas arquivos .pdf (máx. 18 MB) · Assinatura digital gov.br, ICP-Brasil ou escaneado
+                    Apenas arquivos .pdf (máx. 30 MB) · Assinatura digital gov.br, ICP-Brasil ou escaneado
                   </span>
                 </>
               )}
@@ -556,7 +599,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
                 {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>
                   {salvando
-                    ? 'Enviando PDF...'
+                    ? (progressoEnvio || 'Enviando PDF...')
                     : isEditingExisting
                       ? 'Salvar PDF assinado'
                       : 'Salvar laudo assinado'}
