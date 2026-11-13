@@ -160,6 +160,7 @@ export const LaudoEditorView: React.FC = () => {
   const [carregandoIa, setCarregandoIa] = useState(false);
   const [artNumeroInput, setArtNumeroInput] = useState(laudoOriginal?.artNumero || '');
   const [termoAceito, setTermoAceito] = useState(false);
+  const [erroClienteValidacao, setErroClienteValidacao] = useState<string | null>(null);
 
   // Editing section title inline
   const [editandoSecaoId, setEditandoSecaoId] = useState<string | null>(null);
@@ -333,8 +334,22 @@ export const LaudoEditorView: React.FC = () => {
     }, 400);
   };
 
+  const isClienteRealVinculado = (estado: Laudo | null): boolean => {
+    if (!estado) return false;
+    const nome = (estado.clienteNome || '').trim();
+    const temNomeReal = Boolean(nome) && !/^cliente(\s+contratante|\s+corporativo)?$/i.test(nome);
+    const temClienteCadastro = Boolean(estado.clienteId && clientes.some(c => c.id === estado.clienteId));
+    return temNomeReal && temClienteCadastro;
+  };
+
   // Immediate save on user demand
   const handleSalvarManual = () => {
+    if (!isClienteRealVinculado(laudoState)) {
+      setErroClienteValidacao('Selecione um cliente real cadastrado na aba "Ficha & Vistoria" antes de salvar o laudo.');
+      setAbaEstruturada('geral');
+      return;
+    }
+    setErroClienteValidacao(null);
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
@@ -655,6 +670,14 @@ export const LaudoEditorView: React.FC = () => {
   // Finalização e emissão oficial com ART e congelamento de revisão
   const handleConfirmarEmissaoOficial = () => {
     if (!laudoState) return;
+    if (!isClienteRealVinculado(laudoState)) {
+      setErroClienteValidacao('Selecione um cliente real cadastrado na aba "Ficha & Vistoria" antes de emitir oficialmente o laudo.');
+      setAbaEstruturada('geral');
+      setModalFinalizarAberto(false);
+      setModalVerificacaoAberto(false);
+      return;
+    }
+    setErroClienteValidacao(null);
     const artNum = laudoState.artNumero || artNumeroInput.trim() || 'PE20261621255';
     const codigoVerif = laudoState.codigoVerificacao || `${laudoState.numero || 'LAR-2026-001'}-7K4Q`;
     const hash = laudoState.hashPdf || 'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
@@ -1410,61 +1433,110 @@ export const LaudoEditorView: React.FC = () => {
 
         {/* Conteúdo da Aba 1: Ficha & Vistoria */}
         {abaEstruturada === 'geral' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div>
-              <label className="block text-slate-500 font-semibold mb-1">Local da Vistoria (In Loco):</label>
-              <input
-                type="text"
-                value={laudoState.localVistoria || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  agendarAutoSave({ ...laudoState, localVistoria: val });
-                }}
-                placeholder="Ex: Recife, PE — Unidade Operacional"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
-              />
-            </div>
+          <div className="space-y-3">
+            {erroClienteValidacao && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{erroClienteValidacao}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Cliente Contratante *:</label>
+                <select
+                  value={laudoState.clienteId || ''}
+                  onChange={(e) => {
+                    const novoId = e.target.value;
+                    const cli = clientes.find(c => c.id === novoId);
+                    if (!cli) {
+                      agendarAutoSave({ ...laudoState, clienteId: '', clienteNome: '' });
+                      return;
+                    }
+                    setErroClienteValidacao(null);
+                    const prim = cli.contatos?.[0];
+                    const endStr = cli.endereco?.cidade
+                      ? `${cli.endereco.logradouro ? cli.endereco.logradouro + ', ' : ''}${cli.endereco.numero ? cli.endereco.numero + ' - ' : ''}${cli.endereco.bairro ? cli.endereco.bairro + ' - ' : ''}${cli.endereco.cidade}/${cli.endereco.estado || 'PE'}`.trim()
+                      : laudoState.clienteEndereco;
+                    agendarAutoSave({
+                      ...laudoState,
+                      clienteId: cli.id,
+                      clienteNome: cli.nomeFantasia || cli.razaoSocial,
+                      clienteCnpj: cli.cpfCnpj || cli.cnpj || '',
+                      clienteContato: prim?.nome || laudoState.clienteContato || '',
+                      clienteContatoCargo: prim?.cargo || laudoState.clienteContatoCargo || '',
+                      clienteContatoTelefone: prim?.telefone || laudoState.clienteContatoTelefone || '',
+                      clienteContatoEmail: prim?.email || laudoState.clienteContatoEmail || '',
+                      clienteEndereco: endStr || '',
+                    });
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border text-slate-800 dark:text-slate-200 font-semibold ${
+                    erroClienteValidacao ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <option value="">Selecione um cliente cadastrado...</option>
+                  {clientes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.nomeFantasia || c.razaoSocial}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-slate-500 font-semibold mb-1">Acompanhante da Vistoria:</label>
-              <input
-                type="text"
-                value={laudoState.acompanhanteVistoria || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  agendarAutoSave({ ...laudoState, acompanhanteVistoria: val });
-                }}
-                placeholder="Ex: Carlos Eduardo (Coord. Manutenção)"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
-              />
-            </div>
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Local da Vistoria (In Loco):</label>
+                <input
+                  type="text"
+                  value={laudoState.localVistoria || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, localVistoria: val });
+                  }}
+                  placeholder="Ex: Recife, PE — Unidade Operacional"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
 
-            <div>
-              <label className="block text-slate-500 font-semibold mb-1">Fabricante & Modelo do Ativo:</label>
-              <input
-                type="text"
-                value={`${laudoState.ativoFabricante || ''} ${laudoState.ativoModelo || ''}`.trim()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  agendarAutoSave({ ...laudoState, ativoFabricante: val });
-                }}
-                placeholder="Ex: Renault / Randon Munck"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
-              />
-            </div>
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Acompanhante da Vistoria:</label>
+                <input
+                  type="text"
+                  value={laudoState.acompanhanteVistoria || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, acompanhanteVistoria: val });
+                  }}
+                  placeholder="Ex: Carlos Eduardo (Coord. Manutenção)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
 
-            <div>
-              <label className="block text-slate-500 font-semibold mb-1">Capacidade / Número de Série:</label>
-              <input
-                type="text"
-                value={`${laudoState.ativoCapacidade || ''} • Série ${laudoState.ativoNumeroSerie || ''}`.trim()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  agendarAutoSave({ ...laudoState, ativoCapacidade: val });
-                }}
-                placeholder="Ex: 12t • Série RD-2021-998"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
-              />
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Fabricante & Modelo do Ativo:</label>
+                <input
+                  type="text"
+                  value={`${laudoState.ativoFabricante || ''} ${laudoState.ativoModelo || ''}`.trim()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, ativoFabricante: val });
+                  }}
+                  placeholder="Ex: Renault / Randon Munck"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1">Capacidade / Número de Série:</label>
+                <input
+                  type="text"
+                  value={`${laudoState.ativoCapacidade || ''} • Série ${laudoState.ativoNumeroSerie || ''}`.trim()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    agendarAutoSave({ ...laudoState, ativoCapacidade: val });
+                  }}
+                  placeholder="Ex: 12t • Série RD-2021-998"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
             </div>
           </div>
         )}

@@ -226,6 +226,46 @@ function normalizarChecklistsCampo(lista: ChecklistCampo[]): ChecklistCampo[] {
   return Array.from(porId.values());
 }
 
+function normalizarNumeroLaudoPadrao(numero?: string): string {
+  if (!numero) return '';
+  const match = numero.trim().match(/^LAU-(\d{4})\/(\d+)$/i);
+  if (match) return `LAR-${match[1]}-${match[2]}`;
+  return numero.replace(/^LAU-(\d{4})-(\d+)$/i, 'LAR-$1-$2');
+}
+
+function normalizarLaudoPadrao(l: Laudo, clientesLista: Cliente[]): Laudo {
+  let atualizado = l;
+  const numNorm = normalizarNumeroLaudoPadrao(l.numero);
+  const mudouNumero = numNorm && numNorm !== l.numero;
+
+  const nomeTrim = (l.clienteNome || '').trim();
+  const nomeGenerico = !nomeTrim || /^cliente(\s+contratante|\s+corporativo)?$/i.test(nomeTrim);
+  const clienteIdAlvo = l.clienteId || (l.id === 'lau-2026-001' ? 'cli-adf' : '');
+  const clienteRef = clientesLista.find(c => c.id === clienteIdAlvo) ||
+    (l.id === 'lau-2026-001' ? clientesLista.find(c => c.id === 'cli-adf') : undefined);
+
+  if (mudouNumero || nomeGenerico || (l.id === 'lau-2026-001' && !l.clienteId)) {
+    const secoesAtualizadas = mudouNumero && Array.isArray(l.secoes)
+      ? l.secoes.map(sec =>
+          sec.conteudoHtml && sec.conteudoHtml.includes('LAU-2026/002')
+            ? { ...sec, conteudoHtml: sec.conteudoHtml.replace(/LAU-2026\/002/g, 'LAR-2026-002') }
+            : sec
+        )
+      : l.secoes;
+
+    atualizado = {
+      ...l,
+      numero: numNorm || l.numero,
+      clienteId: clienteRef?.id || clienteIdAlvo || l.clienteId,
+      clienteNome: nomeGenerico
+        ? (clienteRef?.nomeFantasia || clienteRef?.razaoSocial || (l.id === 'lau-2026-001' ? 'Adf Auto Pecas LTDA' : l.clienteNome))
+        : l.clienteNome,
+      secoes: secoesAtualizadas,
+    };
+  }
+  return atualizado;
+}
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, firebaseUser, isOnline } = useAuth();
 
@@ -609,9 +649,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let loaded: Laudo[] = loadStorage('vl_laudos', LAUDOS_INICIAIS);
     let alterouStorage = false;
 
-    // Garantir que todos os laudos padrão de LAUDOS_INICIAIS (especialmente LAU-2026/002 Duster) estejam presentes
+    // Garantir que todos os laudos padrão de LAUDOS_INICIAIS (especialmente LAR-2026-002 Duster) estejam presentes
     for (const laudoPadrao of LAUDOS_INICIAIS) {
-      const idxExistente = loaded.findIndex((l: Laudo) => l.id === laudoPadrao.id || l.numero === laudoPadrao.numero);
+      const idxExistente = loaded.findIndex((l: Laudo) => l.id === laudoPadrao.id || normalizarNumeroLaudoPadrao(l.numero) === normalizarNumeroLaudoPadrao(laudoPadrao.numero));
       if (idxExistente === -1 && !removidosSet.has(laudoPadrao.id)) {
         loaded.unshift(laudoPadrao);
         alterouStorage = true;
@@ -619,7 +659,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const lAtual = loaded[idxExistente];
         if (laudoPadrao.id === 'lau-2026-002-duster') {
           // Garante a versão completa restaurada com capa, registros fotográficos reais (7 fotos), diagrama e ART
-          if (!lAtual.capaFotoUrl || !lAtual.artArquivoUrl || (lAtual.anexosFotos?.length || 0) < 7 || (lAtual.secoes?.[7]?.fotos?.length || 0) < 7 || (lAtual.secoes?.length || 0) < 12) {
+          if (!lAtual.capaFotoUrl || !lAtual.artArquivoUrl || (lAtual.anexosFotos?.length || 0) < 7 || (lAtual.secoes?.[7]?.fotos?.length || 0) < 7 || (lAtual.secoes?.length || 0) < 12 || lAtual.numero === 'LAU-2026/002') {
             loaded[idxExistente] = {
               ...LAUDO_DUSTER_COMPLETO,
               orcamentoOrigemId: lAtual.orcamentoOrigemId || 'orc-1790444416499',
@@ -639,10 +679,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Sanitiza seções de Dados do Veículo para garantir proprietário correto do veículo
+    // Sanitiza seções de Dados do Veículo e normaliza códigos e nomes de clientes
     loaded = loaded.map((l: Laudo) => {
+      const norm = normalizarLaudoPadrao(l, clientes);
+      if (norm !== l) alterouStorage = true;
       let mod = false;
-      const novasSecoes = (l.secoes || []).map(sec => {
+      const novasSecoes = (norm.secoes || []).map(sec => {
         if (sec.conteudoHtml && /propriet[aá]rio/i.test(sec.conteudoHtml) && /adf\s*auto|adf\s*caruaru|adf\s*com[eé]rcio/i.test(sec.conteudoHtml)) {
           const corrigido = sec.conteudoHtml.replace(
             /(<td[^>]*>Propriet[aá]rio:?<\/td>\s*<td[^>]*>)([^<]*Adf[^<]*)(<\/td>)/gi,
@@ -658,9 +700,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (mod) {
         alterouStorage = true;
-        return { ...l, secoes: novasSecoes };
+        return { ...norm, secoes: novasSecoes };
       }
-      return l;
+      return norm;
     });
 
     if (alterouStorage) {
@@ -942,22 +984,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const removidosSet = new Set(laudosRemovidos);
           const docs = snapshot.docs.map(d => d.data() as Laudo).filter(d => !removidosSet.has(d.id));
 
-          // Preserva sempre os laudos padrão canônicos (especialmente LAU-2026/002) se não estiverem no snapshot
+          // Preserva sempre os laudos padrão canônicos (especialmente LAR-2026-002) se não estiverem no snapshot
           const docIds = new Set(docs.map(d => d.id));
-          const docNums = new Set(docs.map(d => d.numero));
-          const docsMerged = [...docs];
+          const docNums = new Set(docs.map(d => normalizarNumeroLaudoPadrao(d.numero)));
+          const docsMerged = docs.map(d => normalizarLaudoPadrao(d, clientes));
 
           for (const padrao of LAUDOS_INICIAIS) {
-            if (!removidosSet.has(padrao.id) && !docIds.has(padrao.id) && !docNums.has(padrao.numero)) {
+            if (!removidosSet.has(padrao.id) && !docIds.has(padrao.id) && !docNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
               docsMerged.unshift(padrao);
             }
           }
 
           // Garantir que o laudo do Duster tenha o orçamento vinculado e a versão canônica completa com fotos e ART
-          const dusterIdx = docsMerged.findIndex(l => l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002');
+          const dusterIdx = docsMerged.findIndex(l => l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002');
           if (dusterIdx >= 0) {
             const duster = docsMerged[dusterIdx];
-            if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12) {
+            if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12 || duster.numero === 'LAU-2026/002') {
               const dusterCompleto: Laudo = {
                 ...LAUDO_DUSTER_COMPLETO,
                 orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',
@@ -1122,7 +1164,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const limpos = prev.filter(l => !removidosSet.has(l.id));
             const serverMap = new Map<string, Laudo>(data.laudos.filter((l: Laudo) => !removidosSet.has(l.id)).map((l: Laudo) => [l.id, l]));
             const atualizados = limpos.map(l => {
-              if (l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002') {
+              if (l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002') {
                 const fromServer = serverMap.get(l.id);
                 return {
                   ...LAUDO_DUSTER_COMPLETO,
@@ -1132,17 +1174,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
               const fromServer = serverMap.get(l.id);
               if (fromServer) {
-                return { ...fromServer, ...l };
+                return normalizarLaudoPadrao({ ...fromServer, ...l }, clientes);
               }
-              return l;
+              return normalizarLaudoPadrao(l, clientes);
             });
             const prevIds = new Set(limpos.map(l => l.id));
-            const novos = data.laudos.filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id));
+            const novos = data.laudos
+              .filter((l: Laudo) => !removidosSet.has(l.id) && !prevIds.has(l.id))
+              .map((l: Laudo) => normalizarLaudoPadrao(l, clientes));
             let merged = [...novos, ...atualizados];
             const mergedIds = new Set(merged.map(m => m.id));
-            const mergedNums = new Set(merged.map(m => m.numero));
+            const mergedNums = new Set(merged.map(m => normalizarNumeroLaudoPadrao(m.numero)));
             for (const padrao of LAUDOS_INICIAIS) {
-              if (!removidosSet.has(padrao.id) && !mergedIds.has(padrao.id) && !mergedNums.has(padrao.numero)) {
+              if (!removidosSet.has(padrao.id) && !mergedIds.has(padrao.id) && !mergedNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
                 merged.unshift(padrao);
               }
             }
@@ -1151,18 +1195,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         } else {
           setLaudos(prev => {
-            const limpos = prev.filter(l => !removidosSet.has(l.id));
+            const limpos = prev.filter(l => !removidosSet.has(l.id)).map(l => normalizarLaudoPadrao(l, clientes));
             const limposIds = new Set(limpos.map(l => l.id));
-            const limposNums = new Set(limpos.map(l => l.numero));
+            const limposNums = new Set(limpos.map(l => normalizarNumeroLaudoPadrao(l.numero)));
             const merged = [...limpos];
             for (const padrao of LAUDOS_INICIAIS) {
-              if (!removidosSet.has(padrao.id) && !limposIds.has(padrao.id) && !limposNums.has(padrao.numero)) {
+              if (!removidosSet.has(padrao.id) && !limposIds.has(padrao.id) && !limposNums.has(normalizarNumeroLaudoPadrao(padrao.numero))) {
                 merged.unshift(padrao);
               }
             }
             for (let i = 0; i < merged.length; i++) {
-              if (merged[i].id === 'lau-2026-002-duster' || merged[i].numero === 'LAU-2026/002') {
-                if (!merged[i].capaFotoUrl || (merged[i].anexosFotos?.length || 0) < 7 || (merged[i].secoes?.length || 0) < 12) {
+              if (merged[i].id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(merged[i].numero) === 'LAR-2026-002') {
+                if (!merged[i].capaFotoUrl || (merged[i].anexosFotos?.length || 0) < 7 || (merged[i].secoes?.length || 0) < 12 || merged[i].numero === 'LAU-2026/002') {
                   merged[i] = {
                     ...LAUDO_DUSTER_COMPLETO,
                     orcamentoOrigemId: merged[i].orcamentoOrigemId || 'orc-1790444416499',
@@ -2350,11 +2394,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveStorage('vl_orcamentos', docs);
       }
       if (!snapLau.empty) {
-        let docs = snapLau.docs.map(d => d.data() as Laudo);
-        const dusterIdx = docs.findIndex(l => l.id === 'lau-2026-002-duster' || l.numero === 'LAU-2026/002');
+        let docs = snapLau.docs.map(d => normalizarLaudoPadrao(d.data() as Laudo, clientes));
+        const dusterIdx = docs.findIndex(l => l.id === 'lau-2026-002-duster' || normalizarNumeroLaudoPadrao(l.numero) === 'LAR-2026-002');
         if (dusterIdx >= 0) {
           const duster = docs[dusterIdx];
-          if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12) {
+          if (!duster.capaFotoUrl || !duster.artArquivoUrl || (duster.anexosFotos?.length || 0) < 7 || (duster.secoes?.length || 0) < 12 || duster.numero === 'LAU-2026/002') {
             docs[dusterIdx] = {
               ...LAUDO_DUSTER_COMPLETO,
               orcamentoOrigemId: duster.orcamentoOrigemId || 'orc-1790444416499',

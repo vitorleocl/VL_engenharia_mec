@@ -12,7 +12,8 @@ import {
   LogOut, 
   ExternalLink,
   Sun,
-  Moon
+  Moon,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -23,8 +24,16 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { currentUser, logout } = useAuth();
-  const { laudos, clientes, ativos, orcamentos } = useData();
+  const { currentUser, logout, isOnline } = useAuth();
+  const {
+    laudos,
+    clientes,
+    ativos,
+    orcamentos,
+    pendingSyncCount,
+    sincronizandoOffline,
+    sincronizarChecklistsOffline,
+  } = useData();
   const { theme, toggleTheme } = useAdminTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,8 +57,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const isMaster = currentUser.role === 'master';
   const isColaborador = currentUser.role === 'colaborador' || isMaster;
+  const orcamentosAbertosCount = orcamentos.filter(o => o.status === 'enviado' || o.status === 'rascunho').length;
 
-  // Menu lateral ajustado conforme requisitos (removido o item redundante 'Novo laudo')
+  // Menu lateral ajustado conforme requisitos
   const navItems = [
     {
       id: 'visao-geral',
@@ -57,6 +67,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin',
       icon: LayoutDashboard,
       badge: '',
+      title: 'Visão geral do painel técnico',
       visible: true
     },
     {
@@ -65,6 +76,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/laudos',
       icon: FileText,
       badge: String(laudos.length),
+      title: `${laudos.length} laudos registrados`,
       visible: true
     },
     {
@@ -72,7 +84,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       label: 'Checklist de campo',
       path: '/admin/checklists-campo',
       icon: ClipboardCheck,
-      badge: '',
+      badge: pendingSyncCount > 0 ? String(pendingSyncCount) : '',
+      title: pendingSyncCount > 0
+        ? `${pendingSyncCount} checklist(s) pendente(s) de sincronização`
+        : 'Checklists e vistorias de campo',
       visible: true
     },
     {
@@ -81,6 +96,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/clientes',
       icon: Users,
       badge: String(clientes.length),
+      title: `${clientes.length} clientes cadastrados`,
       visible: isColaborador
     },
     {
@@ -89,6 +105,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/ativos',
       icon: Cpu,
       badge: String(ativos.length),
+      title: `${ativos.length} equipamentos cadastrados`,
       visible: true
     },
     {
@@ -97,6 +114,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/orcamentos',
       icon: FileSpreadsheet,
       badge: String(orcamentos.length),
+      title: `${orcamentos.length} orçamentos no total (${orcamentosAbertosCount} em aberto)`,
       visible: isColaborador
     },
     {
@@ -105,6 +123,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/faturamento',
       icon: TrendingUp,
       badge: String(orcamentos.filter(o => o.status === 'faturado').length),
+      title: 'Faturamento e histórico de propostas faturadas',
       visible: isColaborador
     },
     {
@@ -113,6 +132,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/auditoria',
       icon: ShieldCheck,
       badge: 'Master',
+      title: 'Auditoria, logs e controle de acessos (Master)',
       visible: isMaster
     }
   ];
@@ -125,14 +145,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--adm-bg,#0b1a30)] text-[var(--adm-text,#f4f7fc)] font-['Poppins',system-ui,sans-serif] flex flex-col antialiased">
+    <div className="vl-painel min-h-screen bg-[var(--adm-bg,#0b1a30)] text-[var(--adm-text,#f4f7fc)] font-['Poppins',system-ui,sans-serif] flex flex-col antialiased">
       
       {/* 1. Header do Painel com Logo Oficial e Ações Rápidas */}
-      <header className="sticky top-0 z-40 bg-[var(--adm-top,#0a1628)] border-b border-[var(--adm-line,rgba(159,176,200,0.16))] px-4 sm:px-7 h-[68px] flex items-center justify-between">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <header className="sticky top-0 z-40 bg-[var(--adm-top,#0a1628)] border-b border-[var(--adm-line,rgba(159,176,200,0.16))] px-4 sm:px-7 h-[68px] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link 
             to="/admin" 
-            className="flex items-center text-decoration-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 rounded-sm"
+            className="flex items-center text-decoration-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 rounded-sm shrink-0"
             aria-label="VL Engenharia, início do painel"
           >
             <img 
@@ -141,12 +161,59 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               className="h-[38px] w-auto block select-none" 
             />
           </Link>
-          <span className="text-[0.78rem] font-medium py-1 px-3 rounded-full border border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-mut,#a9b8cf)] hidden sm:inline-block">
+          <span className="text-[0.78rem] font-medium py-1 px-3 rounded-full border border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-mut,#a9b8cf)] hidden sm:inline-block whitespace-nowrap">
             Painel técnico
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Indicador de sincronização do checklist de campo */}
+          <button
+            type="button"
+            onClick={() => sincronizarChecklistsOffline()}
+            disabled={sincronizandoOffline}
+            title={
+              !isOnline
+                ? 'Sem conexão — checklists salvos offline no aparelho'
+                : pendingSyncCount > 0
+                ? `${pendingSyncCount} checklist(s) pendente(s) — clique para sincronizar`
+                : 'Checklists de campo sincronizados'
+            }
+            className={`hidden md:inline-flex items-center gap-2 h-10 px-3 rounded-lg border text-[0.8rem] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 ${
+              !isOnline
+                ? 'border-amber-500/45 text-amber-400 bg-amber-500/5'
+                : pendingSyncCount > 0
+                ? 'border-[#6ea1ff]/50 text-[#6ea1ff] bg-[#6ea1ff]/10'
+                : 'border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-mut,#a9b8cf)] hover:border-[#6ea1ff] hover:text-[var(--adm-text)]'
+            }`}
+          >
+            {sincronizandoOffline ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#6ea1ff]" />
+            ) : (
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  !isOnline
+                    ? 'bg-amber-400'
+                    : pendingSyncCount > 0
+                    ? 'bg-[#6ea1ff]'
+                    : 'bg-emerald-400'
+                }`}
+                aria-hidden="true"
+              />
+            )}
+            <span>
+              {!isOnline
+                ? pendingSyncCount > 0
+                  ? `Offline (${pendingSyncCount})`
+                  : 'Offline'
+                : sincronizandoOffline
+                ? 'Sincronizando...'
+                : pendingSyncCount > 0
+                ? `${pendingSyncCount} pendente${pendingSyncCount > 1 ? 's' : ''}`
+                : 'Campo sincronizado'}
+            </span>
+          </button>
+
           <Link
             to="/"
             className="h-10 px-3.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] text-[0.88rem] font-medium inline-flex items-center gap-2 hover:border-[#6ea1ff] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
@@ -183,7 +250,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         
         {/* Barra Lateral (Navy Sidebar) */}
         <aside 
-          className="w-full md:w-[280px] bg-[var(--adm-side,#0e2347)] border-r border-[var(--adm-line,rgba(159,176,200,0.16))] p-4 flex md:flex-col gap-1 md:sticky md:top-[68px] md:self-start md:h-[calc(100vh-68px)] overflow-x-auto md:overflow-y-auto flex-none z-30"
+          className="w-full md:w-[292px] bg-[var(--adm-side,#0e2347)] border-r border-[var(--adm-line,rgba(159,176,200,0.16))] p-4 flex md:flex-col gap-1 md:sticky md:top-[68px] md:self-start md:h-[calc(100vh-68px)] overflow-x-auto md:overflow-y-auto flex-none z-30"
           aria-label="Menu do painel"
         >
           <nav className="flex md:flex-col gap-1 flex-1 min-w-0" aria-label="Navegação interna">
@@ -199,19 +266,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   <Link
                     key={item.id}
                     to={item.path}
+                    title={item.title}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`flex items-center justify-between px-3.5 py-3 rounded-lg text-[0.92rem] font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 ${
+                    className={`flex items-center justify-between gap-3 px-3.5 py-3 rounded-lg text-[0.92rem] font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2 ${
                       isActive
                         ? 'bg-[var(--adm-blue,#2160db)] text-white shadow-xs'
                         : 'text-[var(--adm-text,#f4f7fc)] hover:bg-[rgba(110,161,255,0.1)]'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <item.icon className="w-[18px] h-[18px] flex-none opacity-85" />
-                      <span>{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className={`text-[0.72rem] min-w-[22px] text-center px-1.5 py-0.5 rounded font-medium ${
+                      <span className={`shrink-0 ml-2 text-[0.72rem] min-w-[22px] text-center px-2 py-0.5 rounded font-medium ${
                         isActive ? 'bg-white/25 text-white' : 'bg-[rgba(110,161,255,0.18)] text-[var(--adm-text)]'
                       }`}>
                         {item.badge}
@@ -222,7 +290,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               })}
           </nav>
 
-          {/* 3. Rodapé da Lateral com Perfil do Usuário (Gemini Removido) */}
+          {/* 3. Rodapé da Lateral com Perfil do Usuário */}
           <div className="hidden md:flex items-center gap-3 pt-4 pb-1 border-t border-[var(--adm-line,rgba(159,176,200,0.16))] mt-auto">
             <div 
               className="w-11 h-11 rounded-full bg-[var(--adm-blue,#2160db)] bg-cover bg-center flex items-center justify-center font-semibold text-white flex-none overflow-hidden text-[0.9rem]"

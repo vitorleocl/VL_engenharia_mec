@@ -1,0 +1,52 @@
+/*! VL Painel Motion v1 — camada de movimento para /admin (Visão geral e demais telas)
+   Não altera conteúdo, cores nem layout. Só opacity/translate/scale, com fill "backwards". */
+:root{ --vm-e:cubic-bezier(.22,1,.36,1); --vm-io:cubic-bezier(.65,0,.35,1); --vm-d:560ms }
+html{ scroll-behavior:smooth }
+
+/* entrada (uma vez) */
+html.vlm [data-vr]:not([data-in]){ opacity:0 }
+html.vlm [data-vr][data-in]{ animation:vm-up var(--vm-d) var(--vm-e) var(--vd,0ms) backwards }
+html.vlm [data-vr="left"][data-in]{ animation-name:vm-left }
+html.vlm [data-vr="fade"][data-in]{ animation-name:vm-fade }
+html.vlm [data-vr="pop"][data-in]{ animation-name:vm-pop; animation-duration:520ms }
+html.vlm [data-vr="bar"][data-in]{ animation-name:vm-bar; animation-duration:900ms; transform-origin:0 50% }
+@keyframes vm-up{ from{ opacity:0; translate:0 14px } }
+@keyframes vm-left{ from{ opacity:0; translate:-14px 0 } }
+@keyframes vm-fade{ from{ opacity:0 } }
+@keyframes vm-pop{ 0%{ opacity:0; scale:.6 } 60%{ scale:1.1 } 100%{ opacity:1; scale:1 } }
+@keyframes vm-bar{ from{ opacity:1; scale:0 1 } }
+
+/* cabeçalho */
+.vl-painel header.sticky{ transition:box-shadow 280ms var(--vm-e) }
+.vl-painel header.sticky[data-stuck]{ box-shadow:0 10px 28px -22px rgba(11,31,58,.5) }
+
+/* menu lateral: ícone avança, ativo respira uma vez */
+.vl-painel aside nav a svg{ transition:translate 240ms var(--vm-e) }
+@media (hover:hover){ .vl-painel aside nav a:not([aria-current]):hover svg{ translate:3px 0 } }
+.vl-painel aside nav a[aria-current="page"]{ animation:vm-act 700ms var(--vm-e) 350ms backwards }
+@keyframes vm-act{ from{ scale:.97; opacity:.6 } }
+.vl-painel aside nav a:active{ scale:.985 }
+
+/* toque e foco */
+.vl-painel main a,.vl-painel main button,.vl-painel header a,.vl-painel header button{ transition-property:background-color,border-color,color,box-shadow,translate,scale,filter }
+.vl-painel main a:active,.vl-painel header button:active{ scale:.98 }
+.vl-painel a[href*="novo=1"]{ transition:translate 220ms var(--vm-e), scale 140ms var(--vm-e), filter 220ms var(--vm-e) }
+@media (hover:hover){ .vl-painel a[href*="novo=1"]:hover{ translate:0 -1px } }
+.vl-painel tbody tr{ transition:background-color 220ms var(--vm-e) }
+
+/* troca de rota: só o miolo troca; cabeçalho e menu ficam parados */
+.vl-painel main>div[data-enter]{ animation:vm-up 420ms var(--vm-e) backwards }
+
+/* troca de tema */
+html.vm-theming *,html.vm-theming *::before,html.vm-theming *::after{
+  transition:background-color 380ms var(--vm-io), color 380ms var(--vm-io), border-color 380ms var(--vm-io), fill 380ms var(--vm-io), stroke 380ms var(--vm-io), box-shadow 380ms var(--vm-io)!important }
+
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto }
+  *,*::before,*::after{ animation:none!important; transition-duration:.01ms!important }
+  html.vlm [data-vr]:not([data-in]){ opacity:1 }
+}
+
+@media print {
+  html.vlm [data-vr]{ opacity:1!important; animation:none!important }
+}

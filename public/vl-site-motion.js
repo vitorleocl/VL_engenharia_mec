@@ -146,11 +146,14 @@
   var last = location.pathname;
   function routeChanged() {
     if (location.pathname === last) return; last = location.pathname;
-    var m = d.querySelector('main');
-    if (m) {
-      if (!location.hash) w.scrollTo({ top: 0, behavior: 'auto' });
-      m.removeAttribute('data-enter'); void m.offsetWidth; m.setAttribute('data-enter', '');
-      setTimeout(function () { m.removeAttribute('data-enter'); }, 600);
+    var p = location.pathname || '';
+    if (p.indexOf('/admin') !== 0 && p.indexOf('/imprimir') === -1) {
+      var m = d.querySelector('main');
+      if (m) {
+        if (!location.hash) w.scrollTo({ top: 0, behavior: 'auto' });
+        m.removeAttribute('data-enter'); void m.offsetWidth; m.setAttribute('data-enter', '');
+        setTimeout(function () { m.removeAttribute('data-enter'); }, 600);
+      }
     }
     setTimeout(scan, 60);
   }

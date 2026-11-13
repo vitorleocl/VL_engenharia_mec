@@ -36,12 +36,20 @@ export const VerificacaoPublicaView: React.FC = () => {
   // Busca o laudo pelo código de verificação ou pelo número do laudo
   const laudo = useMemo(() => {
     if (!codigoNormalizado) return null;
+    const normalizar = (val?: string) =>
+      (val || '')
+        .toUpperCase()
+        .replace(/^LAU-/, 'LAR-')
+        .replace(/[^A-Z0-9]/g, '');
+    const alvoNorm = normalizar(codigoNormalizado);
+
     return laudos.find(l => {
       const matchVerif = l.codigoVerificacao?.toUpperCase() === codigoNormalizado;
       const matchNum = l.numero?.toUpperCase() === codigoNormalizado;
       const matchId = l.id?.toUpperCase() === codigoNormalizado;
-      const matchSemHifen = l.codigoVerificacao?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() === codigoNormalizado.replace(/[^a-zA-Z0-9]/g, '');
-      return matchVerif || matchNum || matchId || matchSemHifen;
+      const matchNormVerif = normalizar(l.codigoVerificacao) === alvoNorm;
+      const matchNormNum = normalizar(l.numero) === alvoNorm;
+      return matchVerif || matchNum || matchId || matchNormVerif || matchNormNum;
     });
   }, [laudos, codigoNormalizado]);
 

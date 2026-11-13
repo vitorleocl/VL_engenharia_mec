@@ -64,7 +64,7 @@ export const LAUDO_FALHA_MECANICA_DEF: TipoLaudoDef = {
   </div>
   <div class="grid grid-cols-2 gap-2 text-xs text-slate-700 pt-1">
     <p><strong>Empresa Emitente:</strong> VL ENGENHARIA</p>
-    <p><strong>Número do Laudo:</strong> LAU-2026/002</p>
+    <p><strong>Número do Laudo:</strong> LAR-2026-002</p>
     <p><strong>ART Vinculada:</strong> Registrada junto ao CREA-PE</p>
     <p><strong>Data de Emissão:</strong> Outubro de 2026</p>
     <p class="col-span-2"><strong>Engenheiro Responsável:</strong> Vitor Leonardo Cordeiro Linhares — CREA-PE 1822299490</p>

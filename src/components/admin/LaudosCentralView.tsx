@@ -50,6 +50,7 @@ export const LaudosCentralView: React.FC = () => {
   const [categoriaIndex, setCategoriaIndex] = useState(0);
   const [subtipoIndex, setSubtipoIndex] = useState(0);
   const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '');
+  const [erroClienteNovo, setErroClienteNovo] = useState<string | null>(null);
   const [novoEquipamento, setNovoEquipamento] = useState('');
   const [novaData, setNovaData] = useState(new Date().toISOString().split('T')[0]);
 
@@ -90,6 +91,13 @@ export const LaudosCentralView: React.FC = () => {
     return { texto: 'Risco alto: ação imediata e possível interdição.', cor: 'text-[var(--bad)]' };
   }, [hrnValor]);
 
+  const contagemStatus = useMemo(() => ({
+    todos: laudos.length,
+    art: laudos.filter(l => l.status === 'finalizado').length,
+    em: laudos.filter(l => l.status === 'em_andamento').length,
+    aguard: laudos.filter(l => l.status === 'rascunho' || l.status === 'em_revisao' || !l.status).length,
+  }), [laudos]);
+
   // Filtered reports
   const laudosFiltrados = useMemo(() => {
     return laudos.filter((l) => {
@@ -104,7 +112,7 @@ export const LaudosCentralView: React.FC = () => {
       } else if (statusFiltro === 'Em') {
         return l.status === 'em_andamento';
       } else if (statusFiltro === 'Aguard') {
-        return l.status === 'rascunho' || !l.status;
+        return l.status === 'rascunho' || l.status === 'em_revisao' || !l.status;
       }
       return true;
     });
@@ -135,12 +143,20 @@ export const LaudosCentralView: React.FC = () => {
   };
 
   const handleSalvarNovoLaudo = () => {
+    const clienteSel = clientes.find(c => c.id === novoClienteId);
+    const nomeClienteReal = (clienteSel?.razaoSocial || clienteSel?.nomeFantasia || '').trim();
+    if (!clienteSel || !nomeClienteReal || /^cliente(\s+contratante|\s+corporativo)?$/i.test(nomeClienteReal)) {
+      setErroClienteNovo('Selecione um cliente real cadastrado antes de salvar o laudo.');
+      return;
+    }
+    setErroClienteNovo(null);
+
     const activeCategory = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
     const activeSubtipo = activeCategory.subtipos[subtipoIndex] || activeCategory.subtipos[0];
     const equip = novoEquipamento.trim() || activeSubtipo.nome;
 
-    const clienteSelecionado = clientes.find(c => c.id === novoClienteId) || clientes[0];
-    const ativoCorrespondente = ativos.find(a => a.clienteId === novoClienteId) || ativos[0];
+    const clienteSelecionado = clienteSel;
+    const ativoCorrespondente = ativos.find(a => a.clienteId === clienteSel.id) || ativos[0];
 
     const ehPrePreenchido = modoPreenchimento === 'pre_preenchido';
 
@@ -150,7 +166,7 @@ export const LaudosCentralView: React.FC = () => {
           id: `sec-${idx + 1}`,
           titulo: titulo,
           ordem: idx + 1,
-          conteudoHtml: `<p class="leading-relaxed">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>${activeSubtipo.normaRef}</strong>. Inspeção efetuada no ativo <strong>${equip}</strong> para o cliente <strong>${clienteSelecionado?.razaoSocial || clienteSelecionado?.nomeFantasia || 'Contratante'}</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>`,
+          conteudoHtml: `<p class="leading-relaxed">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>${activeSubtipo.normaRef}</strong>. Inspeção efetuada no ativo <strong>${equip}</strong> para o cliente <strong>${clienteSelecionado.razaoSocial || clienteSelecionado.nomeFantasia}</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>`,
           itens: [],
           fotos: []
         }))
@@ -183,7 +199,6 @@ export const LaudosCentralView: React.FC = () => {
         }))
       : [];
 
-    const clienteSel = clientes.find(c => c.id === (novoClienteId || clientes[0]?.id));
     const primContato = clienteSel?.contatos?.[0];
     const endStr = clienteSel?.endereco?.cidade
       ? `${clienteSel.endereco.logradouro ? clienteSel.endereco.logradouro + ', ' : ''}${clienteSel.endereco.numero ? clienteSel.endereco.numero + ' - ' : ''}${clienteSel.endereco.bairro ? clienteSel.endereco.bairro + ' - ' : ''}${clienteSel.endereco.cidade}/${clienteSel.endereco.estado || 'PE'}`.trim()
@@ -191,8 +206,8 @@ export const LaudosCentralView: React.FC = () => {
 
     const novoId = criarNovoLaudo({
       tipo: activeSubtipo.nome,
-      clienteId: novoClienteId || clientes[0]?.id || '',
-      clienteNome: clienteSel?.razaoSocial || clienteSel?.nomeFantasia || 'Cliente Contratante',
+      clienteId: clienteSel.id,
+      clienteNome: clienteSel.razaoSocial || clienteSel.nomeFantasia,
       clienteCnpj: clienteSel?.cpfCnpj || clienteSel?.cnpj || '',
       clienteContato: primContato?.nome || '',
       clienteContatoCargo: primContato?.cargo || '',
@@ -288,7 +303,7 @@ export const LaudosCentralView: React.FC = () => {
           />
         </div>
 
-        {/* Status Chips */}
+        {/* Status Chips com contagem */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
@@ -299,7 +314,7 @@ export const LaudosCentralView: React.FC = () => {
                 : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
             }`}
           >
-            Todos
+            Todos ({contagemStatus.todos})
           </button>
           <button
             type="button"
@@ -310,7 +325,7 @@ export const LaudosCentralView: React.FC = () => {
                 : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
             }`}
           >
-            Com ART
+            ART emitida ({contagemStatus.art})
           </button>
           <button
             type="button"
@@ -321,7 +336,7 @@ export const LaudosCentralView: React.FC = () => {
                 : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
             }`}
           >
-            Em andamento
+            Em elaboração ({contagemStatus.em})
           </button>
           <button
             type="button"
@@ -332,7 +347,7 @@ export const LaudosCentralView: React.FC = () => {
                 : 'bg-[var(--card)] text-[var(--muted)] border-[var(--line)] hover:border-[var(--ink)]'
             }`}
           >
-            Pendentes
+            Aguardando ART ({contagemStatus.aguard})
           </button>
         </div>
       </div>
@@ -367,7 +382,13 @@ export const LaudosCentralView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-4 align-top text-[var(--ink)]">
-                      <span>{cliente?.nomeFantasia || cliente?.razaoSocial || laudo.clienteNome || 'Cliente'}</span>
+                      <span>
+                        {cliente?.nomeFantasia ||
+                          cliente?.razaoSocial ||
+                          (laudo.clienteNome && !/^cliente$/i.test(laudo.clienteNome.trim())
+                            ? laudo.clienteNome
+                            : 'Cliente não vinculado')}
+                      </span>
                       <small className="text-[var(--muted)] text-xs block">
                         {cliente?.endereco?.cidade || 'PE'}
                       </small>
@@ -379,11 +400,20 @@ export const LaudosCentralView: React.FC = () => {
 
                     <td className="py-3 px-4 align-top">
                       {isFinalizado ? (
-                        <span className="tag-tech ok">ART emitida</span>
+                        <span className="tag-tech ok inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
+                          <span>ART emitida</span>
+                        </span>
                       ) : laudo.status === 'em_andamento' ? (
-                        <span className="tag-tech bl">Em elaboração</span>
+                        <span className="tag-tech bl inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
+                          <span>Em elaboração</span>
+                        </span>
                       ) : (
-                        <span className="tag-tech w">Aguardando</span>
+                        <span className="tag-tech w inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
+                          <span>Aguardando ART</span>
+                        </span>
                       )}
                     </td>
 
@@ -578,16 +608,27 @@ export const LaudosCentralView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="block text-sm font-semibold">
-                    <span className="mb-1 block">Cliente Contratante</span>
+                    <span className="mb-1 block">Cliente Contratante *</span>
                     <select
                       value={novoClienteId}
-                      onChange={(e) => setNovoClienteId(e.target.value)}
-                      className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                      onChange={(e) => {
+                        setNovoClienteId(e.target.value);
+                        setErroClienteNovo(null);
+                      }}
+                      className={`w-full p-2.5 border rounded-lg bg-[var(--paper)] text-[var(--ink)] ${
+                        erroClienteNovo ? 'border-rose-500' : 'border-[var(--line)]'
+                      }`}
                     >
+                      <option value="">Selecione um cliente cadastrado...</option>
                       {clientes.map(c => (
                         <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>
                       ))}
                     </select>
+                    {erroClienteNovo && (
+                      <span className="text-xs text-rose-500 font-semibold mt-1 block">
+                        {erroClienteNovo}
+                      </span>
+                    )}
                   </label>
 
                   <label className="block text-sm font-semibold">

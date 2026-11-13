@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   FileSpreadsheet, 
   Plus, 
@@ -45,8 +45,16 @@ export const OrcamentosView: React.FC = () => {
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [modalNovoAberto, setModalNovoAberto] = useState(false);
+  const [modalNovoAberto, setModalNovoAberto] = useState(searchParams.get('novo') === '1');
+
+  useEffect(() => {
+    if (searchParams.get('novo') === '1') {
+      setModalNovoAberto(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [propostaModalOrcamento, setPropostaModalOrcamento] = useState<Orcamento | null>(null);
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
   const [editandoTituloId, setEditandoTituloId] = useState<string | null>(null);

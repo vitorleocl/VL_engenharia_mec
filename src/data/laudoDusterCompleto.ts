@@ -62,7 +62,7 @@ export const FOTOS_DUSTER_EVIDENCIAS: EvidenciaFoto[] = [
 
 export const LAUDO_DUSTER_COMPLETO: Laudo = {
   id: 'lau-2026-002-duster',
-  numero: 'LAU-2026/002',
+  numero: 'LAR-2026-002',
   tipo: 'Laudo de Perícia Técnica Veicular – Análise de Falha Mecânica e Apuração de Causa Raiz',
   tipoLaudoId: 'laudo-falha-mecanica-causa-raiz',
   categoriaId: 'cat-4',
@@ -106,7 +106,7 @@ export const LAUDO_DUSTER_COMPLETO: Laudo = {
   </div>
   <div class="grid grid-cols-2 gap-2 text-xs text-slate-700 pt-1">
     <p><strong>Empresa Emitente:</strong> VL ENGENHARIA MECÂNICA</p>
-    <p><strong>Número do Laudo:</strong> LAU-2026/002</p>
+    <p><strong>Número do Laudo:</strong> LAR-2026-002</p>
     <p><strong>ART Vinculada:</strong> PE20261621255 (Registrada no CREA-PE)</p>
     <p><strong>Data de Emissão:</strong> Outubro de 2026</p>
     <p class="col-span-2"><strong>Engenheiro Responsável:</strong> Vitor Leonardo Cordeiro Linhares — CREA-PE 1822299490</p>

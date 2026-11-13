@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -40,8 +40,17 @@ export const ChecklistCampoView: React.FC = () => {
   } = useData();
   const { isOnline } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [modalFormAberto, setModalFormAberto] = useState(false);
+  const [modalFormAberto, setModalFormAberto] = useState(searchParams.get('novo') === '1');
+
+  useEffect(() => {
+    if (searchParams.get('novo') === '1') {
+      setChecklistParaEditar(null);
+      setModalFormAberto(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [checklistParaEditar, setChecklistParaEditar] = useState<ChecklistCampo | null>(null);
   const [checklistVisualizandoPdf, setChecklistVisualizandoPdf] = useState<ChecklistCampo | null>(null);
   const [modalModelosAberto, setModalModelosAberto] = useState(false);
