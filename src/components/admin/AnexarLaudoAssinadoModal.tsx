@@ -157,18 +157,36 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
       const slice = file.slice(start, end);
       const chunkData = await blobParaBase64(slice);
 
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          laudoId: targetId,
-          chunkData,
-          chunkIndex: idx,
-          totalChunks,
-          uploadId,
-          nomeArquivo: file.name,
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      let resp: Response;
+      try {
+        resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            laudoId: targetId,
+            chunkData,
+            chunkIndex: idx,
+            totalChunks,
+            uploadId,
+            nomeArquivo: file.name,
+          }),
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        const err: any = new Error(
+          fetchErr?.name === 'AbortError'
+            ? 'Tempo esgotado ao enviar o PDF para o servidor.'
+            : 'Falha de conexão com o servidor ao enviar o PDF.'
+        );
+        err.isNetworkOrTimeout = true;
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const rawText = await resp.text();
       let json: any = {};
@@ -208,13 +226,18 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
         return await tentarEndpointEmPartes(ep, targetId, file);
       } catch (err: any) {
         ultimoErro = err;
-        if (err?.status !== 404) {
+        const podeFazerFallback =
+          err?.status === 404 ||
+          err?.status === 405 ||
+          err?.status === 501 ||
+          err?.isNetworkOrTimeout;
+        if (!podeFazerFallback) {
           throw err;
         }
       }
     }
 
-    // Se todas as rotas /api/* retornaram 404 (ex.: hospedagem estática), tenta Firebase Storage
+    // Se todas as rotas /api/* não responderam (ex.: hospedagem estática), tenta Firebase Storage (com timeout curto de 4s)
     setProgressoEnvio('Salvando PDF na nuvem...');
     const firebaseUrl = await tentarUploadFirebaseStorage(targetId, file);
     if (firebaseUrl) {
