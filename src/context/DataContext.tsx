@@ -46,8 +46,10 @@ import {
   getDoc,
   getDocs, 
   onSnapshot, 
-  getDocFromServer 
+  getDocFromServer,
+  deleteField
 } from 'firebase/firestore';
+import { getHojeLocalYmd } from '../lib/dateUtils';
 import { 
   handleFirestoreError, 
   isFirestoreWriteQuotaBlocked, 
@@ -94,7 +96,11 @@ interface DataContextType {
   // Orçamentos Actions
   adicionarOrcamento: (orcamento: Omit<Orcamento, 'id' | 'criadoEm'>) => string;
   atualizarOrcamento: (id: string, dados: Partial<Orcamento>) => void;
-  atualizarStatusOrcamento: (id: string, status: Orcamento['status']) => void;
+  atualizarStatusOrcamento: (
+    id: string,
+    status: Orcamento['status'],
+    extras?: FaturamentoDadosExtras
+  ) => void;
   gerarLaudoFromOrcamento: (orcamentoId: string, ativoIdEscolhido?: string) => string;
   associarOrcamentoAoLaudo: (orcamentoId: string, laudoId: string | null) => void;
   removerOrcamento: (id: string) => void;
@@ -153,6 +159,15 @@ interface DataContextType {
   sincronizarChecklistsOffline: () => Promise<void>;
   resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
   atualizarContagemSync: () => Promise<void>;
+}
+
+export interface FaturamentoDadosExtras {
+  faturadoEm?: string;
+  dataInicioServico?: string | null;
+  dataEntregaServico?: string | null;
+  comprovantePagamentoUrl?: string | null;
+  comprovantePagamentoNome?: string | null;
+  comprovantePagamentoTipo?: 'imagem' | 'pdf' | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -1432,40 +1447,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const atualizarOrcamento = (id: string, dados: Partial<Orcamento>) => {
+    const agora = new Date().toISOString();
+    const dadosComTimestamp: Partial<Orcamento> = { ...dados, atualizadoEm: agora };
+
     setOrcamentos(prev => {
-      const atualizados = prev.map(o => o.id === id ? { ...o, ...dados } : o);
+      const atualizados = prev.map(o => o.id === id ? { ...o, ...dadosComTimestamp } : o);
       saveStorage('vl_orcamentos', atualizados);
       salvarServidorDireto({ orcamentos: atualizados });
       return atualizados;
     });
     registrarLog('orcamentos', id, 'editar', `Orçamento/Proposta atualizada: ${dados.servico || id}`);
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
-      setDoc(doc(db, 'orcamentos', id), dados, { merge: true }).catch(err => {
+      const firestorePayload: Record<string, any> = {};
+      Object.entries(dadosComTimestamp).forEach(([k, v]) => {
+        if (v !== undefined) {
+          firestorePayload[k] = v;
+        }
+      });
+      setDoc(doc(db, 'orcamentos', id), firestorePayload, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
       });
     }
   };
 
-  const atualizarStatusOrcamento = (id: string, status: Orcamento['status']) => {
+  const atualizarStatusOrcamento = (
+    id: string,
+    status: Orcamento['status'],
+    extras?: FaturamentoDadosExtras
+  ) => {
     const agora = new Date().toISOString();
     const existente = orcamentos.find(o => o.id === id);
-    const patch: Partial<Orcamento> = { status };
+    const localPatch: Partial<Orcamento> = { status, atualizadoEm: agora };
+    const firestorePatch: Record<string, any> = { status, atualizadoEm: agora };
+
     if (status === 'aprovado' && !existente?.aprovadoEm) {
-      patch.aprovadoEm = agora;
+      localPatch.aprovadoEm = agora;
+      firestorePatch.aprovadoEm = agora;
     }
-    if (status === 'faturado' && !existente?.faturadoEm) {
-      patch.faturadoEm = agora;
+
+    if (status === 'faturado') {
+      const dataFaturamento = extras?.faturadoEm?.trim() || existente?.faturadoEm || getHojeLocalYmd();
+      localPatch.faturadoEm = dataFaturamento;
+      firestorePatch.faturadoEm = dataFaturamento;
+
+      const aplicarCampoOpcional = (
+        chave: keyof FaturamentoDadosExtras & keyof Orcamento,
+        valor: string | null | undefined
+      ) => {
+        if (valor === undefined) return;
+        const limpo = typeof valor === 'string' ? valor.trim() : valor;
+        if (limpo) {
+          (localPatch as any)[chave] = limpo;
+          firestorePatch[chave] = limpo;
+        } else {
+          (localPatch as any)[chave] = null;
+          firestorePatch[chave] = deleteField();
+        }
+      };
+
+      if (extras) {
+        aplicarCampoOpcional('dataInicioServico', extras.dataInicioServico);
+        aplicarCampoOpcional('dataEntregaServico', extras.dataEntregaServico);
+        aplicarCampoOpcional('comprovantePagamentoUrl', extras.comprovantePagamentoUrl);
+        aplicarCampoOpcional('comprovantePagamentoNome', extras.comprovantePagamentoNome);
+        aplicarCampoOpcional('comprovantePagamentoTipo', extras.comprovantePagamentoTipo);
+      }
     }
 
     setOrcamentos(prev => {
-      const atualizados = prev.map(o => o.id === id ? { ...o, ...patch } : o);
+      const atualizados = prev.map(o => o.id === id ? { ...o, ...localPatch } : o);
       saveStorage('vl_orcamentos', atualizados);
       salvarServidorDireto({ orcamentos: atualizados });
       return atualizados;
     });
 
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
-      setDoc(doc(db, 'orcamentos', id), patch, { merge: true }).catch(err => {
+      setDoc(doc(db, 'orcamentos', id), firestorePatch, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `orcamentos/${id}`);
       });
     }

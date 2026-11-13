@@ -49,6 +49,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase, OrcamentoParcela } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
+import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
 import { 
   CHAVE_PIX_FORMATADA_PADRAO, 
@@ -114,7 +115,7 @@ export function parseValorMoeda(val: string | number | undefined | null): number
 export const OrcamentoEditorView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { orcamentos, clientes, ativos, atualizarOrcamento, removerOrcamento } = useData();
+  const { orcamentos, clientes, ativos, atualizarOrcamento, atualizarStatusOrcamento, removerOrcamento } = useData();
   const { currentUser } = useAuth();
 
   // Find target quote
@@ -144,6 +145,7 @@ export const OrcamentoEditorView: React.FC = () => {
   const [drawerHistoricoAberto, setDrawerHistoricoAberto] = useState(false);
   const [modalModeloPadraoAberto, setModalModeloPadraoAberto] = useState(false);
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
+  const [modalFaturarAberto, setModalFaturarAberto] = useState(false);
   const [menuMaisAberto, setMenuMaisAberto] = useState(false);
   const [modoVisualizacao, setModoVisualizacao] = useState<'folha_clara' | 'escuro'>('folha_clara');
   const [qrCodeSvgPix, setQrCodeSvgPix] = useState<string>('');
@@ -1427,10 +1429,13 @@ export const OrcamentoEditorView: React.FC = () => {
                 value={orcamentoState.status}
                 onChange={(e) => {
                   const novoStatus = e.target.value as Orcamento['status'];
+                  if (novoStatus === 'faturado' && orcamentoState.status !== 'faturado') {
+                    setModalFaturarAberto(true);
+                    return;
+                  }
                   const agora = new Date().toISOString();
                   const patch: Partial<Orcamento> = { status: novoStatus };
                   if (novoStatus === 'aprovado' && !orcamentoState.aprovadoEm) patch.aprovadoEm = agora;
-                  if (novoStatus === 'faturado' && !orcamentoState.faturadoEm) patch.faturadoEm = agora;
                   setOrcamentoState(prev => prev ? { ...prev, ...patch } : prev);
                   atualizarOrcamento(orcamentoState.id, patch);
                 }}
@@ -2996,6 +3001,32 @@ export const OrcamentoEditorView: React.FC = () => {
           orcamento={orcamentoState}
           isOpen={modalPdfAberto}
           onClose={() => setModalPdfAberto(false)}
+        />
+      )}
+
+      {/* Modal de Registro de Faturamento */}
+      {modalFaturarAberto && (
+        <FaturarOrcamentoModal
+          orcamento={orcamentoState}
+          onClose={() => setModalFaturarAberto(false)}
+          onConfirm={(dados) => {
+            atualizarStatusOrcamento(orcamentoState.id, 'faturado', dados);
+            setOrcamentoState((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: 'faturado',
+                    faturadoEm: dados.faturadoEm || prev.faturadoEm,
+                    dataInicioServico: dados.dataInicioServico || undefined,
+                    dataEntregaServico: dados.dataEntregaServico || undefined,
+                    comprovantePagamentoUrl: dados.comprovantePagamentoUrl || undefined,
+                    comprovantePagamentoNome: dados.comprovantePagamentoNome || undefined,
+                    comprovantePagamentoTipo: dados.comprovantePagamentoTipo || undefined,
+                  }
+                : prev
+            );
+            setModalFaturarAberto(false);
+          }}
         />
       )}
 

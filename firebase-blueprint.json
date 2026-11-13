@@ -54,7 +54,13 @@
         "clienteNome": { "type": "string" },
         "servico": { "type": "string" },
         "valor": { "type": "number" },
-        "status": { "type": "string" }
+        "status": { "type": "string" },
+        "faturadoEm": { "type": "string" },
+        "dataInicioServico": { "type": "string" },
+        "dataEntregaServico": { "type": "string" },
+        "comprovantePagamentoUrl": { "type": "string" },
+        "comprovantePagamentoNome": { "type": "string" },
+        "comprovantePagamentoTipo": { "type": "string", "enum": ["imagem", "pdf"] }
       },
       "required": ["id", "clienteId", "servico", "valor", "status"]
     },

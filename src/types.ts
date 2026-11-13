@@ -201,6 +201,11 @@ export interface Orcamento {
   status: OrcamentoStatus;
   aprovadoEm?: string;
   faturadoEm?: string;
+  dataInicioServico?: string;
+  dataEntregaServico?: string;
+  comprovantePagamentoUrl?: string;
+  comprovantePagamentoNome?: string;
+  comprovantePagamentoTipo?: 'imagem' | 'pdf';
   laudoGeradoId?: string;
   tipoLaudoVinculadoId?: string;
   fotosDescricao?: string;

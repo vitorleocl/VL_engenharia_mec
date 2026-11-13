@@ -19,12 +19,15 @@ import {
   Layers,
   FileText,
   SlidersHorizontal,
-  Check
+  Check,
+  Receipt
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Orcamento } from '../../types';
 import { PropostaViewerModal } from './PropostaViewerModal';
+import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
+import { parseDataLocalSegura, obterYmLocal, formatarDataBrSegura } from '../../lib/dateUtils';
 import { SERVICOS_LISTA, ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
 import { 
   gerarSecoesPadraoOrcamento, 
@@ -57,6 +60,7 @@ export const OrcamentosView: React.FC = () => {
   }, [searchParams, setSearchParams]);
   const [propostaModalOrcamento, setPropostaModalOrcamento] = useState<Orcamento | null>(null);
   const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
+  const [orcamentoParaFaturar, setOrcamentoParaFaturar] = useState<Orcamento | null>(null);
   const [editandoTituloId, setEditandoTituloId] = useState<string | null>(null);
   const [tituloEditado, setTituloEditado] = useState('');
   const [busca, setBusca] = useState('');
@@ -231,11 +235,10 @@ export const OrcamentosView: React.FC = () => {
   const mesesDisponiveis = useMemo(() => {
     const mapMeses = new Map<string, string>();
     orcamentos.forEach((o) => {
-      const ref = o.emitidaEm || o.criadoEm;
+      const ref = o.status === 'faturado' && o.faturadoEm ? o.faturadoEm : (o.emitidaEm || o.criadoEm);
       if (!ref) return;
-      const d = new Date(ref);
-      if (isNaN(d.getTime())) return;
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const d = parseDataLocalSegura(ref);
+      const ym = obterYmLocal(d);
       if (!mapMeses.has(ym)) {
         const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
         mapMeses.set(ym, label.charAt(0).toUpperCase() + label.slice(1));
@@ -266,11 +269,8 @@ export const OrcamentosView: React.FC = () => {
         return false;
       }
       if (filtroMes) {
-        const ref = o.emitidaEm || o.criadoEm;
-        const d = ref ? new Date(ref) : null;
-        const ym = d && !isNaN(d.getTime())
-          ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-          : '';
+        const ref = o.status === 'faturado' && o.faturadoEm ? o.faturadoEm : (o.emitidaEm || o.criadoEm);
+        const ym = ref ? obterYmLocal(parseDataLocalSegura(ref)) : '';
         if (ym !== filtroMes) return false;
       }
       if (b) {
@@ -422,9 +422,29 @@ export const OrcamentosView: React.FC = () => {
             {valorFormatado}
           </span>
           <span className="text-[11px] text-[var(--muted)] font-mono tabular-nums">
-            {new Date(orcamento.emitidaEm || orcamento.criadoEm || Date.now()).toLocaleDateString('pt-BR')}
+            {formatarDataBrSegura(
+              orcamento.status === 'faturado' && orcamento.faturadoEm
+                ? orcamento.faturadoEm
+                : (orcamento.emitidaEm || orcamento.criadoEm)
+            )}
           </span>
         </div>
+
+        {orcamento.status === 'faturado' && (orcamento.dataInicioServico || orcamento.dataEntregaServico || orcamento.comprovantePagamentoUrl) && (
+          <div className="flex flex-wrap items-center justify-between gap-1 text-[10.5px] text-[var(--muted)]">
+            {(orcamento.dataInicioServico || orcamento.dataEntregaServico) && (
+              <span className="font-mono">
+                {orcamento.dataInicioServico ? formatarDataBrSegura(orcamento.dataInicioServico) : '—'} → {orcamento.dataEntregaServico ? formatarDataBrSegura(orcamento.dataEntregaServico) : '—'}
+              </span>
+            )}
+            {orcamento.comprovantePagamentoUrl && (
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                <Receipt className="w-3 h-3" />
+                <span>Comprovante</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Quick actions + Contained status selector */}
         <div className="pt-1.5 space-y-2" onClick={(e) => e.stopPropagation()}>
@@ -465,7 +485,14 @@ export const OrcamentosView: React.FC = () => {
 
           <select
             value={orcamento.status || 'rascunho'}
-            onChange={(e) => atualizarStatusOrcamento(orcamento.id, e.target.value as any)}
+            onChange={(e) => {
+              const novoStatus = e.target.value as Orcamento['status'];
+              if (novoStatus === 'faturado' && orcamento.status !== 'faturado') {
+                setOrcamentoParaFaturar(orcamento);
+                return;
+              }
+              atualizarStatusOrcamento(orcamento.id, novoStatus);
+            }}
             className="w-full min-w-0 max-w-full text-[11.5px] py-1.5 px-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-semibold cursor-pointer focus:outline-none focus:border-[var(--blue)]"
           >
             <option value="rascunho">Novo / Rascunho</option>
@@ -999,10 +1026,31 @@ export const OrcamentosView: React.FC = () => {
           isOpen={true}
           orcamento={orcamentos.find(o => o.id === propostaModalOrcamento.id) || propostaModalOrcamento}
           onClose={() => setPropostaModalOrcamento(null)}
-          onStatusChange={(id, novoStatus) => atualizarStatusOrcamento(id, novoStatus)}
+          onStatusChange={(id, novoStatus) => {
+            if (novoStatus === 'faturado') {
+              const alvo = orcamentos.find(o => o.id === id) || propostaModalOrcamento;
+              if (alvo && alvo.status !== 'faturado') {
+                setOrcamentoParaFaturar(alvo);
+                return;
+              }
+            }
+            atualizarStatusOrcamento(id, novoStatus);
+          }}
           onEditarProposta={(orc) => {
             setPropostaModalOrcamento(null);
             navigate(`/admin/orcamentos/${orc.id}`);
+          }}
+        />
+      )}
+
+      {/* Modal de Registro de Faturamento (Data + Início/Entrega + Comprovante Opcional) */}
+      {orcamentoParaFaturar && (
+        <FaturarOrcamentoModal
+          orcamento={orcamentoParaFaturar}
+          onClose={() => setOrcamentoParaFaturar(null)}
+          onConfirm={(dados) => {
+            atualizarStatusOrcamento(orcamentoParaFaturar.id, 'faturado', dados);
+            setOrcamentoParaFaturar(null);
           }}
         />
       )}

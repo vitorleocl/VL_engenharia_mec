@@ -9,19 +9,28 @@ import {
   Link2,
   CheckCircle2,
   Calendar,
+  Receipt,
+  Edit,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Orcamento, Laudo, ChecklistCampo } from '../../types';
 import { PropostaViewerModal } from './PropostaViewerModal';
+import {
+  FaturarOrcamentoModal,
+  ComprovantePagamentoModal,
+} from './FaturarOrcamentoModal';
+import {
+  parseDataLocalSegura,
+  obterYmLocal,
+  formatarDataBrSegura,
+} from '../../lib/dateUtils';
 
 function obterDataRefOrcamento(o: Orcamento): Date {
-  const raw = o.faturadoEm || o.emitidaEm || o.criadoEm;
-  const d = raw ? new Date(raw) : new Date();
-  return isNaN(d.getTime()) ? new Date() : d;
+  return parseDataLocalSegura(o.faturadoEm || o.emitidaEm || o.criadoEm);
 }
 
 function obterYm(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return obterYmLocal(d);
 }
 
 function formatarMesCurto(ym: string): string {
@@ -61,6 +70,15 @@ export const FaturamentoView: React.FC = () => {
   const [filtroClienteId, setFiltroClienteId] = useState<string>('');
   const [mesSelecionadoGrafico, setMesSelecionadoGrafico] = useState<string | null>(null);
   const [propostaVisualizando, setPropostaVisualizando] = useState<Orcamento | null>(null);
+  const [orcamentoFaturando, setOrcamentoFaturando] = useState<{
+    orcamento: Orcamento;
+    modoEdicao: boolean;
+  } | null>(null);
+  const [comprovanteVisualizando, setComprovanteVisualizando] = useState<{
+    url: string;
+    nome: string;
+    tipo?: 'imagem' | 'pdf';
+  } | null>(null);
   const [laudoParaVincular, setLaudoParaVincular] = useState<Record<string, string>>({});
 
   // Todos os orçamentos faturados e aprovados
@@ -229,8 +247,7 @@ export const FaturamentoView: React.FC = () => {
     // Serviços realizados no mês (laudos finalizados + checklists finalizados do filtro de cliente)
     laudos.forEach((l) => {
       if (filtroClienteId && l.clienteId !== filtroClienteId) return;
-      const d = new Date(l.atualizadoEm || l.criadoEm);
-      if (isNaN(d.getTime())) return;
+      const d = parseDataLocalSegura(l.atualizadoEm || l.criadoEm);
       const ym = obterYm(d);
       if (mapa.has(ym) && (l.status === 'finalizado' || l.orcamentoOrigemId)) {
         const entry = mapa.get(ym)!;
@@ -480,7 +497,7 @@ export const FaturamentoView: React.FC = () => {
           </div>
 
           {/* Barras comparativas por mês */}
-          <div className="grid grid-cols-6 gap-2 sm:gap-4 items-end h-[210px] pt-6">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-4 items-end min-h-[210px] pt-6">
             {serieMensal.map((mes) => {
               const alturaPct =
                 mes.valorFaturado > 0
@@ -664,7 +681,13 @@ export const FaturamentoView: React.FC = () => {
                   {grupo.itens.map((orc) => {
                     const cli = clientes.find((c) => c.id === orc.clienteId);
                     const nomeCliente = cli?.nomeFantasia || cli?.razaoSocial || orc.clienteNome || 'Cliente';
-                    const dataRef = obterDataRefOrcamento(orc).toLocaleDateString('pt-BR');
+                    const dataRef = formatarDataBrSegura(orc.faturadoEm || orc.emitidaEm || orc.criadoEm);
+                    const dataInicioFmt = orc.dataInicioServico
+                      ? formatarDataBrSegura(orc.dataInicioServico)
+                      : '';
+                    const dataEntregaFmt = orc.dataEntregaServico
+                      ? formatarDataBrSegura(orc.dataEntregaServico)
+                      : '';
                     const { laudosVinculados, checklistsVinculados } = obterServicosVinculados(orc);
 
                     // Laudos disponíveis do mesmo cliente (ou gerais) ainda não vinculados a este orçamento
@@ -682,26 +705,82 @@ export const FaturamentoView: React.FC = () => {
 
                         <div className="border border-[var(--adm-line,rgba(159,176,200,0.16))] rounded-xl p-4 sm:p-5 bg-[var(--adm-bg,#0b1a30)]/45 space-y-3">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                            <div className="space-y-1 min-w-0">
+                            <div className="space-y-1.5 min-w-0">
                               <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--adm-mut,#a9b8cf)]">
                                 <span className="font-mono font-semibold text-[var(--adm-blue-soft,#6ea1ff)]">
                                   {orc.codigoProposta || orc.id}
                                 </span>
                                 <span aria-hidden="true">·</span>
-                                <span className="font-mono tabular-nums">{dataRef}</span>
+                                <span className="font-mono tabular-nums">
+                                  Faturado em {dataRef}
+                                </span>
                                 <span aria-hidden="true">·</span>
                                 <span>{nomeCliente}</span>
                               </div>
                               <h4 className="text-[15.5px] font-semibold text-[var(--adm-text,#f4f7fc)] leading-snug">
                                 {orc.servico}
                               </h4>
+
+                              {/* Período do serviço (início até entrega/finalização) + comprovante */}
+                              <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                                {(dataInicioFmt || dataEntregaFmt) ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.18))] bg-[var(--adm-card,#0f2038)] text-[var(--adm-text,#f4f7fc)] font-mono text-[11.5px]">
+                                    <Calendar className="w-3.5 h-3.5 text-[var(--adm-blue-soft,#6ea1ff)] shrink-0" />
+                                    <span>
+                                      Início: <strong>{dataInicioFmt || '—'}</strong> · Entrega:{' '}
+                                      <strong>{dataEntregaFmt || '—'}</strong>
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOrcamentoFaturando({ orcamento: orc, modoEdicao: true })
+                                    }
+                                    className="inline-flex items-center gap-1 text-[11.5px] text-[var(--adm-mut,#a9b8cf)] hover:text-[var(--adm-blue-soft,#6ea1ff)] underline decoration-dotted cursor-pointer"
+                                  >
+                                    <Calendar className="w-3 h-3" />
+                                    <span>Informar data de início e entrega</span>
+                                  </button>
+                                )}
+
+                                {orc.comprovantePagamentoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setComprovanteVisualizando({
+                                        url: orc.comprovantePagamentoUrl!,
+                                        nome: orc.comprovantePagamentoNome || 'Comprovante de Pagamento',
+                                        tipo: orc.comprovantePagamentoTipo,
+                                      })
+                                    }
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-500/35 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[11.5px] font-semibold transition-colors cursor-pointer"
+                                    title={orc.comprovantePagamentoNome || 'Visualizar comprovante de pagamento'}
+                                  >
+                                    <Receipt className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Ver comprovante</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
                               <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-[var(--adm-ok,#34d399)]">
                                 {formatarMoeda(orc.valor)}
                               </span>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOrcamentoFaturando({ orcamento: orc, modoEdicao: true })
+                                  }
+                                  className="text-xs font-medium text-[var(--adm-mut,#a9b8cf)] hover:text-[var(--adm-text,#f4f7fc)] inline-flex items-center gap-1 cursor-pointer"
+                                  title="Editar data de faturamento, período e comprovante"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  <span>Editar</span>
+                                </button>
+                                <span className="text-[var(--adm-mut,#a9b8cf)]">·</span>
                                 <button
                                   type="button"
                                   onClick={() => setPropostaVisualizando(orc)}
@@ -881,7 +960,9 @@ export const FaturamentoView: React.FC = () => {
                       <td className="py-3 px-3 text-right">
                         <button
                           type="button"
-                          onClick={() => atualizarStatusOrcamento(orc.id, 'faturado')}
+                          onClick={() =>
+                            setOrcamentoFaturando({ orcamento: orc, modoEdicao: false })
+                          }
                           className="py-1.5 px-3 rounded-lg bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -901,16 +982,46 @@ export const FaturamentoView: React.FC = () => {
       {propostaVisualizando && (
         <PropostaViewerModal
           isOpen={true}
-          orcamento={propostaVisualizando}
+          orcamento={orcamentos.find((o) => o.id === propostaVisualizando.id) || propostaVisualizando}
           onClose={() => setPropostaVisualizando(null)}
           onEditarProposta={(orc) => {
             setPropostaVisualizando(null);
             navigate(`/admin/orcamentos/${orc.id}`);
           }}
           onStatusChange={(id, status) => {
+            if (status === 'faturado') {
+              const alvo = orcamentos.find((o) => o.id === id) || propostaVisualizando;
+              if (alvo && alvo.status !== 'faturado') {
+                setOrcamentoFaturando({ orcamento: alvo, modoEdicao: false });
+                return;
+              }
+            }
             atualizarStatusOrcamento(id, status);
             setPropostaVisualizando((prev) => (prev ? { ...prev, status } : null));
           }}
+        />
+      )}
+
+      {/* Modal de Faturamento (Data, Período Início/Entrega e Comprovante Opcional) */}
+      {orcamentoFaturando && (
+        <FaturarOrcamentoModal
+          orcamento={orcamentoFaturando.orcamento}
+          modoEdicao={orcamentoFaturando.modoEdicao}
+          onClose={() => setOrcamentoFaturando(null)}
+          onConfirm={(dados) => {
+            atualizarStatusOrcamento(orcamentoFaturando.orcamento.id, 'faturado', dados);
+            setOrcamentoFaturando(null);
+          }}
+        />
+      )}
+
+      {/* Modal de Visualização do Comprovante de Pagamento */}
+      {comprovanteVisualizando && (
+        <ComprovantePagamentoModal
+          url={comprovanteVisualizando.url}
+          nome={comprovanteVisualizando.nome}
+          tipo={comprovanteVisualizando.tipo}
+          onClose={() => setComprovanteVisualizando(null)}
         />
       )}
     </div>
