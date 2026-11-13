@@ -73,7 +73,13 @@
         "codigoLaudo": { "type": "string" },
         "clienteId": { "type": "string" },
         "ativoId": { "type": "string" },
-        "status": { "type": "string" }
+        "status": { "type": "string" },
+        "publicadoNoSite": { "type": "boolean" },
+        "publicadoNoSiteEm": { "type": "string" },
+        "laudoAssinadoPdfUrl": { "type": "string" },
+        "laudoAssinadoPdfNome": { "type": "string" },
+        "laudoAssinadoEm": { "type": "string" },
+        "laudoAssinadoTamanho": { "type": "number" }
       },
       "required": ["id", "codigoLaudo", "clienteId", "status"]
     },

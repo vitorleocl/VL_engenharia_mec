@@ -151,13 +151,120 @@ const FAQ_ITENS = [
   }
 ];
 
+const FOTO_POR_CATEGORIA: Record<string, string> = {
+  nr12: imgNr12,
+  munck: imgMunck,
+  maquinas: imgMaquinas,
+  pmoc: imgPmoc,
+  playground: imgPlayground,
+  pericia: imgPericia,
+  manutencao: imgManutencao,
+};
+
+function resolverFotoTrabalho(raw: any): string {
+  if (typeof raw?.foto === 'string' && raw.foto.trim()) {
+    return raw.foto;
+  }
+  if (raw?.categoriaFoto && FOTO_POR_CATEGORIA[raw.categoriaFoto]) {
+    return FOTO_POR_CATEGORIA[raw.categoriaFoto];
+  }
+  const t = `${raw?.titulo || ''} ${raw?.norma || ''} ${raw?.escopo || ''}`.toLowerCase();
+  if (t.includes('munck') || t.includes('guindaste') || t.includes('ponte rolante')) return imgMunck;
+  if (t.includes('pmoc') || t.includes('climatiza') || t.includes('hvac')) return imgPmoc;
+  if (t.includes('playground') || t.includes('brinquedo') || t.includes('16071')) return imgPlayground;
+  if (t.includes('perícia') || t.includes('pericia') || t.includes('veicular') || t.includes('automot')) return imgPericia;
+  if (t.includes('escavadeira') || t.includes('linha amarela') || t.includes('pesad')) return imgMaquinas;
+  if (t.includes('manuten') || t.includes('pcm') || t.includes('nr-13') || t.includes('vaso') || t.includes('caldeira')) return imgManutencao;
+  return imgNr12;
+}
+
+function normalizarTrabalhoPublicado(raw: any): TrabalhoRealizado | null {
+  if (!raw || !raw.titulo) return null;
+  const id = String(raw.id || raw.laudoId || raw.titulo);
+  return {
+    id,
+    titulo: String(raw.titulo),
+    badge: String(raw.badge || raw.resultado || 'Laudo Emitido'),
+    norma: String(raw.norma || 'CREA-PE'),
+    escopo: String(raw.escopo || (raw.local ? `Atendimento técnico em ${raw.local}` : 'Laudo técnico com ART registrada no CREA-PE')),
+    prazo: String(raw.prazo || 'ART emitida'),
+    resumo: String(raw.resumo || 'Inspeção técnica e emissão de laudo de conformidade com ART registrada no CREA-PE.'),
+    foto: resolverFotoTrabalho(raw),
+    whatsappMsg: raw.whatsappMsg || `Olá, Eng. Vitor Leonardo! Gostaria de um orçamento similar ao trabalho: ${raw.titulo}.`,
+  };
+}
+
+function combinarTrabalhosPublicados(publicadosRaw: any[]): TrabalhoRealizado[] {
+  const map = new Map<string, TrabalhoRealizado>();
+  for (const item of publicadosRaw) {
+    const norm = normalizarTrabalhoPublicado(item);
+    if (norm && !map.has(norm.id)) {
+      map.set(norm.id, norm);
+    }
+  }
+  for (const base of TRABALHOS_INICIAIS) {
+    if (!map.has(base.id)) {
+      map.set(base.id, base);
+    }
+  }
+  return Array.from(map.values());
+}
+
 export const LandingPage: React.FC = () => {
   // Official Vitor Photo URL from user request
   const VITOR_PHOTO_URL = 'https://www.vlengenhariamecanica.com.br/assets/image-Ca17hHDt.png';
 
-  // Works state
-  const [trabalhos] = useState<TrabalhoRealizado[]>(TRABALHOS_INICIAIS);
+  // Works state (combina trabalhos publicados da Central de Laudos + catálogo inicial)
+  const [trabalhos, setTrabalhos] = useState<TrabalhoRealizado[]>(() => {
+    try {
+      const raw = localStorage.getItem('vl-publicados');
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return combinarTrabalhosPublicados(parsed);
+      }
+    } catch {
+      // ignore
+    }
+    return TRABALHOS_INICIAIS;
+  });
   const [modalTrabalho, setModalTrabalho] = useState<{ item: TrabalhoRealizado; index: number } | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+
+    const carregarDoLocalStorage = () => {
+      try {
+        const raw = localStorage.getItem('vl-publicados');
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (ativo && Array.isArray(parsed)) {
+          setTrabalhos(combinarTrabalhosPublicados(parsed));
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetch('/api/trabalhos-publicados')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!ativo || !json || !Array.isArray(json.trabalhos)) return;
+        setTrabalhos(combinarTrabalhosPublicados(json.trabalhos));
+        try {
+          localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
+        } catch {
+          // ignore
+        }
+      })
+      .catch(() => {});
+
+    window.addEventListener('vl-publicados-updated', carregarDoLocalStorage);
+    window.addEventListener('storage', carregarDoLocalStorage);
+    return () => {
+      ativo = false;
+      window.removeEventListener('vl-publicados-updated', carregarDoLocalStorage);
+      window.removeEventListener('storage', carregarDoLocalStorage);
+    };
+  }, []);
 
   // Expandable services sub-panels state
   const [expandedServicos, setExpandedServicos] = useState<Record<number, boolean>>({});

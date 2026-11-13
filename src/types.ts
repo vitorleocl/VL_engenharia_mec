@@ -616,8 +616,30 @@ export interface Laudo {
     fotoRef?: string;
   }[];
   trechosIaPendentes?: { secaoId: string; revisado: boolean }[] | number;
+  publicadoNoSite?: boolean;
+  publicadoNoSiteEm?: string;
+  laudoAssinadoPdfUrl?: string;
+  laudoAssinadoPdfNome?: string;
+  laudoAssinadoEm?: string;
+  laudoAssinadoTamanho?: number;
   criadoEm: string;
   atualizadoEm: string;
+}
+
+export interface TrabalhoPublicadoSite {
+  id: string;
+  laudoId?: string;
+  titulo: string;
+  badge: string;
+  norma: string;
+  escopo: string;
+  prazo: string;
+  resumo: string;
+  local?: string;
+  foto?: string;
+  categoriaFoto?: 'nr12' | 'munck' | 'maquinas' | 'pmoc' | 'playground' | 'pericia' | 'manutencao';
+  whatsappMsg?: string;
+  publicadoEm: string;
 }
 
 export type VistoriaInspecao = ChecklistCampo;

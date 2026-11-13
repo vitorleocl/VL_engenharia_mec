@@ -191,6 +191,14 @@ app.post("/api/app-data", (req, res) => {
       "uid"
     );
 
+    const laudosRemovidosSet = new Set(laudosRemovidosIds);
+    const baseTrabalhos = Array.isArray(req.body.trabalhosPublicados)
+      ? req.body.trabalhosPublicados
+      : (Array.isArray(currentData.trabalhosPublicados) ? currentData.trabalhosPublicados : []);
+    merged.trabalhosPublicados = baseTrabalhos.filter(
+      (t: any) => !laudosRemovidosSet.has(t?.laudoId || t?.id)
+    );
+
     fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2), "utf-8");
     return res.json({ success: true, savedAt: merged.updatedAt });
   } catch (err: any) {
@@ -225,6 +233,161 @@ app.delete("/api/orcamentos/:id", (req, res) => {
     return res.json({ success: true, removedId: id });
   } catch (err: any) {
     console.error("Erro ao deletar orçamento em app_storage.json:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+const LAUDOS_PDF_DIR = path.join(process.cwd(), "data", "uploads", "laudos");
+
+function sanitizeSafeId(raw: string): string {
+  return String(raw || "").replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function readAppStorageSafe(): Record<string, any> {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")) || {};
+    }
+  } catch (err) {
+    console.warn("Erro ao ler app_storage.json:", err);
+  }
+  return {};
+}
+
+function writeAppStorageSafe(data: Record<string, any>) {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+}
+
+app.get("/api/trabalhos-publicados", (req, res) => {
+  try {
+    const data = readAppStorageSafe();
+    const laudosRemSet = new Set<string>(data.laudosRemovidosIds || []);
+    const lista = Array.isArray(data.trabalhosPublicados)
+      ? data.trabalhosPublicados.filter((t: any) => t && !laudosRemSet.has(t.laudoId || t.id))
+      : [];
+    return res.json({ trabalhos: lista });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/trabalhos-publicados", (req, res) => {
+  try {
+    const data = readAppStorageSafe();
+    const atual: any[] = Array.isArray(data.trabalhosPublicados) ? data.trabalhosPublicados : [];
+    const { trabalho, trabalhos, removerId } = req.body || {};
+    let proximaLista = [...atual];
+
+    if (Array.isArray(trabalhos)) {
+      proximaLista = trabalhos.filter((t: any) => t && t.id);
+    } else if (removerId) {
+      proximaLista = proximaLista.filter((t: any) => t.id !== removerId && t.laudoId !== removerId);
+    } else if (trabalho && trabalho.id) {
+      proximaLista = [
+        trabalho,
+        ...proximaLista.filter((t: any) => t.id !== trabalho.id && t.laudoId !== trabalho.id),
+      ];
+    } else {
+      return res.status(400).json({ error: "Envie 'trabalho', 'trabalhos' ou 'removerId'." });
+    }
+
+    const updated = {
+      ...data,
+      trabalhosPublicados: proximaLista,
+      updatedAt: new Date().toISOString(),
+    };
+    writeAppStorageSafe(updated);
+    return res.json({ success: true, trabalhos: proximaLista });
+  } catch (err: any) {
+    console.error("Erro ao salvar trabalhos publicados:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/laudos/:id/pdf-assinado", (req, res) => {
+  try {
+    const safeId = sanitizeSafeId(req.params.id);
+    if (!safeId) {
+      return res.status(400).json({ error: "Identificador do laudo inválido." });
+    }
+    const { dataUrl, nomeArquivo } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== "string") {
+      return res.status(400).json({ error: "Arquivo PDF não enviado." });
+    }
+
+    const base64Match = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
+    const base64Body = base64Match ? base64Match[1] : dataUrl;
+    const buffer = Buffer.from(base64Body, "base64");
+
+    if (!buffer.length) {
+      return res.status(400).json({ error: "Arquivo PDF vazio ou inválido." });
+    }
+    if (buffer.length > 18 * 1024 * 1024) {
+      return res.status(413).json({ error: "O arquivo PDF excede o limite de 18 MB." });
+    }
+    if (buffer.subarray(0, 4).toString("utf-8") !== "%PDF") {
+      return res.status(400).json({ error: "O arquivo enviado não possui cabeçalho PDF válido." });
+    }
+
+    if (!fs.existsSync(LAUDOS_PDF_DIR)) {
+      fs.mkdirSync(LAUDOS_PDF_DIR, { recursive: true });
+    }
+
+    const filePath = path.join(LAUDOS_PDF_DIR, `${safeId}.pdf`);
+    fs.writeFileSync(filePath, buffer);
+
+    const safeFileName = String(nomeArquivo || `${safeId}-assinado.pdf`)
+      .replace(/[^\w.\-() ]+/g, "_")
+      .slice(0, 140);
+
+    return res.json({
+      success: true,
+      url: `/api/laudos/${safeId}/pdf-assinado`,
+      nomeArquivo: safeFileName,
+      tamanhoBytes: buffer.length,
+    });
+  } catch (err: any) {
+    console.error("Erro ao salvar PDF assinado do laudo:", err);
+    return res.status(500).json({ error: err.message || "Falha ao salvar PDF assinado." });
+  }
+});
+
+app.get("/api/laudos/:id/pdf-assinado", (req, res) => {
+  try {
+    const safeId = sanitizeSafeId(req.params.id);
+    if (!safeId) {
+      return res.status(400).json({ error: "Identificador inválido." });
+    }
+    const filePath = path.join(LAUDOS_PDF_DIR, `${safeId}.pdf`);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "PDF assinado não encontrado." });
+    }
+    const download = req.query.download === "1";
+    const fileName = String(req.query.nome || `laudo-${safeId}-assinado.pdf`).replace(/[^\w.\-() ]+/g, "_");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `${download ? "attachment" : "inline"}; filename="${fileName}"`);
+    return res.sendFile(filePath);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/laudos/:id/pdf-assinado", (req, res) => {
+  try {
+    const safeId = sanitizeSafeId(req.params.id);
+    if (!safeId) {
+      return res.status(400).json({ error: "Identificador inválido." });
+    }
+    const filePath = path.join(LAUDOS_PDF_DIR, `${safeId}.pdf`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return res.json({ success: true });
+  } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });

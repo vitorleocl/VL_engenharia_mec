@@ -14,21 +14,51 @@ import {
   Share2,
   Trash2,
   Sparkles,
-  Calculator
+  Calculator,
+  FileUp,
+  Globe
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
-import { Laudo } from '../../types';
+import { AnexarLaudoAssinadoModal } from './AnexarLaudoAssinadoModal';
+import { Laudo, TrabalhoPublicadoSite } from '../../types';
 import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
+
+const inferirCategoriaTrabalhoSite = (
+  texto: string
+): { categoriaFoto: TrabalhoPublicadoSite['categoriaFoto']; badge: string; normaPadrao: string } => {
+  const t = texto.toLowerCase();
+  if (t.includes('munck') || t.includes('guindaste') || t.includes('guindauto') || t.includes('ponte rolante') || t.includes('eleva')) {
+    return { categoriaFoto: 'munck', badge: 'Içamento & Carga', normaPadrao: 'NR-11 · NBR 14768' };
+  }
+  if (t.includes('pmoc') || t.includes('climatiza') || t.includes('ar-condicionado') || t.includes('hvac') || t.includes('exaust')) {
+    return { categoriaFoto: 'pmoc', badge: 'Climatização Legal', normaPadrao: 'Lei 13.589/2018 · NBR 16401' };
+  }
+  if (t.includes('playground') || t.includes('brinquedo') || t.includes('parque infantil') || t.includes('16071')) {
+    return { categoriaFoto: 'playground', badge: 'Segurança Infantil', normaPadrao: 'ABNT NBR 16071' };
+  }
+  if (t.includes('perícia') || t.includes('pericia') || t.includes('veicular') || t.includes('automot') || t.includes('monta') || t.includes('causa raiz') || t.includes('sinistr')) {
+    return { categoriaFoto: 'pericia', badge: 'Perícia Técnica', normaPadrao: 'CONTRAN · ABNT' };
+  }
+  if (t.includes('escavadeira') || t.includes('pá carregadeira') || t.includes('retroescavadeira') || t.includes('trator') || t.includes('pesad') || t.includes('linha amarela') || t.includes('empilhadeira')) {
+    return { categoriaFoto: 'maquinas', badge: 'Linha Amarela', normaPadrao: 'NR-11 · NR-12' };
+  }
+  if (t.includes('manuten') || t.includes('pcm') || t.includes('caldeira') || t.includes('vaso de press') || t.includes('nr-13') || t.includes('gás') || t.includes('glp')) {
+    return { categoriaFoto: 'manutencao', badge: 'Inspeção & PCM', normaPadrao: 'NR-13 · CONFEA' };
+  }
+  return { categoriaFoto: 'nr12', badge: 'Conformidade NR-12', normaPadrao: 'NR-12 · CREA-PE' };
+};
 
 export const LaudosCentralView: React.FC = () => {
   const { 
     laudos, 
     clientes, 
     ativos, 
+    gerarNumeroLaudo,
     criarNovoLaudo,
-    criarLaudoPorTaxonomia, 
+    criarLaudoPorTaxonomia,
+    atualizarLaudo,
     removerLaudo 
   } = useData();
   const { currentUser } = useAuth();
@@ -43,6 +73,21 @@ export const LaudosCentralView: React.FC = () => {
   const [modalNovoAberto, setModalNovoAberto] = useState(searchParams.get('novo') === '1');
   const [laudoExportandoPdf, setLaudoExportandoPdf] = useState<Laudo | null>(null);
   const [laudoParaExcluir, setLaudoParaExcluir] = useState<Laudo | null>(null);
+  const [modalPdfAssinadoAberto, setModalPdfAssinadoAberto] = useState(false);
+  const [laudoParaAnexarPdf, setLaudoParaAnexarPdf] = useState<Laudo | null>(null);
+  const [laudoVisualizandoPdfAssinado, setLaudoVisualizandoPdfAssinado] = useState<Laudo | null>(null);
+  const [publicadosIds, setPublicadosIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('vl-publicados');
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map((w: any) => String(w?.laudoId || w?.id || '')).filter(Boolean));
+      }
+    } catch {
+      // ignore
+    }
+    return new Set();
+  });
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
   // Template & Form State for Novo Laudo
@@ -74,9 +119,32 @@ export const LaudosCentralView: React.FC = () => {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    let ativo = true;
+    fetch('/api/trabalhos-publicados')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!ativo || !json || !Array.isArray(json.trabalhos)) return;
+        const ids = new Set<string>(
+          json.trabalhos.map((w: any) => String(w?.laudoId || w?.id || '')).filter(Boolean)
+        );
+        setPublicadosIds(ids);
+        try {
+          localStorage.setItem('vl-publicados', JSON.stringify(json.trabalhos));
+          window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
+        } catch {
+          // ignore
+        }
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   const showToast = (msg: string) => {
     setToastMensagem(msg);
-    setTimeout(() => setToastMensagem(null), 2500);
+    setTimeout(() => setToastMensagem(null), 3000);
   };
 
   // Live HRN Calculation
@@ -119,27 +187,102 @@ export const LaudosCentralView: React.FC = () => {
   }, [laudos, clientes, busca, statusFiltro]);
 
   // Publish to site handler
-  const handlePublicarNoSite = (laudo: Laudo) => {
-    try {
-      const cliente = clientes.find(c => c.id === laudo.clienteId);
-      const novoTrabalho = {
-        id: laudo.id,
-        titulo: `${laudo.tipo} · ${laudo.numero}`,
-        local: `${cliente?.endereco?.cidade || 'Recife'} · PE`,
-        norma: laudo.tipo.includes('12') ? 'NR-12' : laudo.tipo.includes('11') ? 'NR-11' : 'CREA-PE',
-        resultado: 'Conforme',
-        prazo: 'Em até 48 h',
-        resumo: `Laudo técnico com ART registrada no CREA-PE para ${cliente?.nomeFantasia || 'indústria local'}. Conformidade e segurança operacional validadas.`
-      };
+  const handlePublicarNoSite = async (laudo: Laudo) => {
+    const cliente = clientes.find(c => c.id === laudo.clienteId);
+    const cidade = cliente?.endereco?.cidade || 'Recife';
+    const estado = cliente?.endereco?.estado || 'PE';
+    const nomeCliente =
+      cliente?.nomeFantasia ||
+      cliente?.razaoSocial ||
+      (laudo.clienteNome && !/^cliente$/i.test(laudo.clienteNome.trim()) ? laudo.clienteNome : 'Cliente corporativo');
+    const infoCat = inferirCategoriaTrabalhoSite(`${laudo.tipo || ''} ${laudo.normasReferencia || ''}`);
+    const fotoReal =
+      laudo.capaFotoUrl ||
+      laudo.anexosFotos?.[0]?.url ||
+      (laudo.secoes || []).flatMap(s => s.fotos || []).find(f => f?.url)?.url ||
+      undefined;
+    const agora = new Date().toISOString();
 
+    const novoTrabalho: TrabalhoPublicadoSite = {
+      id: laudo.id,
+      laudoId: laudo.id,
+      titulo: laudo.ativoIdentificacao && laudo.ativoIdentificacao !== laudo.tipo
+        ? `${laudo.tipo} · ${laudo.ativoIdentificacao}`
+        : `${laudo.tipo} · ${laudo.numero}`,
+      badge: infoCat.badge,
+      norma: laudo.normasReferencia || infoCat.normaPadrao,
+      escopo: `Laudo ${laudo.numero} · ${nomeCliente} (${cidade}/${estado})`,
+      prazo: laudo.artNumero ? `ART ${laudo.artNumero}` : 'ART emitida · CREA-PE',
+      resumo:
+        laudo.resumoExecutivo ||
+        `Laudo técnico com ART registrada no CREA-PE para ${nomeCliente} (${cidade}/${estado}). Conformidade e segurança operacional validadas.`,
+      local: `${cidade} · ${estado}`,
+      ...(fotoReal ? { foto: fotoReal } : {}),
+      categoriaFoto: infoCat.categoriaFoto,
+      whatsappMsg: `Olá, Eng. Vitor Leonardo! Vi o trabalho "${laudo.tipo}" (${laudo.numero}) no site e gostaria de um orçamento similar.`,
+      publicadoEm: agora,
+    };
+
+    try {
       const existingRaw = localStorage.getItem('vl-publicados');
       const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      const updated = [novoTrabalho, ...existing.filter((w: any) => w.id !== laudo.id)];
+      const updated = [
+        novoTrabalho,
+        ...(Array.isArray(existing) ? existing.filter((w: any) => w?.id !== laudo.id && w?.laudoId !== laudo.id) : []),
+      ];
       localStorage.setItem('vl-publicados', JSON.stringify(updated));
-      showToast('Publicado em Trabalhos realizados no site público!');
+      window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
     } catch {
-      showToast('Publicado no site!');
+      // ignore storage errors
     }
+
+    setPublicadosIds(prev => new Set(prev).add(laudo.id));
+    atualizarLaudo(laudo.id, { publicadoNoSite: true, publicadoNoSiteEm: agora });
+
+    try {
+      await fetch('/api/trabalhos-publicados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trabalho: novoTrabalho }),
+      });
+    } catch {
+      // servidor fallback já coberto pelo localStorage + app-data
+    }
+
+    showToast('Publicado em "Trabalhos realizados" no site público!');
+  };
+
+  const handleDespublicarDoSite = async (laudo: Laudo) => {
+    try {
+      const existingRaw = localStorage.getItem('vl-publicados');
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      if (Array.isArray(existing)) {
+        const updated = existing.filter((w: any) => w?.id !== laudo.id && w?.laudoId !== laudo.id);
+        localStorage.setItem('vl-publicados', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
+      }
+    } catch {
+      // ignore
+    }
+
+    setPublicadosIds(prev => {
+      const next = new Set(prev);
+      next.delete(laudo.id);
+      return next;
+    });
+    atualizarLaudo(laudo.id, { publicadoNoSite: false, publicadoNoSiteEm: null });
+
+    try {
+      await fetch('/api/trabalhos-publicados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ removerId: laudo.id }),
+      });
+    } catch {
+      // ignore
+    }
+
+    showToast('Laudo removido da seção pública do site.');
   };
 
   const handleSalvarNovoLaudo = () => {
@@ -268,6 +411,17 @@ export const LaudosCentralView: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              setLaudoParaAnexarPdf(null);
+              setModalPdfAssinadoAberto(true);
+            }}
+            className="btn-tech text-[14.5px] px-3.5 py-2 border-[var(--blue)]/40 text-[var(--blue)] hover:bg-[var(--blue)]/10"
+          >
+            <FileUp className="w-4 h-4 mr-1.5" />
+            <span>Anexar laudo assinado (PDF)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setModoPreenchimento('pre_preenchido');
               setModalNovoAberto(true);
             }}
@@ -371,6 +525,8 @@ export const LaudosCentralView: React.FC = () => {
                 const cliente = clientes.find(c => c.id === laudo.clienteId);
                 const dataFormatada = new Date(laudo.criadoEm || Date.now()).toLocaleDateString('pt-BR');
                 const isFinalizado = laudo.status === 'finalizado';
+                const estaPublicadoNoSite = Boolean(laudo.publicadoNoSite || publicadosIds.has(laudo.id));
+                const temPdfAssinado = Boolean(laudo.laudoAssinadoPdfUrl);
 
                 return (
                   <tr key={laudo.id} className="hover:bg-[var(--paper)] transition-colors">
@@ -379,6 +535,17 @@ export const LaudosCentralView: React.FC = () => {
                       <small className="text-[var(--muted)] text-xs block max-w-[240px] truncate">
                         {laudo.tipo}
                       </small>
+                      {temPdfAssinado && (
+                        <button
+                          type="button"
+                          onClick={() => setLaudoVisualizandoPdfAssinado(laudo)}
+                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                          title={`Visualizar PDF assinado: ${laudo.laudoAssinadoPdfNome || 'laudo-assinado.pdf'}`}
+                        >
+                          <FileCheck2 className="w-3 h-3" />
+                          <span>PDF Assinado</span>
+                        </button>
+                      )}
                     </td>
 
                     <td className="py-3 px-4 align-top text-[var(--ink)]">
@@ -419,15 +586,32 @@ export const LaudosCentralView: React.FC = () => {
 
                     {/* Botão Publicar no Site */}
                     <td className="py-3 px-4 align-top">
-                      {isFinalizado ? (
-                        <button
-                          type="button"
-                          onClick={() => handlePublicarNoSite(laudo)}
-                          className="btn-tech sm text-xs py-1 px-2.5"
-                          title="Exibir este trabalho na página inicial pública"
-                        >
-                          Publicar no site
-                        </button>
+                      {isFinalizado || temPdfAssinado ? (
+                        estaPublicadoNoSite ? (
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30">
+                              <Globe className="w-3 h-3" />
+                              <span>Publicado ✓</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDespublicarDoSite(laudo)}
+                              className="text-[11px] font-semibold text-[var(--muted)] hover:text-rose-600 underline cursor-pointer"
+                            >
+                              Remover do site
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handlePublicarNoSite(laudo)}
+                            className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1"
+                            title="Exibir este trabalho na página inicial pública"
+                          >
+                            <Globe className="w-3 h-3" />
+                            <span>Publicar no site</span>
+                          </button>
+                        )
                       ) : (
                         <span className="text-[var(--muted)] text-xs">—</span>
                       )}
@@ -435,6 +619,33 @@ export const LaudosCentralView: React.FC = () => {
 
                     {/* Quick actions */}
                     <td className="py-3 px-4 align-top text-right space-x-1 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLaudoParaAnexarPdf(laudo);
+                          setModalPdfAssinadoAberto(true);
+                        }}
+                        className={`btn-tech sm text-xs py-1 px-2 ${
+                          temPdfAssinado
+                            ? 'text-emerald-600 border-emerald-500/40'
+                            : 'text-[var(--blue)]'
+                        }`}
+                        title={temPdfAssinado ? 'Gerenciar / substituir PDF assinado' : 'Anexar PDF já finalizado e assinado'}
+                      >
+                        <FileUp className="w-3.5 h-3.5" />
+                      </button>
+
+                      {temPdfAssinado && (
+                        <button
+                          type="button"
+                          onClick={() => setLaudoVisualizandoPdfAssinado(laudo)}
+                          className="btn-tech sm text-xs py-1 px-2"
+                          title="Visualizar PDF assinado anexado"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/laudos/${laudo.id}`)}
@@ -860,6 +1071,89 @@ export const LaudosCentralView: React.FC = () => {
           laudo={laudoExportandoPdf}
           onClose={() => setLaudoExportandoPdf(null)}
         />
+      )}
+
+      {/* Modal: Anexar Laudo Finalizado e Assinado (PDF) */}
+      <AnexarLaudoAssinadoModal
+        isOpen={modalPdfAssinadoAberto}
+        laudoExistente={laudoParaAnexarPdf}
+        clientes={clientes}
+        ativos={ativos}
+        gerarNumeroLaudo={gerarNumeroLaudo}
+        onClose={() => {
+          setModalPdfAssinadoAberto(false);
+          setLaudoParaAnexarPdf(null);
+        }}
+        onCriarComPdf={criarNovoLaudo}
+        onAtualizarLaudoPdf={atualizarLaudo}
+        onSuccessToast={showToast}
+      />
+
+      {/* Modal: Visualizador In-App do PDF Assinado */}
+      {laudoVisualizandoPdfAssinado && laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.78)] backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setLaudoVisualizandoPdfAssinado(null);
+          }}
+        >
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-[var(--line)] bg-[var(--paper)]">
+              <div className="min-w-0">
+                <h3 className="text-[17px] font-bold truncate">
+                  {laudoVisualizandoPdfAssinado.numero} · {laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || 'Laudo Assinado.pdf'}
+                </h3>
+                <p className="text-xs text-[var(--muted)] truncate">
+                  {laudoVisualizandoPdfAssinado.tipo}
+                  {laudoVisualizandoPdfAssinado.artNumero ? ` · ART ${laudoVisualizandoPdfAssinado.artNumero}` : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`${laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl}?download=1&nome=${encodeURIComponent(
+                    laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`
+                  )}`}
+                  download={laudoVisualizandoPdfAssinado.laudoAssinadoPdfNome || `${laudoVisualizandoPdfAssinado.numero}-assinado.pdf`}
+                  className="btn-tech pri sm text-xs py-1.5 px-3 inline-flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Baixar PDF</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const alvo = laudoVisualizandoPdfAssinado;
+                    setLaudoVisualizandoPdfAssinado(null);
+                    setLaudoParaAnexarPdf(alvo);
+                    setModalPdfAssinadoAberto(true);
+                  }}
+                  className="btn-tech sm text-xs py-1.5 px-3 inline-flex items-center gap-1.5"
+                >
+                  <FileUp className="w-3.5 h-3.5" />
+                  <span>Substituir</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLaudoVisualizandoPdfAssinado(null)}
+                  className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)]"
+                  aria-label="Fechar visualizador"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-slate-900/10">
+              <iframe
+                src={laudoVisualizandoPdfAssinado.laudoAssinadoPdfUrl}
+                title={`PDF Assinado ${laudoVisualizandoPdfAssinado.numero}`}
+                className="w-full h-full border-0"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

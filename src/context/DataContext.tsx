@@ -115,7 +115,7 @@ interface DataContextType {
   gerarNumeroLaudo: (prefixo?: string) => string;
   criarNovoLaudo: (dados: Partial<Laudo> & { tipo: string; clienteId: string; ativoId: string }) => string;
   criarLaudoPorTaxonomia: (params: { tipoLaudoId: string; clienteId: string; ativoId: string; artNumero?: string; dataInspecao?: string; modoPreenchimento?: 'em_branco' | 'sugestao_ia' }) => string;
-  atualizarLaudo: (id: string, dados: Partial<Laudo>) => void;
+  atualizarLaudo: (id: string, dados: Partial<Record<keyof Laudo, any>>) => void;
   finalizarLaudo: (id: string, artNumero: string, assinaturaUrl?: string) => void;
   removerLaudo: (id: string) => void;
 
@@ -2138,7 +2138,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return lista;
     });
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
-      setDoc(doc(db, 'laudos', id), novo).catch(err => {
+      const firestoreNovo: Record<string, any> = {};
+      Object.entries(novo).forEach(([k, v]) => {
+        if (v !== undefined) {
+          firestoreNovo[k] = v;
+        }
+      });
+      setDoc(doc(db, 'laudos', id), firestoreNovo).catch(err => {
         handleFirestoreError(err, OperationType.CREATE, `laudos/${id}`);
       });
     }
@@ -2146,17 +2152,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return id;
   };
 
-  const atualizarLaudo = (id: string, dados: Partial<Laudo>) => {
+  const atualizarLaudo = (id: string, dados: Partial<Record<keyof Laudo, any>>) => {
     const agora = new Date().toISOString();
-    const patch = { ...dados, atualizadoEm: agora };
+    const dadosComTimestamp: Record<string, any> = { ...dados, atualizadoEm: agora };
+    const localPatch: Record<string, any> = {};
+    const firestorePatch: Record<string, any> = {};
+
+    Object.entries(dadosComTimestamp).forEach(([k, v]) => {
+      if (v === undefined) return;
+      if (v === null) {
+        localPatch[k] = undefined;
+        firestorePatch[k] = deleteField();
+      } else {
+        localPatch[k] = v;
+        firestorePatch[k] = v;
+      }
+    });
+
     setLaudos(prev => {
-      const atualizados = prev.map(l => l.id === id ? { ...l, ...patch } : l);
+      const atualizados = prev.map(l => {
+        if (l.id !== id) return l;
+        const next: Record<string, any> = { ...l, ...localPatch };
+        Object.keys(localPatch).forEach((k) => {
+          if (localPatch[k] === undefined) {
+            delete next[k];
+          }
+        });
+        return next as Laudo;
+      });
       saveStorage('vl_laudos', atualizados);
       salvarServidorDireto({ laudos: atualizados });
       return atualizados;
     });
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
-      setDoc(doc(db, 'laudos', id), patch, { merge: true }).catch(err => {
+      setDoc(doc(db, 'laudos', id), firestorePatch, { merge: true }).catch(err => {
         handleFirestoreError(err, OperationType.UPDATE, `laudos/${id}`);
       });
     }
@@ -2265,6 +2294,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(err, OperationType.DELETE, `laudos/${id}`);
       });
     }
+
+    try {
+      const existingRaw = localStorage.getItem('vl-publicados');
+      if (existingRaw) {
+        const existing = JSON.parse(existingRaw);
+        if (Array.isArray(existing)) {
+          const filtered = existing.filter((w: any) => w?.id !== id && w?.laudoId !== id);
+          localStorage.setItem('vl-publicados', JSON.stringify(filtered));
+          window.dispatchEvent(new CustomEvent('vl-publicados-updated'));
+        }
+      }
+    } catch {
+      // Ignorar erro de localStorage
+    }
+    fetch('/api/trabalhos-publicados', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ removerId: id }),
+    }).catch(() => {});
+    fetch(`/api/laudos/${encodeURIComponent(id)}/pdf-assinado`, { method: 'DELETE' }).catch(() => {});
 
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };
