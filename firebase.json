@@ -1,8 +1,11 @@
 {
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
+  "firestore": [
+    {
+      "database": "ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   },
