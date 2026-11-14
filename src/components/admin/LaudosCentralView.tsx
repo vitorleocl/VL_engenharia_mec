@@ -14,7 +14,6 @@ import {
   Share2,
   Trash2,
   Sparkles,
-  Calculator,
   FileUp,
   Globe
 } from 'lucide-react';
@@ -92,14 +91,14 @@ export const LaudosCentralView: React.FC = () => {
   const [subtipoIndex, setSubtipoIndex] = useState(0);
   const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '');
   const [erroClienteNovo, setErroClienteNovo] = useState<string | null>(null);
-  const [novoEquipamento, setNovoEquipamento] = useState('');
+  const [novoAtivoId, setNovoAtivoId] = useState('');
+  const [erroAtivoNovo, setErroAtivoNovo] = useState<string | null>(null);
   const [novaData, setNovaData] = useState(new Date().toISOString().split('T')[0]);
 
-  // HRN Factors
-  const [hrnLo, setHrnLo] = useState<number>(2); // Probabilidade
-  const [hrnFe, setHrnFe] = useState<number>(4); // Frequencia
-  const [hrnDph, setHrnDph] = useState<number>(2); // Gravidade
-  const [hrnNp, setHrnNp] = useState<number>(1); // Pessoas expostas
+  const ativosDoCliente = useMemo(
+    () => ativos.filter((a) => a.clienteId === novoClienteId),
+    [ativos, novoClienteId]
+  );
 
   useEffect(() => {
     if (searchParams.get('novo') === '1') {
@@ -187,18 +186,6 @@ export const LaudosCentralView: React.FC = () => {
     setToastMensagem(msg);
     setTimeout(() => setToastMensagem(null), 3000);
   };
-
-  // Live HRN Calculation
-  const hrnValor = useMemo(() => {
-    const total = hrnLo * hrnFe * hrnDph * hrnNp;
-    return total % 1 === 0 ? total : parseFloat(total.toFixed(1));
-  }, [hrnLo, hrnFe, hrnDph, hrnNp]);
-
-  const hrnClassificacao = useMemo(() => {
-    if (hrnValor < 10) return { texto: 'Risco baixo: manter e monitorar.', cor: 'text-[var(--green)]' };
-    if (hrnValor < 50) return { texto: 'Risco significativo: são necessárias medidas de proteção.', cor: 'text-[var(--warn)]' };
-    return { texto: 'Risco alto: ação imediata e possível interdição.', cor: 'text-[var(--bad)]' };
-  }, [hrnValor]);
 
   const contagemStatus = useMemo(() => ({
     todos: laudos.length,
@@ -309,12 +296,22 @@ export const LaudosCentralView: React.FC = () => {
     }
     setErroClienteNovo(null);
 
+    const ativoSel = ativosDoCliente.find(a => a.id === novoAtivoId);
+    if (!ativoSel) {
+      setErroAtivoNovo(
+        ativosDoCliente.length === 0
+          ? 'Este cliente não possui ativos cadastrados. Cadastre o equipamento em Equipamentos antes de abrir o laudo.'
+          : 'Selecione o ativo periciado.'
+      );
+      return;
+    }
+    setErroAtivoNovo(null);
+
     const activeCategory = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
     const activeSubtipo = activeCategory.subtipos[subtipoIndex] || activeCategory.subtipos[0];
-    const equip = novoEquipamento.trim() || activeSubtipo.nome;
+    const equip = ativoSel.identificacao;
 
     const clienteSelecionado = clienteSel;
-    const ativoCorrespondente = ativos.find(a => a.clienteId === clienteSel.id) || ativos[0];
 
     const ehPrePreenchido = modoPreenchimento === 'pre_preenchido';
 
@@ -372,8 +369,12 @@ export const LaudosCentralView: React.FC = () => {
       clienteContatoTelefone: primContato?.telefone || '',
       clienteContatoEmail: primContato?.email || '',
       clienteEndereco: endStr,
-      ativoId: ativoCorrespondente?.id || '',
-      ativoIdentificacao: equip,
+      ativoId: ativoSel.id,
+      ativoIdentificacao: ativoSel.identificacao,
+      ativoFabricante: ativoSel.fabricante,
+      ativoModelo: ativoSel.modelo || '',
+      ativoNumeroSerie: ativoSel.numeroSerie || '',
+      ativoCapacidade: ativoSel.capacidade || '',
       dataInspecao: novaData,
       normasReferencia: activeSubtipo.normaRef,
       resumoExecutivo: `Laudo técnico de ${activeSubtipo.nome} referente ao equipamento ${equip}. Normas de referência: ${activeSubtipo.normaRef}. Escopo: ${activeSubtipo.detalhe}`,
@@ -382,13 +383,7 @@ export const LaudosCentralView: React.FC = () => {
       conclusao: `Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma ${activeSubtipo.normaRef}, estando apto para operação regular sob acompanhamento das rotinas de manutenção.`,
       secoes: secoesModelo,
       checklist: checklistModelo,
-      modoCriacao: ehPrePreenchido ? 'sugestao_ia' : 'em_branco',
-      hrnCalculoGeral: {
-        score: hrnValor,
-        nivel: hrnValor < 10 ? 'Baixo' : hrnValor < 50 ? 'Médio' : 'Alto',
-        cor: hrnClassificacao.cor,
-        recomendacao: hrnClassificacao.texto
-      }
+      modoCriacao: ehPrePreenchido ? 'sugestao_ia' : 'em_branco'
     });
 
     setModalNovoAberto(false);
@@ -713,19 +708,19 @@ export const LaudosCentralView: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal: Novo Laudo com Apreciação de Risco HRN ao vivo */}
+      {/* Modal: Novo Laudo */}
       {modalNovoAberto && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(5,14,28,0.7)] backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[var(--line)]">
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-[var(--line)]">
               <div>
-                <h2 className="text-[22px] font-bold">Novo laudo</h2>
-                <p className="text-[var(--muted)] text-sm">
-                  Preencha os dados da vistoria. O risco HRN é calculado enquanto você escolhe.
+                <h2 className="text-[18px] font-bold">Novo laudo</h2>
+                <p className="text-[var(--muted)] text-[12.5px] mt-0.5">
+                  Escolha o serviço, o cliente e o ativo periciado. O conteúdo técnico é montado no editor.
                 </p>
               </div>
               <button
@@ -734,32 +729,34 @@ export const LaudosCentralView: React.FC = () => {
                   setModalNovoAberto(false);
                   setSearchParams({});
                 }}
-                className="p-1 rounded-md text-[var(--muted)] hover:text-[var(--ink)]"
+                className="p-1 rounded-md text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            <div className="px-6 py-5 space-y-4 overflow-y-auto">
+
             {/* Mode Switcher: Pré-Pronto vs Em branco */}
-            <div className="flex items-center gap-2 p-1 bg-[var(--paper)] rounded-xl border border-[var(--line)]">
+            <div className="flex items-center gap-1 p-1 bg-[var(--paper)] rounded-lg border border-[var(--line)]">
               <button
                 type="button"
                 onClick={() => setModoPreenchimento('pre_preenchido')}
-                className={`flex-1 py-2 px-3 rounded-lg text-[13.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 rounded-md text-[12.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   modoPreenchimento === 'pre_preenchido'
-                    ? 'bg-[var(--blue)] text-[var(--onblue)] shadow-sm'
+                    ? 'bg-[var(--blue)] text-[var(--onblue)]'
                     : 'text-[var(--muted)] hover:text-[var(--ink)]'
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Modelo Pré-Pronto (Recomendado)</span>
+                <span>Modelo pré-pronto</span>
               </button>
               <button
                 type="button"
                 onClick={() => setModoPreenchimento('em_branco')}
-                className={`flex-1 py-2 px-3 rounded-lg text-[13.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`flex-1 py-1.5 px-3 rounded-md text-[12.5px] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   modoPreenchimento === 'em_branco'
-                    ? 'bg-[var(--blue)] text-[var(--onblue)] shadow-sm'
+                    ? 'bg-[var(--blue)] text-[var(--onblue)]'
                     : 'text-[var(--muted)] hover:text-[var(--ink)]'
                 }`}
               >
@@ -768,17 +765,9 @@ export const LaudosCentralView: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-6">
-              
-              {/* Vistoria Inputs */}
-              <div className="space-y-4">
-                <h3 className="text-[17px] font-bold">
-                  {modoPreenchimento === 'pre_preenchido' ? 'Escolha a Especialidade e o Modelo' : 'Dados do Laudo'}
-                </h3>
-
                 {/* 1. Especialidade (7 core services) */}
-                <label className="block text-sm font-semibold">
-                  <span className="mb-1 block">Especialidade (O que a VL inspeciona)</span>
+                <label className="block text-[12px] font-semibold">
+                  <span className="mb-1 block">Especialidade</span>
                   <select
                     value={categoriaIndex}
                     onChange={(e) => {
@@ -797,8 +786,8 @@ export const LaudosCentralView: React.FC = () => {
                 </label>
 
                 {/* 2. Subtipo / Modelo Pré-Pronto */}
-                <label className="block text-sm font-semibold">
-                  <span className="mb-1 block">Modelo de laudo / Subtipo técnico</span>
+                <label className="block text-[12px] font-semibold">
+                  <span className="mb-1 block">Modelo de laudo / subtipo técnico</span>
                   <select
                     value={subtipoIndex}
                     onChange={(e) => setSubtipoIndex(parseInt(e.target.value, 10))}
@@ -842,13 +831,15 @@ export const LaudosCentralView: React.FC = () => {
                 })()}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="block text-sm font-semibold">
-                    <span className="mb-1 block">Cliente Contratante *</span>
+                  <label className="block text-[12px] font-semibold">
+                    <span className="mb-1 block">Cliente contratante *</span>
                     <select
                       value={novoClienteId}
                       onChange={(e) => {
                         setNovoClienteId(e.target.value);
+                        setNovoAtivoId('');
                         setErroClienteNovo(null);
+                        setErroAtivoNovo(null);
                       }}
                       className={`w-full p-2.5 border rounded-lg bg-[var(--paper)] text-[var(--ink)] ${
                         erroClienteNovo ? 'border-rose-500' : 'border-[var(--line)]'
@@ -866,7 +857,7 @@ export const LaudosCentralView: React.FC = () => {
                     )}
                   </label>
 
-                  <label className="block text-sm font-semibold">
+                  <label className="block text-[12px] font-semibold">
                     <span className="mb-1 block">Data da vistoria</span>
                     <input
                       type="date"
@@ -904,116 +895,92 @@ export const LaudosCentralView: React.FC = () => {
                   );
                 })()}
 
-                <label className="block text-sm font-semibold">
-                  <span className="mb-1 block">Equipamento / Ativo periciado</span>
-                  <input
-                    type="text"
-                    value={novoEquipamento}
-                    onChange={(e) => setNovoEquipamento(e.target.value)}
-                    placeholder="Ex: Escavadeira CAT 320, Munck Madal 15 t, Prensa Excêntrica 60 t..."
-                    className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
-                  />
-                </label>
-
-                {/* Apreciação de Risco HRN Inputs */}
-                <div className="pt-4 border-t border-[var(--line)] space-y-3">
-                  <h3 className="text-[17px] font-bold">Apreciação de risco (HRN)</h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <label className="block font-semibold">
-                      <span className="mb-1 block text-xs text-[var(--muted)]">Probabilidade (LO)</span>
-                      <select
-                        value={hrnLo}
-                        onChange={(e) => setHrnLo(parseFloat(e.target.value))}
-                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
-                      >
-                        <option value={1}>1 - Improvável</option>
-                        <option value={2}>2 - Possível</option>
-                        <option value={5}>5 - Provável</option>
-                        <option value={10}>10 - Muito provável</option>
-                      </select>
-                    </label>
-
-                    <label className="block font-semibold">
-                      <span className="mb-1 block text-xs text-[var(--muted)]">Frequência de exposição (FE)</span>
-                      <select
-                        value={hrnFe}
-                        onChange={(e) => setHrnFe(parseFloat(e.target.value))}
-                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
-                      >
-                        <option value={1}>1 - Anual</option>
-                        <option value={2.5}>2.5 - Mensal</option>
-                        <option value={4}>4 - Semanal</option>
-                        <option value={5}>5 - Diária</option>
-                      </select>
-                    </label>
-
-                    <label className="block font-semibold">
-                      <span className="mb-1 block text-xs text-[var(--muted)]">Gravidade (DPH)</span>
-                      <select
-                        value={hrnDph}
-                        onChange={(e) => setHrnDph(parseFloat(e.target.value))}
-                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
-                      >
-                        <option value={0.5}>0.5 - Arranhão / Leve</option>
-                        <option value={2}>2 - Corte / Contusão</option>
-                        <option value={8}>8 - Fratura</option>
-                        <option value={25}>25 - Perda de membro</option>
-                        <option value={40}>40 - Fatal</option>
-                      </select>
-                    </label>
-
-                    <label className="block font-semibold">
-                      <span className="mb-1 block text-xs text-[var(--muted)]">Pessoas expostas (NP)</span>
-                      <select
-                        value={hrnNp}
-                        onChange={(e) => setHrnNp(parseFloat(e.target.value))}
-                        className="w-full p-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
-                      >
-                        <option value={1}>1 - 1 a 2 pessoas</option>
-                        <option value={2}>2 - 3 a 7 pessoas</option>
-                        <option value={4}>4 - 8 a 15 pessoas</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Live HRN Output Box */}
-              <div className="space-y-4 flex flex-col justify-between">
-                <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-5 space-y-3">
-                  <h3 className="text-[17px] font-bold">Risco calculado</h3>
-                  
-                  <div className="font-[family-name:var(--d)] font-extrabold text-[52px] leading-none text-[var(--ink)]">
-                    {hrnValor}
+                <div>
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <label className="block text-[12px] font-semibold">Equipamento / Ativo periciado *</label>
+                    <Link to="/admin/ativos" className="text-[11px] font-medium text-[var(--blue)] hover:underline">
+                      Gerenciar ativos
+                    </Link>
                   </div>
 
-                  {/* Meter Bar */}
-                  <div className="meter-hrn">
-                    <i style={{ left: `${Math.min(94, Math.max(2, (hrnValor / 60) * 100))}%` }} />
-                  </div>
-
-                  <p className={`text-[14px] font-semibold ${hrnClassificacao.cor} leading-snug`}>
-                    {hrnClassificacao.texto}
-                  </p>
-                </div>
-
-                <div className="bg-[var(--paper)] border border-[var(--line)] rounded-xl p-5 space-y-3">
-                  <h3 className="text-[17px] font-bold">Ao salvar</h3>
-                  <p className="text-[var(--muted)] text-[13.5px] leading-relaxed">
-                    O laudo vai para rascunho e a ART só é emitida depois da sua revisão técnica.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleSalvarNovoLaudo}
-                    className="btn-tech pri w-full justify-center text-[15px] py-2.5 mt-2"
+                  <select
+                    value={novoAtivoId}
+                    onChange={(e) => {
+                      setNovoAtivoId(e.target.value);
+                      setErroAtivoNovo(null);
+                    }}
+                    disabled={ativosDoCliente.length === 0}
+                    className={`w-full p-2.5 border rounded-lg bg-[var(--paper)] text-[var(--ink)] text-[13px] disabled:opacity-60 ${
+                      erroAtivoNovo ? 'border-rose-500' : 'border-[var(--line)]'
+                    }`}
                   >
-                    Salvar rascunho
-                  </button>
-                </div>
-              </div>
+                    <option value="">
+                      {ativosDoCliente.length === 0
+                        ? 'Nenhum ativo cadastrado para este cliente'
+                        : 'Selecione um ativo cadastrado...'}
+                    </option>
+                    {ativosDoCliente.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.identificacao} — {a.tipo}{a.fabricante ? ` · ${a.fabricante}` : ''}{a.modelo ? ` ${a.modelo}` : ''}
+                      </option>
+                    ))}
+                  </select>
 
+                  {erroAtivoNovo && (
+                    <span className="text-xs text-rose-500 font-semibold mt-1 block">
+                      {erroAtivoNovo}
+                    </span>
+                  )}
+
+                  {ativosDoCliente.length === 0 && (
+                    <p className="text-[11.5px] text-[var(--muted)] mt-1">
+                      Cadastre o equipamento em{' '}
+                      <Link to="/admin/ativos" className="text-[var(--blue)] font-semibold hover:underline">
+                        Equipamentos
+                      </Link>{' '}
+                      para poder abrir o laudo.
+                    </p>
+                  )}
+
+                  {(() => {
+                    const ativoSel = ativosDoCliente.find((a) => a.id === novoAtivoId);
+                    if (!ativoSel) return null;
+                    return (
+                      <div className="mt-2 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-[11.5px] text-[var(--muted)] grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+                        <span><b className="text-[var(--ink)] font-semibold">Tipo:</b> {ativoSel.tipo}</span>
+                        <span><b className="text-[var(--ink)] font-semibold">Fabricante:</b> {ativoSel.fabricante}</span>
+                        <span><b className="text-[var(--ink)] font-semibold">Modelo:</b> {ativoSel.modelo || '—'}</span>
+                        <span><b className="text-[var(--ink)] font-semibold">Série:</b> {ativoSel.numeroSerie || '—'}</span>
+                        <span><b className="text-[var(--ink)] font-semibold">Capacidade:</b> {ativoSel.capacidade || '—'}</span>
+                        <span><b className="text-[var(--ink)] font-semibold">Local:</b> {ativoSel.localizacao || '—'}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4 border-t border-[var(--line)]">
+              <p className="text-[11.5px] text-[var(--muted)] sm:mr-auto">
+                O laudo é criado como rascunho. A ART só é emitida após a revisão técnica.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalNovoAberto(false);
+                  setSearchParams({});
+                }}
+                className="px-3.5 py-2 rounded-lg border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--paper)] cursor-pointer whitespace-nowrap"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSalvarNovoLaudo}
+                className="px-3.5 py-2 rounded-lg bg-[var(--blue)] text-[var(--onblue)] text-[12.5px] font-semibold hover:opacity-90 cursor-pointer whitespace-nowrap"
+              >
+                Salvar rascunho
+              </button>
             </div>
           </div>
         </div>

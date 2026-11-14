@@ -12,8 +12,6 @@ import {
   Trash2, 
   ShieldCheck, 
   ClipboardCheck,
-  Award, 
-  Lock, 
   ChevronRight, 
   FileText,
   Clock,
@@ -28,16 +26,10 @@ import {
   History,
   RotateCcw,
   Loader2,
-  FolderTree,
-  Building2,
-  Cpu,
   Layers,
-  FileCheck2,
-  HelpCircle,
   X,
   Image as ImageIcon,
   UploadCloud,
-  Paperclip,
   FileCheck,
   ExternalLink,
   ZoomIn,
@@ -45,7 +37,7 @@ import {
   Search,
   ShieldAlert,
   Scale,
-  FileDown
+  MoreHorizontal,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -149,6 +141,7 @@ export const LaudoEditorView: React.FC = () => {
   const [modalConverterLayoutAberto, setModalConverterLayoutAberto] = useState(false);
   const [modoExibicao, setModoExibicao] = useState<'editor' | 'folhas'>('editor');
   const [abaEstruturada, setAbaEstruturada] = useState<'geral' | 'parecer' | 'ncs' | 'normas_instrumentos'>('geral');
+  const [menuAcoesAberto, setMenuAcoesAberto] = useState(false);
   const [buscaOrcamentoModal, setBuscaOrcamentoModal] = useState('');
   const [filtroApenasMesmoCliente, setFiltroApenasMesmoCliente] = useState(true);
 
@@ -984,397 +977,396 @@ export const LaudoEditorView: React.FC = () => {
       {/* ========================================================================= */}
       {/* TOP HEADER: TAXONOMIA, METADADOS & AUTO-SAVE INDICATOR                    */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-        
-        {/* Row 1: Back, Breadcrumb & Actions */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Link 
-                to="/admin/laudos"
-                className="text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Central de Laudos</span>
-              </Link>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-bold text-[#1565D8] dark:text-blue-400">
-                {taxonomyDetails.catNome}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-slate-600 dark:text-slate-300 font-medium">
-                {taxonomyDetails.subNome}
-              </span>
-            </div>
+      <div className="bg-white dark:bg-[#0B1324] rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="px-4 sm:px-5 py-4 space-y-3">
 
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-black text-[#0B1E3D] dark:text-white tracking-tight">
-                {laudoState.numero} • {laudoState.tipo}
-              </h1>
-
-              {/* Status Badge */}
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                laudoState.status === 'finalizado'
-                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-300'
-                  : laudoState.status === 'em_revisao'
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300'
-                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-300'
-              }`}>
-                {laudoState.status.toUpperCase().replace('_', ' ')}
-              </span>
-
-              {/* ART Badge */}
-              <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                ART: {laudoState.artNumero || 'Pendente de Emissão'}
-              </span>
-            </div>
+          {/* Breadcrumb */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <Link
+              to="/admin/laudos"
+              className="text-slate-500 hover:text-[#1565D8] font-medium flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              <span>Central de Laudos</span>
+            </Link>
+            <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+            <span className="text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+              {taxonomyDetails.catNome}
+            </span>
+            <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+            <span className="text-slate-500 dark:text-slate-400 truncate max-w-[240px]">
+              {taxonomyDetails.subNome}
+            </span>
           </div>
 
-          {/* Top Control Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            
-            {/* Auto-Save Indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
-              {statusSalvamento === 'salvando' ? (
+          {/* Título, estado e ações */}
+          <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold text-[#0B1E3D] dark:text-white tracking-tight">
+                  {laudoState.numero}
+                </h1>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${
+                  laudoState.status === 'finalizado'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : laudoState.status === 'em_revisao'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                }`}>
+                  {laudoState.status.toUpperCase().replace('_', ' ')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 truncate">
+                {laudoState.tipo}
+                <span className="text-slate-400 dark:text-slate-500"> · ART {laudoState.artNumero || 'pendente'}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+
+              {/* Indicador de salvamento */}
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mr-0.5">
+                {statusSalvamento === 'salvando' ? (
+                  <>
+                    <Loader2 className="w-3 h-3 text-amber-500 animate-spin" />
+                    <span className="text-amber-600 dark:text-amber-400">Salvando...</span>
+                  </>
+                ) : statusSalvamento === 'pendente' ? (
+                  <>
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Alterações pendentes</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <span>Salvo às {ultimoSalvoHora}</span>
+                  </>
+                )}
+              </span>
+
+              <button
+                onClick={handleSalvarManual}
+                disabled={statusSalvamento === 'salvando'}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                title="Salvar alterações agora (Ctrl+S)"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Salvar</span>
+              </button>
+
+              {/* Alternador de modo */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[11px]">
+                <button
+                  onClick={() => setModoExibicao('editor')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
+                    modoExibicao === 'editor'
+                      ? 'bg-white dark:bg-slate-700 text-[#0B1E3D] dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Editor
+                </button>
+                <button
+                  onClick={() => setModoExibicao('folhas')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
+                    modoExibicao === 'folhas'
+                      ? 'bg-white dark:bg-slate-700 text-[#0B1E3D] dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Folhas A4
+                </button>
+              </div>
+
+              <button
+                onClick={() => navigate(`/admin/laudos/${laudoState.id}/imprimir`)}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                title="Gerar PDF vetorial do laudo"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>PDF</span>
+              </button>
+
+              {laudoState.status === 'finalizado' ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">Salvando rascunho...</span>
-                </>
-              ) : statusSalvamento === 'pendente' ? (
-                <>
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-slate-500">Alterações pendentes</span>
+                  <Link
+                    to={`/verificar/${laudoState.codigoVerificacao || `${laudoState.numero}-7K4Q`}`}
+                    target="_blank"
+                    className="px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[11px] font-semibold flex items-center gap-1.5"
+                    title="Verificar registro no portal público de autenticidade"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Verificação Pública</span>
+                  </Link>
+                  <button
+                    onClick={handleCriarNovaRevisao}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                    title="Abrir nova revisão técnica do documento"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Nova Revisão</span>
+                  </button>
                 </>
               ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-slate-600 dark:text-slate-300">Salvo às {ultimoSalvoHora}</span>
-                </>
+                <button
+                  onClick={() => setModalVerificacaoAberto(true)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                  title="Conferir pendências e homologar laudo com ART"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Finalizar com ART</span>
+                </button>
               )}
-            </div>
 
-            {/* Save Manual Button */}
-            <button
-              onClick={handleSalvarManual}
-              disabled={statusSalvamento === 'salvando'}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5 border border-slate-700 cursor-pointer shadow-xs"
-              title="Salvar alterações agora (Ctrl+S)"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Salvar Agora</span>
-            </button>
-
-            {/* Revision History */}
-            <button
-              onClick={() => setModalRevisoesAberto(true)}
-              className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
-            >
-              <History className="w-3.5 h-3.5 text-[#1565D8]" />
-              <span>Revisões ({laudoState.revisoes?.length || 0})</span>
-            </button>
-
-            {/* Assistente IA */}
-            <button
-              onClick={() => setModalIaAberto(true)}
-              className="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5 border border-purple-200 dark:border-purple-800 cursor-pointer shadow-xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>Redação IA</span>
-            </button>
-
-            {/* Importar Checklist In Loco */}
-            <button
-              onClick={() => setModalImportarChecklistAberto(true)}
-              className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-[#1565D8] dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 cursor-pointer shadow-xs"
-              title="Importar anotações e fotos de um Checklist de Campo"
-            >
-              <ClipboardCheck className="w-3.5 h-3.5 text-[#1565D8]" />
-              <span>Importar Checklist</span>
-            </button>
-
-            {/* Vincular / Visualizar Orçamento */}
-            <button
-              onClick={() => setModalAssociarOrcamentoAberto(true)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border cursor-pointer shadow-xs transition-all ${
-                laudoState.orcamentoOrigemId
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-              }`}
-              title="Associar ou consultar o orçamento / proposta comercial deste laudo"
-            >
-              <FileSpreadsheet className={`w-3.5 h-3.5 ${laudoState.orcamentoOrigemId ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#1565D8]'}`} />
-              <span>{laudoState.orcamentoNumero ? `Orçamento: ${laudoState.orcamentoNumero}` : (laudoState.orcamentoOrigemId ? 'Orçamento Vinculado' : 'Associar Orçamento')}</span>
-            </button>
-
-            {/* Alternador de Modo: Editor Estruturado vs Folhas Claras A4 */}
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-              <button
-                onClick={() => setModoExibicao('editor')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                  modoExibicao === 'editor'
-                    ? 'bg-[#1565D8] text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                Editor Estruturado
-              </button>
-              <button
-                onClick={() => setModoExibicao('folhas')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                  modoExibicao === 'folhas'
-                    ? 'bg-[#1565D8] text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                Visualizar Folhas A4
-              </button>
-            </div>
-
-            {/* Baixar PDF Vetorial (Menos de 500 KB, texto selecionável) */}
-            <button
-              onClick={() => navigate(`/admin/laudos/${laudoState.id}/imprimir`)}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition transform active:scale-95"
-              title="Gera o PDF vetorial em 1 clique com links ativos e menos de 500 KB"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Baixar PDF</span>
-            </button>
-
-            {/* Auditoria Prévia de Emissão (Parte E) */}
-            <button
-              onClick={() => setModalVerificacaoAberto(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-              title="Auditar conformidade técnica de todos os campos e pendências antes da emissão"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Verificar Emissão</span>
-            </button>
-
-            {/* Finalizar ou Gerenciar Revisões */}
-            {laudoState.status === 'finalizado' ? (
-              <div className="flex items-center gap-1.5">
-                <Link
-                  to={`/verificar/${laudoState.codigoVerificacao || `${laudoState.numero}-7K4Q`}`}
-                  target="_blank"
-                  className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 flex items-center gap-1 cursor-pointer"
-                  title="Verificar registro no portal público de autenticidade"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Verificação Pública</span>
-                </Link>
+              {/* Menu de ações secundárias */}
+              <div className="relative">
                 <button
-                  onClick={handleCriarNovaRevisao}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
-                  title="Descongelar e abrir nova revisão técnica do documento"
+                  type="button"
+                  onClick={() => setMenuAcoesAberto(v => !v)}
+                  aria-expanded={menuAcoesAberto}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+                  title="Mais ações do laudo"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Nova Revisão</span>
+                  <MoreHorizontal className="w-4 h-4" />
+                  <span className="hidden sm:inline">Mais</span>
                 </button>
+
+                {menuAcoesAberto && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setMenuAcoesAberto(false)} />
+                    <div className="absolute right-0 mt-1 z-40 w-60 bg-white dark:bg-[#0B1324] border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden">
+                      <div className="py-1 text-[11.5px]">
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalRevisoesAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <History className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="flex-1">Histórico de revisões</span>
+                          <span className="font-mono text-slate-400">{laudoState.revisoes?.length || 0}</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalAssociarOrcamentoAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <FileSpreadsheet className={`w-3.5 h-3.5 ${laudoState.orcamentoOrigemId ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+                          <span className="flex-1 truncate">
+                            {laudoState.orcamentoNumero
+                              ? `Orçamento ${laudoState.orcamentoNumero}`
+                              : laudoState.orcamentoOrigemId ? 'Orçamento vinculado' : 'Associar orçamento'}
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalImportarChecklistAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <ClipboardCheck className="w-3.5 h-3.5 text-[#1565D8]" />
+                          <span>Importar checklist de campo</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalIaAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Redação assistida por IA</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalVerificacaoAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Verificar pendências de emissão</span>
+                        </button>
+                      </div>
+
+                      <div className="border-t border-slate-100 dark:border-slate-800 py-1">
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setModalExcluirLaudoAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer text-[11.5px]"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Excluir laudo</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-            ) : (
-              <button
-                onClick={() => setModalVerificacaoAberto(true)}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title="Conferir pendências e homologar laudo com ART"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Finalizar com ART</span>
-              </button>
-            )}
 
-            {/* Excluir Laudo */}
-            <button
-              type="button"
-              onClick={() => setModalExcluirLaudoAberto(true)}
-              className="px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-              title="Excluir este laudo permanentemente"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-              <span>Excluir laudo</span>
-            </button>
-
+            </div>
           </div>
         </div>
 
-        {/* Row 2: Client, Asset & Budget Quick Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#1565D8] shrink-0" />
-            <div className="truncate">
-              <span className="text-slate-400 block text-[10px]">Cliente & CNPJ:</span>
-              <strong className="text-slate-900 dark:text-white font-semibold truncate block">
-                {laudoState.clienteNome}
-              </strong>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono block truncate">
-                {laudoState.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || 'Sem CNPJ'}
-                {(laudoState.clienteContato || cliente?.contatos?.[0]?.nome) ? ` • ${laudoState.clienteContato || cliente?.contatos?.[0]?.nome}` : ''}
-              </span>
-            </div>
+        {/* Faixa de dados do laudo */}
+        <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-slate-100 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 overflow-hidden rounded-b-xl">
+          <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-2.5 min-w-0">
+            <dt className="text-[9.5px] uppercase tracking-wider font-semibold text-slate-400">Cliente</dt>
+            <dd className="mt-0.5 text-[11.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {laudoState.clienteNome}
+            </dd>
+            <dd className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">
+              {laudoState.clienteCnpj || cliente?.cpfCnpj || cliente?.cnpj || 'CNPJ não informado'}
+              {(laudoState.clienteContato || cliente?.contatos?.[0]?.nome)
+                ? ` · ${laudoState.clienteContato || cliente?.contatos?.[0]?.nome}`
+                : ''}
+            </dd>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-[#1565D8] shrink-0" />
-            <div className="truncate">
-              <span className="text-slate-400 block text-[10px]">Ativo / Identificação:</span>
-              <strong className="text-slate-900 dark:text-white font-semibold truncate block">
-                {laudoState.ativoIdentificacao}
-              </strong>
-            </div>
+          <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-2.5 min-w-0">
+            <dt className="text-[9.5px] uppercase tracking-wider font-semibold text-slate-400">Ativo periciado</dt>
+            <dd className="mt-0.5 text-[11.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {laudoState.ativoIdentificacao || 'Não informado'}
+            </dd>
+            <dd className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              {`${laudoState.ativoFabricante || ''} ${laudoState.ativoModelo || ''}`.trim() || ativo?.tipo || '—'}
+            </dd>
           </div>
 
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div className="truncate">
-              <span className="text-slate-400 block text-[10px]">Orçamento Vinculado:</span>
-              <div className="flex items-center gap-1">
-                <strong className="text-slate-900 dark:text-white font-semibold truncate block">
-                  {laudoState.orcamentoNumero || (laudoState.orcamentoOrigemId ? 'Vinculado' : 'Não associado')}
-                </strong>
-                <button
-                  onClick={() => setModalAssociarOrcamentoAberto(true)}
-                  className="text-[10px] text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer hover:text-blue-800 ml-1"
-                >
-                  {laudoState.orcamentoOrigemId ? 'Gerenciar' : 'Associar'}
-                </button>
-              </div>
-            </div>
+          <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-2.5 min-w-0">
+            <dt className="text-[9.5px] uppercase tracking-wider font-semibold text-slate-400">Orçamento</dt>
+            <dd className="mt-0.5 text-[11.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {laudoState.orcamentoNumero || (laudoState.orcamentoOrigemId ? 'Vinculado' : 'Não associado')}
+            </dd>
+            <dd>
+              <button
+                onClick={() => setModalAssociarOrcamentoAberto(true)}
+                className="text-[10px] text-[#1565D8] dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+              >
+                {laudoState.orcamentoOrigemId ? 'Gerenciar vínculo' : 'Associar orçamento'}
+              </button>
+            </dd>
           </div>
 
-          <div className="flex items-center gap-2">
-            <FileCheck2 className="w-4 h-4 text-[#1565D8] shrink-0" />
-            <div>
-              <span className="text-slate-400 block text-[10px]">Responsável Técnico:</span>
-              <strong className="text-slate-900 dark:text-white font-semibold block">
-                {laudoState.responsavelNome}
-              </strong>
-            </div>
+          <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-2.5 min-w-0">
+            <dt className="text-[9.5px] uppercase tracking-wider font-semibold text-slate-400">Responsável técnico</dt>
+            <dd className="mt-0.5 text-[11.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {laudoState.responsavelNome}
+            </dd>
+            <dd className="text-[10px] text-slate-500 dark:text-slate-400">Engenharia mecânica</dd>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Award className="w-4 h-4 text-[#1565D8] shrink-0" />
-            <div>
-              <span className="text-slate-400 block text-[10px]">Registro Profissional:</span>
-              <strong className="text-slate-900 dark:text-white font-mono block">
-                {laudoState.responsavelCrea}
-              </strong>
-            </div>
+          <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-2.5 min-w-0">
+            <dt className="text-[9.5px] uppercase tracking-wider font-semibold text-slate-400">Registro profissional</dt>
+            <dd className="mt-0.5 text-[11.5px] font-mono font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {laudoState.responsavelCrea}
+            </dd>
+            <dd className="text-[10px] text-slate-500 dark:text-slate-400">Conselho profissional</dd>
           </div>
-        </div>
+        </dl>
 
       </div>
 
       {/* ========================================================================= */}
-      {/* LINHA DO TEMPO DE ESTADOS: Rascunho -> Em revisão -> ART anexada -> Emitido */}
+      {/* FLUXO DE EMISSÃO: Rascunho -> Em revisão -> ART anexada -> Emitido       */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#1565D8]" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Fluxo Oficial de Emissão Pericial
-            </h3>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            {laudoState.status === 'finalizado' ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Laudo Homologado e Emitido com ART
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-300 dark:border-amber-800">
-                <Clock className="w-3.5 h-3.5" />
-                Minuta Técnica em Elaboração
-              </span>
-            )}
-          </div>
+      <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Fluxo de emissão pericial
+          </span>
+          {laudoState.status === 'finalizado' ? (
+            <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Homologado e emitido com ART
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+              <Clock className="w-3.5 h-3.5" />
+              Minuta técnica em elaboração
+            </span>
+          )}
         </div>
 
-        {/* Timeline Steps */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          {/* Step 1: Rascunho */}
-          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-            laudoState.status === 'rascunho' || !laudoState.status || laudoState.status === 'em_andamento'
-              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 text-blue-900 dark:text-blue-200 font-bold'
-              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
-          }`}>
-            <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">1</span>
-            <div className="truncate">
-              <span className="block font-semibold">Rascunho</span>
-              <span className="text-[10px] text-slate-400 block truncate">Vistoria & Ativo</span>
-            </div>
-          </div>
+        <ol className="mt-2.5 flex flex-col sm:flex-row sm:items-center gap-y-1.5 text-[11px]">
+          <li className="flex items-center gap-2">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+              laudoState.status === 'rascunho' || !laudoState.status || laudoState.status === 'em_andamento'
+                ? 'bg-blue-600 border-blue-600 text-white'
+                : 'bg-blue-600/10 border-blue-600 text-blue-700 dark:text-blue-400'
+            }`}>1</span>
+            <span className={`font-semibold ${
+              laudoState.status === 'rascunho' || !laudoState.status || laudoState.status === 'em_andamento'
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}>Rascunho</span>
+          </li>
 
-          {/* Step 2: Em Revisão */}
-          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-            laudoState.status === 'em_revisao'
-              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 font-bold'
-              : (laudoState.status === 'finalizado')
-                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
-          }`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-              laudoState.status === 'finalizado' ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+          <span className="hidden sm:block flex-1 h-px bg-slate-200 dark:bg-slate-700 mx-3" />
+
+          <li className="flex items-center gap-2">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+              laudoState.status === 'finalizado'
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : laudoState.status === 'em_revisao'
+                ? 'bg-amber-500 border-amber-500 text-white'
+                : 'border-slate-300 dark:border-slate-700 text-slate-400'
             }`}>2</span>
-            <div className="truncate">
-              <span className="block font-semibold">Em Revisão</span>
-              <span className="text-[10px] text-slate-400 block truncate">NCs & Parecer</span>
-            </div>
-          </div>
+            <span className={`font-semibold ${
+              laudoState.status === 'finalizado'
+                ? 'text-emerald-700 dark:text-emerald-400'
+                : laudoState.status === 'em_revisao'
+                ? 'text-amber-700 dark:text-amber-400'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}>Revisão</span>
+          </li>
 
-          {/* Step 3: ART Anexada */}
-          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-            laudoState.artNumero && laudoState.artArquivoUrl
-              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 text-emerald-800 dark:text-emerald-200 font-bold'
-              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
-          }`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-              laudoState.artNumero && laudoState.artArquivoUrl ? 'bg-emerald-600 text-white' : 'bg-slate-400 text-white'
+          <span className="hidden sm:block flex-1 h-px bg-slate-200 dark:bg-slate-700 mx-3" />
+
+          <li className="flex items-center gap-2">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+              laudoState.artNumero && laudoState.artArquivoUrl
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'border-slate-300 dark:border-slate-700 text-slate-400'
             }`}>3</span>
-            <div className="truncate">
-              <span className="block font-semibold">ART Anexada</span>
-              <span className="text-[10px] text-slate-400 block truncate">{laudoState.artNumero || 'Pendente CREA'}</span>
-            </div>
-          </div>
+            <span className={`font-semibold ${
+              laudoState.artNumero && laudoState.artArquivoUrl
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}>ART anexada</span>
+            <span className="text-[10px] font-mono text-slate-400 hidden md:inline">
+              {laudoState.artNumero || 'pendente'}
+            </span>
+          </li>
 
-          {/* Step 4: Emitido */}
-          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-            laudoState.status === 'finalizado'
-              ? 'bg-emerald-600 text-white border-emerald-700 font-bold shadow-xs'
-              : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-500'
-          }`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-              laudoState.status === 'finalizado' ? 'bg-white text-emerald-700' : 'bg-slate-400 text-white'
+          <span className="hidden sm:block flex-1 h-px bg-slate-200 dark:bg-slate-700 mx-3" />
+
+          <li className="flex items-center gap-2">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+              laudoState.status === 'finalizado'
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'border-slate-300 dark:border-slate-700 text-slate-400'
             }`}>4</span>
-            <div className="truncate">
-              <span className="block font-semibold">Emitido</span>
-              <span className="text-[10px] opacity-80 block truncate">{laudoState.codigoVerificacao || 'Código público'}</span>
-            </div>
-          </div>
-        </div>
+            <span className={`font-semibold ${
+              laudoState.status === 'finalizado'
+                ? 'text-emerald-700 dark:text-emerald-400'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}>Emitido</span>
+            <span className="text-[10px] font-mono text-slate-400 hidden md:inline truncate max-w-[140px]">
+              {laudoState.codigoVerificacao || '—'}
+            </span>
+          </li>
+        </ol>
       </div>
 
       {/* Banner de Conversão de Layout (Orçamentos e Laudos antigos) */}
       {laudoState.layoutVersao !== 'novo-2026' && (
-        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border-2 border-blue-300 dark:border-blue-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-[#1565D8] shrink-0 mt-0.5">
-              <FileCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-sm text-[#0B1E3D] dark:text-white">
-                Novo Modelo Base de Laudo A4 (6 Folhas Vetoriais)
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                Este laudo está no padrão anterior. Você pode convertê-lo com 1 clique para o novo modelo aprovado, estruturando partes, normas com ano, instrumentos com calibração, parecer e ART.
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-blue-200 dark:border-blue-800/70 bg-blue-50/70 dark:bg-blue-950/25">
+          <p className="text-[11.5px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <FileCheck className="w-3.5 h-3.5 text-[#1565D8] shrink-0" />
+            <span>
+              Este laudo usa o modelo anterior. O novo modelo A4 (6 folhas vetoriais) organiza partes, normas, instrumentos, parecer e ART.
+            </span>
+          </p>
           <button
             onClick={() => setModalConverterLayoutAberto(true)}
-            className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold shrink-0 shadow-md transition cursor-pointer"
+            className="text-[11px] font-semibold text-[#1565D8] hover:underline underline-offset-2 shrink-0 text-left cursor-pointer"
           >
-            Converter para o Novo Layout
+            Converter para o novo layout
           </button>
         </div>
       )}
@@ -1382,54 +1374,76 @@ export const LaudoEditorView: React.FC = () => {
       {/* ========================================================================= */}
       {/* PAINEL DE DADOS ESTRUTURADOS (PARTE C: PARECER, NCS, INSTRUMENTOS, NORMAS) */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div>
-            <h3 className="font-bold text-sm text-[#0B1E3D] dark:text-white flex items-center gap-2">
-              <Scale className="w-4 h-4 text-[#1565D8]" />
-              Campos Estruturados de Engenharia (Fonte Única)
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              Dados técnicos paramétricos que alimentam as 6 folhas normatizadas e as verificações da ART.
-            </p>
-          </div>
-
-          {/* Abas Estruturadas */}
-          <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs">
-            <button
-              onClick={() => setAbaEstruturada('geral')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                abaEstruturada === 'geral' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              Ficha & Vistoria
-            </button>
-            <button
-              onClick={() => setAbaEstruturada('parecer')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                abaEstruturada === 'parecer' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              Parecer Técnico
-            </button>
-            <button
-              onClick={() => setAbaEstruturada('ncs')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                abaEstruturada === 'ncs' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              Não Conformidades ({laudoState.naoConformidadesEstruturadas?.length || 0})
-            </button>
-            <button
-              onClick={() => setAbaEstruturada('normas_instrumentos')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
-                abaEstruturada === 'normas_instrumentos' ? 'bg-[#1565D8] text-white' : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              Normas & Instrumentos
-            </button>
-          </div>
+      <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div>
+          <h3 className="font-semibold text-[13px] text-[#0B1E3D] dark:text-white">
+            Campos estruturados de engenharia
+          </h3>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            Fonte única dos dados técnicos das folhas normatizadas e das verificações da ART.
+          </p>
         </div>
+
+        {/* Abas */}
+        <div role="tablist" className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-slate-200 dark:border-slate-800 text-[11.5px]">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaEstruturada === 'geral'}
+            onClick={() => setAbaEstruturada('geral')}
+            className={`-mb-px pb-2 border-b-2 font-semibold transition cursor-pointer ${
+              abaEstruturada === 'geral'
+                ? 'border-[#1565D8] text-[#1565D8] dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Ficha & vistoria
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaEstruturada === 'parecer'}
+            onClick={() => setAbaEstruturada('parecer')}
+            className={`-mb-px pb-2 border-b-2 font-semibold transition cursor-pointer ${
+              abaEstruturada === 'parecer'
+                ? 'border-[#1565D8] text-[#1565D8] dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Parecer técnico
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaEstruturada === 'ncs'}
+            onClick={() => setAbaEstruturada('ncs')}
+            className={`-mb-px pb-2 border-b-2 font-semibold transition cursor-pointer ${
+              abaEstruturada === 'ncs'
+                ? 'border-[#1565D8] text-[#1565D8] dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Não conformidades
+            <span className="ml-1 font-mono text-[10px] text-slate-400">
+              {laudoState.naoConformidadesEstruturadas?.length || 0}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaEstruturada === 'normas_instrumentos'}
+            onClick={() => setAbaEstruturada('normas_instrumentos')}
+            className={`-mb-px pb-2 border-b-2 font-semibold transition cursor-pointer ${
+              abaEstruturada === 'normas_instrumentos'
+                ? 'border-[#1565D8] text-[#1565D8] dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Normas & instrumentos
+          </button>
+        </div>
+
+        <div className="pt-3.5">
 
         {/* Conteúdo da Aba 1: Ficha & Vistoria */}
         {abaEstruturada === 'geral' && (
@@ -1442,7 +1456,7 @@ export const LaudoEditorView: React.FC = () => {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Cliente Contratante *:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Cliente contratante *</label>
                 <select
                   value={laudoState.clienteId || ''}
                   onChange={(e) => {
@@ -1469,7 +1483,7 @@ export const LaudoEditorView: React.FC = () => {
                       clienteEndereco: endStr || '',
                     });
                   }}
-                  className={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border text-slate-800 dark:text-slate-200 font-semibold ${
+                  className={`w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border text-slate-800 dark:text-slate-200 font-semibold ${
                     erroClienteValidacao ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'
                   }`}
                 >
@@ -1483,7 +1497,7 @@ export const LaudoEditorView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Local da Vistoria (In Loco):</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Local da vistoria</label>
                 <input
                   type="text"
                   value={laudoState.localVistoria || ''}
@@ -1492,12 +1506,12 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, localVistoria: val });
                   }}
                   placeholder="Ex: Recife, PE — Unidade Operacional"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Acompanhante da Vistoria:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Acompanhante</label>
                 <input
                   type="text"
                   value={laudoState.acompanhanteVistoria || ''}
@@ -1506,12 +1520,12 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, acompanhanteVistoria: val });
                   }}
                   placeholder="Ex: Carlos Eduardo (Coord. Manutenção)"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Fabricante & Modelo do Ativo:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Fabricante / modelo</label>
                 <input
                   type="text"
                   value={`${laudoState.ativoFabricante || ''} ${laudoState.ativoModelo || ''}`.trim()}
@@ -1520,12 +1534,12 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, ativoFabricante: val });
                   }}
                   placeholder="Ex: Renault / Randon Munck"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Capacidade / Número de Série:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Capacidade / série</label>
                 <input
                   type="text"
                   value={`${laudoState.ativoCapacidade || ''} • Série ${laudoState.ativoNumeroSerie || ''}`.trim()}
@@ -1534,7 +1548,7 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, ativoCapacidade: val });
                   }}
                   placeholder="Ex: 12t • Série RD-2021-998"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
             </div>
@@ -1573,8 +1587,8 @@ export const LaudoEditorView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-500 font-semibold mb-1">
-                Justificativa Técnica do Parecer (Obrigatório e fundamentado):
+              <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">
+                Justificativa técnica do parecer
               </label>
               <textarea
                 value={laudoState.justificativaParecer || ''}
@@ -1584,13 +1598,13 @@ export const LaudoEditorView: React.FC = () => {
                 }}
                 rows={2}
                 placeholder="Descreva o embasamento pericial para a conclusão adotada..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Próxima Inspeção Recomendada:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Próxima inspeção</label>
                 <input
                   type="text"
                   value={laudoState.proximaInspecaoData || ''}
@@ -1599,12 +1613,12 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, proximaInspecaoData: val });
                   }}
                   placeholder="Ex: 30/10/2027 (Periodicidade Anual)"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Limitações e Premissas Periciais:</label>
+                <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">Premissas e limitações</label>
                 <input
                   type="text"
                   value={laudoState.premissasLimitacoes || ''}
@@ -1613,7 +1627,7 @@ export const LaudoEditorView: React.FC = () => {
                     agendarAutoSave({ ...laudoState, premissasLimitacoes: val });
                   }}
                   placeholder="Ex: Restrito a ensaios não destrutivos e inspeção visual..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
             </div>
@@ -1659,13 +1673,15 @@ export const LaudoEditorView: React.FC = () => {
             </div>
 
             {(!laudoState.naoConformidadesEstruturadas || laudoState.naoConformidadesEstruturadas.length === 0) ? (
-              <div className="p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-center text-emerald-800 dark:text-emerald-300">
-                <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
-                <p className="font-bold">Nenhuma Não Conformidade registrada no momento</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">O equipamento pode ser classificado como totalmente liberado.</p>
+              <div className="px-4 py-3 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-[12px]">Nenhuma não conformidade registrada</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">O equipamento pode ser classificado como totalmente liberado.</p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div>
                 {laudoState.naoConformidadesEstruturadas.map((nc, idx) => {
                   const codigo = nc.codigo || nc.id;
                   const risco = nc.classificacaoRisco || nc.risco || 'medio';
@@ -1673,7 +1689,7 @@ export const LaudoEditorView: React.FC = () => {
                   const descricao = nc.descricao || nc.titulo;
 
                   return (
-                    <div key={nc.id || idx} className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div key={nc.id || idx} className="py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 flex flex-col md:flex-row md:items-start justify-between gap-2">
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                           <strong className="font-mono text-rose-600 dark:text-rose-400 font-bold">{codigo}</strong>
@@ -1728,7 +1744,7 @@ export const LaudoEditorView: React.FC = () => {
                     : `${norma.norma} — ${norma.titulo}${norma.edicao ? ` (${norma.edicao})` : ''}`;
 
                   return (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <div key={idx} className="flex items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
                       <span className="flex-1 font-medium text-slate-800 dark:text-slate-200">{normaTexto}</span>
                       <button
@@ -1758,7 +1774,7 @@ export const LaudoEditorView: React.FC = () => {
                   const venc = inst.calibracaoValidade || inst.validadeCalibracao || 'Válida';
 
                   return (
-                    <div key={inst.id || idx} className="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div key={inst.id || idx} className="py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center justify-between">
                       <div>
                         <strong className="text-slate-800 dark:text-slate-200 block">{inst.nome}</strong>
                         <span className="text-[11px] text-slate-500 font-mono">
@@ -1782,6 +1798,8 @@ export const LaudoEditorView: React.FC = () => {
             </div>
           </div>
         )}
+
+        </div>
       </div>
 
       {/* Visualização de Folhas A4 Claras em Tempo Real se selecionado */}
@@ -1811,23 +1829,15 @@ export const LaudoEditorView: React.FC = () => {
       {/* AVISO FIXO: LAUDO INICIADO COM SUGESTÕES DE IA                           */}
       {/* ========================================================================= */}
       {laudoState.iniciadoComIA && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/80 shadow-xs flex items-start gap-3.5">
-          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div className="flex-1 text-xs">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-1.5 text-sm">
-                <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                Preenchimento Assistido por IA
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
-                Rascunho Preliminar
-              </span>
-            </div>
-            <p className="text-amber-900/90 dark:text-amber-200/90 leading-relaxed font-medium">
-              Este laudo foi iniciado com sugestões geradas por IA. Revise e valide todas as informações antes da emissão final. O conteúdo sugerido não substitui a vistoria técnica presencial.
-            </p>
+        <div className="flex items-start gap-2.5 px-4 py-2.5 rounded-lg border border-amber-200 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/25">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-[11.5px] leading-relaxed">
+            <span className="font-semibold text-amber-900 dark:text-amber-200">
+              Preenchimento assistido por IA (rascunho preliminar).
+            </span>{' '}
+            <span className="text-amber-900/90 dark:text-amber-200/80">
+              Revise e valide todas as informações antes da emissão final. O conteúdo sugerido não substitui a vistoria técnica presencial.
+            </span>
           </div>
         </div>
       )}
@@ -1835,7 +1845,7 @@ export const LaudoEditorView: React.FC = () => {
       {/* ========================================================================= */}
       {/* CARD DE FOTO DA CAPA DO LAUDO (EQUIPAMENTO / INSTALAÇÃO)                  */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-[#0B1324] px-4 sm:px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-800">
         <input 
           type="file" 
           ref={capaFileInputRef} 
@@ -1845,55 +1855,51 @@ export const LaudoEditorView: React.FC = () => {
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-[#1565D8]">
-              <Camera className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-[#0B1E3D] dark:text-white flex items-center gap-2">
-                Foto Oficial da Capa do Laudo
-                {laudoState.capaFotoUrl ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                    Foto Configurada
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                    Opcional / Recomendado
-                  </span>
-                )}
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Esta fotografia do equipamento ou instalação será impressa em destaque na 1ª página (capa oficial) do laudo técnico em PDF.
-              </p>
-            </div>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-[13px] text-[#0B1E3D] dark:text-white flex flex-wrap items-center gap-2">
+              <Camera className="w-3.5 h-3.5 text-[#1565D8]" />
+              Foto de capa do laudo
+              {laudoState.capaFotoUrl ? (
+                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  Configurada
+                </span>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  Opcional
+                </span>
+              )}
+            </h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Impressa em destaque na 1ª página (capa oficial) do PDF.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => capaFileInputRef.current?.click()}
-              className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-[#1565D8] dark:text-blue-400 text-xs font-bold flex items-center gap-1.5 border border-blue-200 dark:border-blue-800 shadow-xs cursor-pointer"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <UploadCloud className="w-4 h-4" />
-              <span>{laudoState.capaFotoUrl ? 'Substituir Foto da Capa' : 'Enviar Foto do Computador / Celular'}</span>
+              <UploadCloud className="w-3.5 h-3.5 text-[#1565D8]" />
+              <span>{laudoState.capaFotoUrl ? 'Substituir foto' : 'Enviar foto'}</span>
             </button>
             {laudoState.capaFotoUrl && (
               <button
                 type="button"
                 onClick={handleRemoverCapaFoto}
-                className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 border border-transparent hover:border-red-200 cursor-pointer"
-                title="Remover Foto da Capa"
+                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 cursor-pointer"
+                title="Remover foto da capa"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         </div>
 
         {laudoState.capaFotoUrl ? (
-          <div className="pt-4 flex flex-col sm:flex-row items-start gap-4">
+          <div className="pt-3.5 flex flex-col sm:flex-row items-start gap-4">
             <div 
-              className="relative group cursor-pointer shrink-0 rounded-xl overflow-hidden border-2 border-[#1565D8]/40 shadow-sm w-full sm:w-64 h-40 bg-slate-900 flex items-center justify-center"
+              className="relative group cursor-pointer shrink-0 rounded-lg overflow-hidden border border-[#1565D8]/40 w-full sm:w-56 h-36 bg-slate-900 flex items-center justify-center"
               onClick={() => setModalVisualizarImagemUrl({ url: laudoState.capaFotoUrl!, titulo: laudoState.capaFotoLegenda || 'Foto da Capa do Laudo' })}
             >
               <img 
@@ -1901,41 +1907,32 @@ export const LaudoEditorView: React.FC = () => {
                 alt="Capa do Laudo" 
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                <ZoomIn className="w-4 h-4" />
-                <span>Ampliar Imagem</span>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-semibold gap-1">
+                <ZoomIn className="w-3.5 h-3.5" />
+                <span>Ampliar</span>
               </div>
             </div>
 
             <div className="flex-1 space-y-2 text-xs w-full">
-              <label className="font-bold text-slate-700 dark:text-slate-300 block">
-                Legenda Técnica da Fotografia de Capa:
+              <label className="block text-[10.5px] font-semibold text-slate-500">
+                Legenda da fotografia de capa
               </label>
               <input
                 type="text"
                 value={laudoState.capaFotoLegenda || ''}
                 onChange={(e) => handleCapaLegendaChange(e.target.value)}
                 placeholder="Ex: Foto frontal do equipamento auditado em suas instalações operacionais"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
               />
-              <p className="text-[11px] text-slate-500">
-                A foto da capa confere alto padrão estético de engenharia diagnóstica e autenticidade ao laudo pericial oficial.
-              </p>
             </div>
           </div>
         ) : (
           <div 
             onClick={() => capaFileInputRef.current?.click()}
-            className="mt-3 p-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 bg-slate-50/50 dark:bg-slate-900/30 text-center cursor-pointer transition-colors"
+            className="mt-3 px-4 py-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-700 text-center cursor-pointer transition-colors"
           >
-            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#1565D8] flex items-center justify-center mx-auto mb-2">
-              <Camera className="w-6 h-6" />
-            </div>
-            <p className="font-bold text-xs text-slate-700 dark:text-slate-200">
-              Nenhuma foto de capa vinculada a este laudo
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Clique aqui ou use o botão acima para carregar a imagem do equipamento inspecionado (PNG, JPG, WEBP).
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Nenhuma foto vinculada. Clique para carregar uma imagem do equipamento (PNG, JPG, WEBP).
             </p>
           </div>
         )}
@@ -1947,47 +1944,46 @@ export const LaudoEditorView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
         {/* Left Column: Sections List & Management (4 cols on lg) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#0B1324] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <div className="lg:col-span-4 bg-white dark:bg-[#0B1324] rounded-xl border border-slate-200 dark:border-slate-800">
           
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#1565D8]" />
-              <h3 className="font-bold text-sm text-[#0B1E3D] dark:text-white">
-                Estrutura do Laudo ({laudoState.secoes.length} Seções)
-              </h3>
-            </div>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="font-semibold text-[13px] text-[#0B1E3D] dark:text-white">
+              Estrutura do laudo
+              <span className="ml-1.5 font-mono text-[10px] text-slate-400">
+                {laudoState.secoes.length}
+              </span>
+            </h3>
 
             <button
               onClick={() => {
                 setNovaSecaoTitulo('');
                 setModalNovaSecaoAberto(true);
               }}
-              className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-[#1565D8] dark:text-blue-400 text-xs font-bold flex items-center gap-1 border border-blue-200 dark:border-blue-800 cursor-pointer"
+              className="px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#1565D8] dark:text-blue-400 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
               title="Adicionar nova seção"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Nova Seção</span>
+              <span>Nova seção</span>
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-500">
-            Clique para editar. Reordene com as setas ou renomeie as seções livremente.
-          </p>
-
           {/* Sections List */}
-          <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
+          <div className="max-h-[600px] overflow-y-auto">
             {laudoState.secoes.map((secao, idx) => {
               const isAtiva = secao.id === secaoAtiva?.id;
 
               return (
                 <div
                   key={secao.id}
-                  className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 group ${
+                  className={`relative group flex items-center gap-2 pl-3.5 pr-1.5 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors ${
                     isAtiva
-                      ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700 shadow-xs'
-                      : 'bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      ? 'bg-blue-50/70 dark:bg-blue-950/30'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-900/50'
                   }`}
                 >
+                  {isAtiva && (
+                    <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#1565D8]" />
+                  )}
                   {/* Title or Inline Edit */}
                   <div 
                     className="flex-1 min-w-0 cursor-pointer"
@@ -2015,29 +2011,25 @@ export const LaudoEditorView: React.FC = () => {
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono font-bold text-slate-400">
-                            #{idx + 1}
-                          </span>
-                          <span className={`text-xs font-bold truncate block ${
-                            isAtiva ? 'text-[#1565D8] dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'
-                          } ${secao.ocultaNoPdf ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
-                            {secao.titulo}
-                          </span>
-                        </div>
+                        <span
+                          title={secao.titulo}
+                          className={`text-[11.5px] font-medium truncate block ${
+                          isAtiva ? 'text-[#1565D8] dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'
+                        } ${secao.ocultaNoPdf ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+                          {secao.titulo}
+                        </span>
                         <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[9px] font-mono text-slate-400">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
                           {secao.ocultaNoPdf && (
-                            <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                              Oculta no PDF
+                            <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                              oculta no PDF
                             </span>
                           )}
-                          {secao.isObrigatoria ? (
-                            <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                              • Obrigatória
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-medium text-slate-400">
-                              • Customizada
+                          {secao.isObrigatoria && (
+                            <span className="text-[9px] text-slate-400">
+                              obrigatória
                             </span>
                           )}
                         </div>
@@ -2046,7 +2038,7 @@ export const LaudoEditorView: React.FC = () => {
                   </div>
 
                   {/* Actions for this section: Hide/Show in PDF, Reorder, Rename, Delete */}
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0 transition-opacity opacity-70 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -2101,10 +2093,9 @@ export const LaudoEditorView: React.FC = () => {
             })}
           </div>
 
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 space-y-1">
-            <p className="font-semibold text-slate-700 dark:text-slate-300">💡 Dica do Perito:</p>
-            <p>Você pode inserir tabelas de checklist, medições e fotos diretamente no corpo de qualquer seção usando a barra de ferramentas do editor.</p>
-          </div>
+          <p className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 text-[10.5px] text-slate-400">
+            Clique para editar. Use as setas para reordenar.
+          </p>
 
         </div>
 
@@ -2112,39 +2103,38 @@ export const LaudoEditorView: React.FC = () => {
         <div className="lg:col-span-8 space-y-3">
           
           {secaoAtiva ? (
-            <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="bg-white dark:bg-[#0B1324] rounded-xl border border-slate-200 dark:border-slate-800">
               
               {/* Section Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="space-y-0.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#1565D8]/10 text-[#1565D8]">
-                      Seção #{secaoAtiva.ordem}
+                    <span className="text-[9.5px] font-mono font-semibold uppercase tracking-wider text-slate-400">
+                      Seção {secaoAtiva.ordem}
                     </span>
                     {secaoAtiva.isObrigatoria && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        Obrigatória por Norma
+                      <span className="text-[9.5px] font-semibold text-amber-600 dark:text-amber-400">
+                        obrigatória por norma
                       </span>
                     )}
                   </div>
-                  <h2 className="text-lg font-black text-[#0B1E3D] dark:text-white">
+                  <h2 className="text-[15px] font-semibold text-[#0B1E3D] dark:text-white truncate">
                     {secaoAtiva.titulo}
                   </h2>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleToggleOcultarSecao(secaoAtiva.id)}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                    className={`p-1.5 rounded-md border transition-colors cursor-pointer ${
                       secaoAtiva.ocultaNoPdf
-                        ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
-                        : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200'
+                        ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                        : 'text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
-                    title={secaoAtiva.ocultaNoPdf ? 'Seção OCULTA do PDF — Clique para incluir na exportação' : 'Seção VISÍVEL no PDF — Clique para ocultar da exportação'}
+                    title={secaoAtiva.ocultaNoPdf ? 'Seção oculta no PDF — clique para incluir' : 'Seção visível no PDF — clique para ocultar'}
                   >
-                    {secaoAtiva.ocultaNoPdf ? <EyeOff className="w-3.5 h-3.5 text-amber-600" /> : <Eye className="w-3.5 h-3.5 text-slate-600" />}
-                    <span>{secaoAtiva.ocultaNoPdf ? 'Oculta no PDF' : 'Visível no PDF'}</span>
+                    {secaoAtiva.ocultaNoPdf ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
 
                   <button
@@ -2152,11 +2142,14 @@ export const LaudoEditorView: React.FC = () => {
                       setEditandoSecaoId(secaoAtiva.id);
                       setTituloEditando(secaoAtiva.titulo);
                     }}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 flex items-center gap-1 cursor-pointer"
+                    className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    title="Renomear título da seção"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Editar Título</span>
+                    <Edit3 className="w-3.5 h-3.5" />
                   </button>
+
+                  <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
+
                   <button
                     type="button"
                     onClick={() => {
@@ -2178,22 +2171,22 @@ export const LaudoEditorView: React.FC = () => {
                       });
                     }}
                     title="Preencher com minuta técnica padrão de engenharia para esta seção"
-                    className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 flex items-center gap-1 cursor-pointer transition-colors"
+                    className="px-2 py-1 rounded-md text-[#1565D8] dark:text-blue-400 text-[11px] font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Minuta Padrão</span>
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Minuta</span>
                   </button>
                   <button
                     onClick={() => setModalIaAberto(true)}
-                    className="px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 flex items-center gap-1 cursor-pointer transition-colors"
+                    className="px-2 py-1 rounded-md text-purple-700 dark:text-purple-300 text-[11px] font-semibold hover:bg-purple-50 dark:hover:bg-purple-950/40 flex items-center gap-1 cursor-pointer transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Expandir com IA</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>IA</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSecaoParaRemoverConfirm(secaoAtiva)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                     title="Excluir esta seção do laudo"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -2201,21 +2194,23 @@ export const LaudoEditorView: React.FC = () => {
                 </div>
               </div>
 
+              <div className="px-4 sm:px-5 py-4 space-y-4">
+
               {/* Banner if section is hidden from PDF */}
               {secaoAtiva.ocultaNoPdf && (
-                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+                <div className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-3 text-[11px] text-amber-900 dark:text-amber-200">
                   <div className="flex items-center gap-2">
-                    <EyeOff className="w-4 h-4 text-amber-600 shrink-0" />
+                    <EyeOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span>
-                      Esta seção está <strong>OCULTA para a versão em PDF</strong>. O conteúdo permanece salvo e editável aqui, mas não sairá na versão impressa nem contará na paginação.
+                      Seção <strong>oculta no PDF</strong>. O conteúdo permanece salvo e editável, mas não sai na versão impressa.
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleToggleOcultarSecao(secaoAtiva.id)}
-                    className="px-2.5 py-1 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-bold shrink-0 cursor-pointer"
+                    className="px-2 py-0.5 rounded bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-semibold shrink-0 cursor-pointer"
                   >
-                    Tornar Visível no PDF
+                    Tornar visível
                   </button>
                 </div>
               )}
@@ -2232,7 +2227,7 @@ export const LaudoEditorView: React.FC = () => {
               </div>
 
               {/* Evidências Fotográficas & Fotos desta Seção */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
                 <input
                   type="file"
                   ref={secaoFotoInputRef}
@@ -2241,48 +2236,48 @@ export const LaudoEditorView: React.FC = () => {
                   className="hidden"
                 />
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-emerald-600" />
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Evidências Fotográficas desta Seção ({secaoAtiva.fotos?.length || 0})
-                    </h4>
-                  </div>
-
-                  <span className="text-[11px] text-slate-400">
-                    Insira fotos com legenda técnica e adicione-as ao texto com um clique
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <h4 className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+                    Evidências fotográficas
+                    <span className="font-mono text-[10px] text-slate-400">
+                      {secaoAtiva.fotos?.length || 0}
+                    </span>
+                  </h4>
+                  <span className="text-[10.5px] text-slate-400">
+                    Legende a foto e insira no texto com um clique
                   </span>
                 </div>
 
                 {/* Upload Form for Section Photo */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
                     type="text"
                     value={legendaNovaFotoSecao}
                     onChange={(e) => setLegendaNovaFotoSecao(e.target.value)}
                     placeholder="Legenda da foto (Ex: Foto 1: Desgaste abrasivo no dente da engrenagem)"
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                    className="flex-1 px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-800 dark:text-slate-200"
                   />
                   <button
                     type="button"
                     onClick={() => secaoFotoInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                   >
                     <UploadCloud className="w-3.5 h-3.5" />
-                    <span>Upload Foto</span>
+                    <span>Upload</span>
                   </button>
                 </div>
 
                 {/* Photos Grid for this Section */}
                 {secaoAtiva.fotos && secaoAtiva.fotos.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
                     {secaoAtiva.fotos.map((foto) => (
                       <div 
                         key={foto.id}
-                        className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-2 flex flex-col justify-between"
+                        className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 flex flex-col justify-between overflow-hidden"
                       >
                         <div 
-                          className="relative group rounded-lg overflow-hidden h-44 bg-slate-50 dark:bg-slate-800/80 cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center p-1.5"
+                          className="relative group overflow-hidden h-36 bg-slate-50 dark:bg-slate-800/80 cursor-pointer flex items-center justify-center p-1"
                           onClick={() => setModalVisualizarImagemUrl({ url: foto.url, titulo: foto.descricao })}
                         >
                           <img 
@@ -2290,48 +2285,50 @@ export const LaudoEditorView: React.FC = () => {
                             alt={foto.descricao || 'Evidência'} 
                             className="max-w-full max-h-full object-contain"
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold gap-1 rounded-lg">
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-semibold gap-1">
                             <ZoomIn className="w-3.5 h-3.5" />
-                            <span>Ampliar Imagem</span>
+                            <span>Ampliar</span>
                           </div>
                         </div>
 
-                        <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">
+                        <p className="px-2 text-[10.5px] text-slate-600 dark:text-slate-300 line-clamp-2">
                           {foto.descricao || 'Evidência sem legenda'}
                         </p>
 
-                        <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-1 px-2 pb-1.5">
                           <button
                             type="button"
                             onClick={() => handleInserirFotoNoTexto(foto.url, foto.descricao)}
-                            className="flex-1 py-1 px-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-[#1565D8] dark:text-blue-300 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                            className="flex-1 py-0.5 px-1.5 rounded text-[#1565D8] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[10.5px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
                             title="Inserir esta foto no corpo de texto do laudo"
                           >
                             <Plus className="w-3 h-3" />
-                            <span>Inserir no Texto</span>
+                            <span>Inserir no texto</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRemoverFotoSecao(foto.id)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                             title="Excluir Evidência"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-slate-400 italic">
-                    Nenhuma foto adicional cadastrada nesta seção. Use o formulário acima ou a barra de ferramentas do editor para adicionar fotos.
+                  <p className="text-[10.5px] text-slate-400">
+                    Nenhuma foto cadastrada nesta seção.
                   </p>
                 )}
               </div>
 
+              </div>
+
             </div>
           ) : (
-            <div className="bg-white dark:bg-[#0B1324] p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-2">
+            <div className="bg-white dark:bg-[#0B1324] px-6 py-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
               <p className="text-slate-500 text-xs">Nenhuma seção selecionada para edição.</p>
             </div>
           )}
@@ -2344,7 +2341,7 @@ export const LaudoEditorView: React.FC = () => {
       {/* SEÇÃO OFICIAL DE ANEXO DA ART (CREA-PE)                                   */}
       {/* Suporta upload de arquivo em PDF ou Imagem                               */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#0B1324] p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-[#0B1324] rounded-xl border border-slate-200 dark:border-slate-800">
         <input
           type="file"
           ref={artFileInputRef}
@@ -2353,63 +2350,60 @@ export const LaudoEditorView: React.FC = () => {
           className="hidden"
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold text-[13px] text-[#0B1E3D] dark:text-white flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Anexo da ART
+                <span className="font-normal text-slate-400">· CREA-PE</span>
+              </h3>
+              {laudoState.artArquivoUrl ? (
+                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  Anexada
+                </span>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                  Obrigatória para finalizar
+                </span>
+              )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-black text-base text-[#0B1E3D] dark:text-white">
-                  Anexo Oficial da ART (Anotação de Responsabilidade Técnica — CREA-PE)
-                </h3>
-                {laudoState.artArquivoUrl ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    ART Anexada
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                    Obrigatório para Finalização
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Anexe o arquivo oficial emitido pelo CREA-PE. O sistema aceita comprovantes tanto em formato <strong>PDF</strong> quanto em <strong>Imagem (PNG/JPG)</strong>.
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Arquivo oficial emitido pelo CREA-PE, em PDF ou imagem.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => artFileInputRef.current?.click()}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
             >
-              <UploadCloud className="w-4 h-4" />
-              <span>{laudoState.artArquivoUrl ? 'Substituir Arquivo da ART' : 'Anexar ART (PDF ou Imagem)'}</span>
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>{laudoState.artArquivoUrl ? 'Substituir arquivo' : 'Anexar ART'}</span>
             </button>
             {laudoState.artArquivoUrl && (
               <button
                 type="button"
                 onClick={handleRemoverArt}
-                className="p-2 rounded-xl hover:bg-red-50 text-red-600 border border-transparent hover:border-red-200 cursor-pointer"
-                title="Remover Anexo da ART"
+                className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                title="Remover anexo da ART"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         </div>
 
+        <div className="px-4 sm:px-5 py-4">
         {laudoState.artArquivoUrl ? (
-          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-4">
-            {/* Top row with ART metadata inputs and actions */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-              <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="space-y-3">
+            {/* Metadados e ações da ART */}
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block text-[11px] mb-1">
-                    Nº da ART CREA-PE:
+                  <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">
+                    Nº da ART CREA-PE
                   </label>
                   <input
                     type="text"
@@ -2420,13 +2414,13 @@ export const LaudoEditorView: React.FC = () => {
                       agendarAutoSave({ ...laudoState, artNumero: val });
                     }}
                     placeholder="Ex: PE20261822299"
-                    className="w-48 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs font-bold text-[#0B1E3D] dark:text-white"
+                    className="w-48 px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-mono text-xs font-semibold text-[#0B1E3D] dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block text-[11px] mb-1">
-                    Data de Registro:
+                  <label className="block text-[10.5px] font-semibold text-slate-500 mb-1">
+                    Data de registro
                   </label>
                   <input
                     type="date"
@@ -2435,12 +2429,12 @@ export const LaudoEditorView: React.FC = () => {
                       const val = e.target.value;
                       agendarAutoSave({ ...laudoState, artDataHomologacao: val });
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                    className="px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -2450,69 +2444,66 @@ export const LaudoEditorView: React.FC = () => {
                       titulo: `Documento da ART CREA-PE: ${laudoState.artNumero || 'Oficial'}`
                     });
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1565D8] text-xs font-bold flex items-center gap-1.5 border border-blue-200 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-md text-[#1565D8] dark:text-blue-400 text-[11px] font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center gap-1 cursor-pointer"
                   title="Ampliar ART em tela cheia"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
-                  <span>Ampliar Imagem</span>
+                  <span>Ampliar</span>
                 </button>
                 <a
                   href={laudoState.artArquivoUrl}
                   download={laudoState.artNomeArquivo || 'ART_CREA_PE.pdf'}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  title="Baixar Arquivo Original da ART"
+                  className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  title="Baixar arquivo original da ART"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                 </a>
               </div>
             </div>
 
-            {/* Visualização Direta da Imagem Real da ART na Página */}
-            <div className="w-full bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
+            {/* Visualização da ART */}
+            <div className="w-full bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
               {carregandoArtImagem ? (
-                <div className="p-12 flex flex-col items-center gap-2 text-slate-500">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-                  <span className="text-xs font-semibold">Renderizando documento da ART em alta resolução...</span>
+                <div className="py-10 flex flex-col items-center gap-2 text-slate-500">
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                  <span className="text-[11px] font-medium">Renderizando documento da ART...</span>
                 </div>
               ) : artImagemVisual ? (
-                <div className="relative group max-w-2xl w-full flex flex-col items-center">
+                <div className="relative group max-w-xl w-full flex flex-col items-center">
                   <div 
                     onClick={() => setModalVisualizarImagemUrl({
                       url: artImagemVisual,
                       titulo: `Anotação de Responsabilidade Técnica (ART — CREA-PE) Nº ${laudoState.artNumero || 'Oficial'}`
                     })}
-                    className="cursor-pointer bg-white rounded-xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden relative p-1 transition-transform hover:scale-[1.01]"
+                    className="cursor-pointer bg-white rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden relative p-1"
                     title="Clique para ampliar em tela cheia"
                   >
                     <img 
                       src={artImagemVisual} 
                       alt="Documento Oficial da ART CREA-PE" 
-                      className="max-h-[640px] w-auto max-w-full object-contain mx-auto rounded"
+                      className="max-h-[420px] w-auto max-w-full object-contain mx-auto rounded"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded">
-                      <span className="px-3.5 py-2 rounded-xl bg-white/95 text-slate-900 text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                        <ZoomIn className="w-4 h-4 text-[#1565D8]" />
-                        Clique para Ampliar em Tela Cheia
+                      <span className="px-3 py-1.5 rounded-md bg-white/95 text-slate-900 text-[11px] font-semibold flex items-center gap-1.5 shadow">
+                        <ZoomIn className="w-3.5 h-3.5 text-[#1565D8]" />
+                        Ampliar em tela cheia
                       </span>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">
-                    Visualização integral do documento de ART CREA-PE vinculado a este laudo técnico.
-                  </p>
                 </div>
               ) : laudoState.artArquivoUrl ? (
-                <div className="relative group max-w-2xl w-full flex flex-col items-center">
+                <div className="relative group max-w-xl w-full flex flex-col items-center">
                   <div 
                     onClick={() => setModalVisualizarImagemUrl({
                       url: laudoState.artArquivoUrl!,
                       titulo: `ART CREA-PE: ${laudoState.artNumero || 'Oficial'}`
                     })}
-                    className="cursor-pointer bg-white rounded-xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden p-1"
+                    className="cursor-pointer bg-white rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden p-1"
                   >
                     <img 
                       src={laudoState.artArquivoUrl} 
                       alt="Documento Oficial da ART CREA-PE" 
-                      className="max-h-[640px] w-auto max-w-full object-contain mx-auto rounded"
+                      className="max-h-[420px] w-auto max-w-full object-contain mx-auto rounded"
                     />
                   </div>
                 </div>
@@ -2522,19 +2513,17 @@ export const LaudoEditorView: React.FC = () => {
         ) : (
           <div
             onClick={() => artFileInputRef.current?.click()}
-            className="p-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-900/30 text-center cursor-pointer transition-colors"
+            className="px-4 py-4 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-700 text-center cursor-pointer transition-colors"
           >
-            <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-200 dark:border-emerald-800">
-              <Paperclip className="w-6 h-6" />
-            </div>
-            <p className="font-bold text-xs text-slate-700 dark:text-slate-200">
-              Clique aqui para anexar o arquivo da ART (PDF ou Imagem)
+            <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+              Clique para anexar o arquivo da ART (PDF ou imagem)
             </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Selecione o arquivo baixado do portal do CREA-PE ou tire uma foto legível da guia de Anotação de Responsabilidade Técnica.
+            <p className="text-[10.5px] text-slate-400 mt-0.5">
+              Arquivo baixado do portal do CREA-PE ou foto legível da guia de ART.
             </p>
           </div>
         )}
+        </div>
       </div>
 
       {/* MODAL: VISUALIZAR IMAGEM EM ALTA RESOLUÇÃO */}
@@ -2638,7 +2627,7 @@ export const LaudoEditorView: React.FC = () => {
                       if (preset) setNovaSecaoTitulo(preset.titulo);
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                 >
                   <option value="custom">-- Seção Personalizada em Branco --</option>
                   {PRESET_SECTIONS.map(p => (
@@ -2658,7 +2647,7 @@ export const LaudoEditorView: React.FC = () => {
                   value={novaSecaoTitulo}
                   onChange={(e) => setNovaSecaoTitulo(e.target.value)}
                   placeholder="Ex: 4. Ensaio de Carga e Medições de Deflexão"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                 />
               </div>
             </div>
@@ -2717,7 +2706,7 @@ export const LaudoEditorView: React.FC = () => {
                 laudoState.revisoes.map((rev) => (
                   <div 
                     key={rev.id} 
-                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1"
+                    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1"
                   >
                     <div className="flex items-center justify-between text-[11px]">
                       <strong className="text-slate-900 dark:text-white font-semibold">
@@ -2746,7 +2735,7 @@ export const LaudoEditorView: React.FC = () => {
                   value={novaNotaRevisao}
                   onChange={(e) => setNovaNotaRevisao(e.target.value)}
                   placeholder="Ex: Revisão pós-inspeção presencial com cliente"
-                  className="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  className="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                 />
                 <button
                   onClick={handleAdicionarNotaRevisao}
@@ -2797,7 +2786,7 @@ export const LaudoEditorView: React.FC = () => {
                   rows={3}
                   value={promptIa}
                   onChange={(e) => setPromptIa(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                 />
               </div>
 
@@ -2892,7 +2881,7 @@ export const LaudoEditorView: React.FC = () => {
                   value={artNumeroInput}
                   onChange={(e) => setArtNumeroInput(e.target.value)}
                   placeholder="Ex: PE20261822299"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-200"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-200"
                 />
               </div>
 
@@ -3140,7 +3129,7 @@ export const LaudoEditorView: React.FC = () => {
                   value={buscaOrcamentoModal}
                   onChange={(e) => setBuscaOrcamentoModal(e.target.value)}
                   placeholder="Buscar por código, serviço ou cliente..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -3328,7 +3317,7 @@ export const LaudoEditorView: React.FC = () => {
                 Tem certeza de que deseja excluir permanentemente o laudo <strong className="font-mono text-slate-900 dark:text-white">{laudoState.numero}</strong>?
               </p>
 
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-xs text-slate-600 dark:text-slate-300">
                 <div><strong>Tipo:</strong> {laudoState.tipo}</div>
                 <div><strong>Cliente:</strong> {laudoState.clienteNome}</div>
                 <div><strong>Ativo:</strong> {laudoState.ativoIdentificacao}</div>
