@@ -1641,19 +1641,19 @@
       "validaAte": "28/11/2026"
     }
   ],
-  "updatedAt": "2026-11-14T13:11:50.925Z",
+  "updatedAt": "2026-11-14T14:23:03.429Z",
   "laudos": [
     {
       "dataInspecao": "2026-10-31",
       "resumoExecutivo": "Laudo técnico de Laudo de Liberação e Conformidade NR-11 / NR-12 referente ao equipamento Laudo de Liberação e Conformidade NR-11 / NR-12. Normas de referência: NR-11 · NBR 8400. Escopo: Inspeção de sapatas estabilizadoras, grampos, cabos de aço, ganchos, moitões e comandos hidráulicos.",
       "normasReferencia": "NR-11 · NBR 8400",
       "conclusao": "Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma NR-11 · NBR 8400, estando apto para operação regular sob acompanhamento das rotinas de manutenção.",
-      "clienteCnpj": "",
+      "clienteCnpj": "67.152.714/0001-96",
       "apresentacao": "O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de Laudo de Liberação e Conformidade NR-11 / NR-12, em estrita conformidade com as diretrizes de NR-11 · NBR 8400.",
       "criadoEm": "2026-10-31T00:19:16.015Z",
       "status": "rascunho",
       "id": "lau-1793405956015",
-      "clienteNome": "ADF",
+      "clienteNome": "Nexus Projetos e Instalacoes",
       "checklist": [
         {
           "status": "conforme",
@@ -1722,7 +1722,7 @@
       ],
       "tabelaNaoConformidades": [],
       "ativoId": "atv-1790444362907",
-      "clienteId": "cli-adf",
+      "clienteId": "cli-1794519484955",
       "ativoIdentificacao": "PGX-9708",
       "responsavelNome": "Eng. Vitor Leonardo Cordeiro Linhares",
       "responsavelCrea": "CREA-PE 182229949-0",
@@ -1733,7 +1733,13 @@
         "chamadas": 0
       },
       "metodologia": "A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.",
-      "atualizadoEm": "2026-10-31T00:19:16.015Z"
+      "atualizadoEm": "2026-11-14T14:22:00.102Z",
+      "clienteContato": "Pablo Cavalcanti",
+      "clienteContatoCargo": "Gerente",
+      "clienteContatoTelefone": "81999149157",
+      "clienteContatoEmail": "nexusprojetoseinstalacoes@gmail.com",
+      "clienteEndereco": "Rua 11 de Agosto, 173 - Santa Tereza - Olinda/PE",
+      "revisoes": []
     },
     {
       "conclusao": "Conclui-se de forma peremptória que a pane no motor do veículo decorreu da ruptura da correia dentada, gerando danos severos ao cabeçote e válvulas que demandam retífica. O evento ocorreu ultrapassando o prazo legal de garantia de 90 dias da intervenção passada. Inexistem indícios materiais de mau uso pelo condutor.",
@@ -2057,45 +2063,45 @@
       "normasReferencia": "Engenharia Forense · CREA-PE",
       "secoes": [
         {
-          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
           "fotos": [],
-          "itens": [],
+          "titulo": "1. Histórico dos Fatos e Sintomas Apresentados",
           "id": "sec-1",
           "ordem": 1,
-          "titulo": "1. Histórico dos Fatos e Sintomas Apresentados"
-        },
-        {
-          "titulo": "2. Exame Físico Pericial das Peças Danificadas",
-          "ordem": 2,
-          "itens": [],
-          "ocultaNoPdf": false,
-          "id": "sec-2",
           "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
-          "fotos": []
+          "itens": []
         },
         {
-          "titulo": "3. Análise da Causa Raiz da Ruptura Mecânica",
+          "fotos": [],
+          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
+          "id": "sec-2",
+          "titulo": "2. Exame Físico Pericial das Peças Danificadas",
+          "ocultaNoPdf": false,
+          "ordem": 2,
+          "itens": []
+        },
+        {
+          "id": "sec-3",
           "ordem": 3,
           "itens": [],
-          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
-          "id": "sec-3",
-          "fotos": []
-        },
-        {
-          "ordem": 4,
-          "id": "sec-4",
-          "itens": [],
-          "titulo": "4. Avaliação do Nexo de Causalidade e Responsabilidade",
-          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
-          "fotos": []
-        },
-        {
-          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
+          "titulo": "3. Análise da Causa Raiz da Ruptura Mecânica",
           "fotos": [],
+          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>"
+        },
+        {
+          "fotos": [],
+          "id": "sec-4",
+          "titulo": "4. Avaliação do Nexo de Causalidade e Responsabilidade",
+          "ordem": 4,
+          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
+          "itens": []
+        },
+        {
+          "fotos": [],
+          "conteudoHtml": "<p class=\"leading-relaxed\">Verificação técnica pericial realizada em estrita conformidade com as diretrizes da norma <strong>Engenharia Forense · CREA-PE</strong>. Inspeção efetuada no ativo <strong>Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis)</strong> para o cliente <strong>Servicos de Saude Especializados Rosario de Maria LTDA</strong>, atestando conformidade estrutural, operacional e atendimento pleno aos requisitos regulamentares aplicáveis.</p>",
           "titulo": "5. Respostas aos Quesitos Técnicos Periciais",
           "id": "sec-5",
-          "itens": [],
-          "ordem": 5
+          "ordem": 5,
+          "itens": []
         }
       ],
       "modoCriacao": "sugestao_ia",
@@ -2115,56 +2121,56 @@
       "responsavelCrea": "CREA-PE 182229949-0",
       "clienteContatoTelefone": "+55 81 99753-7612",
       "revisao": "00",
-      "atualizadoEm": "2026-11-13T18:30:49.987Z",
+      "atualizadoEm": "2026-11-14T13:27:18.854Z",
       "apresentacao": "O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis), em estrita conformidade com as diretrizes de Engenharia Forense · CREA-PE.",
       "hrnCalculoGeral": {
         "recomendacao": "Risco significativo: são necessárias medidas de proteção.",
-        "cor": "text-[var(--warn)]",
+        "nivel": "Médio",
         "score": 16,
-        "nivel": "Médio"
+        "cor": "text-[var(--warn)]"
       },
       "checklist": [
         {
-          "status": "conforme",
-          "descricao": "Histórico de manutenção, ordens de serviço e intervenções prévias",
           "id": "ck-1",
-          "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo."
+          "status": "conforme",
+          "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.",
+          "descricao": "Histórico de manutenção, ordens de serviço e intervenções prévias"
         },
         {
-          "status": "conforme",
           "descricao": "Análise metalográfica/fratográfica de componentes fraturados",
+          "status": "conforme",
           "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.",
           "id": "ck-2"
         },
         {
+          "status": "conforme",
           "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.",
           "descricao": "Investigação de sobrecarga mecânica, fadiga ou defeito de montagem",
-          "status": "conforme",
           "id": "ck-3"
         },
         {
+          "status": "conforme",
           "id": "ck-4",
           "descricao": "Nexo causal entre intervenção prévia e sinistro ocorrido",
-          "status": "conforme",
           "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo."
         },
         {
+          "status": "conforme",
           "descricao": "Enquadramento jurídico perante o Código de Defesa do Consumidor",
-          "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.",
           "id": "ck-5",
-          "status": "conforme"
+          "observacao": "Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo."
         }
       ],
       "usoIA": {
         "chamadas": 0
       },
       "clienteCnpj": "40.936.977/0001-30",
-      "status": "rascunho",
+      "status": "finalizado",
       "justificativaParecer": "Ativo aprovado com restrições e plano de ação corretiva programado.",
       "metodologia": "A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.",
       "clienteContatoCargo": "Gerente",
       "responsavelNome": "Eng. Vitor Leonardo Cordeiro Linhares",
-      "artNumero": "",
+      "artNumero": "PE20261585614",
       "premissasLimitacoes": "Avaliação restrita às partes acessíveis no momento da inspeção visual e dinâmica. Não foram realizados ensaios destrutivos.",
       "ativoNumeroSerie": "093YHSRAF500GJ3983670",
       "resumoExecutivo": "Laudo técnico de Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis) referente ao equipamento Laudo Pericial de Análise de Falha Mecânica (Root Cause Analysis). Normas de referência: Engenharia Forense · CREA-PE. Escopo: Investigação pericial de quebra de componentes mecânicos (fadiga, falha de freio, eixos ou direção) para processos judiciais e seguradoras.",
@@ -2176,11 +2182,11 @@
       "clienteId": "cli-1792715877451",
       "instrumentos": [
         {
-          "nome": "Paquímetro Digital Mitutoyo 150mm",
+          "calibracaoValidade": "15/12/2026",
           "certificadoNumero": "CAL-2026-0891",
-          "id": "inst-1",
           "tag": "PAQ-01",
-          "calibracaoValidade": "15/12/2026"
+          "nome": "Paquímetro Digital Mitutoyo 150mm",
+          "id": "inst-1"
         }
       ],
       "orcamentoNumero": "PROP-2026/006",
@@ -2191,7 +2197,190 @@
       "clienteContato": "Thiago Cunha",
       "tabelaNaoConformidades": [],
       "ativoFabricante": "RENAULT",
-      "id": "lau-1794593996956"
+      "id": "lau-1794593996956",
+      "laudoAssinadoPdfNome": "Laudo de Avaliação Tecnica Pericial_Campo Grande Auto Pecas LTDA.pdf",
+      "laudoAssinadoEm": "2026-11-14T13:27:18.853Z",
+      "laudoAssinadoPdfUrl": "idb://lau-1794593996956",
+      "emitidoEm": "2026-11-14T13:27:18.854Z",
+      "laudoAssinadoTamanho": 1017431
+    },
+    {
+      "responsavelNome": "Eng. Vitor Leonardo Cordeiro Linhares",
+      "tabelaNaoConformidades": [],
+      "secoes": [
+        {
+          "id": "sec-1",
+          "titulo": "1. Identificação do Ativo e Escopo da Vistoria",
+          "ordem": 1,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        },
+        {
+          "id": "sec-2",
+          "titulo": "2. Avaliação de Conformidade e Normas Aplicáveis",
+          "ordem": 2,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        }
+      ],
+      "conclusao": "Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma NR-12 item 12.38 · ISO 12100, estando apto para operação regular sob acompanhamento das rotinas de manutenção.",
+      "hrnCalculoGeral": {
+        "score": 16,
+        "nivel": "Médio",
+        "cor": "text-[var(--warn)]",
+        "recomendacao": "Risco significativo: são necessárias medidas de proteção."
+      },
+      "id": "lau-1794663645376",
+      "artNumero": "",
+      "clienteContatoCargo": "Thiago Cunha",
+      "clienteCnpj": "37.071.833/0001-53",
+      "ativoCapacidade": "",
+      "apresentacao": "O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100), em estrita conformidade com as diretrizes de NR-12 item 12.38 · ISO 12100.",
+      "checklist": [],
+      "metodologia": "A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.",
+      "responsavelCrea": "CREA-PE 182229949-0",
+      "usoIA": {
+        "chamadas": 0
+      },
+      "atualizadoEm": "2026-11-14T13:40:45.376Z",
+      "ativoId": "atv-1790444362907",
+      "clienteContato": "Responsável",
+      "ativoIdentificacao": "Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)",
+      "clienteContatoEmail": "adfcentroautomotivo@gmail.com",
+      "clienteEndereco": "Avenida Jose Pinheiro dos Santos, 20, Pinheiropolis - Caruaru/PE",
+      "status": "rascunho",
+      "ativoModelo": "DUSTER",
+      "resumoExecutivo": "Laudo técnico de Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100) referente ao equipamento Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100). Normas de referência: NR-12 item 12.38 · ISO 12100. Escopo: Identificação de perigos mecânicos, estimativa de risco quantitativa (HRN) e definição de Categoria de Segurança requerida (PLr).",
+      "ativoFabricante": "RENAULT",
+      "dataInspecao": "2026-11-14",
+      "criadoEm": "2026-11-14T13:40:45.376Z",
+      "clienteNome": "Adf Auto Pecas LTDA",
+      "tipo": "Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)",
+      "modoCriacao": "em_branco",
+      "clienteId": "cli-1790443501593",
+      "numero": "LAR-2026-005",
+      "normasReferencia": "NR-12 item 12.38 · ISO 12100",
+      "ativoNumeroSerie": "093YHSRAF500GJ3983670",
+      "clienteContatoTelefone": "+55 81 99753-7612"
+    },
+    {
+      "tipo": "Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)",
+      "clienteEndereco": "Avenida Jose Pinheiro dos Santos, 20, Pinheiropolis - Caruaru/PE",
+      "clienteContatoEmail": "adfcentroautomotivo@gmail.com",
+      "clienteContato": "Responsável",
+      "atualizadoEm": "2026-11-14T13:40:02.822Z",
+      "ativoFabricante": "RENAULT",
+      "resumoExecutivo": "Laudo técnico de Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100) referente ao equipamento Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100). Normas de referência: NR-12 item 12.38 · ISO 12100. Escopo: Identificação de perigos mecânicos, estimativa de risco quantitativa (HRN) e definição de Categoria de Segurança requerida (PLr).",
+      "checklist": [],
+      "clienteContatoCargo": "Thiago Cunha",
+      "tabelaNaoConformidades": [],
+      "ativoIdentificacao": "Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)",
+      "apresentacao": "O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100), em estrita conformidade com as diretrizes de NR-12 item 12.38 · ISO 12100.",
+      "artNumero": "",
+      "id": "lau-1794663602822",
+      "metodologia": "A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.",
+      "usoIA": {
+        "chamadas": 0
+      },
+      "clienteCnpj": "37.071.833/0001-53",
+      "secoes": [
+        {
+          "id": "sec-1",
+          "titulo": "1. Identificação do Ativo e Escopo da Vistoria",
+          "ordem": 1,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        },
+        {
+          "id": "sec-2",
+          "titulo": "2. Avaliação de Conformidade e Normas Aplicáveis",
+          "ordem": 2,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        }
+      ],
+      "conclusao": "Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma NR-12 item 12.38 · ISO 12100, estando apto para operação regular sob acompanhamento das rotinas de manutenção.",
+      "responsavelNome": "Eng. Vitor Leonardo Cordeiro Linhares",
+      "clienteNome": "Adf Auto Pecas LTDA",
+      "modoCriacao": "em_branco",
+      "ativoModelo": "DUSTER",
+      "hrnCalculoGeral": {
+        "score": 16,
+        "nivel": "Médio",
+        "cor": "text-[var(--warn)]",
+        "recomendacao": "Risco significativo: são necessárias medidas de proteção."
+      },
+      "clienteId": "cli-1790443501593",
+      "numero": "LAR-2026-004",
+      "criadoEm": "2026-11-14T13:40:02.822Z",
+      "ativoId": "atv-1790444362907",
+      "ativoNumeroSerie": "093YHSRAF500GJ3983670",
+      "ativoCapacidade": "",
+      "dataInspecao": "2026-11-14",
+      "clienteContatoTelefone": "+55 81 99753-7612",
+      "responsavelCrea": "CREA-PE 182229949-0",
+      "normasReferencia": "NR-12 item 12.38 · ISO 12100",
+      "status": "rascunho"
+    },
+    {
+      "tipo": "Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100)",
+      "clienteId": "cli-1792715877451",
+      "clienteNome": "Campo Grande Auto Pecas LTDA",
+      "clienteCnpj": "40.936.977/0001-30",
+      "clienteContato": "Thiago Cunha",
+      "clienteContatoCargo": "Gerente",
+      "clienteContatoTelefone": "+55 81 99753-7612",
+      "clienteContatoEmail": "campograndeautopecas@gmail.com",
+      "clienteEndereco": "Avenida General Manoel Rabelo, 4347, Sucupira - Jaboatão dos Guararapes/PE",
+      "ativoId": "atv-1790444362907",
+      "ativoIdentificacao": "PGX-9708",
+      "ativoFabricante": "RENAULT",
+      "ativoModelo": "DUSTER",
+      "ativoNumeroSerie": "093YHSRAF500GJ3983670",
+      "ativoCapacidade": "",
+      "dataInspecao": "2026-11-14",
+      "normasReferencia": "NR-12 item 12.38 · ISO 12100",
+      "resumoExecutivo": "Laudo técnico de Laudo de Apreciação / Análise de Risco (HRN e NBR ISO 12100) referente ao equipamento PGX-9708. Normas de referência: NR-12 item 12.38 · ISO 12100. Escopo: Identificação de perigos mecânicos, estimativa de risco quantitativa (HRN) e definição de Categoria de Segurança requerida (PLr).",
+      "apresentacao": "O presente laudo técnico pericial tem por escopo inspecionar, avaliar e homologar as condições mecânicas, estruturais e de segurança operacional de PGX-9708, em estrita conformidade com as diretrizes de NR-12 item 12.38 · ISO 12100.",
+      "metodologia": "A metodologia adotada contemplou inspeção visual minuciosa, análise dimensional e estrutural, conferência de componentes críticos e apreciação de risco em conformidade com os preceitos da ABNT e normas do Ministério do Trabalho.",
+      "conclusao": "Com base nas verificações técnicas realizadas, conclui-se que o equipamento/ativo analisado atende aos padrões de segurança e operacionalidade preconizados pela norma NR-12 item 12.38 · ISO 12100, estando apto para operação regular sob acompanhamento das rotinas de manutenção.",
+      "secoes": [
+        {
+          "id": "sec-1",
+          "titulo": "1. Identificação do Ativo e Escopo da Vistoria",
+          "ordem": 1,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        },
+        {
+          "id": "sec-2",
+          "titulo": "2. Avaliação de Conformidade e Normas Aplicáveis",
+          "ordem": 2,
+          "conteudoHtml": "",
+          "itens": [],
+          "fotos": []
+        }
+      ],
+      "checklist": [],
+      "modoCriacao": "em_branco",
+      "id": "lau-1794666162544",
+      "numero": "LAR-2026-006",
+      "status": "rascunho",
+      "artNumero": "",
+      "responsavelNome": "Eng. Vitor Leonardo Cordeiro Linhares",
+      "responsavelCrea": "CREA-PE 182229949-0",
+      "tabelaNaoConformidades": [],
+      "usoIA": {
+        "chamadas": 0
+      },
+      "criadoEm": "2026-11-14T14:22:42.544Z",
+      "atualizadoEm": "2026-11-14T14:23:01.806Z",
+      "revisoes": []
     }
   ],
   "checklistsCampo": [],
