@@ -1382,7 +1382,7 @@ export const OrcamentoEditorView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 pb-24 lg:pb-12">
+    <div className="orcamento-editor-view space-y-5 pb-24 lg:pb-12">
       
       {/* Hidden File Inputs */}
       <input 
@@ -1408,7 +1408,7 @@ export const OrcamentoEditorView: React.FC = () => {
       />
 
       {/* Top Banner & Action Controls */}
-      <div className="bg-gradient-to-br from-white via-white to-blue-50/60 rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm ring-1 ring-slate-900/[0.03] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         {/* Title & Metadata */}
         <div className="space-y-2 min-w-0">
@@ -1779,10 +1779,10 @@ export const OrcamentoEditorView: React.FC = () => {
       </div>
 
       {/* Main Workspace: Left Sidebar (13 Sections) + Right Editor Canvas */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-5 items-start">
         
         {/* Sidebar: 13 Pages Navigator (4 cols on lg) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs space-y-3 lg:sticky lg:top-4">
+        <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs space-y-3 lg:sticky lg:top-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="font-extrabold text-sm text-[#0B1E3D] flex items-center gap-1.5">
@@ -1880,7 +1880,7 @@ export const OrcamentoEditorView: React.FC = () => {
         </div>
 
         {/* Main Editor Section (8 cols on lg) */}
-        <div className="min-w-0 lg:col-span-8 space-y-4">
+        <div className="min-w-0 lg:col-span-8 xl:col-span-9 space-y-4">
           
           {/* Section Header Card */}
           <div className={`rounded-2xl p-3 sm:p-5 border shadow-xs space-y-4 transition-colors ${
@@ -2782,6 +2782,7 @@ export const OrcamentoEditorView: React.FC = () => {
                   onChange={(novoHtml) => handleConteudoSecaoChange(novoHtml)}
                   placeholder={`Edite o conteúdo técnico da ${secaoAtiva?.titulo}...`}
                   mobileToolbarScroll
+                  lightAppearance={modoVisualizacao === 'folha_clara'}
                 />
               </div>
             </div>

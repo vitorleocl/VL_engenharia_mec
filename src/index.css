@@ -216,6 +216,54 @@ h1, h2, h3, h4, h5, h6 {
   color: #04210F;
 }
 
+/* Caderno de edição da proposta: superfície clara, neutra e sem o tema do painel. */
+.tiptap-editor[data-appearance="light"] {
+  color: #334155;
+  background-color: #ffffff;
+  border-color: #dbe2ea;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:bg-slate-900"] {
+  background-color: #ffffff;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:bg-slate-800"] {
+  background-color: #f8fafc;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:border-slate-700"] {
+  border-color: #e2e8f0;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:text-slate-200"],
+.tiptap-editor[data-appearance="light"] [class*="dark:text-slate-300"] {
+  color: #475569;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:hover:bg-slate-800"]:hover {
+  background-color: #f1f5f9;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:bg-emerald-950"] {
+  background-color: #ecfdf5;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:border-emerald-800"] {
+  border-color: #a7f3d0;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:bg-blue-950"] {
+  background-color: #eff6ff;
+}
+
+.tiptap-editor[data-appearance="light"] [class*="dark:border-blue-800"] {
+  border-color: #bfdbfe;
+}
+
+body:has(.orcamento-editor-view) #engineering-theme-backdrop {
+  display: none;
+}
+
 .btn-tech.sm {
   padding: 6px 14px;
   font-size: 14.5px;

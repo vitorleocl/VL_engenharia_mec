@@ -48,6 +48,7 @@ interface TipTapEditorProps {
   placeholder?: string;
   readOnly?: boolean;
   mobileToolbarScroll?: boolean;
+  lightAppearance?: boolean;
 }
 
 const COLOR_OPTIONS = [
@@ -75,6 +76,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   placeholder = 'Digite o parecer ou especificações técnicas aqui...',
   readOnly = false,
   mobileToolbarScroll = false,
+  lightAppearance = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -184,7 +186,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   }
 
   return (
-    <div className="border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+    <div
+      data-appearance={lightAppearance ? 'light' : undefined}
+      className="tiptap-editor border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs"
+    >
       {/* Hidden file input for direct image upload */}
       <input 
         type="file" 
@@ -201,7 +206,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           aria-label="Ferramentas de formatação"
           className={`flex ${
             mobileToolbarScroll
-              ? 'flex-nowrap overflow-x-auto overscroll-x-contain sm:flex-wrap [&>div]:shrink-0 [&>div>button]:min-w-10 [&>div>button]:min-h-10'
+              ? 'flex-nowrap overflow-x-auto overscroll-x-contain [&>div]:shrink-0 [&>div>button]:min-w-10 [&>div>button]:min-h-10'
               : 'flex-wrap'
           } items-center gap-1 p-2 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`}
         >
