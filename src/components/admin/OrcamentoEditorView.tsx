@@ -42,7 +42,8 @@ import {
   Sun,
   Moon,
   Edit3,
-  X
+  X,
+  MessageCircle,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -78,6 +79,7 @@ import {
   calcularValidadeAte,
   FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
+import { abrirWhatsApp, normalizarTelefoneWhatsApp, textoSemHtml } from '../../lib/whatsapp';
 
 /**
  * Converte qualquer entrada de valor monetário (ex: "3200", "3.200,00", "3200.50", "R$ 4.500")
@@ -542,6 +544,46 @@ export const OrcamentoEditorView: React.FC = () => {
     const now = new Date();
     setHorarioUltimoSalvo(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
   }, [atualizarOrcamento, currentUser]);
+
+  const handleEnviarResumoWhatsApp = () => {
+    if (!orcamentoState) return;
+    const contatoTelefone = cliente?.contatos?.find((contato) => contato.telefone?.trim())?.telefone;
+    const numeroEmpresa = normalizarTelefoneWhatsApp(DADOS_VL_PADRAO.telefone);
+    const telefoneSalvoNaProposta = orcamentoState.telefoneCliente;
+    const telefonePropostaNormalizado = normalizarTelefoneWhatsApp(telefoneSalvoNaProposta);
+    const telefoneCliente = contatoTelefone || (
+      telefonePropostaNormalizado && telefonePropostaNormalizado !== numeroEmpresa
+        ? telefoneSalvoNaProposta
+        : undefined
+    );
+    const valor = parseValorMoeda(orcamentoState.valor).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+    const escopo = textoSemHtml(orcamentoState.descricaoEscopo).slice(0, 700);
+    const itensCalculo = (orcamentoState.itensCalculo || [])
+      .filter((item) => item.descricao?.trim())
+      .slice(0, 5)
+      .map((item) => `• ${item.descricao}: ${item.quantidade || 1} × ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+    const mensagem = `Olá, ${orcamentoState.representanteNome || orcamentoState.clienteNome || 'tudo bem'}! Segue o resumo da proposta da VL Engenharia:
+
+📄 Proposta: ${orcamentoState.codigoProposta || orcamentoState.id}
+🏢 Cliente: ${orcamentoState.clienteNome || cliente?.razaoSocial || 'Não informado'}
+🔧 Serviço: ${orcamentoState.servico || 'Não informado'}
+${orcamentoState.ativoIdentificacao ? `⚙️ Ativo: ${orcamentoState.ativoIdentificacao}\n` : ''}${escopo ? `📌 Escopo: ${escopo}\n` : ''}${orcamentoState.normasTecnicas ? `📚 Normas de referência: ${orcamentoState.normasTecnicas}\n` : ''}${itensCalculo.length ? `💰 Itens principais:\n${itensCalculo.join('\n')}\n` : ''}💵 Valor total: ${valor}
+${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `⏱️ Prazo: ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}\n` : ''}${orcamentoState.validadeDias ? `📆 Validade: ${orcamentoState.validadeDias} dias\n` : ''}${orcamentoState.condicoesPagamento ? `💳 Condições de pagamento: ${orcamentoState.condicoesPagamento}\n` : ''}📌 Status: ${orcamentoState.status}
+
+Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`;
+
+    if (!normalizarTelefoneWhatsApp(telefoneCliente)) {
+      window.alert('Cadastre um telefone/WhatsApp válido no contato do cliente antes de enviar o resumo.');
+      return;
+    }
+    salvarImediato(orcamentoState, 'Salvo antes de compartilhar resumo pelo WhatsApp');
+    if (!abrirWhatsApp(telefoneCliente, mensagem)) {
+      window.alert('Não foi possível abrir o WhatsApp. Confira o telefone cadastrado do cliente.');
+    }
+  };
 
   // Debounced Auto-Save
   const agendarAutoSave = useCallback((novoOrcamento: Orcamento, resumoAlteracao = 'Edição de conteúdo') => {
@@ -1591,6 +1633,17 @@ export const OrcamentoEditorView: React.FC = () => {
                 <span className="hidden sm:inline">Tema Escuro</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleEnviarResumoWhatsApp}
+            disabled={statusSalvo === 'salvando'}
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            title="Salvar e abrir o WhatsApp com um resumo da proposta para o cliente"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>WhatsApp</span>
           </button>
 
           {/* Botão Salvar Proposta Manual Imediato */}

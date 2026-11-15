@@ -10,6 +10,7 @@ import {
   Edit3,
   X,
   ClipboardCheck,
+  MessageCircle,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +18,7 @@ import { ChecklistCampoFormModal } from './ChecklistCampoFormModal';
 import { ChecklistCampoPdfModal } from './ChecklistCampoPdfModal';
 import { ChecklistModelosEditor } from './ChecklistModelosEditor';
 import { ChecklistCampo } from '../../types';
+import { abrirWhatsApp } from '../../lib/whatsapp';
 
 function extrairTagCurta(identificacao?: string): string {
   if (!identificacao) return 'Ativo';
@@ -311,6 +313,27 @@ export const ChecklistCampoView: React.FC = () => {
             const dataBr = new Date(
               chk.dataPreenchimento || chk.criadoEm || Date.now()
             ).toLocaleDateString('pt-BR');
+            const telefoneCliente = cliente?.contatos?.find((contato) => contato.telefone?.trim())?.telefone;
+
+            const enviarResumoWhatsApp = () => {
+              const itensNC = todosItens.filter((item) => item.status === 'nao_conforme');
+              const detalhesNC = itensNC.slice(0, 5).map((item) =>
+                `• ${item.numero ? `${item.numero} — ` : ''}${item.descricao}${item.observacao ? `: ${item.observacao}` : ''}`
+              );
+              const mensagem = `Olá, ${nomeCliente}! Segue o resumo da vistoria técnica concluída pela VL Engenharia:
+
+📋 Checklist: ${chk.numero || chk.id}
+⚙️ Ativo: ${chk.ativoIdentificacao || ativo?.identificacao || 'Não informado'}
+🧾 Serviço: ${chk.tipoLaudoNome || chk.categoriaLaudo}
+📅 Data: ${dataBr}
+📊 Resultado: ${conformes} conforme(s), ${naoConformes} não conforme(s) e ${todosItens.filter((item) => item.status === 'nao_aplicavel').length} não aplicável(is).
+👷 Responsável: ${chk.responsavelNome || 'Não informado'}${chk.responsavelCrea ? ` (${chk.responsavelCrea})` : ''}${detalhesNC.length ? `\n\n⚠️ Principais não conformidades:\n${detalhesNC.join('\n')}${itensNC.length > detalhesNC.length ? `\n• e mais ${itensNC.length - detalhesNC.length} item(ns)` : ''}` : ''}
+
+Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta mensagem.`;
+              if (!abrirWhatsApp(telefoneCliente, mensagem)) {
+                window.alert('Cadastre um telefone/WhatsApp válido no contato do cliente para enviar o resumo diretamente.');
+              }
+            };
 
             return (
               <article
@@ -427,13 +450,23 @@ export const ChecklistCampoView: React.FC = () => {
                     Continuar
                   </button>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-3 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setChecklistVisualizandoPdf(chk)}
                       className="min-h-[42px] py-2.5 px-4 rounded-xl border border-[var(--adm-line)] bg-transparent hover:border-[var(--adm-blue-soft)] text-[var(--adm-text)] text-xs sm:text-sm font-semibold transition cursor-pointer"
                     >
                       Ver
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={enviarResumoWhatsApp}
+                      className="min-h-[42px] py-2.5 px-2 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-sm font-semibold transition cursor-pointer inline-flex items-center justify-center gap-1"
+                      title="Enviar resumo deste checklist ao cliente pelo WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp
                     </button>
 
                     <button
