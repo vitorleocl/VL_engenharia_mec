@@ -571,18 +571,19 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden">
         
         {/* Top Header Controls */}
-        <div className="px-4 sm:px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-800 gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="px-4 sm:px-5 py-3 bg-slate-900 text-white flex flex-col shrink-0 border-b border-slate-800 gap-3">
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 rounded-xl bg-[#1565D8]/20 border border-[#1565D8]/30 shrink-0">
               <FileSpreadsheet className="w-5 h-5 text-[#1565D8]" />
             </div>
-            <div className="min-w-0">
+              <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-sm sm:text-base leading-tight">
-                  Proposta Oficial • {orcamentoAtual.codigoProposta || orcamentoAtual.id}
+                  Proposta · {orcamentoAtual.codigoProposta || orcamentoAtual.id}
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
-                  {totalPaginas} Folhas A4 • Layout Oficial Aprovado
+                  {totalPaginas} folhas A4
                 </span>
                 {secoesOcultasCount > 0 && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -625,7 +626,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 truncate">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate mt-0.5">
                   <span className="truncate">{orcamentoAtual.clienteNome} • {orcamentoAtual.servico}</span>
                   <button
                     type="button"
@@ -638,13 +639,15 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                 </div>
               )}
             </div>
-          </div>
+            </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
             {/* Page Selection Button for PDF */}
             <button
               onClick={() => setPainelSelecaoAberto(prev => !prev)}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 painelSelecaoAberto 
                   ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-sm'
                   : secoesOcultasCount > 0
@@ -654,7 +657,7 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
               title="Selecionar quais páginas incluir ou ocultar da versão do PDF final"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-              <span>Páginas no PDF ({totalPaginas}/{todasSecoes.length})</span>
+              <span>Páginas <span className="font-mono">{totalPaginas}/{todasSecoes.length}</span></span>
               {secoesOcultasCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-400 text-slate-900">
                   {secoesOcultasCount} oculta(s)
@@ -663,41 +666,40 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             </button>
 
             {/* View Mode Toggle */}
-            <div className="hidden sm:flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+            <div className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[10px]">
               <button
                 onClick={() => setModoVisualizacao('pagina')}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                className={`px-2 py-1 rounded-md font-semibold transition-colors ${
                   modoVisualizacao === 'pagina' ? 'bg-[#1565D8] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Página a Página
+                Página
               </button>
               <button
                 onClick={() => setModoVisualizacao('continua')}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                className={`px-2 py-1 rounded-md font-semibold transition-colors ${
                   modoVisualizacao === 'continua' ? 'bg-[#1565D8] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Visualização Contínua
+                Contínua
               </button>
             </div>
-
             {/* Mode Selector Toggle: Completa (6 folhas) vs Executiva (4 folhas) */}
-            <div className="hidden lg:flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+            <div className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[10px]">
               <button
                 type="button"
                 onClick={() => {
                   setModoExportacao('completa');
                   atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: 'completa' });
                 }}
-                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md font-bold text-[10px] transition-colors cursor-pointer ${
                   modoExportacao === 'completa' 
                     ? 'bg-amber-400 text-slate-950 shadow-xs' 
                     : 'text-slate-300 hover:text-white'
                 }`}
                 title="Versão Completa com 6 folhas A4 incluindo credenciais institucionais e portfólio"
               >
-                Completa (6 fls)
+                  Completa · 6
               </button>
               <button
                 type="button"
@@ -705,26 +707,28 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
                   setModoExportacao('executiva');
                   atualizarOrcamento(orcamentoAtual.id, { modoExportacaoPdf: 'executiva' });
                 }}
-                className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md font-bold text-[10px] transition-colors cursor-pointer ${
                   modoExportacao === 'executiva' 
                     ? 'bg-amber-400 text-slate-950 shadow-xs' 
                     : 'text-slate-300 hover:text-white'
                 }`}
                 title="Versão Executiva com 4 folhas A4 focada em escopo técnico, metodologia e investimento"
               >
-                Executiva (4 fls)
+                  Executiva · 4
               </button>
             </div>
 
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
             {/* Editar Proposta button */}
             {onEditarProposta && (
               <button
                 onClick={() => onEditarProposta(orcamentoAtual)}
-                className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 border border-amber-500 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
                 title="Editar seções e capa no editor rico"
               >
-                <Edit3 className="w-4 h-4" />
-                <span className="hidden md:inline">Editar Seções</span>
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Editar</span>
               </button>
             )}
 
@@ -732,29 +736,29 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             <button
               type="button"
               onClick={handlePrintNative}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-slate-800 text-slate-300 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
               title="Abrir Visualização A4 para Impressão"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden md:inline">Imprimir</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir</span>
             </button>
 
             {/* Direct A4 View Button (in-app, no target="_blank") */}
             <button
               type="button"
               onClick={handleAbrirA4}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-slate-800 text-slate-300 text-[11px] font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
               title="Abrir Folha A4 Completa em Tela Cheia"
             >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden lg:inline">A4 Direto</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>A4 direto</span>
             </button>
 
             {/* PDF Download Button (1-click Vector PDF) */}
             <button
               onClick={handleIniciarExportacao}
               disabled={gerandoPdf}
-              className="px-3.5 py-2 rounded-lg bg-[#1565D8] hover:bg-[#1565D8]/90 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-[#1565D8] hover:bg-[#1565D8]/90 text-white text-[11px] font-bold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               title={`Exportar PDF Vetorial de alta precisão (${modoExportacao === 'completa' ? '6 folhas' : '4 folhas'}, texto selecionável, links ativos e < 500 KB)`}
             >
               {gerandoPdf ? (
@@ -773,21 +777,21 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
             {/* Excluir Proposta button */}
             <button
               onClick={() => setConfirmandoExclusao(true)}
-              className="p-2 rounded-lg bg-rose-900/40 hover:bg-rose-900/70 text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-800/60 cursor-pointer ml-1"
+              className="p-1.5 rounded-lg bg-rose-900/30 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 cursor-pointer"
               title="Excluir este orçamento definitivamente"
             >
               <Trash2 className="w-4 h-4 text-rose-400" />
-              <span className="hidden md:inline">Excluir</span>
             </button>
 
             {/* Close */}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer ml-1"
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
               title="Fechar"
             >
               <X className="w-5 h-5" />
             </button>
+            </div>
           </div>
         </div>
 
