@@ -318,16 +318,18 @@ export const ChecklistCampoView: React.FC = () => {
             const enviarResumoWhatsApp = () => {
               const itensNC = todosItens.filter((item) => item.status === 'nao_conforme');
               const detalhesNC = itensNC.slice(0, 5).map((item) =>
-                `• ${item.numero ? `${item.numero} — ` : ''}${item.descricao}${item.observacao ? `: ${item.observacao}` : ''}`
+                `- ${item.numero ? `${item.numero} - ` : ''}${item.descricao}${item.observacao ? `: ${item.observacao}` : ''}`
               );
-              const mensagem = `Olá, ${nomeCliente}! Segue o resumo da vistoria técnica concluída pela VL Engenharia:
+              const mensagem = `Olá, ${nomeCliente}!
 
-📋 Checklist: ${chk.numero || chk.id}
-⚙️ Ativo: ${chk.ativoIdentificacao || ativo?.identificacao || 'Não informado'}
-🧾 Serviço: ${chk.tipoLaudoNome || chk.categoriaLaudo}
-📅 Data: ${dataBr}
-📊 Resultado: ${conformes} conforme(s), ${naoConformes} não conforme(s) e ${todosItens.filter((item) => item.status === 'nao_aplicavel').length} não aplicável(is).
-👷 Responsável: ${chk.responsavelNome || 'Não informado'}${chk.responsavelCrea ? ` (${chk.responsavelCrea})` : ''}${detalhesNC.length ? `\n\n⚠️ Principais não conformidades:\n${detalhesNC.join('\n')}${itensNC.length > detalhesNC.length ? `\n• e mais ${itensNC.length - detalhesNC.length} item(ns)` : ''}` : ''}
+Segue o resumo da vistoria técnica concluída pela VL Engenharia:
+
+Checklist: ${chk.numero || chk.id}
+Ativo: ${chk.ativoIdentificacao || ativo?.identificacao || 'Não informado'}
+Serviço: ${chk.tipoLaudoNome || chk.categoriaLaudo}
+Data: ${dataBr}
+Resultado: ${conformes} conforme(s), ${naoConformes} não conforme(s) e ${todosItens.filter((item) => item.status === 'nao_aplicavel').length} não aplicável(is).
+Responsável: ${chk.responsavelNome || 'Não informado'}${chk.responsavelCrea ? ` (${chk.responsavelCrea})` : ''}${detalhesNC.length ? `\n\nPrincipais não conformidades:\n${detalhesNC.join('\n')}${itensNC.length > detalhesNC.length ? `\n- e mais ${itensNC.length - detalhesNC.length} item(ns)` : ''}` : ''}
 
 Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta mensagem.`;
               if (!abrirWhatsApp(telefoneCliente, mensagem)) {

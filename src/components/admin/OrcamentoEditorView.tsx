@@ -564,14 +564,16 @@ export const OrcamentoEditorView: React.FC = () => {
     const itensCalculo = (orcamentoState.itensCalculo || [])
       .filter((item) => item.descricao?.trim())
       .slice(0, 5)
-      .map((item) => `• ${item.descricao}: ${item.quantidade || 1} × ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-    const mensagem = `Olá, ${orcamentoState.representanteNome || orcamentoState.clienteNome || 'tudo bem'}! Segue o resumo da proposta da VL Engenharia:
+      .map((item) => `- ${item.descricao}: ${item.quantidade || 1} x ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+    const mensagem = `Olá, ${orcamentoState.representanteNome || orcamentoState.clienteNome || 'tudo bem'}!
 
-📄 Proposta: ${orcamentoState.codigoProposta || orcamentoState.id}
-🏢 Cliente: ${orcamentoState.clienteNome || cliente?.razaoSocial || 'Não informado'}
-🔧 Serviço: ${orcamentoState.servico || 'Não informado'}
-${orcamentoState.ativoIdentificacao ? `⚙️ Ativo: ${orcamentoState.ativoIdentificacao}\n` : ''}${escopo ? `📌 Escopo: ${escopo}\n` : ''}${orcamentoState.normasTecnicas ? `📚 Normas de referência: ${orcamentoState.normasTecnicas}\n` : ''}${itensCalculo.length ? `💰 Itens principais:\n${itensCalculo.join('\n')}\n` : ''}💵 Valor total: ${valor}
-${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `⏱️ Prazo: ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}\n` : ''}${orcamentoState.validadeDias ? `📆 Validade: ${orcamentoState.validadeDias} dias\n` : ''}${orcamentoState.condicoesPagamento ? `💳 Condições de pagamento: ${orcamentoState.condicoesPagamento}\n` : ''}📌 Status: ${orcamentoState.status}
+Segue o resumo da proposta da VL Engenharia:
+
+Proposta: ${orcamentoState.codigoProposta || orcamentoState.id}
+Cliente: ${orcamentoState.clienteNome || cliente?.razaoSocial || 'Não informado'}
+Serviço: ${orcamentoState.servico || 'Não informado'}
+${orcamentoState.ativoIdentificacao ? `Ativo: ${orcamentoState.ativoIdentificacao}\n` : ''}${escopo ? `Escopo: ${escopo}\n` : ''}${orcamentoState.normasTecnicas ? `Normas de referência: ${orcamentoState.normasTecnicas}\n` : ''}${itensCalculo.length ? `Itens principais:\n${itensCalculo.join('\n')}\n` : ''}Valor total: ${valor}
+${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `Prazo: ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}\n` : ''}${orcamentoState.validadeDias ? `Validade: ${orcamentoState.validadeDias} dias\n` : ''}${orcamentoState.condicoesPagamento ? `Condições de pagamento: ${orcamentoState.condicoesPagamento}\n` : ''}
 
 Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`;
 
