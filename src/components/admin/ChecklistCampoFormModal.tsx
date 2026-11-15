@@ -141,6 +141,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   const [itensExtras, setItensExtras] = useState<ChecklistCampoItem[]>(
     checklistParaEditar?.itensExtras || []
   );
+  const [filtroChecklist, setFiltroChecklist] = useState<'todos' | 'pendentes' | 'nao_conformes'>('todos');
   const [rubricaUrl, setRubricaUrl] = useState<string | undefined>(checklistParaEditar?.rubricaUrl);
   const [responsavelNome, setResponsavelNome] = useState<string>(
     checklistParaEditar?.responsavelNome || currentUser?.nome || 'Eng. Vitor Leonardo Cordeiro Linhares'
@@ -503,6 +504,17 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   const pendentesCount = todosItens.filter((i) => !i.status || i.status === 'pendente').length;
   const percentualConclusao =
     totalItensCount > 0 ? Math.round((respondidosCount / totalItensCount) * 100) : 0;
+  const itensFiltrados = useMemo(() => {
+    const filtrar = (item: ChecklistCampoItem) => {
+      if (filtroChecklist === 'pendentes') return !item.status || item.status === 'pendente';
+      if (filtroChecklist === 'nao_conformes') return item.status === 'nao_conforme';
+      return true;
+    };
+    return {
+      itens: itens.filter(filtrar),
+      extras: itensExtras.filter(filtrar),
+    };
+  }, [itens, itensExtras, filtroChecklist]);
 
   const ncsSemObservacao = useMemo(
     () =>
@@ -680,8 +692,8 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-2 sm:p-5 overflow-y-auto">
-      <div className="bg-[var(--adm-card)] text-[var(--adm-text)] rounded-2xl shadow-2xl max-w-5xl w-full max-h-[96vh] flex flex-col overflow-hidden my-auto border border-[var(--adm-line)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-5 overflow-y-auto">
+      <div className="bg-[var(--adm-card)] text-[var(--adm-text)] rounded-none sm:rounded-2xl shadow-2xl max-w-5xl w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[96vh] flex flex-col overflow-hidden my-auto border border-[var(--adm-line)]">
         {/* Topo do Modal */}
         <div className="px-4 sm:px-6 py-4 border-b border-[var(--adm-line)] bg-[var(--adm-top)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -763,7 +775,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
         )}
 
         {/* Corpo com scroll */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[var(--adm-bg)]">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-6 pb-6 space-y-4 sm:space-y-5 bg-[var(--adm-bg)]">
           {/* 1. Vínculos (B3: Orçamento aprovado, Cliente, Equipamento, Data/Hora, GPS) */}
           <div className="bg-[var(--adm-card)] p-4 sm:p-5 rounded-2xl border border-[var(--adm-line)] space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--adm-line)] pb-2.5">
@@ -905,13 +917,14 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
                 {modelosAtivos.map((mod, idx) => (
                   <button
                     key={mod.id ? `${mod.id}-${idx}` : `mod-${idx}`}
                     type="button"
                     onClick={() => handleTrocarModeloServico(mod.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    aria-pressed={tipoServicoSelecionado === mod.id}
+                    className={`min-h-10 px-3 rounded-xl text-xs font-bold border transition cursor-pointer whitespace-nowrap shrink-0 ${
                       tipoServicoSelecionado === mod.id
                         ? 'bg-[var(--adm-blue,#2160db)] text-white border-[var(--adm-blue,#2160db)]'
                         : 'bg-[var(--adm-bg)] text-[var(--adm-text)] border-[var(--adm-line)] hover:border-[var(--adm-blue-soft)]'
@@ -946,9 +959,34 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
               </div>
             </div>
 
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Filtrar itens do checklist">
+              {[
+                { id: 'todos', label: 'Todos', count: totalItensCount },
+                { id: 'pendentes', label: 'Pendentes', count: pendentesCount },
+                { id: 'nao_conformes', label: 'Não conformes', count: naoConformesCount },
+              ].map((filtro) => {
+                const ativo = filtroChecklist === filtro.id;
+                return (
+                  <button
+                    key={filtro.id}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() => setFiltroChecklist(filtro.id as typeof filtroChecklist)}
+                    className={`min-h-[42px] px-3.5 rounded-xl border text-xs font-bold whitespace-nowrap transition-colors ${
+                      ativo
+                        ? 'bg-[var(--adm-blue,#2160db)] text-white border-[var(--adm-blue,#2160db)]'
+                        : 'bg-[var(--adm-bg)] text-[var(--adm-mut)] border-[var(--adm-line)]'
+                    }`}
+                  >
+                    {filtro.label} <span className="ml-1 opacity-80">{filtro.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Itens */}
-            <div className="space-y-3.5">
-              {itens.map((item, idx) => (
+            <div className="space-y-3">
+              {itensFiltrados.itens.map((item, idx) => (
                 <ChecklistItemRenderer
                   key={item.id ? `${item.id}-${idx}` : `item-${idx}`}
                   item={item}
@@ -966,15 +1004,20 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                   }
                 />
               ))}
+              {itensFiltrados.itens.length === 0 && itensFiltrados.extras.length === 0 && (
+                <div className="px-4 py-8 rounded-xl border border-dashed border-[var(--adm-line)] text-center text-sm text-[var(--adm-mut)]">
+                  Nenhum item neste filtro.
+                </div>
+              )}
             </div>
 
             {/* Itens Extras */}
-            {itensExtras.length > 0 && (
+            {itensFiltrados.extras.length > 0 && (
               <div className="pt-3 border-t border-[var(--adm-line)] space-y-3.5">
                 <h4 className="text-xs font-bold text-[var(--adm-text)] uppercase tracking-wider">
                   Itens Adicionais de Campo ({itensExtras.length})
                 </h4>
-                {itensExtras.map((item, idx) => (
+                {itensFiltrados.extras.map((item, idx) => (
                   <ChecklistItemRenderer
                     key={item.id ? `${item.id}-${idx}` : `extra-${idx}`}
                     item={item}
@@ -1063,8 +1106,8 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
         </div>
 
         {/* Rodapé */}
-        <div className="px-4 sm:px-6 py-4 border-t border-[var(--adm-line)] bg-[var(--adm-card)] flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div className="text-xs">
+        <div className="shrink-0 px-3 sm:px-6 py-3 sm:py-4 border-t border-[var(--adm-line)] bg-[var(--adm-card)] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="hidden lg:block text-xs">
             {podeConcluirVistoria ? (
               <span className="text-emerald-500 font-bold flex items-center gap-1.5">
                 <Check className="w-4 h-4 shrink-0" />
@@ -1080,11 +1123,11 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2.5 text-xs font-semibold text-[var(--adm-mut)] hover:text-[var(--adm-text)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
+              className="hidden sm:block px-3.5 py-2.5 text-xs font-semibold text-[var(--adm-mut)] hover:text-[var(--adm-text)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
             >
               Fechar
             </button>
@@ -1092,7 +1135,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
             <button
               type="button"
               onClick={() => handleSalvar('rascunho')}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-[var(--adm-text)] bg-[var(--adm-bg)] hover:border-[var(--adm-blue-soft)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
+              className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold text-[var(--adm-text)] bg-[var(--adm-bg)] hover:border-[var(--adm-blue-soft)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Salvar rascunho</span>
@@ -1102,7 +1145,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
               type="button"
               onClick={() => handleSalvar('finalizado')}
               disabled={!podeConcluirVistoria}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl border transition ${
+              className={`min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl border transition ${
                 podeConcluirVistoria
                   ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 cursor-pointer'
                   : 'border-[var(--adm-line)] bg-[var(--adm-bg)] text-[var(--adm-mut)] opacity-50 cursor-not-allowed'
@@ -1116,7 +1159,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
               type="button"
               onClick={handleGerarLaudoAPartirDestaVistoria}
               disabled={!podeConcluirVistoria}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-xl transition ${
+              className={`col-span-2 sm:col-span-auto min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition ${
                 podeConcluirVistoria
                   ? 'bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white cursor-pointer'
                   : 'bg-[var(--adm-bg)] text-[var(--adm-mut)] border border-[var(--adm-line)] opacity-50 cursor-not-allowed'

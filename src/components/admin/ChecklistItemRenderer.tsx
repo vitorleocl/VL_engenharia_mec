@@ -58,6 +58,7 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
         item.tipoResposta === 'VALOR'
     )
   );
+  const [observacaoAberta, setObservacaoAberta] = useState(Boolean(item.observacao));
   const [comprimindoFoto, setComprimindoFoto] = useState(false);
 
   const tipo: TipoRespostaChecklist = item.tipoResposta || 'conformidade';
@@ -127,9 +128,9 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
   return (
     <div
       id={`chk-item-${item.id}`}
-      className={`p-4 sm:p-5 rounded-2xl border-2 transition-all ${
+      className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border transition-all ${
         obsPendenteNC
-          ? 'bg-rose-500/10 border-rose-500/80 ring-2 ring-rose-500/25'
+          ? 'bg-rose-500/10 border-rose-500/70'
           : isNaoConforme
           ? 'bg-rose-500/5 border-rose-500/50'
           : isConforme
@@ -166,7 +167,7 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
               )}
 
               {item.secaoLaudo && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-[var(--adm-bg)] text-[var(--adm-mut)] border border-[var(--adm-line)]">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-[var(--adm-bg)] text-[var(--adm-mut)] border border-[var(--adm-line)]">
                   <Layers className="w-3 h-3 opacity-75" />
                   Laudo: {item.secaoLaudo}
                 </span>
@@ -210,12 +211,12 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
         </div>
 
         {/* B1: 3 BOTÕES GRANDES DE STATUS (ALTURA >= 48px, ÍCONE + TEXTO, SEM ESTADO INICIAL MARCADO) */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3 pt-1">
           <button
             type="button"
             onClick={() => onStatusChange('conforme')}
             aria-pressed={isConforme}
-            className={`min-h-[48px] py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-[52px] py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
               isConforme
                 ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/60'
                 : 'bg-[var(--adm-bg)] hover:border-emerald-500/60 text-[var(--adm-text)] border border-[var(--adm-line)]'
@@ -229,21 +230,21 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
             type="button"
             onClick={() => onStatusChange('nao_conforme')}
             aria-pressed={isNaoConforme}
-            className={`min-h-[48px] py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-[52px] py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
               isNaoConforme
                 ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-400/60'
                 : 'bg-[var(--adm-bg)] hover:border-rose-500/60 text-[var(--adm-text)] border border-[var(--adm-line)]'
             }`}
           >
             <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${isNaoConforme ? 'text-white' : 'text-rose-500'}`} />
-            <span>Não conforme</span>
+            <span><span className="sm:hidden">NC</span><span className="hidden sm:inline">Não conforme</span></span>
           </button>
 
           <button
             type="button"
             onClick={() => onStatusChange('nao_aplicavel')}
             aria-pressed={isNaoAplicavel}
-            className={`min-h-[48px] py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-[52px] py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
               isNaoAplicavel
                 ? 'bg-slate-600 text-white shadow-sm ring-2 ring-slate-400/60'
                 : 'bg-[var(--adm-bg)] hover:border-slate-400 text-[var(--adm-text)] border border-[var(--adm-line)]'
@@ -409,49 +410,76 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
         </div>
       )}
 
-      {/* B2: OBSERVAÇÃO TÉCNICA (OBRIGATÓRIA QUANDO NÃO CONFORME) */}
-      <div className="mt-3.5 space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <label className="font-semibold text-[var(--adm-text)] flex items-center gap-1.5">
-            <span>Observação</span>
-            {isNaoConforme && (
-              <span className="text-rose-500 font-bold text-[11px]">* Obrigatória (Não conforme)</span>
+      {/* Observação opcional fica recolhida; NC abre o campo e mantém validação obrigatória. */}
+      {isNaoConforme || observacaoAberta ? (
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <label className="font-semibold text-[var(--adm-text)] flex items-center gap-1.5">
+              <span>Observação</span>
+              {isNaoConforme && <span className="text-rose-500 font-bold text-[11px]">* obrigatória</span>}
+            </label>
+            {!isNaoConforme && (
+              <button
+                type="button"
+                onClick={() => setObservacaoAberta(false)}
+                className="min-h-9 px-2 text-[11px] text-[var(--adm-mut)] hover:text-[var(--adm-text)] font-semibold"
+              >
+                Recolher
+              </button>
             )}
-          </label>
+          </div>
+          <input
+            type="text"
+            placeholder={
+              isNaoConforme
+                ? 'Descreva a não conformidade (obrigatório)...'
+                : 'Observação técnica (opcional)...'
+            }
+            value={item.observacao || ''}
+            onChange={(e) => onObservacaoChange(e.target.value)}
+            className={`w-full min-h-11 text-sm rounded-xl px-3 py-2.5 text-[var(--adm-text)] placeholder:text-[var(--adm-mut)] focus:outline-none ${
+              obsPendenteNC
+                ? 'bg-rose-500/10 border-2 border-rose-500'
+                : 'bg-[var(--adm-bg)] border border-[var(--adm-line)] focus:border-[var(--adm-blue-soft)]'
+            }`}
+          />
+          {obsPendenteNC && (
+            <p className="text-[11px] font-semibold text-rose-500 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>Preencha a observação para concluir a vistoria.</span>
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setObservacaoAberta(true)}
+            className="min-h-10 px-1 text-xs font-semibold text-[var(--adm-mut)] hover:text-[var(--adm-text)]"
+          >
+            + Observação
+          </button>
           {!mostrarMedicaoOpcional && !isMedida && (
             <button
               type="button"
               onClick={() => setMostrarMedicaoOpcional(true)}
-              className="text-[11px] text-[var(--adm-blue-soft,#6ea1ff)] hover:underline font-semibold cursor-pointer"
+              className="min-h-10 px-1 text-xs font-semibold text-[var(--adm-blue-soft,#6ea1ff)] hover:underline"
             >
               + Medição
             </button>
           )}
         </div>
+      )}
 
-        <input
-          type="text"
-          placeholder={
-            isNaoConforme
-              ? 'Descreva a não conformidade constatada em campo (obrigatório)...'
-              : 'Observação técnica ou condição operacional (opcional)...'
-          }
-          value={item.observacao || ''}
-          onChange={(e) => onObservacaoChange(e.target.value)}
-          className={`w-full text-xs rounded-xl px-3 py-2.5 text-[var(--adm-text)] placeholder:text-[var(--adm-mut)] focus:outline-none ${
-            obsPendenteNC
-              ? 'bg-rose-500/10 border-2 border-rose-500'
-              : 'bg-[var(--adm-bg)] border border-[var(--adm-line)] focus:border-[var(--adm-blue-soft)]'
-          }`}
-        />
-
-        {obsPendenteNC && (
-          <p className="text-[11px] font-semibold text-rose-500 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>Preencha a observação deste item Não conforme para concluir a vistoria.</span>
-          </p>
-        )}
-      </div>
+      {!isNaoConforme && observacaoAberta && !mostrarMedicaoOpcional && !isMedida && (
+        <button
+          type="button"
+          onClick={() => setMostrarMedicaoOpcional(true)}
+          className="min-h-9 text-[11px] text-[var(--adm-blue-soft,#6ea1ff)] hover:underline font-semibold"
+        >
+          + Adicionar medição
+        </button>
+      )}
 
       {/* B2: MÚLTIPLAS FOTOS COM CÂMERA DO CELULAR E LEGENDA CURTA */}
       <div className="mt-3.5 pt-3 border-t border-[var(--adm-line)] space-y-2.5">
@@ -467,10 +495,10 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
               value={legendaTemporaria}
               onChange={(e) => setLegendaTemporaria(e.target.value)}
               placeholder="Legenda curta (opcional)..."
-              className="px-2.5 py-2 text-xs rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] text-[var(--adm-text)] placeholder:text-[var(--adm-mut)] sm:w-48 focus:outline-none focus:border-[var(--adm-blue-soft)]"
+              className="hidden sm:block px-2.5 py-2 text-xs rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] text-[var(--adm-text)] placeholder:text-[var(--adm-mut)] sm:w-48 focus:outline-none focus:border-[var(--adm-blue-soft)]"
             />
 
-            <label className="min-h-[42px] px-3.5 py-2 rounded-xl bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition">
+            <label className="min-h-[46px] px-3.5 py-2 rounded-xl bg-[var(--adm-blue,#2160db)] hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition">
               <Camera className="w-4 h-4" />
               <span>{comprimindoFoto ? 'Comprimindo...' : 'Foto / Câmera'}</span>
               <input
