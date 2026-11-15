@@ -322,14 +322,19 @@ export const ChecklistCampoView: React.FC = () => {
               );
               const mensagem = `Olá, ${nomeCliente}!
 
-Segue o resumo da vistoria técnica concluída pela VL Engenharia:
+*VL ENGENHARIA*
+*RESUMO DA VISTORIA TÉCNICA*
+------------------------------
+*Checklist:* ${chk.numero || chk.id}
+*Serviço:* ${chk.tipoLaudoNome || chk.categoriaLaudo}
+*Ativo inspecionado:* ${chk.ativoIdentificacao || ativo?.identificacao || 'Não informado'}
+*Data da vistoria:* ${dataBr}
+*Responsável técnico:* ${chk.responsavelNome || 'Não informado'}${chk.responsavelCrea ? ` (${chk.responsavelCrea})` : ''}
 
-Checklist: ${chk.numero || chk.id}
-Ativo: ${chk.ativoIdentificacao || ativo?.identificacao || 'Não informado'}
-Serviço: ${chk.tipoLaudoNome || chk.categoriaLaudo}
-Data: ${dataBr}
-Resultado: ${conformes} conforme(s), ${naoConformes} não conforme(s) e ${todosItens.filter((item) => item.status === 'nao_aplicavel').length} não aplicável(is).
-Responsável: ${chk.responsavelNome || 'Não informado'}${chk.responsavelCrea ? ` (${chk.responsavelCrea})` : ''}${detalhesNC.length ? `\n\nPrincipais não conformidades:\n${detalhesNC.join('\n')}${itensNC.length > detalhesNC.length ? `\n- e mais ${itensNC.length - detalhesNC.length} item(ns)` : ''}` : ''}
+*RESULTADO*
+*Conformes:* ${conformes}
+*Não conformes:* ${naoConformes}
+*Não aplicáveis:* ${todosItens.filter((item) => item.status === 'nao_aplicavel').length}${detalhesNC.length ? `\n\n*PRINCIPAIS NÃO CONFORMIDADES*\n${detalhesNC.join('\n')}${itensNC.length > detalhesNC.length ? `\n- E mais ${itensNC.length - detalhesNC.length} item(ns)` : ''}` : ''}
 
 Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta mensagem.`;
               if (!abrirWhatsApp(telefoneCliente, mensagem)) {

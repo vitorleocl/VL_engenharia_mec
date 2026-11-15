@@ -567,13 +567,16 @@ export const OrcamentoEditorView: React.FC = () => {
       .map((item) => `- ${item.descricao}: ${item.quantidade || 1} x ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
     const mensagem = `Olá, ${orcamentoState.representanteNome || orcamentoState.clienteNome || 'tudo bem'}!
 
-Segue o resumo da proposta da VL Engenharia:
+*VL ENGENHARIA*
+*RESUMO DA PROPOSTA*
+------------------------------
+*Proposta:* ${orcamentoState.codigoProposta || orcamentoState.id}
+*Cliente:* ${orcamentoState.clienteNome || cliente?.razaoSocial || 'Não informado'}
+*Serviço:* ${orcamentoState.servico || 'Não informado'}${orcamentoState.ativoIdentificacao ? `\n*Ativo:* ${orcamentoState.ativoIdentificacao}` : ''}
+${escopo ? `\n*ESCOPO*\n${escopo}` : ''}${orcamentoState.normasTecnicas ? `\n\n*Normas de referência:* ${orcamentoState.normasTecnicas}` : ''}${itensCalculo.length ? `\n\n*ITENS PRINCIPAIS*\n${itensCalculo.join('\n')}` : ''}
 
-Proposta: ${orcamentoState.codigoProposta || orcamentoState.id}
-Cliente: ${orcamentoState.clienteNome || cliente?.razaoSocial || 'Não informado'}
-Serviço: ${orcamentoState.servico || 'Não informado'}
-${orcamentoState.ativoIdentificacao ? `Ativo: ${orcamentoState.ativoIdentificacao}\n` : ''}${escopo ? `Escopo: ${escopo}\n` : ''}${orcamentoState.normasTecnicas ? `Normas de referência: ${orcamentoState.normasTecnicas}\n` : ''}${itensCalculo.length ? `Itens principais:\n${itensCalculo.join('\n')}\n` : ''}Valor total: ${valor}
-${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `Prazo: ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}\n` : ''}${orcamentoState.validadeDias ? `Validade: ${orcamentoState.validadeDias} dias\n` : ''}${orcamentoState.condicoesPagamento ? `Condições de pagamento: ${orcamentoState.condicoesPagamento}\n` : ''}
+*INVESTIMENTO*
+*Valor total:* ${valor}${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `\n*Prazo:* ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}` : ''}${orcamentoState.validadeDias ? `\n*Validade da proposta:* ${orcamentoState.validadeDias} dias` : ''}${orcamentoState.condicoesPagamento ? `\n*Condições de pagamento:* ${orcamentoState.condicoesPagamento}` : ''}
 
 Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`;
 

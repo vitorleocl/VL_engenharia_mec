@@ -76,17 +76,20 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const texto = `*VL ENGENHARIA - CHECKLIST DE CAMPO PRELIMINAR*
+    const texto = `*VL ENGENHARIA*
+*RESUMO DO CHECKLIST DE CAMPO*
+------------------------------
 *Registro:* ${checklist.numero}
 *Cliente:* ${checklist.clienteNome || 'Cliente'}
-*Ativo:* ${checklist.ativoIdentificacao || 'Ativo'}
-*Tipo:* ${checklist.tipoLaudoNome || checklist.tipoLaudoId}
-*Data:* ${new Date(checklist.dataPreenchimento).toLocaleDateString('pt-BR')}
-*Resumo técnico:*
-Conformes: ${conformes}
-Não conformes: ${naoConformes}
-Não aplicáveis: ${naoAplicaveis}
-*Responsável:* ${checklist.responsavelNome || 'Eng. Vitor Leonardo'} (${checklist.responsavelCrea || 'CREA-PE'})
+*Ativo inspecionado:* ${checklist.ativoIdentificacao || 'Ativo'}
+*Serviço:* ${checklist.tipoLaudoNome || checklist.tipoLaudoId}
+*Data da vistoria:* ${new Date(checklist.dataPreenchimento).toLocaleDateString('pt-BR')}
+*Responsável técnico:* ${checklist.responsavelNome || 'Eng. Vitor Leonardo'} (${checklist.responsavelCrea || 'CREA-PE'})
+
+*RESULTADO*
+*Conformes:* ${conformes}
+*Não conformes:* ${naoConformes}
+*Não aplicáveis:* ${naoAplicaveis}
 
 _Checklist preliminar preenchido e assinado in loco. Relatório técnico completo em elaboração._`;
 
