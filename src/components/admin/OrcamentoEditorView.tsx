@@ -1408,7 +1408,7 @@ export const OrcamentoEditorView: React.FC = () => {
       />
 
       {/* Top Banner & Action Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-gradient-to-br from-white via-white to-blue-50/60 rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm ring-1 ring-slate-900/[0.03] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         {/* Title & Metadata */}
         <div className="space-y-2 min-w-0">
@@ -1598,7 +1598,7 @@ export const OrcamentoEditorView: React.FC = () => {
             type="button"
             onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Salvo manualmente pelo usuário')}
             disabled={statusSalvo === 'salvando'}
-            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            className="hidden lg:flex px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             title="Salvar todas as alterações da proposta agora"
           >
             <Save className="w-3.5 h-3.5" />
@@ -1606,7 +1606,7 @@ export const OrcamentoEditorView: React.FC = () => {
           </button>
 
           {/* Autosave Status Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
             {statusSalvo === 'salvando' ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
@@ -1641,7 +1641,7 @@ export const OrcamentoEditorView: React.FC = () => {
               salvarImediato(orcamentoState, 'Salvo antes da exportação em PDF');
               navigate(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=pdf`);
             }}
-            className="px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="hidden lg:flex px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-black text-xs items-center gap-2 shadow-sm transition-all cursor-pointer"
             title="Gerar e baixar PDF A4 em 1 clique"
           >
             <Download className="w-4 h-4 text-[#D4AF37]" />
