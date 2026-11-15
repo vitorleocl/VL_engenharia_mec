@@ -57,6 +57,14 @@ function inferirModeloIdPorChecklist(
   if (ref.includes('nr13') || ref.includes('nr-13') || ref.includes('vaso') || ref.includes('caldeira')) return 'nr13';
   if (ref.includes('pmoc') || ref.includes('clima') || ref.includes('refrig')) return 'pmoc';
   if (ref.includes('fft') || ref.includes('vibra')) return 'fft';
+  if (ref.includes('linha-amarela') || ref.includes('escavadeira') || ref.includes('pá-carregadeira')) return 'linha-amarela';
+  if (ref.includes('munck') || ref.includes('guindaste') || ref.includes('içamento')) return 'munck-guindaste';
+  if (ref.includes('caldeira')) return 'caldeiras';
+  if (ref.includes('vaso') || ref.includes('compressor')) return 'vasos-compressores';
+  if (ref.includes('tubulação') || ref.includes('tanque')) return 'tubulacoes-tanques';
+  if (ref.includes('gás') || ref.includes('glp') || ref.includes('gn')) return 'redes-gas';
+  if (ref.includes('incêndio') || ref.includes('hidrante') || ref.includes('sprinkler')) return 'incendio-hidromecanico';
+  if (ref.includes('pcm') || ref.includes('utilidade') || ref.includes('gerador')) return 'pcm-utilidades';
   if (ref.includes('nr11') || ref.includes('nr-11') || ref.includes('munck') || ref.includes('guindaste')) return 'nr11';
   return modelos[0]?.id || 'nr11';
 }
@@ -73,6 +81,17 @@ function construirItensDeModelo(modelo: ChecklistModeloServico | undefined): Che
     observacao: '',
     tipoResposta: it.tipoResposta || 'conformidade',
     unidade: it.unidade,
+    criterioInspecao: it.texto,
+    criticidade: it.criticidade || 'media',
+    impeditivo: it.impeditivo || false,
+    tipoEvidencia: ({
+      visual: 'inspecao_visual',
+      dimensional: 'medicao',
+      end: 'ensaio',
+      funcional: 'teste_funcional',
+      documental: 'documento',
+      instrumental: 'medicao',
+    } as const)[it.metodoVerificacao || 'visual'],
   }));
 }
 

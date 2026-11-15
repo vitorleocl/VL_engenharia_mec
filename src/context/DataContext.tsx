@@ -297,6 +297,14 @@ function normalizarChecklistsCampo(lista: ChecklistCampo[]): ChecklistCampo[] {
   return Array.from(porId.values());
 }
 
+function incluirModelosPadraoAusentes(salvos: ChecklistModeloServico[]): ChecklistModeloServico[] {
+  const existentes = new Set((Array.isArray(salvos) ? salvos : []).map((modelo) => modelo.id));
+  return [
+    ...(Array.isArray(salvos) ? salvos : []),
+    ...CHECKLIST_MODELOS_PADRAO.filter((modelo) => !existentes.has(modelo.id)),
+  ];
+}
+
 function normalizarNumeroLaudoPadrao(numero?: string): string {
   if (!numero) return '';
   const match = numero.trim().match(/^LAU-(\d{4})\/(\d+)$/i);
@@ -709,9 +717,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (limpos.length !== loaded.length) saveStorage('vl_checklists_campo', limpos);
     return limpos;
   });
-  const [checklistModelos, setChecklistModelos] = useState<ChecklistModeloServico[]>(() =>
-    loadStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO)
-  );
+  const [checklistModelos, setChecklistModelos] = useState<ChecklistModeloServico[]>(() => {
+    const modelos = incluirModelosPadraoAusentes(loadStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO));
+    saveStorage('vl_checklist_modelos', modelos);
+    return modelos;
+  });
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [syncConflicts, setSyncConflicts] = useState<OfflineSyncConflict[]>([]);
   const [sincronizandoOffline, setSincronizandoOffline] = useState<boolean>(false);

@@ -1,4 +1,5 @@
 import { ChecklistModeloServico } from '../types';
+import { CHECKLIST_MODELOS_COMPLEMENTARES } from './checklistModelosComplementares';
 
 export const CHECKLIST_MODELOS_PADRAO: ChecklistModeloServico[] = [
   {
@@ -325,4 +326,5 @@ export const CHECKLIST_MODELOS_PADRAO: ChecklistModeloServico[] = [
       },
     ],
   },
+  ...CHECKLIST_MODELOS_COMPLEMENTARES,
 ];

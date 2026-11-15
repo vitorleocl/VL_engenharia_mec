@@ -359,6 +359,7 @@ export interface TipoLaudoItemChecklist {
   criterioReferencia?: string;
   obrigatorioFoto?: boolean;
   exigeFotoSeNaoConforme?: boolean;
+  impeditivo?: boolean;
   valorResposta?: string;
 }
 
@@ -738,6 +739,9 @@ export interface ChecklistModeloItemDef {
   secaoLaudo: string;
   tipoResposta?: TipoRespostaChecklist;
   unidade?: string;
+  metodoVerificacao?: 'visual' | 'dimensional' | 'end' | 'funcional' | 'documental' | 'instrumental';
+  criticidade?: ChecklistCriticidade;
+  impeditivo?: boolean;
 }
 
 export interface ChecklistModeloServico {
