@@ -17,6 +17,144 @@ export interface ServicoItem {
 
 export const SERVICOS_LISTA: ServicoItem[] = [
   {
+    id: 'combate-incendio-cbm',
+    nome: 'Sistemas de Combate a Incêndio e CBM',
+    norma: 'CBMPE · NBR 13714 · NBR 12693 · NBR 10897',
+    descricao: 'Inspeção, avaliação e adequação técnica de sistemas de prevenção e combate a incêndio para vistorias do Corpo de Bombeiros.',
+    subtipos: [
+      {
+        id: 'incendio-inspecao-sistemas',
+        nome: 'Inspeção de Sistemas de Combate a Incêndio',
+        normaRef: 'CBMPE · NBR 13714 · NBR 12693 · NBR 10897',
+        detalhe: 'Verificação de extintores, hidrantes, mangotinhos, bombas e sistemas de sprinklers conforme projeto e exigências aplicáveis.',
+        checklistSugerido: [
+          'Conferência de extintores, localização, acesso, sinalização e validade',
+          'Inspeção de hidrantes, mangueiras, esguichos, válvulas e abrigos',
+          'Teste funcional de bombas, pressostatos e condições de alimentação',
+          'Verificação visual de tubulações, suportes, válvulas e sprinklers',
+          'Comparação dos sistemas instalados com o projeto aprovado e exigências do CBM'
+        ],
+        secoesSugeridas: [
+          '1. Identificação da Edificação e Documentos de Referência',
+          '2. Inspeção dos Sistemas de Extintores, Hidrantes e Sprinklers',
+          '3. Testes Funcionais e Registro de Não Conformidades',
+          '4. Recomendações para Regularização junto ao Corpo de Bombeiros'
+        ]
+      },
+      {
+        id: 'incendio-adequacao-avcb',
+        nome: 'Diagnóstico de Adequação para AVCB / CLCB',
+        normaRef: 'CBMPE · Normas Técnicas do CBM · ABNT aplicáveis',
+        detalhe: 'Levantamento de pendências documentais e de campo para preparação da edificação à vistoria do Corpo de Bombeiros.',
+        checklistSugerido: [
+          'Análise do projeto de incêndio, licença vigente e notificações recebidas',
+          'Verificação de rotas de fuga, saídas, iluminação e sinalização de emergência',
+          'Inspeção dos equipamentos e sistemas previstos no projeto aprovado',
+          'Registro fotográfico e classificação das pendências por criticidade',
+          'Elaboração de plano de ação para atendimento das exigências do CBM'
+        ],
+        secoesSugeridas: [
+          '1. Documentos e Exigências Aplicáveis à Edificação',
+          '2. Diagnóstico de Campo e Evidências Fotográficas',
+          '3. Matriz de Não Conformidades e Prioridades',
+          '4. Plano de Adequação para Vistoria CBM / AVCB'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'transporte-vertical-elevadores',
+    nome: 'Transporte Vertical e Elevadores',
+    norma: 'ABNT NBR 16858 · ABNT NBR 16083 · Legislação local',
+    descricao: 'Inspeção técnica e avaliação de segurança de elevadores e equipamentos de transporte vertical.',
+    subtipos: [
+      {
+        id: 'elevador-inspecao-seguranca',
+        nome: 'Inspeção de Segurança e Condição Operacional de Elevadores',
+        normaRef: 'ABNT NBR 16858 · ABNT NBR 16083 · Legislação municipal aplicável',
+        detalhe: 'Avaliação técnica de elevadores de passageiros e carga, casa de máquinas, poço, cabina, portas e dispositivos de segurança.',
+        checklistSugerido: [
+          'Identificação do equipamento, capacidade, velocidade e histórico de manutenção',
+          'Inspeção de cabina, portas, nivelamento, botoeiras e comunicação de emergência',
+          'Verificação de freios, limitador de velocidade, para-choques e intertravamentos',
+          'Avaliação de casa de máquinas, poço, iluminação e acessos seguros',
+          'Conferência de registros de manutenção, livro de ocorrências e documentação técnica'
+        ],
+        secoesSugeridas: [
+          '1. Identificação e Características do Elevador',
+          '2. Inspeção de Cabina, Portas, Poço e Casa de Máquinas',
+          '3. Verificação de Dispositivos de Segurança e Testes Funcionais',
+          '4. Parecer Técnico e Plano de Adequação'
+        ]
+      },
+      {
+        id: 'elevador-auditoria-manutencao',
+        nome: 'Auditoria de Manutenção e Conformidade de Elevadores',
+        normaRef: 'ABNT NBR 16083 · ABNT NBR 16858',
+        detalhe: 'Análise de registros, plano de manutenção e evidências dos serviços executados pela empresa conservadora.',
+        checklistSugerido: [
+          'Análise do contrato e do escopo de manutenção preventiva',
+          'Verificação de registros de atendimento, falhas e resgate de passageiros',
+          'Conferência de testes periódicos dos dispositivos de segurança',
+          'Avaliação de pendências recorrentes e recomendações técnicas',
+          'Verificação da documentação e identificação dos responsáveis técnicos'
+        ],
+        secoesSugeridas: [
+          '1. Documentos e Histórico de Manutenção',
+          '2. Avaliação das Rotinas Preventivas e Corretivas',
+          '3. Pendências Técnicas e Itens de Segurança',
+          '4. Conclusão e Recomendações'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'saneamento-bombeamento',
+    nome: 'Saneamento e Sistemas de Bombeamento',
+    norma: 'ABNT NBR 12214 · ABNT NBR 12208 · NR-12',
+    descricao: 'Inspeção mecânica e avaliação operacional de conjuntos motobomba, estações elevatórias e sistemas de saneamento.',
+    subtipos: [
+      {
+        id: 'bombeamento-inspecao',
+        nome: 'Inspeção de Conjuntos Motobomba e Estações Elevatórias',
+        normaRef: 'ABNT NBR 12214 · ABNT NBR 12208 · NR-12',
+        detalhe: 'Avaliação de bombas, motores, acoplamentos, bases, tubulações, válvulas e condições de operação de estações elevatórias.',
+        checklistSugerido: [
+          'Identificação da bomba, motor, vazão, altura manométrica e regime de operação',
+          'Inspeção de base, alinhamento, acoplamento, mancais, vibração e ruído',
+          'Verificação de válvulas, retenção, juntas, suportes e vazamentos',
+          'Avaliação de painéis, proteções mecânicas e acesso seguro para manutenção',
+          'Registro das condições operacionais e recomendações de manutenção'
+        ],
+        secoesSugeridas: [
+          '1. Identificação do Sistema e Dados de Operação',
+          '2. Inspeção Mecânica do Conjunto Motobomba',
+          '3. Avaliação de Tubulações, Válvulas e Segurança',
+          '4. Parecer Técnico e Plano de Manutenção'
+        ]
+      },
+      {
+        id: 'bombeamento-desempenho',
+        nome: 'Avaliação de Desempenho e Confiabilidade de Sistemas de Bombeamento',
+        normaRef: 'ABNT NBR 12214 · ABNT NBR 12208',
+        detalhe: 'Análise das condições de operação, manutenção e desempenho do sistema para identificar perdas, falhas recorrentes e oportunidades de melhoria.',
+        checklistSugerido: [
+          'Levantamento de vazão, pressão, corrente e condições de operação disponíveis',
+          'Análise de histórico de falhas, intervenções e consumo de peças',
+          'Verificação de cavitação, recirculação, vibração e aquecimento anormal',
+          'Avaliação de redundância operacional e disponibilidade dos equipamentos',
+          'Recomendações de manutenção, operação ou adequação do conjunto'
+        ],
+        secoesSugeridas: [
+          '1. Dados do Sistema e Condições Operacionais',
+          '2. Histórico de Falhas e Inspeção dos Equipamentos',
+          '3. Análise de Desempenho e Confiabilidade',
+          '4. Recomendações de Melhorias e Manutenção'
+        ]
+      }
+    ]
+  },
+  {
     id: 'nr12-projetos',
     nome: 'Adequação à NR-12 e projetos mecânicos',
     norma: 'NR-12 · NBR ISO 12100',
