@@ -47,6 +47,7 @@ interface TipTapEditorProps {
   onChange?: (html: string, json: any) => void;
   placeholder?: string;
   readOnly?: boolean;
+  mobileToolbarScroll?: boolean;
 }
 
 const COLOR_OPTIONS = [
@@ -73,6 +74,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   onChange,
   placeholder = 'Digite o parecer ou especificações técnicas aqui...',
   readOnly = false,
+  mobileToolbarScroll = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -194,7 +196,15 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
 
       {/* WYSIWYG Toolbar */}
       {!readOnly && (
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+        <div
+          role="toolbar"
+          aria-label="Ferramentas de formatação"
+          className={`flex ${
+            mobileToolbarScroll
+              ? 'flex-nowrap overflow-x-auto overscroll-x-contain sm:flex-wrap [&>div]:shrink-0 [&>div>button]:min-w-10 [&>div>button]:min-h-10'
+              : 'flex-wrap'
+          } items-center gap-1 p-2 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`}
+        >
           
           {/* Text Style Group */}
           <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">

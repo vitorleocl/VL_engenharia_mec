@@ -1382,7 +1382,7 @@ export const OrcamentoEditorView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 pb-12">
+    <div className="space-y-4 pb-24 lg:pb-12">
       
       {/* Hidden File Inputs */}
       <input 
@@ -1411,7 +1411,7 @@ export const OrcamentoEditorView: React.FC = () => {
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         {/* Title & Metadata */}
-        <div className="space-y-1">
+        <div className="space-y-2 min-w-0">
           <div className="flex items-center gap-2">
             <Link
               to="/admin/orcamentos"
@@ -1460,11 +1460,11 @@ export const OrcamentoEditorView: React.FC = () => {
             </div>
           </div>
 
-          <h1 className="text-lg sm:text-xl font-extrabold text-[#0B1E3D] flex items-center gap-2">
+          <h1 className="text-base sm:text-xl font-extrabold text-[#0B1E3D] flex items-center gap-2">
             <span>Editor Rico da Proposta Técnico-Comercial</span>
           </h1>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-slate-600">
             <span>Cliente: <strong className="text-slate-900">{orcamentoState.clienteNome || 'Cliente Corporativo'}</strong></span>
             <span>•</span>
             {editandoTituloTopo ? (
@@ -1486,7 +1486,7 @@ export const OrcamentoEditorView: React.FC = () => {
                     }
                   }}
                   autoFocus
-                  className="px-2.5 py-1 rounded-lg border border-[#1565D8] bg-white text-slate-900 font-bold text-xs min-w-[240px] max-w-md focus:outline-none"
+                  className="px-2.5 py-2 rounded-lg border border-[#1565D8] bg-white text-slate-900 font-bold text-xs w-full sm:w-auto sm:min-w-[240px] sm:max-w-md focus:outline-none"
                 />
                 <button
                   type="button"
@@ -1567,7 +1567,7 @@ export const OrcamentoEditorView: React.FC = () => {
         </div>
 
         {/* Status indicator & Right Action Buttons (Agrupados conforme A9) */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:max-w-[440px] lg:justify-end">
           
           {/* Alternar modo de visualização: Folha clara (como no PDF) vs Tema escuro (A6) */}
           <button
@@ -1782,7 +1782,7 @@ export const OrcamentoEditorView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
         {/* Sidebar: 13 Pages Navigator (4 cols on lg) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3 sticky top-4">
+        <div className="lg:col-span-4 bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs space-y-3 lg:sticky lg:top-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="font-extrabold text-sm text-[#0B1E3D] flex items-center gap-1.5">
@@ -1799,7 +1799,7 @@ export const OrcamentoEditorView: React.FC = () => {
           </div>
 
           {/* Sections List */}
-          <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 snap-x snap-mandatory lg:block lg:space-y-1.5 lg:max-h-[70vh] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-1">
             {orcamentoState.secoes?.map((secao) => {
               const isActive = secao.id === secaoAtivaId;
               const hasCover = secao.id === 'capa' && Boolean(orcamentoState.imagemCapaUrl);
@@ -1809,7 +1809,7 @@ export const OrcamentoEditorView: React.FC = () => {
                 <div
                   key={secao.id}
                   onClick={() => setSecaoAtivaId(secao.id)}
-                  className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-start justify-between gap-2 cursor-pointer ${
+                  className={`w-[78vw] max-w-[280px] min-h-[64px] shrink-0 snap-start text-left p-2.5 rounded-xl border transition-all flex items-start justify-between gap-2 cursor-pointer lg:w-full lg:max-w-none lg:min-h-0 ${
                     isActive
                       ? isOculta
                         ? 'bg-amber-50/70 border-amber-400 shadow-xs ring-1 ring-amber-400/50'
@@ -1839,7 +1839,7 @@ export const OrcamentoEditorView: React.FC = () => {
                         )}
                       </div>
                       {secao.subtitulo && (
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                        <p className="hidden sm:block text-[10px] text-slate-400 truncate mt-0.5">
                           {secao.subtitulo}
                         </p>
                       )}
@@ -1880,10 +1880,10 @@ export const OrcamentoEditorView: React.FC = () => {
         </div>
 
         {/* Main Editor Section (8 cols on lg) */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="min-w-0 lg:col-span-8 space-y-4">
           
           {/* Section Header Card */}
-          <div className={`rounded-2xl p-5 border shadow-xs space-y-4 transition-colors ${
+          <div className={`rounded-2xl p-3 sm:p-5 border shadow-xs space-y-4 transition-colors ${
             modoVisualizacao === 'folha_clara' 
               ? 'bg-[#FCFDFF] border-slate-300 text-slate-900 shadow-sm ring-1 ring-slate-900/5' 
               : 'bg-white border-slate-200 text-slate-900'
@@ -1898,7 +1898,7 @@ export const OrcamentoEditorView: React.FC = () => {
                   <span className="text-[10px] font-mono uppercase font-bold text-[#1565D8] tracking-wider">
                     SEÇÃO {secaoAtiva?.numero} DE {totalSecoes} • PROPOSTA COMERCIAL
                   </span>
-                  <h2 className="text-base sm:text-lg font-black text-[#0B1E3D]">
+                  <h2 className="text-sm sm:text-lg font-black text-[#0B1E3D]">
                     {secaoAtiva?.titulo}
                   </h2>
                 </div>
@@ -2769,7 +2769,7 @@ export const OrcamentoEditorView: React.FC = () => {
 
             {/* Rich Text Editor Component (WYSIWYG TipTap) */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
                 <span className="font-bold text-slate-700">Conteúdo Rico da Seção:</span>
                 <span className="text-[11px] text-slate-400">
                   Formatação completa, criação de tabelas, cores e imagens habilitadas
@@ -2781,6 +2781,7 @@ export const OrcamentoEditorView: React.FC = () => {
                   contentHtml={secaoAtiva?.conteudoHtml || ''}
                   onChange={(novoHtml) => handleConteudoSecaoChange(novoHtml)}
                   placeholder={`Edite o conteúdo técnico da ${secaoAtiva?.titulo}...`}
+                  mobileToolbarScroll
                 />
               </div>
             </div>
@@ -2807,6 +2808,47 @@ export const OrcamentoEditorView: React.FC = () => {
 
         </div>
 
+      </div>
+
+      {/* Ações primárias fixas no mobile para salvar e revisar sem voltar ao topo */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-xl items-center gap-2">
+          <button
+            type="button"
+            onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Salvo manualmente pelo usuário')}
+            disabled={statusSalvo === 'salvando'}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-800 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {statusSalvo === 'salvando' ? 'Salvando' : 'Salvar'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalPdfAberto(true)}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+          >
+            <Eye className="h-4 w-4 text-blue-600" />
+            Prévia
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const valorTotal = orcamentoState.valor ?? 0;
+              if (valorTotal <= 0) {
+                setErroAcao('Exportação bloqueada: O valor total da proposta está zerado (R$ 0,00). Preencha o valor unitário no Memorial de Cálculo da Etapa 3 antes de baixar o PDF.');
+                setSecaoAtivaId('etapa3');
+                return;
+              }
+              setErroAcao(null);
+              salvarImediato(orcamentoState, 'Salvo antes da exportação em PDF');
+              navigate(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=pdf`);
+            }}
+            className="flex min-h-11 flex-[1.2] items-center justify-center gap-1.5 rounded-xl bg-[#0B1E3D] px-3 text-xs font-black text-white"
+          >
+            <Download className="h-4 w-4 text-[#D4AF37]" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Drawer: Revisions & History */}
