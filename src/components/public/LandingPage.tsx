@@ -132,6 +132,45 @@ import { SERVICOS_LISTA, ServicoItem, SubtipoServico } from '../../data/servicos
 export { SERVICOS_LISTA };
 export type { ServicoItem, SubtipoServico };
 
+const DOMINIOS_SERVICOS = [
+  {
+    id: 'maquinas-icamento',
+    nome: 'Máquinas & içamento',
+    descricao: 'Inspeção e adequação de máquinas, equipamentos móveis e operações de içamento.',
+    categorias: ['maquinas-pesadas', 'munck-guindastes']
+  },
+  {
+    id: 'pressao-utilidades',
+    nome: 'Pressão & utilidades',
+    descricao: 'Inspeções NR-13 de vasos, caldeiras, tubulações, tanques e sistemas de gás.',
+    categorias: ['nr13-vasos-compressores', 'nr13-caldeiras', 'nr13-tubulacoes-tanques', 'gas-combustivel-glp-gn']
+  },
+  {
+    id: 'seguranca-predial',
+    nome: 'Segurança predial',
+    descricao: 'Sistemas de incêndio, climatização, manutenção e áreas de lazer.',
+    categorias: ['combate-incendio-cbm', 'pmoc-hvac', 'playgrounds']
+  },
+  {
+    id: 'automotiva',
+    nome: 'Engenharia automotiva',
+    descricao: 'Perícias veiculares, avaliação estrutural e análise de falhas mecânicas.',
+    categorias: ['pericia-veicular']
+  },
+  {
+    id: 'projetos-infraestrutura',
+    nome: 'Projetos & infraestrutura',
+    descricao: 'Projetos mecânicos, transporte vertical e sistemas de bombeamento.',
+    categorias: ['nr12-projetos', 'transporte-vertical-elevadores', 'saneamento-bombeamento']
+  },
+  {
+    id: 'conformidade-documental',
+    nome: 'Conformidade documental',
+    descricao: 'Auditoria técnica, ART e gestão de conformidade legal.',
+    categorias: ['pcm-manutencao', 'engenharia-documental-auditoria']
+  }
+] as const;
+
 const FAQ_ITENS = [
   {
     pergunta: 'Qual o prazo para emitir a ART no CREA-PE?',
@@ -281,6 +320,7 @@ export const LandingPage: React.FC = () => {
 
   // Expandable services sub-panels state
   const [expandedServicos, setExpandedServicos] = useState<Record<number, boolean>>({});
+  const [dominioServicoAtivo, setDominioServicoAtivo] = useState<string>(DOMINIOS_SERVICOS[0].id);
 
   const toggleExpandServico = (index: number) => {
     setExpandedServicos(prev => ({ ...prev, [index]: !prev[index] }));
@@ -734,7 +774,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. Serviços (O que a VL inspeciona e certifica) com subtipos expansíveis */}
+      {/* 5. Catálogo de serviços por domínio */}
       <section id="servicos" className="pt-2 pb-14 border-t border-[var(--line)] bg-[var(--paper)] relative z-10">
         <div className="max-w-[1120px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -743,107 +783,118 @@ export const LandingPage: React.FC = () => {
                 O que a VL inspeciona e certifica
               </h2>
               <p className="text-[var(--muted)] text-[16px] mt-1 max-w-[54ch]">
-                Clique no botão de cada especialidade para ver detalhadamente os laudos, escopos e normas atendidas.
+                Explore nossas áreas de atuação e encontre o serviço técnico ideal para sua necessidade.
               </p>
             </div>
           </div>
 
-          <div className="border-t-2 border-[var(--ink)]">
-            {SERVICOS_LISTA.map((serv, index) => {
-              const isExpanded = !!expandedServicos[index];
-              return (
-                <div 
-                  key={index}
-                  className="border-b border-[var(--line)] py-5 px-2 hover:bg-[var(--card)]/40 transition-colors"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.5fr_1.5fr_auto] gap-3 md:gap-5 items-center">
-                    <h3 className="font-[family-name:var(--d)] text-[18.5px] font-bold text-[var(--ink)]">
-                      {serv.nome}
-                    </h3>
-                    
-                    <div>
-                      <span className="font-[family-name:var(--b)] font-semibold text-[13px] bg-[var(--card)] border border-[var(--line)] rounded px-2.5 py-0.5 inline-block text-[var(--muted)]">
-                        {serv.norma}
-                      </span>
-                    </div>
-
-                    <p className="text-[var(--muted)] text-[15px] m-0 leading-relaxed">
-                      {serv.descricao}
-                    </p>
-
-                    <div className="flex items-center gap-2.5 md:justify-self-end mt-2 md:mt-0">
-                      <button
-                        type="button"
-                        onClick={() => toggleExpandServico(index)}
-                        aria-expanded={isExpanded}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--blue)] hover:bg-[var(--card)] transition-colors cursor-pointer select-none"
-                        title={isExpanded ? 'Ocultar subtipos' : 'Expandir subtipos'}
-                        aria-label={isExpanded ? 'Ocultar subtipos' : 'Expandir subtipos'}
-                      >
-                        <span 
-                          className={`text-[24px] font-semibold leading-none transition-transform duration-300 inline-block select-none ${
-                            isExpanded ? 'rotate-45' : 'rotate-0'
-                          }`}
-                        >
-                          +
-                        </span>
-                      </button>
-
-                      <a
-                        href={`https://wa.me/5581984442592?text=${encodeURIComponent('Quero orçar: ' + serv.nome)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-tech wa sm text-[13.5px]"
-                      >
-                        Orçar
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Smooth Minimalist Expandable Subtypes */}
-                  <div 
-                    className="grid transition-all duration-300 ease-in-out"
-                    style={{
-                      gridTemplateRows: isExpanded ? '1fr' : '0fr',
-                      opacity: isExpanded ? 1 : 0
-                    }}
+          <div className="grid grid-cols-1 md:grid-cols-[250px_minmax(0,1fr)] gap-5 md:gap-8 items-start">
+            <nav aria-label="Domínios de serviço" className="flex md:block gap-2 overflow-x-auto pb-2 md:pb-0 md:border-r md:border-[var(--line)] md:pr-4">
+              {DOMINIOS_SERVICOS.map((dominio) => {
+                const quantidade = SERVICOS_LISTA.filter((serv) => dominio.categorias.some((categoriaId) => categoriaId === serv.id)).length;
+                const ativo = dominioServicoAtivo === dominio.id;
+                return (
+                  <button
+                    key={dominio.id}
+                    type="button"
+                    onClick={() => setDominioServicoAtivo(dominio.id)}
+                    aria-current={ativo ? 'page' : undefined}
+                    className={`flex shrink-0 md:w-full items-center justify-between gap-3 text-left px-3 py-2.5 rounded-lg border transition-colors ${
+                      ativo
+                        ? 'border-[var(--blue)]/25 bg-[var(--card)] text-[var(--blue)] font-semibold'
+                        : 'border-transparent text-[var(--ink)] hover:bg-[var(--card)]'
+                    }`}
                   >
-                    <div className="overflow-hidden">
-                      <div className="pt-3 pb-1 pl-3 sm:pl-5 border-l-2 border-[var(--blue)]/35 my-2 space-y-3">
-                        {serv.subtipos.map((sub, sIdx) => (
-                          <div 
-                            key={sIdx}
-                            className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-4 py-1.5 border-b border-[var(--line)]/40 last:border-0"
-                          >
-                            <div className="space-y-0.5 max-w-[76ch]">
-                              <div className="flex flex-wrap items-baseline gap-2">
-                                <span className="font-semibold text-[14.5px] text-[var(--ink)]">
-                                  {sub.nome}
-                                </span>
-                                <span className="text-[12px] text-[var(--muted)] font-mono">
-                                  · {sub.normaRef}
+                    <span className="whitespace-nowrap md:whitespace-normal">{dominio.nome}</span>
+                    <span className={`text-xs tabular-nums ${ativo ? 'text-[var(--blue)]' : 'text-[var(--muted)]'}`}>{quantidade}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {DOMINIOS_SERVICOS.filter((dominio) => dominio.id === dominioServicoAtivo).map((dominio) => {
+              const servicosDoDominio = SERVICOS_LISTA.filter((serv) =>
+                dominio.categorias.some((categoriaId) => categoriaId === serv.id)
+              );
+              return (
+                <div key={dominio.id} className="min-w-0">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-[var(--ink)]">{dominio.nome}</h3>
+                    <p className="text-sm text-[var(--muted)] mt-1">{dominio.descricao}</p>
+                  </div>
+                  <div className="border-t border-[var(--line)]">
+                    {servicosDoDominio.map((serv) => {
+                      const index = SERVICOS_LISTA.indexOf(serv);
+                      const isExpanded = !!expandedServicos[index];
+                      return (
+                        <article key={serv.id || serv.nome} className="border-b border-[var(--line)] py-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-[16px] text-[var(--ink)]">{serv.nome}</h4>
+                              <div className="mt-1.5">
+                                <span className="font-[family-name:var(--b)] font-semibold text-[12px] bg-[var(--card)] border border-[var(--line)] rounded px-2 py-0.5 inline-block text-[var(--muted)]">
+                                  {serv.norma}
                                 </span>
                               </div>
-                              <p className="text-[13.5px] text-[var(--muted)] m-0 leading-relaxed font-[family-name:var(--b)]">
-                                {sub.detalhe}
-                              </p>
+                              <p className="text-[14px] text-[var(--muted)] m-0 mt-2 leading-relaxed">{serv.descricao}</p>
                             </div>
-
-                            <a
-                              href={`https://wa.me/5581984442592?text=${encodeURIComponent(
-                                'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para: ' + sub.nome + ' (' + sub.normaRef + ')'
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[13px] font-semibold text-[var(--blue)] hover:underline whitespace-nowrap self-start sm:self-auto flex items-center gap-1 transition-colors"
-                            >
-                              <span>Orçar</span>
-                              <span aria-hidden="true">→</span>
-                            </a>
+                            <div className="flex items-center gap-3 sm:shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpandServico(index)}
+                                aria-expanded={isExpanded}
+                                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--blue)] hover:underline"
+                              >
+                                <span className={`inline-block text-lg leading-none transition-transform ${isExpanded ? 'rotate-45' : ''}`}>+</span>
+                                {isExpanded ? 'Ocultar serviços' : `Ver ${serv.subtipos.length} serviços`}
+                              </button>
+                              <a
+                                href={`https://wa.me/5581984442592?text=${encodeURIComponent('Quero orçar: ' + serv.nome)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-tech wa sm text-[13px]"
+                              >
+                                Orçar
+                              </a>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+
+                          <div
+                            className="grid transition-all duration-300 ease-in-out"
+                            style={{
+                              gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                              opacity: isExpanded ? 1 : 0
+                            }}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="pt-3 pb-1 pl-3 sm:pl-5 border-l-2 border-[var(--blue)]/35 mt-3 space-y-3">
+                                {serv.subtipos.map((sub, sIdx) => (
+                                  <div key={sub.id || sIdx} className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 sm:gap-4 py-1.5 border-b border-[var(--line)]/40 last:border-0">
+                                    <div className="space-y-0.5 max-w-[76ch]">
+                                      <div className="flex flex-wrap items-baseline gap-2">
+                                        <span className="font-semibold text-[14px] text-[var(--ink)]">{sub.nome}</span>
+                                        <span className="text-[12px] text-[var(--muted)] font-mono">· {sub.normaRef}</span>
+                                      </div>
+                                      <p className="text-[13px] text-[var(--muted)] m-0 leading-relaxed font-[family-name:var(--b)]">{sub.detalhe}</p>
+                                    </div>
+                                    <a
+                                      href={`https://wa.me/5581984442592?text=${encodeURIComponent(
+                                        'Olá, Eng. Vitor Leonardo! Gostaria de um orçamento para: ' + sub.nome + ' (' + sub.normaRef + ')'
+                                      )}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[13px] font-semibold text-[var(--blue)] hover:underline whitespace-nowrap self-start sm:self-auto flex items-center gap-1 transition-colors"
+                                    >
+                                      <span>Orçar</span><span aria-hidden="true">→</span>
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
                 </div>
               );
