@@ -88,7 +88,9 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
       : [];
 
   const temFoto = fotosLista.length > 0;
-  const temFotoObrigatoria = Boolean(item.fotoObrigatoria || item.obrigatorioFoto);
+  const fotoObrigatoriaSempre = Boolean(item.fotoObrigatoria || item.obrigatorioFoto);
+  const fotoObrigatoriaNaNC = Boolean(item.exigeFotoSeNaoConforme && isNaoConforme);
+  const temFotoObrigatoria = fotoObrigatoriaSempre || fotoObrigatoriaNaNC;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -190,6 +192,11 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
                 >
                   <Camera className="w-3 h-3" />
                   {temFoto ? 'Foto Anexada' : 'Foto Obrigatória'}
+                </span>
+              )}
+              {!temFotoObrigatoria && item.exigeFotoSeNaoConforme && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold border bg-amber-500/10 text-amber-500 border-amber-500/30">
+                  <Camera className="w-3 h-3" /> Foto obrigatória se NC
                 </span>
               )}
 

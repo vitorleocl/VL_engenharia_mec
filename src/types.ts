@@ -742,6 +742,8 @@ export interface ChecklistModeloItemDef {
   metodoVerificacao?: 'visual' | 'dimensional' | 'end' | 'funcional' | 'documental' | 'instrumental';
   criticidade?: ChecklistCriticidade;
   impeditivo?: boolean;
+  fotoObrigatoria?: boolean;
+  exigeFotoSeNaoConforme?: boolean;
 }
 
 export interface ChecklistModeloServico {

@@ -12,9 +12,13 @@ import {
   Layers,
   ChevronDown,
   Pencil,
+  Download,
+  Upload,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { ChecklistModeloItemDef, ChecklistModeloServico } from '../../types';
+import { analisarImportacaoChecklistCsv, baixarModeloChecklistCsv } from '../../lib/checklistModelosCsv';
 
 interface ChecklistModelosEditorProps {
   onSaved?: () => void;
@@ -27,6 +31,9 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
   const [modeloAtivoId, setModeloAtivoId] = useState<string>(checklistModelos[0]?.id || 'nr11');
   const [salvoMsg, setSalvoMsg] = useState<string | null>(null);
   const [itemEmEdicaoId, setItemEmEdicaoId] = useState<string | null>(null);
+  const [modelosImportados, setModelosImportados] = useState<ChecklistModeloServico[] | null>(null);
+  const [errosImportacao, setErrosImportacao] = useState<string[]>([]);
+  const [modoImportacao, setModoImportacao] = useState<'substituir' | 'acrescentar'>('substituir');
 
   useEffect(() => {
     setModelosLocais(checklistModelos);
@@ -86,6 +93,57 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
     if (onSaved) onSaved();
   };
 
+  const handleArquivoImportacao = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivo = event.target.files?.[0];
+    event.target.value = '';
+    setModelosImportados(null);
+    setErrosImportacao([]);
+    if (!arquivo) return;
+    if (!arquivo.name.toLocaleLowerCase().endsWith('.csv')) {
+      setErrosImportacao(['Selecione um arquivo CSV. O modelo pode ser aberto e salvo pelo Excel ou LibreOffice como CSV UTF-8.']);
+      return;
+    }
+    try {
+      const resultado = analisarImportacaoChecklistCsv(await arquivo.text(), modelosLocais);
+      setModelosImportados(resultado.modelos);
+      setErrosImportacao(resultado.erros);
+    } catch {
+      setErrosImportacao(['Não foi possível ler o arquivo. Confira se ele está salvo como CSV UTF-8.']);
+    }
+  };
+
+  const aplicarImportacao = () => {
+    if (!modelosImportados?.length || errosImportacao.length) return;
+    const IDsImportados = new Set(modelosImportados.map((modelo) => modelo.id));
+    if (modoImportacao === 'substituir' && !window.confirm(
+      `Substituir os critérios de ${modelosImportados.length} modelo(s) informado(s) no CSV? Modelos não listados serão mantidos.`
+    )) return;
+
+    const resultado = modelosLocais.map((modelo) => {
+      const importado = modelosImportados.find((item) => item.id === modelo.id);
+      if (!importado) return modelo;
+      return {
+        ...modelo,
+        nome: importado.nome,
+        subtitulo: importado.subtitulo,
+        norma: importado.norma,
+        secoesLaudoPadrao: importado.secoesLaudoPadrao,
+        itens: modoImportacao === 'substituir'
+          ? importado.itens
+          : [...modelo.itens, ...importado.itens.map((item) => ({
+              ...item,
+              id: `${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            }))],
+      };
+    });
+    const modelosNovos = modelosImportados.filter((modelo) => !modelosLocais.some((atual) => atual.id === modelo.id));
+    setModelosLocais([...resultado, ...modelosNovos]);
+    if (modelosNovos[0]) setModeloAtivoId(modelosNovos[0].id);
+    setModelosImportados(null);
+    setErrosImportacao([]);
+    setSalvoMsg('Importação aplicada à edição. Clique em “Salvar modelos” para persistir as alterações.');
+  };
+
   const handleRestaurar = () => {
     if (window.confirm('Restaurar todos os modelos de checklist (NR-11, NR-12, NR-13, PMOC, Vibração FFT) para os textos padrão?')) {
       resetarChecklistModelos();
@@ -130,6 +188,69 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
           </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-[var(--adm-line)] bg-[var(--adm-card)] p-3.5 sm:p-4 space-y-3">
+        <div className="flex items-start gap-2.5">
+          <FileSpreadsheet className="w-5 h-5 text-[var(--adm-blue-soft)] mt-0.5 shrink-0" />
+          <div>
+            <h4 className="text-sm font-bold text-[var(--adm-text)]">Importação em massa por CSV</h4>
+            <p className="text-xs text-[var(--adm-mut)] mt-1">
+              Uma linha por critério. Use o mesmo <code>modelo_id</code> nas linhas do mesmo serviço. O CSV pode conter vários modelos.
+              A importação é validada e pré-visualizada antes de entrar na edição; depois, salve os modelos.
+              Remova do arquivo a linha de exemplo antes de incluir seus dados.
+            </p>
+          </div>
+        </div>
+        <div className="text-[11px] leading-relaxed text-[var(--adm-mut)] rounded-xl bg-[var(--adm-bg)] p-3">
+          <strong className="text-[var(--adm-text)]">Colunas:</strong> modelo_id (identificador sem espaços), modelo_nome, modelo_subtitulo,
+          norma_modelo, numero, criterio, norma_item, secao_laudo, tipo_resposta, unidade, metodo_verificacao, criticidade,
+          impeditivo, foto_obrigatoria e foto_obrigatoria_se_nao_conforme.
+          <br />
+          Booleanos aceitam <code>sim/não</code>. Tipos de resposta: conformidade, medida, informacao, sim_nao, multipla_escolha,
+          data, C_NC_NA, VALOR, SELECAO ou FOTO. Métodos: visual, dimensional, end, funcional, documental ou instrumental.
+          Criticidade: critica, alta, media, baixa ou observacao. Campos opcionais podem ficar vazios.
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button type="button" onClick={baixarModeloChecklistCsv} className="min-h-11 px-3 rounded-lg border border-[var(--adm-line)] text-[var(--adm-text)] text-xs font-semibold inline-flex items-center justify-center gap-2">
+            <Download className="w-4 h-4" /> Baixar CSV-modelo explicativo
+          </button>
+          <label className="min-h-11 px-3 rounded-lg bg-[var(--adm-blue,#2160db)] text-white text-xs font-bold inline-flex items-center justify-center gap-2 cursor-pointer">
+            <Upload className="w-4 h-4" /> Selecionar CSV para validar
+            <input type="file" accept=".csv,text/csv" onChange={handleArquivoImportacao} className="sr-only" />
+          </label>
+        </div>
+        {errosImportacao.length > 0 && (
+          <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-400 space-y-1">
+            <strong>Corrija os problemas abaixo e selecione o arquivo novamente:</strong>
+            {errosImportacao.map((erro, index) => <p key={`${index}-${erro}`}>{erro}</p>)}
+          </div>
+        )}
+        {modelosImportados && errosImportacao.length === 0 && (
+          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 space-y-3">
+            <p className="text-xs font-semibold text-emerald-400">
+              Prévia válida: {modelosImportados.length} modelo(s), {modelosImportados.reduce((total, modelo) => total + modelo.itens.length, 0)} critério(s).
+              {modelosImportados.filter((modelo) => modelosLocais.some((atual) => atual.id === modelo.id)).length} modelo(s) já existem.
+            </p>
+            <div className="max-h-36 overflow-auto text-xs text-[var(--adm-text)] space-y-1">
+              {modelosImportados.map((modelo) => (
+                <p key={modelo.id}><strong>{modelo.nome}</strong> ({modelo.id}) — {modelo.itens.length} critérios; {modelo.itens.filter((item) => item.fotoObrigatoria).length} com foto obrigatória.</p>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="text-xs text-[var(--adm-text)] flex items-center gap-2">
+                <span>Ao importar modelos existentes:</span>
+                <select value={modoImportacao} onChange={(event) => setModoImportacao(event.target.value as 'substituir' | 'acrescentar')} className="min-h-10 px-2 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-line)]">
+                  <option value="substituir">substituir critérios</option>
+                  <option value="acrescentar">acrescentar critérios</option>
+                </select>
+              </label>
+              <button type="button" onClick={aplicarImportacao} className="min-h-10 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" /> Aplicar importação
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
 
       {salvoMsg && (
         <div className="px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-500 text-xs font-semibold flex items-center gap-2">

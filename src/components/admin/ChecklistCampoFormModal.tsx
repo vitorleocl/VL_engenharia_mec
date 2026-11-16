@@ -84,6 +84,9 @@ function construirItensDeModelo(modelo: ChecklistModeloServico | undefined): Che
     criterioInspecao: it.texto,
     criticidade: it.criticidade || 'media',
     impeditivo: it.impeditivo || false,
+    fotoObrigatoria: it.fotoObrigatoria || false,
+    obrigatorioFoto: it.fotoObrigatoria || false,
+    exigeFotoSeNaoConforme: it.exigeFotoSeNaoConforme || false,
     tipoEvidencia: ({
       visual: 'inspecao_visual',
       dimensional: 'medicao',
@@ -523,6 +526,15 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       ),
     [todosItens]
   );
+  const fotosObrigatoriasPendentes = useMemo(
+    () => todosItens.filter((item) => {
+      const exigida = item.fotoObrigatoria || item.obrigatorioFoto
+        || (item.exigeFotoSeNaoConforme && item.status === 'nao_conforme');
+      const temFoto = Boolean(item.fotoUrl || item.fotosUrls?.length || item.fotos?.length || item.fotosVinculadas?.length);
+      return exigida && !temFoto;
+    }),
+    [todosItens]
+  );
 
   const podeConcluirVistoria =
     totalItensCount > 0 && pendentesCount === 0 && ncsSemObservacao.length === 0;
@@ -644,6 +656,12 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       if (ncsSemObservacao.length > 0) {
         setErroValidacao(
           `Existem ${ncsSemObservacao.length} item(ns) Não conforme(s) sem observação. A descrição é obrigatória.`
+        );
+        return null;
+      }
+      if (fotosObrigatoriasPendentes.length > 0) {
+        setErroValidacao(
+          `Anexe as fotos obrigatórias de ${fotosObrigatoriasPendentes.length} item(ns) antes de finalizar a vistoria.`
         );
         return null;
       }
