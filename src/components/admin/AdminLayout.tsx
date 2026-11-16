@@ -27,7 +27,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { currentUser, logout, isOnline } = useAuth();
   const {
     laudos,
-    projetosEngenharia,
     clientes,
     ativos,
     orcamentos,
@@ -73,11 +72,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       id: 'central-laudos',
-      label: 'Central de Laudos e Projetos',
+      label: 'Central de Laudos',
       path: '/admin/laudos',
       icon: FileText,
-      badge: String(laudos.length + projetosEngenharia.length),
-      title: `${laudos.length} laudos e ${projetosEngenharia.length} projetos técnicos`,
+      badge: String(laudos.length),
+      title: `${laudos.length} laudos registrados`,
       visible: true
     },
     {
@@ -261,8 +260,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 const isActive = 
                   item.path === '/admin'
                     ? location.pathname === '/admin'
-                    : location.pathname.startsWith(item.path.split('?')[0]) ||
-                      (item.id === 'central-laudos' && location.pathname.startsWith('/admin/projetos'));
+                    : location.pathname.startsWith(item.path.split('?')[0]);
 
                 return (
                   <Link

@@ -1,8 +1,0 @@
-fastapi==0.163.1
-uvicorn[standard]==0.54.0
-pydantic==2.13.5
-ezdxf==1.4.5
-ifcopenshell==0.9.0.post1
-numpy>=2.0
-python-multipart>=0.0.9
-pytest>=8.0

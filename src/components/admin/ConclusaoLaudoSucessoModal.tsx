@@ -156,7 +156,7 @@ export const ConclusaoLaudoSucessoModal: React.FC<ConclusaoLaudoSucessoModalProp
             className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
           >
             <FileText className="w-4 h-4 text-blue-600" />
-            <span>Central de Laudos e Projetos</span>
+            <span>Central de Laudos</span>
           </button>
         </div>
 

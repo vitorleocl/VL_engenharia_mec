@@ -62,7 +62,7 @@ export const LaudoPrintView: React.FC = () => {
         <h2 className="text-xl font-bold">Laudo técnico não encontrado</h2>
         <p className="text-slate-400 text-sm mt-1 mb-4">O código ou identificador informado não foi localizado no sistema.</p>
         <Link to="/admin/laudos" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition">
-          Voltar para Central de Laudos e Projetos
+          Voltar para Central de Laudos
         </Link>
       </div>
     );

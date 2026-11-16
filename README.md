@@ -49,13 +49,9 @@ npm run dev -- --mode production
 
 ---
 
-## Central de Laudos e Projetos
+## Central de Laudos
 
-A área de Projetos foi simplificada para começar pelo que é necessário no dia a dia: cadastrar o projeto, organizar uma ficha HVAC-R, registrar ambientes e acompanhar pendências em checklist. PPCI e projetos mecânicos também podem ser cadastrados, enquanto seus fluxos específicos serão desenvolvidos em etapas posteriores.
-
-Os dados são salvos na coleção `projetosEngenharia` do Firestore, com armazenamento local como fallback. **Esta etapa não requer `HVAC_SERVICE_URL`, `HVAC_API_KEY` nem implantação de um microserviço Python.** A ficha não calcula cargas térmicas nem gera DXF/IFC/memorial; esses recursos serão definidos e implementados gradualmente, com validação técnica.
-
-O backend Express é exposto à Vercel por `api/[...path].ts`; `vercel.json` configura a duração máxima da função. No Vercel, mantenha as variáveis existentes que outros recursos usam, como `GEMINI_API_KEY` para funções de IA já disponíveis. As chaves devem permanecer no ambiente do servidor, nunca no bundle do frontend.
+A Central de Laudos reúne a emissão, edição, assinatura e publicação dos laudos técnicos da VL Engenharia.
 
 ---
 

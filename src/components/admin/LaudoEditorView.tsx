@@ -247,7 +247,7 @@ export const LaudoEditorView: React.FC = () => {
           onClick={() => navigate('/admin/laudos')}
           className="px-4 py-2 rounded-xl bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-bold transition-colors cursor-pointer"
         >
-          Voltar para Central de Laudos e Projetos
+          Voltar para Central de Laudos
         </button>
       </div>
     );
@@ -987,7 +987,7 @@ export const LaudoEditorView: React.FC = () => {
               className="text-slate-400 hover:text-blue-300 font-medium flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" />
-              <span>Central de Laudos e Projetos</span>
+              <span>Central de Laudos</span>
             </Link>
             <ChevronRight className="w-3 h-3 text-slate-600" />
             <span className="text-slate-400 truncate max-w-[200px]">

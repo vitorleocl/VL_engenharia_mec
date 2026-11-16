@@ -26,7 +26,6 @@ import { AgendaView } from './components/admin/AgendaView';
 import { LaudosCentralView } from './components/admin/LaudosCentralView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { ChecklistCampoView } from './components/admin/ChecklistCampoView';
-import { ProjetosCentralView } from './components/admin/ProjetosCentralView';
 import { GestaoView } from './components/admin/GestaoView';
 import { PropostaPrintView } from './components/admin/PropostaPrintView';
 import { LaudoPrintView } from './components/admin/LaudoPrintView';
@@ -174,22 +173,6 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <LaudosCentralView />
-                  </AdminLayout>
-                }
-              />
-              <Route
-                path="/admin/projetos"
-                element={
-                  <AdminLayout>
-                    <ProjetosCentralView />
-                  </AdminLayout>
-                }
-              />
-              <Route
-                path="/admin/projetos/:id"
-                element={
-                  <AdminLayout>
-                    <ProjetosCentralView />
                   </AdminLayout>
                 }
               />
