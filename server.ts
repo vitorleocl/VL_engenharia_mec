@@ -2096,4 +2096,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Vercel imports the Express app as a serverless function instead of opening a port.
+if (!process.env.VERCEL) {
+  void startServer();
+}
+
+export { app };

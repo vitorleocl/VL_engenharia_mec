@@ -76,35 +76,18 @@ GEMINI_API_KEY=...
 
 ### Deploy do backend Node e roteamento `/api/*`
 
-O Firebase Hosting entrega o frontend estático; por isso o backend Node também precisa ser implantado. O `firebase.json` encaminha `/api/**` para o Cloud Run `vl-engenharia-api`, na região `southamerica-east1`. O `Dockerfile` na raiz empacota o servidor Express e o frontend.
+O domínio público da aplicação é servido pela Vercel. A pasta `api/` expõe o Express como função serverless e `vercel.json` configura a duração máxima da função. Assim, `/api/*` chega às rotas existentes no `server.ts` no mesmo domínio do frontend.
 
-No projeto Firebase/GCP `vl-engenharia-55105`, configure o serviço Node no Cloud Run com estas variáveis:
+No projeto Vercel, configure estas variáveis de ambiente no ambiente de produção (e faça um novo deploy):
 
 - `HVAC_SERVICE_URL`: URL do serviço Python.
 - `HVAC_API_KEY`: segredo compartilhado com o serviço Python; prefira armazená-lo no Secret Manager.
 - `GEMINI_API_KEY`: necessária para a análise textual com IA.
 - `FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e `FIRESTORE_DATABASE_ID`: opcionais, se precisar substituir os padrões do arquivo de configuração.
 
-Implante primeiro o serviço `vl-engenharia-api` em `southamerica-east1`, usando o `Dockerfile` da raiz. Como exemplo, com gcloud já autenticado e as APIs do Cloud Run/Artifact Registry habilitadas:
+O frontend chama `/api/hvac/*` relativamente ao próprio domínio. O runtime Vercel define `VERCEL`, então o Express é exportado para a função sem abrir uma porta; no desenvolvimento local, o servidor continua iniciando normalmente via `npm run dev`.
 
-```bash
-gcloud run deploy vl-engenharia-api \
-  --source . \
-  --project vl-engenharia-55105 \
-  --region southamerica-east1 \
-  --allow-unauthenticated
-```
-
-Configure as variáveis e os segredos no serviço Cloud Run antes de habilitar o uso da integração. O serviço precisa aceitar tráfego não autenticado no nível Cloud Run porque o Firebase Hosting encaminha as requisições do navegador; as rotas `/api/hvac/*` validam o token Firebase e o perfil do usuário no próprio backend.
-
-Depois que o serviço existir, publique o Hosting para ativar a rewrite:
-
-```bash
-npm run build
-firebase deploy --only hosting --project vl-engenharia-55105
-```
-
-Verifique a rota de saúde autenticado pelo painel em `/api/hvac/health`. Uma resposta 503 indica que o backend já foi alcançado, mas a configuração/conectividade do microserviço Python ainda precisa ser corrigida.
+Depois do deploy Vercel, teste `GET /api/hvac/health` sem autenticação: deve responder **401** (a rota existe e está exigindo sessão), em vez de 404. Pelo painel autenticado, uma resposta 503 nessa rota indica que o backend foi alcançado, mas a configuração/conectividade do microserviço Python ainda precisa ser corrigida.
 
 O cálculo é feito exclusivamente pelo serviço Python. Os resultados e o memorial são de **pré-dimensionamento** e precisam de validação do responsável técnico. DXF não é DWG; IFC não é `.rvt`. Os dados de entrada/resultados ficam no projeto para permitir regenerar os artefatos após expirarem.
 
