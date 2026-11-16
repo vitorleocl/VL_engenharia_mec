@@ -79,6 +79,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   lightAppearance = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toolbarGroupClass = mobileToolbarScroll
+    ? 'flex items-center gap-0.5 border-r border-slate-200 pr-1.5'
+    : 'flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700';
 
   const editor = useEditor({
     extensions: [
@@ -188,7 +191,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   return (
     <div
       data-appearance={lightAppearance ? 'light' : undefined}
-      className="tiptap-editor border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs"
+      className={`tiptap-editor border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 ${
+        lightAppearance ? 'shadow-none' : 'shadow-xs'
+      }`}
     >
       {/* Hidden file input for direct image upload */}
       <input 
@@ -208,11 +213,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
             mobileToolbarScroll
               ? 'flex-nowrap overflow-x-auto overscroll-x-contain [&>div]:shrink-0 [&>div>button]:min-w-10 [&>div>button]:min-h-10'
               : 'flex-wrap'
-          } items-center gap-1 p-2 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`}
+          } items-center gap-1.5 p-2 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`}
         >
           
           {/* Text Style Group */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={toolbarGroupClass}>
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleBold().run()}
@@ -240,7 +245,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Headings Group */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={toolbarGroupClass}>
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -268,7 +273,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Lists Group */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={toolbarGroupClass}>
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -288,7 +293,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Alignment Group */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={toolbarGroupClass}>
             <button
               type="button"
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -324,7 +329,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Color & Highlight Pickers */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={`flex items-center gap-1 ${mobileToolbarScroll ? 'border-r border-slate-200 px-1.5 pr-2' : 'bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700'}`}>
             <span title="Cor da Fonte">
               <Palette className="w-3.5 h-3.5 text-slate-500" />
             </span>
@@ -376,11 +381,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Table Operations Group */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className={toolbarGroupClass}>
             <button
               type="button"
               onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-              className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-blue-700 font-bold flex items-center gap-1 text-xs"
+              className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-1 text-xs ${mobileToolbarScroll ? 'text-slate-600' : 'text-blue-700'}`}
               title="Inserir Tabela (3x3)"
             >
               <TableIcon className="w-4 h-4" />
@@ -450,20 +455,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Image Upload Group */}
-          <div className="flex items-center gap-1 bg-emerald-50/80 dark:bg-emerald-950/30 p-1 rounded-lg border border-emerald-300 dark:border-emerald-800">
+          <div className={`flex items-center gap-1 ${mobileToolbarScroll ? 'border-r border-slate-200 pr-1.5' : 'bg-emerald-50/80 dark:bg-emerald-950/30 p-1 rounded-lg border border-emerald-300 dark:border-emerald-800'}`}>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-2 py-1 rounded bg-white dark:bg-slate-900 hover:bg-emerald-100 dark:hover:bg-slate-800 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+              className={`px-2 py-1 rounded flex items-center gap-1.5 text-xs font-medium cursor-pointer ${mobileToolbarScroll ? 'bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-600 shadow-none' : 'bg-white dark:bg-slate-900 hover:bg-emerald-100 dark:hover:bg-slate-800 text-emerald-800 dark:text-emerald-300 shadow-xs'}`}
               title="Upload de Imagem Local (Do Computador ou Celular)"
             >
-              <ImageIcon className="w-4 h-4 text-emerald-600" />
-              <span>Inserir Imagem</span>
+              <ImageIcon className={`w-4 h-4 ${mobileToolbarScroll ? 'text-slate-500' : 'text-emerald-600'}`} />
+              <span>Imagem</span>
             </button>
             <button
               type="button"
               onClick={handlePromptImageUrl}
-              className="px-1.5 py-1 rounded hover:bg-emerald-100 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold cursor-pointer"
+              className={`px-1.5 py-1 rounded hover:bg-emerald-100 dark:hover:bg-slate-800 text-[11px] font-medium cursor-pointer ${mobileToolbarScroll ? 'text-slate-500' : 'text-emerald-700 dark:text-emerald-400'}`}
               title="Inserir Imagem por Link / URL da Web"
             >
               Via URL
@@ -471,22 +476,22 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
           </div>
 
           {/* Quebra de Página para o PDF */}
-          <div className="flex items-center gap-1 bg-blue-50/80 dark:bg-blue-950/30 p-1 rounded-lg border border-blue-300 dark:border-blue-800">
+          <div className={`flex items-center gap-1 ${mobileToolbarScroll ? 'border-r border-slate-200 pr-1.5' : 'bg-blue-50/80 dark:bg-blue-950/30 p-1 rounded-lg border border-blue-300 dark:border-blue-800'}`}>
             <button
               type="button"
               onClick={() => {
                 editor.chain().focus().insertContent('<hr class="page-break" data-page-break="true" style="page-break-after: always; border: 0; border-top: 2px dashed #1565D8; margin: 18px 0;" /><p></p>').run();
               }}
-              className="px-2 py-1 rounded bg-white dark:bg-slate-900 hover:bg-blue-100 dark:hover:bg-slate-800 text-[#1565D8] dark:text-blue-300 flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+              className={`px-2 py-1 rounded flex items-center gap-1.5 text-xs font-medium cursor-pointer ${mobileToolbarScroll ? 'bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-600 shadow-none' : 'bg-white dark:bg-slate-900 hover:bg-blue-100 dark:hover:bg-slate-800 text-[#1565D8] dark:text-blue-300 shadow-xs'}`}
               title="Inserir Quebra de Página (Página Seguinte no PDF)"
             >
-              <Scissors className="w-4 h-4 text-[#1565D8]" />
+              <Scissors className={`w-4 h-4 ${mobileToolbarScroll ? 'text-slate-500' : 'text-[#1565D8]'}`} />
               <span className="hidden sm:inline">Quebra de Página</span>
             </button>
           </div>
 
           {/* History Undo / Redo */}
-          <div className="flex items-center gap-0.5 ml-auto">
+          <div className={`flex items-center gap-0.5 ${mobileToolbarScroll ? 'pl-1' : 'ml-auto'}`}>
             <button
               type="button"
               onClick={() => editor.chain().focus().undo().run()}

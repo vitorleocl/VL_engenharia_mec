@@ -17,7 +17,6 @@ import {
   RotateCcw, 
   AlertCircle, 
   FileText, 
-  ChevronRight, 
   Layers, 
   Table as TableIcon, 
   HelpCircle, 
@@ -1399,13 +1398,12 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
   };
 
   // Computed section visibility metrics
-  const { totalSecoes, secoesVisiveisCount, secoesOcultasCount } = useMemo(() => {
+  const { totalSecoes, secoesVisiveisCount } = useMemo(() => {
     const total = orcamentoState?.secoes?.length || 13;
     const ocultas = orcamentoState?.secoes?.filter(s => s.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(s.id)).length || 0;
     return {
       totalSecoes: total,
       secoesVisiveisCount: Math.max(1, total - ocultas),
-      secoesOcultasCount: ocultas,
     };
   }, [orcamentoState]);
 
@@ -1429,7 +1427,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
   }
 
   return (
-    <div className="orcamento-editor-view space-y-5 pb-24 lg:pb-12">
+    <div className="orcamento-editor-view mx-auto max-w-[1600px] space-y-4 pb-24 lg:pb-10">
       
       {/* Hidden File Inputs */}
       <input 
@@ -1455,23 +1453,23 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       />
 
       {/* Top Banner & Action Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         {/* Title & Metadata */}
-        <div className="space-y-2 min-w-0">
+        <div className="space-y-2.5 min-w-0">
           <div className="flex items-center gap-2">
             <Link
               to="/admin/orcamentos"
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
               title="Voltar para a lista"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-[#1565D8] border border-blue-200 uppercase">
+            <span className="text-[11px] font-mono font-semibold text-slate-500">
               {orcamentoState.codigoProposta || orcamentoState.id}
             </span>
-            <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">Status:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-500">Status</span>
               <select
                 value={orcamentoState.status}
                 onChange={(e) => {
@@ -1486,7 +1484,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
                   setOrcamentoState(prev => prev ? { ...prev, ...patch } : prev);
                   atualizarOrcamento(orcamentoState.id, patch);
                 }}
-                className={`text-[11px] font-extrabold uppercase rounded px-1.5 py-0.5 border cursor-pointer ${
+                 className={`text-[11px] font-semibold rounded-md px-2 py-1 border cursor-pointer ${
                   orcamentoState.status === 'aprovado'
                     ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                     : orcamentoState.status === 'faturado'
@@ -1507,13 +1505,12 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             </div>
           </div>
 
-          <h1 className="text-base sm:text-xl font-extrabold text-[#0B1E3D] flex items-center gap-2">
-            <span>Editor Rico da Proposta Técnico-Comercial</span>
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[#0B1E3D] flex items-center gap-2">
+            <span>Editor de proposta</span>
           </h1>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-slate-600">
-            <span>Cliente: <strong className="text-slate-900">{orcamentoState.clienteNome || 'Cliente Corporativo'}</strong></span>
-            <span>•</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+            <span>Cliente <strong className="ml-1 text-slate-900">{orcamentoState.clienteNome || 'Cliente Corporativo'}</strong></span>
             {editandoTituloTopo ? (
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-semibold">Título:</span>
@@ -1557,70 +1554,69 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
               </div>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <span>Serviço: <strong className="text-slate-900">{orcamentoState.servico}</strong></span>
+                <span>Serviço <strong className="ml-1 text-slate-900">{orcamentoState.servico}</strong></span>
                 <button
                   type="button"
                   onClick={() => {
                     setTituloTopoDigitado(orcamentoState.servico || '');
                     setEditandoTituloTopo(true);
                   }}
-                  className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  className="p-1 rounded-md text-slate-500 hover:bg-slate-100 hover:text-[#1565D8] inline-flex items-center gap-1 cursor-pointer transition-colors"
                   title="Editar o título deste orçamento"
                 >
                   <Edit3 className="w-3 h-3" />
-                  <span>Editar Título</span>
+                  <span className="sr-only">Editar título</span>
                 </button>
               </span>
             )}
-            <span>•</span>
             <div className="flex items-center gap-1.5">
-              <span>Valor Total:</span>
-              <strong className="text-[#1565D8] font-mono text-sm">{(orcamentoState.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+              <span>Valor</span>
+              <strong className="text-[#0B1E3D] font-mono text-sm">{(orcamentoState.valor ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
               <button
                 type="button"
                 onClick={() => setSecaoAtivaId('etapa3')}
-                className="ml-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
+                className="p-1 rounded-md text-slate-500 hover:bg-slate-100 hover:text-[#1565D8] cursor-pointer transition-colors"
                 title="Ir para o Memorial de Cálculo e editar o valor cheio da proposta"
               >
-                ✎ Editar Valor Cheio
+                <Edit3 className="h-3 w-3" />
+                <span className="sr-only">Editar valor cheio</span>
               </button>
             </div>
           </div>
 
           {/* Quick Selectable Nota Fiscal & PIX Indicator */}
-          <div className="flex flex-wrap items-center gap-2 pt-1.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
             <button
               type="button"
               onClick={handleToggleNotaFiscal}
-              className={`px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                 orcamentoState.incluiNotaFiscal !== false
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
-                  : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                  ? 'text-emerald-700 hover:text-emerald-800'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
               title="Clique para alternar entre proposta Com Nota Fiscal (NFS-e) ou Sem Nota Fiscal (Recibo com ART)"
             >
               <FileText className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Nota Fiscal:</span>
-              <span className="font-extrabold uppercase text-[10px]">
-                {orcamentoState.incluiNotaFiscal !== false ? '✓ Inclusa (Com NFS-e)' : '✕ Sem NFS-e (Recibo + ART)'}
+              <span>
+                {orcamentoState.incluiNotaFiscal !== false ? 'NFS-e inclusa' : 'Sem NFS-e · Recibo + ART'}
               </span>
             </button>
             
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50/80 border border-blue-200 text-xs text-[#0B1E3D]">
-              <span className="font-bold text-[#1565D8]">PIX Padrão (CPF):</span>
-              <code className="font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-blue-200 text-[11px] text-[#0B1E3D]">{CHAVE_PIX_FORMATADA_PADRAO}</code>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span>PIX (CPF)</span>
+              <code className="font-mono text-[11px] text-slate-700">{CHAVE_PIX_FORMATADA_PADRAO}</code>
             </div>
           </div>
         </div>
 
         {/* Status indicator & Right Action Buttons (Agrupados conforme A9) */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:max-w-[440px] lg:justify-end">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 lg:max-w-[440px] lg:justify-end">
           
           {/* Alternar modo de visualização: Folha clara (como no PDF) vs Tema escuro (A6) */}
           <button
             type="button"
             onClick={() => setModoVisualizacao(prev => prev === 'folha_clara' ? 'escuro' : 'folha_clara')}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`p-2 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
               modoVisualizacao === 'folha_clara'
                 ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
                 : 'bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-700'
@@ -1630,12 +1626,12 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             {modoVisualizacao === 'folha_clara' ? (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">Folha Clara (PDF)</span>
+                <span className="sr-only">Folha clara (PDF)</span>
               </>
             ) : (
               <>
                 <Moon className="w-3.5 h-3.5 text-blue-400" />
-                <span className="hidden sm:inline">Tema Escuro</span>
+                <span className="sr-only">Tema escuro</span>
               </>
             )}
           </button>
@@ -1644,7 +1640,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             type="button"
             onClick={handleEnviarResumoWhatsApp}
             disabled={statusSalvo === 'salvando'}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            className="px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
             title="Salvar e abrir o WhatsApp com um resumo da proposta para o cliente"
           >
             <MessageCircle className="w-3.5 h-3.5" />
@@ -1656,7 +1652,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             type="button"
             onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Salvo manualmente pelo usuário')}
             disabled={statusSalvo === 'salvando'}
-            className="hidden lg:flex px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            className="hidden lg:flex px-3 py-2 rounded-lg bg-[#1565D8] hover:bg-[#0b4fb8] text-white text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
             title="Salvar todas as alterações da proposta agora"
           >
             <Save className="w-3.5 h-3.5" />
@@ -1664,7 +1660,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
           </button>
 
           {/* Autosave Status Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1.5 text-xs">
             {statusSalvo === 'salvando' ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
@@ -1699,11 +1695,11 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
               salvarImediato(orcamentoState, 'Salvo antes da exportação em PDF');
               navigate(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=pdf`);
             }}
-            className="hidden lg:flex px-4 py-2 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white font-black text-xs items-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="hidden lg:flex px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs items-center gap-2 transition-colors cursor-pointer"
             title="Gerar e baixar PDF A4 em 1 clique"
           >
-            <Download className="w-4 h-4 text-[#D4AF37]" />
-            <span>Baixar PDF ({secoesVisiveisCount} fls)</span>
+            <Download className="w-4 h-4" />
+            <span>PDF · {secoesVisiveisCount} pág.</span>
           </button>
 
           {/* MENU MAIS AÇÕES (Agrupamento A9) */}
@@ -1711,7 +1707,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             <button
               type="button"
               onClick={() => setMenuMaisAberto(prev => !prev)}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Mais ações do orçamento"
             >
               <span>Mais</span>
@@ -1821,15 +1817,15 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       )}
 
       {/* Notice of Instance Isolation (Regra Crítica 1.1 e A5 - sem colisão com o contador) */}
-      <div className="bg-blue-50/70 border border-blue-200 rounded-xl px-4 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-blue-900">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200 px-1 pb-3 text-xs text-slate-500">
         <div className="flex items-start sm:items-center gap-2.5 flex-1">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5 sm:mt-0" />
-          <p className="leading-relaxed">
-            <strong>Edição de Instância Isolada:</strong> As alterações feitas nesta tela aplicam-se exclusivamente a este orçamento. O modelo padrão da VL Engenharia e as credenciais fixas permanecem preservados para novos orçamentos.
+          <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />
+          <p className="leading-relaxed" title="As alterações feitas nesta tela aplicam-se exclusivamente a este orçamento. O modelo padrão da VL Engenharia e as credenciais fixas permanecem preservados para novos orçamentos.">
+            Esta proposta é uma instância independente. O modelo padrão permanece inalterado.
           </p>
         </div>
         <div className="shrink-0 text-right md:border-l md:border-blue-200 md:pl-3">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-blue-800 bg-white/90 border border-blue-200 px-2.5 py-1 rounded-lg shadow-2xs whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 whitespace-nowrap">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             {secoesVisiveisCount} de {totalSecoes} páginas ativas no PDF
           </span>
@@ -1840,97 +1836,54 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-5 items-start">
         
         {/* Sidebar: 13 Pages Navigator (4 cols on lg) */}
-        <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-xs space-y-3 lg:sticky lg:top-4">
+        <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-xl p-3 sm:p-4 border border-slate-200 space-y-3 lg:sticky lg:top-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
-              <h3 className="font-extrabold text-sm text-[#0B1E3D] flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-[#1565D8]" />
-                <span>Seções da Proposta</span>
+              <h3 className="font-semibold text-sm text-[#0B1E3D] flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-slate-400" />
+                <span>Seções</span>
               </h3>
               <p className="text-[11px] text-slate-500">
-                {secoesVisiveisCount} no PDF {secoesOcultasCount > 0 && <span className="text-amber-600 font-bold">• {secoesOcultasCount} oculta{secoesOcultasCount > 1 ? 's' : ''}</span>}
+                {secoesVisiveisCount} de {totalSecoes} incluídas no PDF
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-              {totalSecoes} seções
-            </span>
           </div>
 
           {/* Sections List */}
-          <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 snap-x snap-mandatory lg:block lg:space-y-1.5 lg:max-h-[70vh] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-1">
+          <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 snap-x snap-mandatory lg:block lg:space-y-0.5 lg:max-h-[70vh] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-1">
             {orcamentoState.secoes?.map((secao) => {
               const isActive = secao.id === secaoAtivaId;
               const hasCover = secao.id === 'capa' && Boolean(orcamentoState.imagemCapaUrl);
               const isOculta = Boolean(secao.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secao.id));
 
               return (
-                <div
+                <button
                   key={secao.id}
+                  type="button"
                   onClick={() => setSecaoAtivaId(secao.id)}
-                  className={`w-[78vw] max-w-[280px] min-h-[64px] shrink-0 snap-start text-left p-2.5 rounded-xl border transition-all flex items-start justify-between gap-2 cursor-pointer lg:w-full lg:max-w-none lg:min-h-0 ${
+                  aria-current={isActive ? 'step' : undefined}
+                  className={`w-[190px] shrink-0 snap-start rounded-lg border px-3 py-2.5 text-left transition-colors lg:w-full ${
                     isActive
-                      ? isOculta
-                        ? 'bg-amber-50/70 border-amber-400 shadow-xs ring-1 ring-amber-400/50'
-                        : 'bg-blue-50/80 border-[#1565D8] shadow-xs'
-                      : isOculta
-                      ? 'bg-slate-50/60 hover:bg-amber-50/40 border-dashed border-amber-300/80 text-slate-600'
-                      : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-700'
+                      ? 'border-blue-200 bg-blue-50/60 text-[#0B1E3D]'
+                      : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    <span className={`w-6 h-6 rounded-lg font-mono text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5 ${
-                      isActive 
-                        ? isOculta ? 'bg-amber-600 text-white' : 'bg-[#1565D8] text-white' 
-                        : isOculta ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-[11px] font-semibold ${
+                      isActive ? 'bg-white text-[#1565D8]' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {secao.numero}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className={`text-xs font-bold truncate ${isActive ? 'text-[#0B1E3D]' : 'text-slate-800'}`}>
-                          {secao.titulo}
-                        </p>
-                        {isOculta && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                            Oculta no PDF
-                          </span>
-                        )}
-                      </div>
-                      {secao.subtitulo && (
-                        <p className="hidden sm:block text-[10px] text-slate-400 truncate mt-0.5">
-                          {secao.subtitulo}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions & PDF Toggle */}
-                  <div className="shrink-0 flex items-center gap-1 mt-0.5">
-                    {hasCover && (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" title="Foto de capa anexada" />
-                    )}
-
-                    {/* Quick Visibility Toggle Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleOcultarNoPdf(secao.id, e)}
-                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                        isOculta
-                          ? 'bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-800'
-                          : 'bg-slate-100/80 hover:bg-slate-200 border-slate-200 text-slate-500 hover:text-slate-800'
-                      }`}
-                      title={isOculta ? 'Seção oculta do PDF. Clique para incluir.' : 'Seção incluída no PDF. Clique para ocultar.'}
-                    >
-                      {isOculta ? (
-                        <EyeOff className="w-3.5 h-3.5 text-amber-700" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      )}
-                    </button>
-
-                    <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-[#1565D8]' : 'text-slate-300'}`} />
-                  </div>
-                </div>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-medium">{secao.titulo}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-slate-400">
+                        {hasCover && <ImageIcon className="h-3 w-3" />}
+                        {isOculta ? 'Oculta no PDF' : 'Incluída no PDF'}
+                      </span>
+                    </span>
+                    {isOculta && <EyeOff className="h-3.5 w-3.5 shrink-0 text-amber-600" />}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -1941,22 +1894,22 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
         <div className="min-w-0 lg:col-span-8 xl:col-span-9 space-y-4">
           
           {/* Section Header Card */}
-          <div className={`rounded-2xl p-3 sm:p-5 border shadow-xs space-y-4 transition-colors ${
+          <div className={`rounded-xl p-3 sm:p-5 border space-y-4 transition-colors ${
             modoVisualizacao === 'folha_clara' 
-              ? 'bg-[#FCFDFF] border-slate-300 text-slate-900 shadow-sm ring-1 ring-slate-900/5' 
-              : 'bg-white border-slate-200 text-slate-900'
+              ? 'bg-white border-slate-200 text-slate-900'
+              : 'bg-slate-900 border-slate-700 text-slate-100'
           }`}>
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-[#0B1E3D] text-white font-mono text-sm font-black flex items-center justify-center">
+                <span className="w-7 h-7 rounded-md bg-slate-100 text-slate-600 font-mono text-xs font-semibold flex items-center justify-center">
                   {secaoAtiva?.numero}
                 </span>
                 <div>
-                  <span className="text-[10px] font-mono uppercase font-bold text-[#1565D8] tracking-wider">
-                    SEÇÃO {secaoAtiva?.numero} DE {totalSecoes} • PROPOSTA COMERCIAL
+                  <span className="text-[10px] font-medium text-slate-500">
+                    Seção {secaoAtiva?.numero} de {totalSecoes}
                   </span>
-                  <h2 className="text-sm sm:text-lg font-black text-[#0B1E3D]">
+                  <h2 className={`text-sm sm:text-base font-semibold ${modoVisualizacao === 'folha_clara' ? 'text-[#0B1E3D]' : 'text-slate-100'}`}>
                     {secaoAtiva?.titulo}
                   </h2>
                 </div>
@@ -1969,25 +1922,25 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
                 <button
                   type="button"
                   onClick={(e) => secaoAtiva && handleToggleOcultarNoPdf(secaoAtiva.id, e)}
-                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    secaoAtiva?.ocultarNoPdf
-                      ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800'
-                      : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800'
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    (secaoAtiva?.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secaoAtiva?.id || ''))
+                      ? 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                   }`}
                   title={
-                    secaoAtiva?.ocultarNoPdf
+                    (secaoAtiva?.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secaoAtiva?.id || ''))
                       ? 'Esta seção está oculta no PDF. Clique para exibi-la no documento gerado.'
                       : 'Esta seção está visível no PDF. Clique para ocultá-la do documento gerado.'
                   }
                 >
-                  {secaoAtiva?.ocultarNoPdf ? (
+                  {(secaoAtiva?.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secaoAtiva?.id || '')) ? (
                     <>
                       <EyeOff className="w-3.5 h-3.5 text-amber-600" />
                       <span>Oculta no PDF</span>
                     </>
                   ) : (
                     <>
-                      <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
                       <span>Incluída no PDF</span>
                     </>
                   )}
@@ -1996,7 +1949,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
                 {/* Reset to template */}
                 <button
                   onClick={handleRestaurarSecaoPadrao}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Restaurar esta seção para o texto do modelo padrão"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
@@ -2006,7 +1959,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
                 {/* Quick Add photo for section */}
                 <button
                   onClick={() => secaoFotoInputRef.current?.click()}
-                  className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-100 text-[#1565D8] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Inserir foto adicional de levantamento fotográfico nesta seção"
                 >
                   <ImageIcon className="w-3.5 h-3.5" />
@@ -2017,7 +1970,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             </div>
 
             {/* Warning banner when active section is hidden from PDF */}
-            {secaoAtiva?.ocultarNoPdf && (
+            {(secaoAtiva?.ocultarNoPdf || orcamentoState.secoesOcultasPdf?.includes(secaoAtiva?.id || '')) && (
               <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-start sm:items-center gap-2.5">
                   <div className="p-1.5 rounded-lg bg-amber-200 text-amber-800 shrink-0 mt-0.5 sm:mt-0">
@@ -2827,14 +2780,12 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
 
             {/* Rich Text Editor Component (WYSIWYG TipTap) */}
             <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
-                <span className="font-bold text-slate-700">Conteúdo Rico da Seção:</span>
-                <span className="text-[11px] text-slate-400">
-                  Formatação completa, criação de tabelas, cores e imagens habilitadas
-                </span>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-medium text-slate-600">Conteúdo</span>
+                <span className="text-[11px] text-slate-400">As alterações são salvas automaticamente</span>
               </div>
 
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+              <div className="overflow-hidden rounded-xl">
                 <TipTapEditor
                   contentHtml={secaoAtiva?.conteudoHtml || ''}
                   onChange={(novoHtml) => handleConteudoSecaoChange(novoHtml)}
@@ -2848,17 +2799,17 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
           </div>
 
           {/* Quick Section Guide & Helper Footer */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 px-1 pt-3 text-xs text-slate-500">
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-slate-400 shrink-0" />
               <span>
-                <strong>Dica de Produtividade:</strong> Você pode adicionar linhas e colunas em tabelas (Metodologia e Identificação das Partes) clicando nos botões de tabela da barra de ferramentas do editor.
+                  <strong>Dica:</strong> Use a barra de ferramentas para tabelas, imagens e formatação.
               </span>
             </div>
             
             <button
               onClick={() => setModalPdfAberto(true)}
-              className="text-[#1565D8] hover:underline font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+              className="text-[#1565D8] hover:underline font-semibold shrink-0 flex items-center gap-1 cursor-pointer"
             >
               <span>Ver prévia final no PDF</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -2870,13 +2821,13 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       </div>
 
       {/* Ações primárias fixas no mobile para salvar e revisar sem voltar ao topo */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-xl items-center gap-2">
           <button
             type="button"
             onClick={() => orcamentoState && salvarImediato(orcamentoState, 'Salvo manualmente pelo usuário')}
             disabled={statusSalvo === 'salvando'}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-800 disabled:opacity-50"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#1565D8] px-3 text-xs font-semibold text-white disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {statusSalvo === 'salvando' ? 'Salvando' : 'Salvar'}
@@ -2884,9 +2835,9 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
           <button
             type="button"
             onClick={() => setModalPdfAberto(true)}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700"
           >
-            <Eye className="h-4 w-4 text-blue-600" />
+            <Eye className="h-4 w-4 text-slate-500" />
             Prévia
           </button>
           <button
@@ -2902,9 +2853,9 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
               salvarImediato(orcamentoState, 'Salvo antes da exportação em PDF');
               navigate(`/admin/orcamentos/${orcamentoState.id}/imprimir?auto=pdf`);
             }}
-            className="flex min-h-11 flex-[1.2] items-center justify-center gap-1.5 rounded-xl bg-[#0B1E3D] px-3 text-xs font-black text-white"
+            className="flex min-h-11 flex-[1.2] items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-800"
           >
-            <Download className="h-4 w-4 text-[#D4AF37]" />
+            <Download className="h-4 w-4 text-slate-600" />
             PDF
           </button>
         </div>
