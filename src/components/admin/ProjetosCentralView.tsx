@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Building2, Download, FileArchive, FileText, Loader2, Plus,
-  RefreshCw, Save, Settings2, Snowflake, Trash2, Upload, Wind,
+  RefreshCw, Save, Search, Settings2, Snowflake, Trash2, Upload, Wind,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -438,20 +438,95 @@ export const ProjetosCentralView: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1200px] space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><h1 className="text-3xl font-extrabold tracking-tight text-[var(--ink)]">Central de Laudos e Projetos</h1><p className="mt-1 text-sm text-[var(--muted)]">Projetos técnicos da VL Engenharia, organizados por disciplina e cliente.</p></div>
+    <div className="mx-auto max-w-[1200px] space-y-5">
+      <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">VL Engenharia</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">Central de Laudos e Projetos</h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">Projetos organizados por disciplina e cliente.</p>
+        </div>
         <div className="flex gap-2">
           <Link to="/admin/laudos" className="btn-tech inline-flex items-center gap-2"><FileText className="h-4 w-4" />Laudos</Link>
           <button type="button" onClick={() => { setTipoNovo('hvac-r'); setClienteNovo(clientes[0]?.id || ''); setNomeNovo(''); setEnderecoNovo(''); setDescricaoNova(''); setModalNovo(true); }} className="btn-tech pri inline-flex items-center gap-2"><Plus className="h-4 w-4" />Novo projeto</button>
         </div>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">{TIPOS_PROJETO.map((tipo) => <button key={tipo.id} type="button" onClick={() => { setTipoNovo(tipo.id); setClienteNovo(clientes[0]?.id || ''); setNomeNovo(''); setEnderecoNovo(''); setDescricaoNova(''); setModalNovo(true); }} className={`rounded-2xl border p-4 text-left transition hover:border-[var(--blue)] ${tipo.id === 'hvac-r' ? 'border-sky-300 bg-sky-50/70' : 'border-[var(--line)] bg-[var(--card)]'}`}><div className="mb-2 flex items-center gap-2 font-bold text-[var(--ink)]">{tipo.id === 'hvac-r' ? <Wind className="h-4 w-4 text-sky-700" /> : <FileArchive className="h-4 w-4 text-[var(--blue)]" />}{tipo.titulo}</div><p className="text-xs leading-relaxed text-[var(--muted)]">{tipo.descricao}</p></button>)}</div>
-      <div className="flex flex-wrap items-center gap-2">
-        <input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar código, nome, cliente..." className="min-w-[220px] flex-1 rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm" />
-        <select value={filtro} onChange={(event) => setFiltro(event.target.value as any)} className="rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm"><option value="todos">Todos os tipos</option>{TIPOS_PROJETO.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.titulo}</option>)}</select>
-      </div>
-      {projetosFiltrados.length === 0 ? <div className="rounded-2xl border border-dashed border-[var(--line)] p-12 text-center"><FileArchive className="mx-auto mb-3 h-9 w-9 text-[var(--muted)]" /><p className="font-bold">Nenhum projeto cadastrado</p><p className="mt-1 text-sm text-[var(--muted)]">Crie um projeto HVAC-R, PPCI ou mecânico para começar.</p></div> : <div className="grid gap-3 lg:grid-cols-2">{projetosFiltrados.map((item) => <article key={item.id} className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-bold uppercase text-[var(--blue)]">{item.codigo} · {item.status.replace('_', ' ')}</p><h2 className="mt-1 text-lg font-bold">{item.nome}</h2><p className="text-sm text-[var(--muted)]">{item.clienteNome}</p></div><span className="rounded-full bg-[var(--paper)] px-2 py-1 text-[10px] font-semibold">{item.tipo.toUpperCase()}</span></div><p className="mt-3 line-clamp-2 text-xs text-[var(--muted)]">{item.endereco || item.descricao || tipoProjetoLabel(item.tipo)}</p><div className="mt-4 flex items-center justify-between"><span className="text-[11px] text-[var(--muted)]">Atualizado {new Date(item.atualizadoEm).toLocaleDateString('pt-BR')}</span><Link to={`/admin/projetos/${item.id}`} className="btn-tech pri inline-flex items-center gap-1.5">Abrir projeto</Link></div></article>)}</div>}
+      </header>
+
+      <section aria-label="Filtrar projetos" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1 overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--card)] p-1">
+          {[
+            { id: 'todos' as const, label: 'Todos' },
+            { id: 'hvac-r' as const, label: 'Climatização' },
+            { id: 'ppci' as const, label: 'Incêndio' },
+            { id: 'mecanico' as const, label: 'Mecânicos' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFiltro(item.id)}
+              aria-pressed={filtro === item.id}
+              className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                filtro === item.id
+                  ? 'bg-[var(--ink)] text-[var(--card)]'
+                  : 'text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--ink)]'
+              }`}
+            >
+              {item.label}
+              <span className="ml-1.5 opacity-70">
+                {item.id === 'todos'
+                  ? projetosEngenharia.length
+                  : projetosEngenharia.filter((projetoItem) => projetoItem.tipo === item.id).length}
+              </span>
+            </button>
+          ))}
+        </div>
+        <label className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 focus-within:border-[var(--blue)] sm:w-72">
+          <Search className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+          <input
+            value={busca}
+            onChange={(event) => setBusca(event.target.value)}
+            placeholder="Buscar projeto ou cliente"
+            className="w-full bg-transparent py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
+          />
+        </label>
+      </section>
+
+      <section aria-label="Lista de projetos" className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--card)]">
+        <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Projetos</h2>
+          <span className="text-xs text-[var(--muted)]">{projetosFiltrados.length} encontrados</span>
+        </div>
+        {projetosFiltrados.length === 0 ? (
+          <div className="px-5 py-12 text-center">
+            <FileArchive className="mx-auto mb-3 h-7 w-7 text-[var(--muted)]" />
+            <p className="text-sm font-semibold text-[var(--ink)]">Nenhum projeto encontrado</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Ajuste a busca ou crie um novo projeto.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--line)]">
+            {projetosFiltrados.map((item) => (
+              <article key={item.id} className="flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-[var(--paper)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                    <span className="font-semibold text-[var(--blue)]">{item.codigo}</span>
+                    <span className="text-[var(--muted)]">·</span>
+                    <span className="text-[var(--muted)]">{item.status.replace('_', ' ')}</span>
+                    <span className="rounded bg-[var(--paper)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">{item.tipo.toUpperCase()}</span>
+                  </div>
+                  <h3 className="mt-1 truncate text-sm font-semibold text-[var(--ink)]">{item.nome}</h3>
+                  <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
+                    {item.clienteNome}
+                    {(item.endereco || item.descricao) && ` · ${item.endereco || item.descricao}`}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
+                  <span className="text-[11px] text-[var(--muted)]">Atualizado {new Date(item.atualizadoEm).toLocaleDateString('pt-BR')}</span>
+                  <Link to={`/admin/projetos/${item.id}`} className="text-xs font-semibold text-[var(--blue)] hover:underline">Abrir <span aria-hidden="true">→</span></Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {modalNovo && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"><div className="w-full max-w-xl space-y-4 rounded-2xl bg-[var(--paper)] p-5 shadow-2xl">
         <div className="flex items-center justify-between"><h2 className="text-xl font-bold">Novo projeto</h2><button type="button" onClick={() => setModalNovo(false)} className="text-xl">×</button></div>
