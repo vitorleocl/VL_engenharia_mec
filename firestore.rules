@@ -87,6 +87,11 @@ service cloud.firestore {
       allow read, write: if isColaborador() || isMaster();
     }
 
+    // Projetos técnicos (HVAC-R, PPCI e mecânicos)
+    match /projetosEngenharia/{projetoId} {
+      allow read, write: if isColaborador() || isMaster();
+    }
+
     // Field Checklists
     match /checklistsCampo/{checklistId} {
       allow read, write: if isColaborador() || isMaster();

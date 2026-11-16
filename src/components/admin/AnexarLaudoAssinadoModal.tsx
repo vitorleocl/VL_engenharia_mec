@@ -360,7 +360,7 @@ export const AnexarLaudoAssinadoModal: React.FC<AnexarLaudoAssinadoModalProps> =
           }.`,
           ...pdfMeta,
         });
-        onSuccessToast('Laudo finalizado e assinado (PDF) cadastrado na Central de Laudos!');
+        onSuccessToast('Laudo finalizado e assinado (PDF) cadastrado na Central de Laudos e Projetos!');
       }
 
       onClose();

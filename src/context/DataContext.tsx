@@ -14,6 +14,7 @@ import {
   TipoLaudoDef,
   ChecklistCampo,
   ChecklistModeloServico,
+  ProjetoEngenharia,
   SolicitacaoAcesso,
   UserRole
 } from '../types';
@@ -75,6 +76,7 @@ interface DataContextType {
   orcamentos: Orcamento[];
   agenda: AgendaVistoria[];
   laudos: Laudo[];
+  projetosEngenharia: ProjetoEngenharia[];
   templates: LaudoTemplate[];
   logsAuditoria: LogAuditoria[];
   auditLogs: LogAuditoria[];
@@ -119,6 +121,9 @@ interface DataContextType {
   atualizarLaudo: (id: string, dados: Partial<Record<keyof Laudo, any>>) => void;
   finalizarLaudo: (id: string, artNumero: string, assinaturaUrl?: string) => void;
   removerLaudo: (id: string) => void;
+  adicionarProjetoEngenharia: (dados: Omit<ProjetoEngenharia, 'id' | 'codigo' | 'criadoEm' | 'atualizadoEm'>) => string;
+  atualizarProjetoEngenharia: (id: string, dados: Partial<ProjetoEngenharia>) => void;
+  removerProjetoEngenharia: (id: string) => void;
 
   // Templates Actions
   salvarTemplate: (template: Omit<LaudoTemplate, 'id' | 'criadoEm'>) => void;
@@ -706,6 +711,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return loaded;
   });
+  const [projetosEngenharia, setProjetosEngenharia] = useState<ProjetoEngenharia[]>(() => {
+    const loaded: ProjetoEngenharia[] = loadStorage('vl_projetos_engenharia', []);
+    const validos = (Array.isArray(loaded) ? loaded : []).filter((projeto) => projeto?.id && projeto?.tipo);
+    if (validos.length !== loaded.length) saveStorage('vl_projetos_engenharia', validos);
+    return validos;
+  });
 
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
   const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => {
@@ -825,6 +836,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_orcamentos', orcamentos), [orcamentos]);
   useEffect(() => saveStorage('vl_agenda', agenda), [agenda]);
   useEffect(() => saveStorage('vl_laudos', laudos), [laudos]);
+  useEffect(() => saveStorage('vl_projetos_engenharia', projetosEngenharia), [projetosEngenharia]);
   useEffect(() => saveStorage('vl_templates', templates), [templates]);
   useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
   useEffect(() => saveStorage('vl_checklist_modelos', checklistModelos), [checklistModelos]);
@@ -937,6 +949,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(error, OperationType.GET, 'laudos');
       });
 
+      const unsubProjetos = onSnapshot(collection(db, 'projetosEngenharia'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docs = snapshot.docs.map((d) => ({ ...(d.data() as ProjetoEngenharia), id: d.id }));
+          setProjetosEngenharia((prev) => {
+            const merged = mesclarColecaoPorId(prev, docs, new Set(), new Set(), 'id');
+            saveStorage('vl_projetos_engenharia', merged);
+            return merged;
+          });
+        }
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, 'projetosEngenharia');
+      });
+
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
         if (!snapshot.empty) {
           const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
@@ -981,7 +1006,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[Firestore] Erro listener usuarios:', error);
       });
 
-      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios);
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubProjetos, unsubChecklists, unsubAgenda, unsubUsuarios);
 
       if (currentUser.role === 'master') {
         const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
@@ -2331,6 +2356,65 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };
 
+  const adicionarProjetoEngenharia = (
+    dados: Omit<ProjetoEngenharia, 'id' | 'codigo' | 'criadoEm' | 'atualizadoEm'>
+  ): string => {
+    const agora = new Date().toISOString();
+    const id = `prj-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ano = new Date().getFullYear();
+    const sequencia = projetosEngenharia.filter((p) => p.codigo.startsWith(`PRJ-${ano}-`)).length + 1;
+    const novo: ProjetoEngenharia = {
+      ...dados,
+      id,
+      codigo: `PRJ-${ano}-${String(sequencia).padStart(3, '0')}`,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    };
+    setProjetosEngenharia((prev) => {
+      const atualizados = [novo, ...prev];
+      saveStorage('vl_projetos_engenharia', atualizados);
+      return atualizados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'projetosEngenharia', id), novo).catch((err) => {
+        handleFirestoreError(err, OperationType.CREATE, `projetosEngenharia/${id}`);
+      });
+    }
+    registrarLog('projetosEngenharia', id, 'criar', `Projeto ${novo.codigo} criado: ${novo.nome}`);
+    return id;
+  };
+
+  const atualizarProjetoEngenharia = (id: string, dados: Partial<ProjetoEngenharia>) => {
+    const atualizadoEm = new Date().toISOString();
+    setProjetosEngenharia((prev) => {
+      const atualizados = prev.map((projeto) =>
+        projeto.id === id ? { ...projeto, ...dados, atualizadoEm } : projeto
+      );
+      saveStorage('vl_projetos_engenharia', atualizados);
+      return atualizados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'projetosEngenharia', id), { ...dados, atualizadoEm }, { merge: true }).catch((err) => {
+        handleFirestoreError(err, OperationType.UPDATE, `projetosEngenharia/${id}`);
+      });
+    }
+    registrarLog('projetosEngenharia', id, 'editar', `Projeto atualizado: ${id}`);
+  };
+
+  const removerProjetoEngenharia = (id: string) => {
+    setProjetosEngenharia((prev) => {
+      const atualizados = prev.filter((projeto) => projeto.id !== id);
+      saveStorage('vl_projetos_engenharia', atualizados);
+      return atualizados;
+    });
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      deleteDoc(doc(db, 'projetosEngenharia', id)).catch((err) => {
+        handleFirestoreError(err, OperationType.DELETE, `projetosEngenharia/${id}`);
+      });
+    }
+    registrarLog('projetosEngenharia', id, 'excluir', `Projeto removido: ${id}`);
+  };
+
   // Templates
   const salvarTemplate = (dados: Omit<LaudoTemplate, 'id' | 'criadoEm'>) => {
     const id = `tpl-${Date.now()}`;
@@ -2972,6 +3056,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         orcamentos,
         agenda,
         laudos,
+        projetosEngenharia,
         templates,
         logsAuditoria,
         auditLogs: logsAuditoria,
@@ -3002,6 +3087,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         atualizarLaudo,
         finalizarLaudo,
         removerLaudo,
+        adicionarProjetoEngenharia,
+        atualizarProjetoEngenharia,
+        removerProjetoEngenharia,
         salvarTemplate,
         removerTemplate,
         atualizarUsuario,

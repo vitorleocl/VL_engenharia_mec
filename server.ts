@@ -4,6 +4,10 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import multer from "multer";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import firebaseConfig from "./firebase-applet-config.json";
 import { 
   gerarLaudoCausaRaizOffline, 
   construirPromptSistemaCausaRaiz, 
@@ -17,6 +21,319 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "25mb" }));
+
+const HVAC_ALLOWED_FILES = new Set([
+  "planta_hvac.dxf",
+  "modelo_hvac.ifc",
+  "memorial.html",
+  "memorial.md",
+  "resultado.json",
+]);
+const HVAC_JOB_ID_RE = /^[0-9a-f]{32}$/;
+const HVAC_ACCESS_FILE = path.join(process.cwd(), "data", "hvac-jobs.json");
+const HVAC_LIMITS = new Map<string, { startedAt: number; count: number }>();
+
+function hvacConfigError(): string | null {
+  if (!process.env.HVAC_SERVICE_URL?.trim()) return "HVAC_SERVICE_URL não configurada no servidor.";
+  if (!process.env.HVAC_API_KEY?.trim()) return "HVAC_API_KEY não configurada no servidor.";
+  return null;
+}
+
+function hvacUrl(pathname: string): string {
+  const base = process.env.HVAC_SERVICE_URL!.trim().replace(/\/+$/, "");
+  return `${base}${pathname}`;
+}
+
+async function verificarUsuarioProjeto(req: express.Request, res: express.Response, next: express.NextFunction) {
+  try {
+    const authorization = req.header("authorization") || "";
+    const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token) return res.status(401).json({ error: "Autenticação necessária para acessar projetos." });
+
+    const apiKey = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey;
+    const lookup = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: token }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!lookup.ok) return res.status(401).json({ error: "Sessão inválida ou expirada. Entre novamente no sistema." });
+    const lookupData = await lookup.json() as { users?: { localId?: string; email?: string }[] };
+    const user = lookupData.users?.[0];
+    if (!user?.localId) return res.status(401).json({ error: "Sessão inválida ou expirada." });
+
+    const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId;
+    const databaseId = process.env.FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || "(default)";
+    const userDocUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/${encodeURIComponent(databaseId)}/documents/usuarios/${encodeURIComponent(user.localId)}`;
+    const roleResponse = await fetch(userDocUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    const masterEmails = ["vitorleonardocl@gmail.com", "vlengenhariamec@gmail.com", "atendimento@vlengenhariamecanica.com.br"];
+    let role = "";
+    let ativo: boolean | undefined;
+    if (roleResponse.ok) {
+      const roleDoc = await roleResponse.json() as { fields?: Record<string, { stringValue?: string; booleanValue?: boolean }> };
+      role = roleDoc.fields?.role?.stringValue || "";
+      ativo = roleDoc.fields?.ativo?.booleanValue;
+    } else if (masterEmails.includes((user.email || "").toLowerCase())) {
+      role = "master";
+    } else {
+      return res.status(403).json({ error: "Acesso aos projetos permitido somente a usuários autorizados." });
+    }
+    if (!["master", "colaborador"].includes(role || "") || ativo === false) {
+      return res.status(403).json({ error: "Acesso aos projetos permitido somente a colaboradores autorizados." });
+    }
+    (req as any).hvacUid = user.localId;
+    next();
+  } catch {
+    return res.status(503).json({ error: "Não foi possível validar a sessão para acessar projetos HVAC." });
+  }
+}
+
+app.use("/api/hvac", verificarUsuarioProjeto);
+
+app.post("/api/hvac/analysis", async (req, res) => {
+  const result = req.body?.result;
+  if (!result || typeof result !== "object") return res.status(400).json({ error: "Resultado do cálculo HVAC não informado." });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: "Análise com IA indisponível: configure GEMINI_API_KEY no servidor." });
+  const serialized = JSON.stringify(result);
+  if (serialized.length > 900_000) return res.status(413).json({ error: "Resultado excede o limite para análise textual." });
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const system = `Você redige texto técnico em português do Brasil para memorial de pré-dimensionamento HVAC-R.
+Use EXCLUSIVAMENTE os dados e números do JSON fornecido. Não recalcule, não arredonde, não invente valores, normas, marcas ou modelos.
+Não afirme conformidade normativa. Declare que todo resultado é pré-dimensionamento sujeito à conferência e validação do responsável técnico.
+Se um dado não estiver no JSON, escreva "a confirmar em projeto". Cite somente as referências que aparecem no JSON/memorial.
+Retorne Markdown com: Introdução (um parágrafo); Análise crítica citando até três ambientes de maior carga específica e seus componentes_w relevantes, além dos warnings; Recomendações e pontos de validação em campo/projeto (lista curta). Não repita as tabelas.`;
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: `${system}\n\nResultado calculado (JSON):\n<resultado>${serialized}</resultado>` }] }],
+      config: { temperature: 0.1 },
+    });
+    const analysis = response.text?.trim();
+    if (!analysis) return res.status(502).json({ error: "A análise técnica não foi retornada pelo serviço de IA." });
+    res.json({ analysis });
+  } catch {
+    res.status(503).json({ error: "Não foi possível gerar a análise técnica. Tente novamente mais tarde." });
+  }
+});
+
+async function chamarServicoHvac(pathname: string, init: RequestInit = {}): Promise<Response> {
+  const missing = hvacConfigError();
+  if (missing) {
+    const error = new Error(missing) as Error & { status?: number };
+    error.status = 503;
+    throw error;
+  }
+  try {
+    const response = await fetch(hvacUrl(pathname), {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        "X-API-Key": process.env.HVAC_API_KEY!,
+      },
+      signal: AbortSignal.timeout(Number(process.env.HVAC_TIMEOUT_MS) || 90000),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({})) as { detail?: unknown };
+      const error = new Error(
+        response.status === 422
+          ? (typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || "Confira os campos do projeto."))
+          : "Serviço de projeto HVAC indisponível."
+      ) as Error & { status?: number; detail?: unknown };
+      error.status = response.status === 422 ? 422 : response.status >= 500 ? 503 : response.status;
+      error.detail = body.detail;
+      throw error;
+    }
+    return response;
+  } catch (error: any) {
+    if (error?.status) throw error;
+    const timeout = error?.name === "TimeoutError" || error?.name === "AbortError";
+    const safe = new Error(timeout ? "O serviço de projeto HVAC excedeu o tempo de resposta." : "Serviço de projeto HVAC indisponível.") as Error & { status?: number };
+    safe.status = 503;
+    throw safe;
+  }
+}
+
+app.get("/api/hvac/health", async (_req, res) => {
+  const serviceUrl = process.env.HVAC_SERVICE_URL?.trim().replace(/\/+$/, "");
+  if (!serviceUrl) return res.status(503).json({ error: "HVAC_SERVICE_URL não configurada no servidor." });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${serviceUrl}/health`, { signal: AbortSignal.timeout(4000) });
+      if (response.ok) return res.json({ status: "ok" });
+    } catch {
+      // Health check faz uma segunda tentativa curta, sem incluir detalhes internos na resposta.
+    }
+  }
+  return res.status(503).json({ error: "Serviço de projeto HVAC indisponível." });
+});
+
+function registrarLimiteHvac(uid: string, action: string, max: number): boolean {
+  const key = `${uid}:${action}`;
+  const now = Date.now();
+  const current = HVAC_LIMITS.get(key);
+  if (!current || now - current.startedAt > 15 * 60 * 1000) {
+    HVAC_LIMITS.set(key, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= max) return false;
+  current.count += 1;
+  return true;
+}
+
+function lerAcessosHvac(): Record<string, string> {
+  try {
+    return JSON.parse(fs.readFileSync(HVAC_ACCESS_FILE, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function salvarAcessoHvac(jobId: string, uid: string) {
+  const dir = path.dirname(HVAC_ACCESS_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const acessos = lerAcessosHvac();
+  acessos[jobId] = uid;
+  fs.writeFileSync(HVAC_ACCESS_FILE, JSON.stringify(acessos), "utf-8");
+}
+
+function validarAcessoJobHvac(req: express.Request, res: express.Response): boolean {
+  const jobId = String(req.params.jobId || "");
+  if (!HVAC_JOB_ID_RE.test(jobId)) {
+    res.status(400).json({ error: "Identificador de projeto inválido." });
+    return false;
+  }
+  if (lerAcessosHvac()[jobId] !== (req as any).hvacUid) {
+    res.status(404).json({ error: "Arquivo do projeto não encontrado ou sem acesso." });
+    return false;
+  }
+  return true;
+}
+
+function tratarErroHvac(res: express.Response, error: any) {
+  const status = Number(error?.status) || 503;
+  const serviceDetails = error?.detail;
+  const fieldErrors = Array.isArray(serviceDetails)
+    ? serviceDetails.map((item: any) => ({
+        field: Array.isArray(item?.loc) ? item.loc.filter((part: unknown) => part !== "body").join(".") : "",
+        message: String(item?.msg || "Confira o valor informado."),
+      }))
+    : [{ field: "", message: String(error?.message || "Confira os dados do projeto.") }];
+  res.status(status).json({
+    error: status === 422 ? "Revise os dados informados no projeto." : (error?.message || "Serviço de projeto HVAC indisponível."),
+    ...(status === 422 ? { detail: serviceDetails || error?.message, fieldErrors } : {}),
+  });
+}
+
+app.get("/api/hvac/cities", async (_req, res) => {
+  try {
+    const response = await chamarServicoHvac("/v1/catalog/cities");
+    res.json(await response.json());
+  } catch (error) {
+    tratarErroHvac(res, error);
+  }
+});
+
+app.post("/api/hvac/calculate", async (req, res) => {
+  try {
+    const response = await chamarServicoHvac("/v1/projects/calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+    res.status(response.status).json(await response.json());
+  } catch (error) {
+    tratarErroHvac(res, error);
+  }
+});
+
+app.post("/api/hvac/generate", async (req, res) => {
+  const uid = (req as any).hvacUid as string;
+  if (!registrarLimiteHvac(uid, "generate", 5)) {
+    return res.status(429).json({ error: "Limite temporário de geração atingido. Tente novamente em alguns minutos." });
+  }
+  try {
+    const response = await chamarServicoHvac("/v1/projects/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+    const payload = await response.json() as { job_id?: string };
+    if (!payload.job_id || !HVAC_JOB_ID_RE.test(payload.job_id)) {
+      return res.status(502).json({ error: "O serviço HVAC retornou uma identificação inválida." });
+    }
+    salvarAcessoHvac(payload.job_id, uid);
+    res.json(payload);
+  } catch (error) {
+    tratarErroHvac(res, error);
+  }
+});
+
+app.get("/api/hvac/jobs/:jobId/files/:name", async (req, res) => {
+  if (!validarAcessoJobHvac(req, res)) return;
+  const name = String(req.params.name || "");
+  if (!HVAC_ALLOWED_FILES.has(name)) return res.status(404).json({ error: "Arquivo solicitado não permitido." });
+  try {
+    const response = await chamarServicoHvac(`/v1/jobs/${req.params.jobId}/files/${name}`);
+    res.setHeader("Content-Type", response.headers.get("content-type") || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+    if (!response.body) return res.status(502).json({ error: "Arquivo indisponível no serviço HVAC." });
+    await pipeline(Readable.fromWeb(response.body as any), res);
+  } catch (error) {
+    if (!res.headersSent) tratarErroHvac(res, error);
+  }
+});
+
+app.get("/api/hvac/jobs/:jobId/bundle", async (req, res) => {
+  if (!validarAcessoJobHvac(req, res)) return;
+  try {
+    const response = await chamarServicoHvac(`/v1/jobs/${req.params.jobId}/bundle.zip`);
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", 'attachment; filename="pacote_hvac.zip"');
+    if (!response.body) return res.status(502).json({ error: "Pacote indisponível no serviço HVAC." });
+    await pipeline(Readable.fromWeb(response.body as any), res);
+  } catch (error) {
+    if (!res.headersSent) tratarErroHvac(res, error);
+  }
+});
+
+const uploadDxf = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!/\.dxf$/i.test(file.originalname)) return callback(new Error("Envie somente arquivos com extensão .dxf."));
+    callback(null, true);
+  },
+});
+
+app.post("/api/hvac/rooms-from-dxf", (req, res) => {
+  const uid = (req as any).hvacUid as string;
+  if (!registrarLimiteHvac(uid, "dxf-upload", 10)) {
+    return res.status(429).json({ error: "Limite temporário de importações DXF atingido. Tente novamente em alguns minutos." });
+  }
+  uploadDxf.single("file")(req, res, async (uploadError) => {
+    if (uploadError) {
+      const status = (uploadError as any).code === "LIMIT_FILE_SIZE" ? 413 : 400;
+      return res.status(status).json({ error: status === 413 ? "O DXF excede o limite de 25 MB." : uploadError.message });
+    }
+    const file = (req as any).file as Express.Multer.File | undefined;
+    if (!file) return res.status(400).json({ error: "Selecione um arquivo DXF." });
+    const data = new FormData();
+    data.append("file", new Blob([file.buffer], { type: "application/dxf" }), path.basename(file.originalname));
+    data.append("layer", String(req.body.layer || "AMBIENTES"));
+    data.append("unit_to_m", String(Number(req.body.unit_to_m) || 0.001));
+    try {
+      const response = await chamarServicoHvac("/v1/rooms/from-dxf", { method: "POST", body: data });
+      res.status(response.status).json(await response.json());
+    } catch (error) {
+      tratarErroHvac(res, error);
+    }
+  });
+});
 
 const DATA_FILE = path.join(process.cwd(), "data", "app_storage.json");
 

@@ -258,6 +258,29 @@ export interface Orcamento {
 
 export type VistoriaStatus = 'agendada' | 'em_andamento' | 'concluida' | 'remarcada';
 
+export type TipoProjetoEngenharia = 'hvac-r' | 'ppci' | 'mecanico';
+export type StatusProjetoEngenharia = 'em_elaboracao' | 'em_revisao' | 'concluido';
+
+export interface ProjetoEngenharia {
+  id: string;
+  codigo: string;
+  tipo: TipoProjetoEngenharia;
+  nome: string;
+  clienteId: string;
+  clienteNome: string;
+  endereco: string;
+  descricao: string;
+  status: StatusProjetoEngenharia;
+  payloadHvac?: Record<string, any>;
+  resultadoHvac?: Record<string, any>;
+  analiseHvac?: string;
+  jobHvacId?: string;
+  jobHvacGeradoEm?: string;
+  criadoPorUid: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
 export interface AgendaVistoria {
   id: string;
   clienteId: string;

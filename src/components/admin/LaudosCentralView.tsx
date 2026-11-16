@@ -410,7 +410,7 @@ export const LaudosCentralView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
-            Central de laudos
+            Central de Laudos e Projetos
           </h1>
           <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
             {laudos.length} documentos emitidos · Modelos pré-prontos das {SERVICOS_LISTA.length} especialidades da VL Engenharia.
@@ -418,6 +418,10 @@ export const LaudosCentralView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <Link to="/admin/projetos" className="btn-tech text-[14.5px] px-3.5 py-2">
+            <Globe className="w-4 h-4 mr-1.5" />
+            <span>Projetos técnicos</span>
+          </Link>
           <button
             type="button"
             onClick={() => {

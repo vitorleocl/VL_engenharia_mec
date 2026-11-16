@@ -49,6 +49,37 @@ npm run dev -- --mode production
 
 ---
 
+## Projetos técnicos e integração HVAC-R
+
+A Central de Laudos e Projetos oferece cadastro de projetos HVAC-R, PPCI e Mecânicos. O módulo HVAC-R consome o microserviço Python da pasta `vl-hvac-service/` para cálculo de pré-dimensionamento, importação de ambientes DXF e geração de DXF, IFC, memorial e ZIP. Os projetos são salvos em `projetosEngenharia` no Firestore e mantidos em `localStorage` como fallback.
+
+### Variáveis do backend Node
+
+Configure no serviço Node/Express (não no bundle do frontend):
+
+```env
+HVAC_SERVICE_URL=https://url-interna-do-servico-hvac
+HVAC_API_KEY=segredo-compartilhado-com-o-servico-hvac
+HVAC_TIMEOUT_MS=90000
+GEMINI_API_KEY=...
+```
+
+`FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e `FIRESTORE_DATABASE_ID` são opcionais e, por padrão, usam os valores de `firebase-applet-config.json`. A chave `HVAC_API_KEY` nunca é enviada ao navegador. As rotas de HVAC validam o token Firebase e exigem perfil ativo de `master` ou `colaborador`; limitam geração a 5 jobs e importação DXF a 10 uploads por janela de 15 minutos. Arquivos aceitos para download são allowlisted e os jobs ficam vinculados ao usuário que os gerou.
+
+### Deploy do microserviço
+
+1. Crie um segundo serviço Railway/Render usando `vl-hvac-service/` como diretório raiz e o `Dockerfile` incluso.
+2. Configure `API_KEY` no serviço Python com o mesmo valor de `HVAC_API_KEY` do serviço Node. Em produção, não habilite `DEV=1`.
+3. Configure `HVAC_SERVICE_URL` no Node para a URL privada HTTPS/interna do serviço Python. Se usar URL pública, use HTTPS.
+4. Em ambos os serviços, configure porta via `$PORT`. O health check Python é `/health`. Use volume persistente para `data/` no Node se quiser preservar o mapa temporário de acesso dos jobs após reinícios; os arquivos de geração expiram em até 24 h no serviço Python.
+5. Regras Firestore: implante a regra da coleção `projetosEngenharia` junto às regras já existentes.
+
+O cálculo é feito exclusivamente pelo serviço Python. Os resultados e o memorial são de **pré-dimensionamento** e precisam de validação do responsável técnico. DXF não é DWG; IFC não é `.rvt`. Os dados de entrada/resultados ficam no projeto para permitir regenerar os artefatos após expirarem.
+
+Para validar o serviço localmente, siga `vl-hvac-service/README.md` (`pip install -r requirements.txt`, `DEV=1 uvicorn app.main:app --reload` e `pytest -q`). Para usar a integração pelo painel, inicie também o Node com `HVAC_SERVICE_URL` e `HVAC_API_KEY` configurados e entre com uma sessão Firebase autorizada.
+
+---
+
 ## 2. Backup Programado do Firestore (Cloud Scheduler + Storage)
 
 Como laudos técnicos de engenharia envolvem responsabilidade civil e criminal (ART), a política de backup deve ser rigorosa:
