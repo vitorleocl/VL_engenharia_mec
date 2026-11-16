@@ -260,6 +260,28 @@ export type VistoriaStatus = 'agendada' | 'em_andamento' | 'concluida' | 'remarc
 
 export type TipoProjetoEngenharia = 'hvac-r' | 'ppci' | 'mecanico';
 export type StatusProjetoEngenharia = 'em_elaboracao' | 'em_revisao' | 'concluido';
+export type StatusItemProjeto = 'pendente' | 'em_andamento' | 'concluido';
+
+export interface AmbienteProjetoHvac {
+  id: string;
+  nome: string;
+  pavimento: string;
+  areaM2: number | null;
+  peDireitoM: number | null;
+  ocupantes: number | null;
+  observacoes: string;
+}
+
+export interface ItemChecklistProjeto {
+  status: StatusItemProjeto;
+  observacoes: string;
+}
+
+export interface MensagemAssistenteProjeto {
+  role: 'user' | 'model';
+  texto: string;
+  criadaEm: string;
+}
 
 export interface ProjetoEngenharia {
   id: string;
@@ -271,6 +293,12 @@ export interface ProjetoEngenharia {
   endereco: string;
   descricao: string;
   status: StatusProjetoEngenharia;
+  sistemaHvac?: string;
+  usoHvac?: string;
+  observacoesHvac?: string;
+  ambientesHvac?: AmbienteProjetoHvac[];
+  checklistHvac?: Record<string, ItemChecklistProjeto>;
+  mensagensAssistente?: MensagemAssistenteProjeto[];
   payloadHvac?: Record<string, any>;
   resultadoHvac?: Record<string, any>;
   analiseHvac?: string;

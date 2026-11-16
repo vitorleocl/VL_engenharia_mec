@@ -49,49 +49,13 @@ npm run dev -- --mode production
 
 ---
 
-## Projetos técnicos e integração HVAC-R
+## Central de Laudos e Projetos
 
-A Central de Laudos e Projetos oferece cadastro de projetos HVAC-R, PPCI e Mecânicos. O módulo HVAC-R consome o microserviço Python da pasta `vl-hvac-service/` para cálculo de pré-dimensionamento, importação de ambientes DXF e geração de DXF, IFC, memorial e ZIP. Os projetos são salvos em `projetosEngenharia` no Firestore e mantidos em `localStorage` como fallback.
+A área de Projetos foi simplificada para começar pelo que é necessário no dia a dia: cadastrar o projeto, organizar uma ficha HVAC-R, registrar ambientes e acompanhar pendências em checklist. PPCI e projetos mecânicos também podem ser cadastrados, enquanto seus fluxos específicos serão desenvolvidos em etapas posteriores.
 
-### Variáveis do backend Node
+Os dados são salvos na coleção `projetosEngenharia` do Firestore, com armazenamento local como fallback. **Esta etapa não requer `HVAC_SERVICE_URL`, `HVAC_API_KEY` nem implantação de um microserviço Python.** A ficha não calcula cargas térmicas nem gera DXF/IFC/memorial; esses recursos serão definidos e implementados gradualmente, com validação técnica.
 
-Configure no serviço Node/Express (não no bundle do frontend):
-
-```env
-HVAC_SERVICE_URL=https://url-interna-do-servico-hvac
-HVAC_API_KEY=segredo-compartilhado-com-o-servico-hvac
-HVAC_TIMEOUT_MS=90000
-GEMINI_API_KEY=...
-```
-
-`FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e `FIRESTORE_DATABASE_ID` são opcionais e, por padrão, usam os valores de `firebase-applet-config.json`. A chave `HVAC_API_KEY` nunca é enviada ao navegador. As rotas de HVAC validam o token Firebase e exigem perfil ativo de `master` ou `colaborador`; limitam geração a 5 jobs e importação DXF a 10 uploads por janela de 15 minutos. Arquivos aceitos para download são allowlisted e os jobs ficam vinculados ao usuário que os gerou.
-
-### Deploy do microserviço
-
-1. Crie um segundo serviço Railway/Render usando `vl-hvac-service/` como diretório raiz e o `Dockerfile` incluso.
-2. Configure `API_KEY` no serviço Python com o mesmo valor de `HVAC_API_KEY` do serviço Node. Em produção, não habilite `DEV=1`.
-3. Configure `HVAC_SERVICE_URL` no Node para a URL privada HTTPS/interna do serviço Python. Se usar URL pública, use HTTPS.
-4. Em ambos os serviços, configure porta via `$PORT`. O health check Python é `/health`. Use volume persistente para `data/` no Node se quiser preservar o mapa temporário de acesso dos jobs após reinícios; os arquivos de geração expiram em até 24 h no serviço Python.
-5. Regras Firestore: implante a regra da coleção `projetosEngenharia` junto às regras já existentes.
-
-### Deploy do backend Node e roteamento `/api/*`
-
-O domínio público da aplicação é servido pela Vercel. A pasta `api/` expõe o Express como função serverless e `vercel.json` configura a duração máxima da função. Assim, `/api/*` chega às rotas existentes no `server.ts` no mesmo domínio do frontend.
-
-No projeto Vercel, configure estas variáveis de ambiente no ambiente de produção (e faça um novo deploy):
-
-- `HVAC_SERVICE_URL`: URL do serviço Python.
-- `HVAC_API_KEY`: segredo compartilhado com o serviço Python; prefira armazená-lo no Secret Manager.
-- `GEMINI_API_KEY`: necessária para a análise textual com IA.
-- `FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e `FIRESTORE_DATABASE_ID`: opcionais, se precisar substituir os padrões do arquivo de configuração.
-
-O frontend chama `/api/hvac/*` relativamente ao próprio domínio. O runtime Vercel define `VERCEL`, então o Express é exportado para a função sem abrir uma porta; no desenvolvimento local, o servidor continua iniciando normalmente via `npm run dev`.
-
-Depois do deploy Vercel, teste `GET /api/hvac/health` sem autenticação: deve responder **401** (a rota existe e está exigindo sessão), em vez de 404. Pelo painel autenticado, uma resposta 503 nessa rota indica que o backend foi alcançado, mas a configuração/conectividade do microserviço Python ainda precisa ser corrigida.
-
-O cálculo é feito exclusivamente pelo serviço Python. Os resultados e o memorial são de **pré-dimensionamento** e precisam de validação do responsável técnico. DXF não é DWG; IFC não é `.rvt`. Os dados de entrada/resultados ficam no projeto para permitir regenerar os artefatos após expirarem.
-
-Para validar o serviço localmente, siga `vl-hvac-service/README.md` (`pip install -r requirements.txt`, `DEV=1 uvicorn app.main:app --reload` e `pytest -q`). Para usar a integração pelo painel, inicie também o Node com `HVAC_SERVICE_URL` e `HVAC_API_KEY` configurados e entre com uma sessão Firebase autorizada.
+O backend Express é exposto à Vercel por `api/[...path].ts`; `vercel.json` configura a duração máxima da função. No Vercel, mantenha as variáveis existentes que outros recursos usam, como `GEMINI_API_KEY` para funções de IA já disponíveis. As chaves devem permanecer no ambiente do servidor, nunca no bundle do frontend.
 
 ---
 
