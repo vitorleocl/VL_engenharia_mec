@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Layers3, Pencil, Plus, Save, Trash2, Wrench } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, ChevronsDownUp, Layers3, Pencil, Plus, Save, Trash2, Wrench } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
 
@@ -19,6 +19,7 @@ export const ServicosView: React.FC = () => {
   const [checklistTexto, setChecklistTexto] = useState('');
   const [secoesTexto, setSecoesTexto] = useState('');
   const [mensagem, setMensagem] = useState('');
+  const [servicosExpandidos, setServicosExpandidos] = useState<Set<string>>(() => new Set());
 
   const servicoSelecionado = useMemo(
     () => servicosCatalogo.find((servico) => servico.id === subtipoServicoId),
@@ -62,6 +63,7 @@ export const ServicosView: React.FC = () => {
       };
       atualizarServicosCatalogo([...servicosCatalogo, servico]);
       setSubtipoServicoId(servico.id!);
+      setServicosExpandidos((prev) => new Set(prev).add(servico.id!));
       setMensagem('Serviço criado. Agora adicione uma especificação de subtipo/laudo.');
     }
     limparServico();
@@ -86,6 +88,7 @@ export const ServicosView: React.FC = () => {
         : [...item.subtipos, subtipo];
       return { ...item, subtipos };
     }));
+    setServicosExpandidos((prev) => new Set(prev).add(subtipoServicoId));
     setMensagem(subtipoEditandoId ? 'Especificação atualizada.' : 'Especificação adicionada ao catálogo.');
     limparSubtipo();
   };
@@ -211,45 +214,83 @@ export const ServicosView: React.FC = () => {
       </div>
 
       <section className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--adm-text)]">Catálogo Oficial de Serviços</h2>
-          <p className="text-sm text-[var(--adm-mut)]">Os serviços e subtipos cadastrados ficam disponíveis nos formulários de novos laudos e orçamentos.</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--adm-text)]">Catálogo Oficial de Serviços</h2>
+            <p className="text-sm text-[var(--adm-mut)]">Os serviços e subtipos cadastrados ficam disponíveis nos formulários de novos laudos e orçamentos.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setServicosExpandidos(
+              servicosExpandidos.size === servicosCatalogo.length
+                ? new Set()
+                : new Set(servicosCatalogo.map((servico) => servico.id).filter((id): id is string => Boolean(id))),
+            )}
+            className="inline-flex items-center gap-1.5 self-start rounded-lg border border-[var(--adm-line)] px-3 py-2 text-xs font-semibold text-[var(--adm-mut)] transition-colors hover:bg-[var(--adm-bg)] hover:text-[var(--adm-text)] sm:self-auto"
+          >
+            <ChevronsDownUp className="h-3.5 w-3.5" />
+            {servicosExpandidos.size === servicosCatalogo.length ? 'Recolher todos' : 'Expandir todos'}
+          </button>
         </div>
-        {servicosCatalogo.map((servico) => (
-          <article key={servico.id} className="rounded-xl border border-[var(--adm-line)] bg-[var(--adm-card)] p-4 sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--adm-text)]">{servico.nome}</h3>
-                <p className="mt-1 text-xs font-medium text-[var(--adm-blue,#2160db)]">{servico.norma}</p>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--adm-mut)]">{servico.descricao}</p>
+        {servicosCatalogo.map((servico) => {
+          const expanded = Boolean(servico.id && servicosExpandidos.has(servico.id));
+          return (
+            <article key={servico.id} className="overflow-hidden rounded-xl border border-[var(--adm-line)] bg-[var(--adm-card)] transition-colors">
+              <div className="flex items-center gap-2 p-3 sm:p-4">
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  onClick={() => setServicosExpandidos((prev) => {
+                    const next = new Set(prev);
+                    if (servico.id && next.has(servico.id)) next.delete(servico.id);
+                    else if (servico.id) next.add(servico.id);
+                    return next;
+                  })}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-[var(--adm-bg)]"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--adm-bg)] text-[var(--adm-blue,#2160db)]">
+                    {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-[var(--adm-text)]">{servico.nome}</span>
+                    <span className="mt-0.5 block truncate text-xs text-[var(--adm-mut)]">
+                      {servico.subtipos.length} especificações · {servico.norma}
+                    </span>
+                  </span>
+                </button>
+                <div className="flex shrink-0 gap-1 sm:gap-2">
+                  <button type="button" onClick={() => editarServico(servico)} aria-label={`Editar ${servico.nome}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--adm-line)] px-2 py-2 text-xs font-semibold text-[var(--adm-text)] transition-colors hover:bg-[var(--adm-bg)] sm:px-2.5"><Pencil className="h-3.5 w-3.5" /><span className="hidden sm:inline">Editar</span></button>
+                  <button type="button" onClick={() => excluirServico(servico)} aria-label={`Excluir ${servico.nome}`} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-2 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-500/10 sm:px-2.5"><Trash2 className="h-3.5 w-3.5" /><span className="hidden sm:inline">Excluir</span></button>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-2">
-                <button type="button" onClick={() => editarServico(servico)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--adm-line)] px-2.5 py-2 text-xs font-semibold text-[var(--adm-text)] hover:bg-[var(--adm-bg)]"><Pencil className="h-3.5 w-3.5" />Editar</button>
-                <button type="button" onClick={() => excluirServico(servico)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-2.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-500/10"><Trash2 className="h-3.5 w-3.5" />Excluir</button>
+              <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div className="min-h-0 overflow-hidden">
+                  <div className="border-t border-[var(--adm-line)] px-4 pb-4 pt-3 sm:px-5">
+                    <p className="mb-2 text-sm leading-relaxed text-[var(--adm-mut)]">{servico.descricao}</p>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--adm-mut)]">Especificações / subtipos</p>
+                    {servico.subtipos.length ? (
+                      <ul className="divide-y divide-[var(--adm-line)]">
+                        {servico.subtipos.map((subtipo) => (
+                          <li key={subtipo.id || subtipo.nome} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-[var(--adm-text)]">{subtipo.nome}</p>
+                              <p className="mt-0.5 text-xs text-[var(--adm-mut)]">{subtipo.normaRef}</p>
+                              <p className="mt-1 line-clamp-2 text-xs text-[var(--adm-mut)]">{subtipo.detalhe}</p>
+                            </div>
+                            <div className="flex shrink-0 gap-2">
+                              <button type="button" onClick={() => editarSubtipo(servico, subtipo)} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--adm-blue,#2160db)] hover:bg-[var(--adm-bg)]"><Pencil className="h-3 w-3" />Editar</button>
+                              <button type="button" onClick={() => excluirSubtipo(servico, subtipo)} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-500/10"><Trash2 className="h-3 w-3" />Excluir</button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <p className="py-2 text-sm text-[var(--adm-mut)]">Nenhuma especificação cadastrada.</p>}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 border-t border-[var(--adm-line)] pt-3">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--adm-mut)]">Especificações / subtipos ({servico.subtipos.length})</p>
-              {servico.subtipos.length ? (
-                <ul className="divide-y divide-[var(--adm-line)]">
-                  {servico.subtipos.map((subtipo) => (
-                    <li key={subtipo.id || subtipo.nome} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--adm-text)]">{subtipo.nome}</p>
-                        <p className="mt-0.5 text-xs text-[var(--adm-mut)]">{subtipo.normaRef}</p>
-                        <p className="mt-1 line-clamp-2 text-xs text-[var(--adm-mut)]">{subtipo.detalhe}</p>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <button type="button" onClick={() => editarSubtipo(servico, subtipo)} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--adm-blue,#2160db)] hover:bg-[var(--adm-bg)]"><Pencil className="h-3 w-3" />Editar</button>
-                        <button type="button" onClick={() => excluirSubtipo(servico, subtipo)} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-500/10"><Trash2 className="h-3 w-3" />Excluir</button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="py-2 text-sm text-[var(--adm-mut)]">Nenhuma especificação cadastrada.</p>}
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   FileSpreadsheet, 
@@ -66,6 +66,8 @@ export const OrcamentosView: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroClienteId, setFiltroClienteId] = useState('');
+  const [cardsAnimados, setCardsAnimados] = useState<Set<string>>(() => new Set());
+  const animacoesTimeoutRef = useRef<Map<string, number>>(new Map());
 
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
   const [cnpjCliente, setCnpjCliente] = useState('');
@@ -80,6 +82,31 @@ export const OrcamentosView: React.FC = () => {
   const [validadeDias, setValidadeDias] = useState<number>(15);
   const [valorTotal, setValorTotal] = useState('3500');
   const [condicoesPagamento, setCondicoesPagamento] = useState('50% na aprovação da proposta e 50% após emissão do laudo técnico pericial e registro da ART junto ao CREA-PE.');
+
+  const animarCardOrcamento = (id: string) => {
+    const timeoutAnterior = animacoesTimeoutRef.current.get(id);
+    if (timeoutAnterior) window.clearTimeout(timeoutAnterior);
+    setCardsAnimados((prev) => new Set(prev).add(id));
+    const timeout = window.setTimeout(() => {
+      setCardsAnimados((prev) => {
+        const proximo = new Set(prev);
+        proximo.delete(id);
+        return proximo;
+      });
+      animacoesTimeoutRef.current.delete(id);
+    }, 850);
+    animacoesTimeoutRef.current.set(id, timeout);
+  };
+
+  useEffect(() => () => {
+    animacoesTimeoutRef.current.forEach((timeout) => window.clearTimeout(timeout));
+    animacoesTimeoutRef.current.clear();
+  }, []);
+
+  const alterarStatusComAnimacao = (id: string, novoStatus: Orcamento['status']) => {
+    atualizarStatusOrcamento(id, novoStatus);
+    animarCardOrcamento(id);
+  };
 
   // Preenchimento automático ao selecionar cliente
   useEffect(() => {
@@ -205,6 +232,7 @@ export const OrcamentosView: React.FC = () => {
     orcamentoRascunho.secoes = gerarSecoesPadraoOrcamentoV2(orcamentoRascunho as Orcamento, { cliente });
 
     const idCriado = adicionarOrcamento(orcamentoRascunho);
+    animarCardOrcamento(idCriado);
     return { id: idCriado, ...orcamentoRascunho, criadoEm: new Date().toISOString() } as Orcamento;
   };
 
@@ -336,7 +364,11 @@ export const OrcamentosView: React.FC = () => {
     return (
       <div 
         key={orcamento.id}
-        className="bg-[var(--card)] border border-[var(--line)] rounded-xl p-3.5 space-y-2.5 shadow-xs hover:border-[var(--blue)] transition-colors cursor-pointer group min-w-0 overflow-hidden"
+        className={`bg-[var(--card)] border border-[var(--line)] rounded-xl p-3.5 space-y-2.5 shadow-xs hover:border-[var(--blue)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-sm motion-reduce:transition-none cursor-pointer group min-w-0 overflow-hidden ${
+          cardsAnimados.has(orcamento.id)
+            ? 'animate-in fade-in slide-in-from-bottom-2 duration-500 ring-2 ring-[#1565D8]/30'
+            : ''
+        }`}
         onClick={() => {
           if (!estaEditandoTitulo) {
             setPropostaModalOrcamento(orcamento);
@@ -491,9 +523,9 @@ export const OrcamentosView: React.FC = () => {
                 setOrcamentoParaFaturar(orcamento);
                 return;
               }
-              atualizarStatusOrcamento(orcamento.id, novoStatus);
+              alterarStatusComAnimacao(orcamento.id, novoStatus);
             }}
-            className="w-full min-w-0 max-w-full text-[11.5px] py-1.5 px-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-semibold cursor-pointer focus:outline-none focus:border-[var(--blue)]"
+            className="w-full min-w-0 max-w-full text-[11.5px] py-1.5 px-2 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-semibold cursor-pointer focus:outline-none focus:border-[var(--blue)] transition-colors duration-300 motion-reduce:transition-none"
           >
             <option value="rascunho">Novo / Rascunho</option>
             <option value="enviado">Enviado</option>
@@ -1034,7 +1066,7 @@ export const OrcamentosView: React.FC = () => {
                 return;
               }
             }
-            atualizarStatusOrcamento(id, novoStatus);
+            alterarStatusComAnimacao(id, novoStatus);
           }}
           onEditarProposta={(orc) => {
             setPropostaModalOrcamento(null);
@@ -1050,6 +1082,7 @@ export const OrcamentosView: React.FC = () => {
           onClose={() => setOrcamentoParaFaturar(null)}
           onConfirm={(dados) => {
             atualizarStatusOrcamento(orcamentoParaFaturar.id, 'faturado', dados);
+            animarCardOrcamento(orcamentoParaFaturar.id);
             setOrcamentoParaFaturar(null);
           }}
         />
