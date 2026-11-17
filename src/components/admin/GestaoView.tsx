@@ -5,7 +5,7 @@ import { useData } from '../../context/DataContext';
 import { ChecklistModelosEditor } from './ChecklistModelosEditor';
 
 export const GestaoView: React.FC = () => {
-  const { auditLogs, usuarios } = useData();
+  const { auditLogs, usuarios, atualizarUsuario } = useData();
   const [searchParams] = useSearchParams();
   const [abaAtiva, setAbaAtiva] = useState<'auditoria' | 'configuracoes'>(
     searchParams.get('tab') === 'modelos' ? 'configuracoes' : 'auditoria'
@@ -94,7 +94,7 @@ export const GestaoView: React.FC = () => {
 
                   {auditLogs.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="text-center py-8 text-[var(--adm-mut)]">
+                      <td colSpan={4} className="text-center py-8 text-[var(--adm-mut)]">
                         Nenhum registro de auditoria recente.
                       </td>
                     </tr>
@@ -117,6 +117,7 @@ export const GestaoView: React.FC = () => {
                   <tr className="border-b border-[var(--adm-line)] text-[var(--adm-mut)] text-[12.5px]">
                     <th className="py-2.5 px-3 font-semibold">Pessoa</th>
                     <th className="py-2.5 px-3 font-semibold text-right">Perfil</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Projetos e Guia Técnico</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--adm-line)]">
@@ -133,6 +134,26 @@ export const GestaoView: React.FC = () => {
                           <span className="tag-tech w">Campo</span>
                         ) : (
                           <span className="tag-tech ok">Cliente</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right align-top">
+                        {u.role === 'colaborador' ? (
+                          <label className="inline-flex items-center justify-end gap-2 text-xs text-[var(--adm-mut)]">
+                            <span className="sr-only">Permitir Projetos e Guia Técnico para {u.nome}</span>
+                            <input
+                              type="checkbox"
+                              checked={u.permissoes?.projetosGuia === true}
+                              onChange={(event) => atualizarUsuario(u.uid, {
+                                permissoes: { ...u.permissoes, projetosGuia: event.target.checked },
+                              })}
+                              className="h-4 w-4 accent-blue-600"
+                            />
+                            {u.permissoes?.projetosGuia ? 'Permitido' : 'Sem acesso'}
+                          </label>
+                        ) : u.role === 'master' ? (
+                          <span className="text-xs font-semibold text-emerald-500">Acesso total</span>
+                        ) : (
+                          <span className="text-xs text-[var(--adm-mut)]">Indisponível</span>
                         )}
                       </td>
                     </tr>

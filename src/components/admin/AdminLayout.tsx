@@ -7,6 +7,7 @@ import {
   Users, 
   Cpu, 
   FileSpreadsheet, 
+  ClipboardList,
   TrendingUp,
   ShieldCheck, 
   LogOut, 
@@ -90,6 +91,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         ? `${pendingSyncCount} checklist(s) pendente(s) de sincronização`
         : 'Checklists e vistorias de campo',
       visible: true
+    },
+    {
+      id: 'projetos-guia',
+      label: 'Projetos e Guia Técnico',
+      path: '/admin/projetos-guia',
+      icon: ClipboardList,
+      badge: '',
+      title: 'Projetos técnicos e guias por serviço',
+      visible: isMaster || (isColaborador && currentUser.permissoes?.projetosGuia === true)
     },
     {
       id: 'clientes',

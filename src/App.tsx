@@ -31,6 +31,7 @@ import { GestaoView } from './components/admin/GestaoView';
 import { PropostaPrintView } from './components/admin/PropostaPrintView';
 import { LaudoPrintView } from './components/admin/LaudoPrintView';
 import { VerificacaoPublicaView } from './components/public/VerificacaoPublicaView';
+import { ProjetosGuiaView } from './components/admin/ProjetosGuiaView';
 
 function FloatingContactHelper() {
   const location = useLocation();
@@ -202,6 +203,14 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <ChecklistCampoView />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/projetos-guia"
+                element={
+                  <AdminLayout>
+                    <ProjetosGuiaView />
                   </AdminLayout>
                 }
               />
