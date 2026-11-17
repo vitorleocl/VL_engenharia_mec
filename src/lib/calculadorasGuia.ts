@@ -41,6 +41,8 @@ export interface EntradasPpci {
   comprimentoEquivalenteM: number;
   desNivelM: number;
   pressaoResidualMca: number;
+  massaCombustivelKg: number;
+  poderCalorificoMjKg: number;
 }
 
 export interface EntradasNr12 {
@@ -57,6 +59,7 @@ export interface EntradasNr13 {
   eficienciaJunta: number;
   sobreEspessuraCorrosaoMm: number;
   espessuraMedidaMm: number;
+  espessuraNominalMm: number;
   taxaCorrosaoMmAno: number;
   volumeM3: number;
   classeFluido: 'A' | 'B' | 'C' | 'D';
@@ -85,13 +88,13 @@ export const EXEMPLOS_CALCULADORAS: Record<GuiaServicoId, EntradasGuia> = {
     area: 400, densidadeM2Pessoa: 3, capacidadePassagem: 100, numeroHidrantes: 2,
     vazaoHidranteLMin: 125, autonomiaMin: 60, diametroInternoMm: 62.7,
     coeficienteHazenWilliams: 120, comprimentoEquivalenteM: 85,
-    desNivelM: 8, pressaoResidualMca: 20,
+    desNivelM: 8, pressaoResidualMca: 20, massaCombustivelKg: 0, poderCalorificoMjKg: 0,
   },
   nr12: { tempoParadaMs: 120, tempoRespostaMs: 20, capacidadeDeteccaoMm: 30 },
   nr13: {
     pressaoProjetoMpa: 1.2, raioInternoMm: 400, diametroInternoMm: 800,
     tensaoAdmissivelMpa: 138, eficienciaJunta: 0.85, sobreEspessuraCorrosaoMm: 1.5,
-    espessuraMedidaMm: 5.4, taxaCorrosaoMmAno: 0.1, volumeM3: 1,
+    espessuraMedidaMm: 5.4, espessuraNominalMm: 6.35, taxaCorrosaoMmAno: 0.1, volumeM3: 1,
     classeFluido: 'D', razaoTensoesTeste: 1,
   },
 };
@@ -115,7 +118,7 @@ export function calcularHvac(entrada: EntradasHvac): ResultadoGuia {
   validarPositivo('Pé-direito', entrada.peDireito, false);
   validarPositivo('ΔT de insuflação', entrada.deltaTInsuflacao, false);
   validarPositivo('Quantidade de difusores', entrada.quantidadeDifusores, false);
-  if (entrada.urExterna > 100 || entrada.urInterna > 100) throw new Error('Umidade relativa deve estar entre 0 e 100%.');
+  if (entrada.urExterna < 0 || entrada.urExterna > 100 || entrada.urInterna < 0 || entrada.urInterna > 100) throw new Error('Umidade relativa deve estar entre 0 e 100%.');
 
   const pessoasSensivel = entrada.pessoas * entrada.wSensivelPessoa;
   const pessoasLatente = entrada.pessoas * entrada.wLatentePessoa;
@@ -194,6 +197,9 @@ export function calcularPpci(entrada: EntradasPpci): ResultadoGuia {
     / (entrada.coeficienteHazenWilliams ** 1.85 * diametroM ** 4.87);
   const perdaTrecho = perdaUnitária * entrada.comprimentoEquivalenteM;
   const alturaManometrica = entrada.desNivelM + perdaTrecho + entrada.pressaoResidualMca;
+  const cargaIncendioEspecifica = entrada.area > 0
+    ? entrada.massaCombustivelKg * entrada.poderCalorificoMjKg / entrada.area
+    : 0;
 
   return {
     tipo: 'ppci',
@@ -211,6 +217,7 @@ export function calcularPpci(entrada: EntradasPpci): ResultadoGuia {
       perdaUnitáriaMPorM: perdaUnitária,
       perdaTrechoMca: perdaTrecho,
       alturaManometricaMca: alturaManometrica,
+      cargaIncendioEspecificaMjM2: cargaIncendioEspecifica,
     },
     passos: [
       `População: ${entrada.area} / ${entrada.densidadeM2Pessoa} = ${populacaoExata.toFixed(1)}; adotada ${populacao} pessoas.`,
@@ -271,6 +278,7 @@ export function calcularNr13(
   validarPositivo('Tensão admissível', entrada.tensaoAdmissivelMpa, false);
   validarPositivo('Eficiência da junta', entrada.eficienciaJunta, false);
   validarPositivo('Espessura medida', entrada.espessuraMedidaMm, false);
+  validarPositivo('Espessura nominal', entrada.espessuraNominalMm, false);
   if (entrada.eficienciaJunta > 1) throw new Error('Eficiência da junta deve ser informada entre 0 e 1.');
   const p = entrada.pressaoProjetoMpa;
   const r = entrada.raioInternoMm;
@@ -302,6 +310,7 @@ export function calcularNr13(
       espessuraMinimaCascoMm: tCasco,
       espessuraMinimaTampoMm: tTampo,
       espessuraProjetoComCorrosaoMm: espessuraProjeto,
+      espessuraNominalAdotadaMm: entrada.espessuraNominalMm,
       pmtaRecalculadaMpa: pmtaRecalculada,
       vidaRemanescenteAnos: vidaRemanescente,
       produtoPressaoVolume: produtoPv,

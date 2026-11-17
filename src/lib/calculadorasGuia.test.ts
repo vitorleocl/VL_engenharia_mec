@@ -38,6 +38,7 @@ test('PPCI: reproduz a loja térrea ilustrativa', () => {
   assert.ok(Math.abs(Number(resultado.resultados.perdaUnitáriaMPorM) - 0.043) < 0.001);
   assert.ok(Math.abs(Number(resultado.resultados.perdaTrechoMca) - 3.7) < 0.1);
   assert.ok(Math.abs(Number(resultado.resultados.alturaManometricaMca) - 32) < 0.5);
+  assert.equal(resultado.resultados.cargaIncendioEspecificaMjM2, 0);
 });
 
 test('NR-12: reproduz distância de segurança ilustrativa', () => {
@@ -57,6 +58,7 @@ test('NR-13: reproduz espessuras, PMTA, grupo e teste ilustrativos', () => {
   assert.ok(Math.abs(Number(resultado.resultados.espessuraMinimaCascoMm) - 4.12) < 0.01);
   assert.ok(Math.abs(Number(resultado.resultados.espessuraMinimaTampoMm) - 4.10) < 0.01);
   assert.ok(Math.abs(Number(resultado.resultados.espessuraProjetoComCorrosaoMm) - 5.62) < 0.02);
+  assert.equal(resultado.resultados.espessuraNominalAdotadaMm, 6.35);
   assert.ok(Math.abs(Number(resultado.resultados.pmtaRecalculadaMpa) - 1.57) < 0.02);
   assert.ok(Math.abs(Number(resultado.resultados.vidaRemanescenteAnos) - 12.8) < 0.1);
   assert.ok(Math.abs(Number(resultado.resultados.testeHidrostatico1_3xPressaoProjetoMpa) - 1.56) < 0.001);

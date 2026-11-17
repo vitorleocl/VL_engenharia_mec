@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { AlertCircle, Check, Clipboard, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useData } from '../../../context/DataContext';
 import {
   EntradasGuia,
   EXEMPLOS_CALCULADORAS,
@@ -10,6 +12,7 @@ import {
 } from '../../../lib/calculadorasGuia';
 import { GuiaModeloServico, GuiaServicoId, ProjetoGuia, ProjetoGuiaCalculo } from '../../../types';
 import { db } from '../../../lib/firebase';
+import { CHAVE_GUIA_INSERCAO_PENDENTE, GuiaDestinoEditor, GuiaInsercaoPendente } from '../../../lib/guiaInsercaoEditor';
 
 interface CalculadoraProjetoGuiaProps {
   servico: GuiaServicoId;
@@ -65,6 +68,8 @@ const CAMPOS: Record<GuiaServicoId, CampoNumero[]> = {
     { chave: 'comprimentoEquivalenteM', rotulo: 'Comprimento equivalente', unidade: 'm' },
     { chave: 'desNivelM', rotulo: 'Desnível', unidade: 'm' },
     { chave: 'pressaoResidualMca', rotulo: 'Pressão residual', unidade: 'mca' },
+    { chave: 'massaCombustivelKg', rotulo: 'Massa de combustível', unidade: 'kg' },
+    { chave: 'poderCalorificoMjKg', rotulo: 'Poder calorífico', unidade: 'MJ/kg' },
   ],
   nr12: [
     { chave: 'tempoParadaMs', rotulo: 'Tempo de parada da máquina', unidade: 'ms' },
@@ -79,6 +84,7 @@ const CAMPOS: Record<GuiaServicoId, CampoNumero[]> = {
     { chave: 'eficienciaJunta', rotulo: 'Eficiência de junta E', unidade: '0–1', passo: '0.01' },
     { chave: 'sobreEspessuraCorrosaoMm', rotulo: 'Sobrespessura de corrosão', unidade: 'mm', passo: '0.1' },
     { chave: 'espessuraMedidaMm', rotulo: 'Espessura medida', unidade: 'mm', passo: '0.01' },
+    { chave: 'espessuraNominalMm', rotulo: 'Espessura nominal', unidade: 'mm', passo: '0.01' },
     { chave: 'taxaCorrosaoMmAno', rotulo: 'Taxa de corrosão', unidade: 'mm/ano', passo: '0.01' },
     { chave: 'volumeM3', rotulo: 'Volume', unidade: 'm³', passo: '0.1' },
     { chave: 'razaoTensoesTeste', rotulo: 'Razão de tensões para teste', unidade: '—', passo: '0.01' },
@@ -118,6 +124,7 @@ const ROTULOS_RESULTADO: Record<string, string> = {
   perdaUnitáriaMPorM: 'Perda unitária J',
   perdaTrechoMca: 'Perda no trecho',
   alturaManometricaMca: 'Altura manométrica',
+  cargaIncendioEspecificaMjM2: 'Carga de incêndio específica (combustível informado)',
   tempoTotalS: 'Tempo total',
   compensacaoCmm: 'Compensação C',
   constanteKmmS: 'Constante K',
@@ -126,6 +133,7 @@ const ROTULOS_RESULTADO: Record<string, string> = {
   espessuraMinimaCascoMm: 'Espessura mínima do casco',
   espessuraMinimaTampoMm: 'Espessura mínima do tampo 2:1',
   espessuraProjetoComCorrosaoMm: 'Espessura de projeto com corrosão',
+  espessuraNominalAdotadaMm: 'Espessura nominal informada/adotada',
   pmtaRecalculadaMpa: 'PMTA recalculada',
   vidaRemanescenteAnos: 'Vida remanescente indicativa',
   produtoPressaoVolume: 'Produto P × V',
@@ -156,6 +164,8 @@ function formatarResultado(chave: string, valor: string | number): string {
 
 export const CalculadoraProjetoGuia: React.FC<CalculadoraProjetoGuiaProps> = ({ servico, modelo, projeto }) => {
   const { currentUser } = useAuth();
+  const { laudos, orcamentos } = useData();
+  const navigate = useNavigate();
   const [entradas, setEntradas] = useState<Record<string, number | string>>(
     () => ({ ...EXEMPLOS_CALCULADORAS[servico] }) as Record<string, number | string>,
   );
@@ -163,6 +173,15 @@ export const CalculadoraProjetoGuia: React.FC<CalculadoraProjetoGuiaProps> = ({ 
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [calculosSalvos, setCalculosSalvos] = useState<ProjetoGuiaCalculo[]>([]);
+  const [destinoEditor, setDestinoEditor] = useState<GuiaDestinoEditor>('laudo');
+  const [documentoDestinoId, setDocumentoDestinoId] = useState('');
+  const [secaoDestinoId, setSecaoDestinoId] = useState('');
+  const laudosDisponiveis = useMemo(() => laudos.filter((laudo) => laudo.status !== 'finalizado'), [laudos]);
+  const orcamentosDisponiveis = useMemo(() => orcamentos.filter((orcamento) => orcamento.status !== 'faturado'), [orcamentos]);
+  const documentoDestino = destinoEditor === 'laudo'
+    ? laudosDisponiveis.find((laudo) => laudo.id === documentoDestinoId)
+    : orcamentosDisponiveis.find((orcamento) => orcamento.id === documentoDestinoId);
+  const secoesDestino = documentoDestino?.secoes || [];
   const calculo = useMemo<{ resultado?: ResultadoGuia; erro?: string }>(() => {
     try {
       const entradasComClasse = servico === 'nr13' ? { ...entradas, classeFluido } : entradas;
@@ -223,6 +242,40 @@ export const CalculadoraProjetoGuia: React.FC<CalculadoraProjetoGuiaProps> = ({ 
     }
   };
 
+  useEffect(() => {
+    const documentos = destinoEditor === 'laudo' ? laudosDisponiveis : orcamentosDisponiveis;
+    if (!documentoDestinoId || !documentos.some((documento) => documento.id === documentoDestinoId)) {
+      setDocumentoDestinoId(documentos[0]?.id || '');
+      setSecaoDestinoId(documentos[0]?.secoes?.[0]?.id || '');
+    }
+  }, [destinoEditor, laudosDisponiveis, orcamentosDisponiveis, documentoDestinoId]);
+
+  useEffect(() => {
+    if (secoesDestino.length && !secoesDestino.some((secao) => secao.id === secaoDestinoId)) {
+      setSecaoDestinoId(secoesDestino[0].id);
+    } else if (!secoesDestino.length) {
+      setSecaoDestinoId('');
+    }
+  }, [documentoDestinoId, secoesDestino, secaoDestinoId]);
+
+  const inserirNoEditor = () => {
+    if (!calculo.resultado || !documentoDestino || !secaoDestinoId) return;
+    const pendente: GuiaInsercaoPendente = {
+      destino: destinoEditor,
+      documentoId: documentoDestino.id,
+      secaoId: secaoDestinoId,
+      servico,
+      origem: projeto?.nome || `Guia técnico ${servico.toUpperCase()}`,
+      criadoEm: new Date().toISOString(),
+      linhas: Object.entries(calculo.resultado.resultados).map(([chave, valor]) => ({
+        rotulo: ROTULOS_RESULTADO[chave] || chave,
+        valor: formatarResultado(chave, valor),
+      })),
+    };
+    sessionStorage.setItem(CHAVE_GUIA_INSERCAO_PENDENTE, JSON.stringify(pendente));
+    navigate(destinoEditor === 'laudo' ? `/admin/laudos/${documentoDestino.id}` : `/admin/orcamentos/${documentoDestino.id}`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-400">
@@ -279,6 +332,39 @@ export const CalculadoraProjetoGuia: React.FC<CalculadoraProjetoGuiaProps> = ({ 
         <button type="button" onClick={() => void copiarTabela()} disabled={!calculo.resultado} className="min-h-10 px-3 rounded-lg border border-[var(--adm-line)] text-xs font-semibold text-[var(--adm-text)] inline-flex items-center gap-1.5 disabled:opacity-50"><Clipboard className="w-4 h-4" />Copiar tabela para o laudo</button>
         <button type="button" onClick={() => void salvarCalculo()} disabled={!projeto || !calculo.resultado || salvando} className="min-h-10 px-3 rounded-lg bg-[var(--adm-blue,#2160db)] text-xs font-bold text-white inline-flex items-center gap-1.5 disabled:opacity-50"><Save className="w-4 h-4" />{salvando ? 'Salvando…' : 'Salvar cálculo no projeto'}</button>
         {!projeto && <span className="self-center text-[11px] text-[var(--adm-mut)]">Crie ou selecione um projeto para salvar o cálculo.</span>}
+      </div>
+      <div className="rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] p-3.5 space-y-2.5">
+        <h4 className="text-xs font-bold text-[var(--adm-text)]">Inserir resultado em documento existente</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <label className="text-[10px] font-semibold text-[var(--adm-mut)]">
+            Tipo de documento
+            <select value={destinoEditor} onChange={(event) => { setDestinoEditor(event.target.value as GuiaDestinoEditor); setDocumentoDestinoId(''); }} className="mt-1 w-full min-h-10 px-2 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-xs text-[var(--adm-text)]">
+              <option value="laudo">Laudo</option><option value="orcamento">Orçamento</option>
+            </select>
+          </label>
+          <label className="text-[10px] font-semibold text-[var(--adm-mut)]">
+            Documento
+            <select value={documentoDestinoId} onChange={(event) => { setDocumentoDestinoId(event.target.value); setSecaoDestinoId(''); }} className="mt-1 w-full min-h-10 px-2 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-xs text-[var(--adm-text)]">
+              <option value="">Selecione</option>
+              {(destinoEditor === 'laudo' ? laudosDisponiveis : orcamentosDisponiveis).map((documento) => (
+                <option key={documento.id} value={documento.id}>
+                  {destinoEditor === 'laudo' ? `${(documento as typeof laudos[number]).numero} · ${(documento as typeof laudos[number]).clienteNome}` : `${(documento as typeof orcamentos[number]).codigoProposta || documento.id} · ${(documento as typeof orcamentos[number]).clienteNome || ''}`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-[10px] font-semibold text-[var(--adm-mut)]">
+            Seção para anexar ao final
+            <select value={secaoDestinoId} onChange={(event) => setSecaoDestinoId(event.target.value)} disabled={!secoesDestino.length} className="mt-1 w-full min-h-10 px-2 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-xs text-[var(--adm-text)] disabled:opacity-50">
+              <option value="">Selecione</option>
+              {secoesDestino.map((secao) => <option key={secao.id} value={secao.id}>{secao.titulo}</option>)}
+            </select>
+          </label>
+        </div>
+        <button type="button" onClick={inserirNoEditor} disabled={!calculo.resultado || !documentoDestino || !secaoDestinoId} className="min-h-10 px-3 rounded-lg border border-blue-500/40 text-xs font-semibold text-blue-400 disabled:opacity-45">
+          Inserir no editor sem substituir o conteúdo existente
+        </button>
+        {!secoesDestino.length && <p className="text-[10px] text-[var(--adm-mut)]">O documento selecionado ainda não possui seções editáveis.</p>}
       </div>
       {mensagem && <p role="status" className="text-xs text-[var(--adm-mut)] inline-flex items-start gap-1.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" />{mensagem}</p>}
       {projeto && calculosSalvos.length > 0 && (

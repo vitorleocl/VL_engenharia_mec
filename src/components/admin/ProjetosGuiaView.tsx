@@ -4,10 +4,11 @@ import { collection, doc, onSnapshot, setDoc, writeBatch } from 'firebase/firest
 import { AlertCircle, Box, Calculator, Check, ClipboardCheck, FileStack, Loader2, Plus, Save, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { GuiaModeloServico, GuiaServicoId, ProjetoGuia, ProjetoGuiaChecklistItem } from '../../types';
+import { GuiaModeloServico, GuiaServicoId, Orcamento, ProjetoGuia, ProjetoGuiaChecklistItem } from '../../types';
 import { GUIA_TECNICO_CATALOGO, criarDocumentosGuiaPadrao } from '../../lib/guiaTecnicoCatalogo';
 import { inicializarModelosGuiaAusentes } from '../../lib/guiaTecnicoFirestore';
 import { db } from '../../lib/firebase';
+import { gerarSecoesPadraoOrcamentoV2 } from '../../lib/orcamentoTemplatePadrao';
 import { ChecklistProjetoGuia } from './guia/ChecklistProjetoGuia';
 import { EditorModeloGuia } from './guia/EditorModeloGuia';
 import { CalculadoraProjetoGuia } from './guia/CalculadoraProjetoGuia';
@@ -30,7 +31,7 @@ const BLOCOS = [
 
 export const ProjetosGuiaView: React.FC = () => {
   const { currentUser } = useAuth();
-  const { clientes, ativos } = useData();
+  const { clientes, ativos, adicionarOrcamento } = useData();
   const location = useLocation();
   const navigate = useNavigate();
   const permitido = currentUser?.role === 'master'
@@ -199,6 +200,48 @@ export const ProjetosGuiaView: React.FC = () => {
     }, { merge: true });
   };
 
+  const gerarOrcamentoProjeto = () => {
+    if (!projetoSelecionado || !clienteSelecionado) return;
+    const ativo = ativos.find((item) => item.id === projetoSelecionado.ativoId);
+    const criadoEm = new Date().toISOString();
+    const codigoProposta = `PROP-GUIA-${Date.now()}`;
+    const rascunhoCompleto: Orcamento = {
+      id: codigoProposta,
+      codigoProposta,
+      clienteId: clienteSelecionado.id,
+      clienteNome: clienteSelecionado.nomeFantasia || clienteSelecionado.razaoSocial,
+      cnpjCliente: clienteSelecionado.cpfCnpj || clienteSelecionado.cnpj || '',
+      ativoId: ativo?.id,
+      ativoIdentificacao: ativo?.identificacao,
+      servico: `${SERVICOS.find((item) => item.id === servicoAtivo)?.nome} · ${projetoSelecionado.nome}`,
+      descricaoEscopo: `Rascunho originado do projeto técnico "${projetoSelecionado.nome}". Entregas previstas:\n${modeloAtivo.entregas.map((entrega) => `• ${entrega.nome} (${entrega.formato})`).join('\n')}\n\nValores, prazo final e escopo comercial devem ser revisados antes do envio.`,
+      normasTecnicas: modeloAtivo.normas.join(', '),
+      valor: 0,
+      valorFormatado: 'A definir',
+      status: 'rascunho',
+      prazoDias: 10,
+      prazoEntrega: 'A definir',
+      validadeDias: 15,
+      incluiNotaFiscal: true,
+      layoutVersao: 'v2',
+      incluso: modeloAtivo.entregas.map((entrega) => entrega.nome),
+      foraDoEscopo: [],
+      ativos: ativo ? [{
+        id: ativo.id,
+        tipo: ativo.tipo,
+        identificacao: ativo.identificacao,
+        fabricante: ativo.fabricante,
+        modelo: ativo.modelo,
+        quantidade: 1,
+      }] : [],
+      criadoEm,
+    };
+    rascunhoCompleto.secoes = gerarSecoesPadraoOrcamentoV2(rascunhoCompleto, { cliente: clienteSelecionado, ativo });
+    const { id: _idTemporario, criadoEm: _criadoEmTemporario, ...dadosRascunho } = rascunhoCompleto;
+    const orcamentoId = adicionarOrcamento(dadosRascunho);
+    navigate(`/admin/orcamentos/${orcamentoId}`);
+  };
+
   if (!currentUser) return <Navigate to="/login" replace />;
   if (!permitido) return <Navigate to="/admin" replace />;
 
@@ -348,7 +391,10 @@ export const ProjetosGuiaView: React.FC = () => {
                           </select>
                         </label>
                         <div className="border-t border-[var(--adm-line)] pt-3">
-                          <h4 className="text-sm font-bold text-[var(--adm-text)] mb-3">Checklist do projeto · {clienteSelecionado?.nomeFantasia || clienteSelecionado?.razaoSocial}</h4>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <h4 className="text-sm font-bold text-[var(--adm-text)]">Checklist do projeto · {clienteSelecionado?.nomeFantasia || clienteSelecionado?.razaoSocial}</h4>
+                            <button type="button" onClick={gerarOrcamentoProjeto} disabled={!clienteSelecionado} className="min-h-9 px-3 rounded-lg border border-[var(--adm-line)] text-xs font-semibold text-[var(--adm-text)] disabled:opacity-50">Gerar orçamento rascunho</button>
+                          </div>
                           <ChecklistProjetoGuia
                             projeto={projetoSelecionado}
                             modelo={modeloAtivo}

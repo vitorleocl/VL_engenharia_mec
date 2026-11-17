@@ -44,6 +44,7 @@ import { useAuth } from '../../context/AuthContext';
 import { calculateHRN, HRN_LO_OPTIONS, HRN_FE_OPTIONS, HRN_DPH_OPTIONS, HRN_NP_OPTIONS } from '../../utils/hrn';
 import { Laudo, LaudoSecao, LaudoRevisao, HRNValues, ChecklistCampo } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
+import { criarHtmlTabelaGuia, limparGuiaInsercaoPendente, lerGuiaInsercaoPendente } from '../../lib/guiaInsercaoEditor';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { ImportarChecklistCampoModal } from './ImportarChecklistCampoModal';
 import { gerarMinutaTecnicaSecao } from '../../lib/geradorMinutasLaudo';
@@ -367,6 +368,31 @@ export const LaudoEditorView: React.FC = () => {
       secoes: secoesAtualizadas,
     });
   };
+
+  // Consome uma inserção pedida pelo Guia Técnico, anexando-a sem substituir
+  // o HTML que já existe na seção selecionada.
+  useEffect(() => {
+    if (!laudoState || !id) return;
+    const insercao = lerGuiaInsercaoPendente();
+    if (!insercao || insercao.destino !== 'laudo' || insercao.documentoId !== id) return;
+    const secaoExiste = laudoState.secoes.some((secao) => secao.id === insercao.secaoId);
+    if (!secaoExiste) {
+      limparGuiaInsercaoPendente();
+      window.alert('A seção escolhida não foi encontrada neste laudo. O conteúdo existente foi mantido.');
+      return;
+    }
+    const htmlTabela = criarHtmlTabelaGuia(insercao);
+    const novoEstado: Laudo = {
+      ...laudoState,
+      secoes: laudoState.secoes.map((secao) => secao.id === insercao.secaoId
+        ? { ...secao, conteudoHtml: `${secao.conteudoHtml || ''}<hr />${htmlTabela}`, conteudoJson: undefined }
+        : secao),
+    };
+    limparGuiaInsercaoPendente();
+    setSecaoAtivaId(insercao.secaoId);
+    setLaudoState(novoEstado);
+    executarSalvar(novoEstado, `Tabela de cálculo ${insercao.servico.toUpperCase()} inserida pelo Guia Técnico`);
+  }, [id, laudoState]);
 
   // Move Section Up in order
   const handleMoverSecaoCima = (index: number) => {
