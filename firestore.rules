@@ -26,6 +26,17 @@ service cloud.firestore {
       );
     }
 
+    // A permissão específica do módulo é aditiva ao papel existente.
+    function hasProjetosGuiaPermission() {
+      return isMaster() || (
+        isAuthenticated() &&
+        exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == "colaborador" &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get("ativo", true) == true &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get("permissoes", {}).get("projetosGuia", false) == true
+      );
+    }
+
     // Public contact form submission (Creation allowed without auth, reading/modifying forbidden)
     match /contatos/{contatoId} {
       allow create: if true;
@@ -111,6 +122,25 @@ service cloud.firestore {
     // Inspection Schedule / Agenda
     match /agendaVistorias/{agendaId} {
       allow read, write: if isColaborador() || isMaster();
+    }
+
+    // Modelos e projetos do Guia Técnico — coleções novas.
+    match /guia_modelos/{servico} {
+      allow read: if hasProjetosGuiaPermission();
+      allow create, update, delete: if isMaster();
+
+      // Arquivos de exemplo do serviço, sem misturá-los com projetos de clientes.
+      match /exemplos/{arquivoId} {
+        allow read, write: if hasProjetosGuiaPermission();
+      }
+    }
+
+    match /projetos_guia/{projetoId} {
+      allow read, create, update, delete: if hasProjetosGuiaPermission();
+
+      match /{subcolecao}/{documentoId} {
+        allow read, create, update, delete: if hasProjetosGuiaPermission();
+      }
     }
   }
 }
