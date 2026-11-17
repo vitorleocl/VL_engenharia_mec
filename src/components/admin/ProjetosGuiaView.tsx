@@ -12,6 +12,7 @@ import { ChecklistProjetoGuia } from './guia/ChecklistProjetoGuia';
 import { EditorModeloGuia } from './guia/EditorModeloGuia';
 import { CalculadoraProjetoGuia } from './guia/CalculadoraProjetoGuia';
 import { Visualizador3DGuia } from './guia/Visualizador3DGuia';
+import { ArquivosProjetoGuia } from './guia/ArquivosProjetoGuia';
 
 const SERVICOS: { id: GuiaServicoId; nome: string; descricao: string }[] = [
   { id: 'hvac', nome: 'HVAC-R', descricao: 'Climatização, ventilação e refrigeração' },
@@ -370,7 +371,7 @@ export const ProjetosGuiaView: React.FC = () => {
               </div>
             ) : indice === 2 ? (
               <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 items-start">
-                <Visualizador3DGuia servico={servicoAtivo} modelo={modeloAtivo} />
+                <Visualizador3DGuia servico={servicoAtivo} modelo={modeloAtivo} projeto={projetoSelecionado} />
                 <div className="flex flex-wrap gap-2">
                   {modeloAtivo.modelo3d.legenda.map((item) => (
                     <span key={item.nome} className="inline-flex items-center gap-1.5 text-xs text-[var(--adm-mut)]">
@@ -380,21 +381,8 @@ export const ProjetosGuiaView: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[580px] text-left text-xs">
-                  <thead><tr className="border-b border-[var(--adm-line)] text-[var(--adm-mut)]">
-                    <th className="py-2 pr-3">Entrega</th><th className="py-2 pr-3">Formato</th><th className="py-2">Descrição</th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-[var(--adm-line)]">
-                    {modeloAtivo.entregas.map((entrega) => (
-                      <tr key={entrega.nome}>
-                        <td className="py-2.5 pr-3 font-semibold text-[var(--adm-text)]">{entrega.nome}</td>
-                        <td className="py-2.5 pr-3 text-[var(--adm-mut)]">{entrega.formato}</td>
-                        <td className="py-2.5 text-[var(--adm-mut)]">{entrega.descricao}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-3">
+                <ArquivosProjetoGuia modelo={modeloAtivo} projeto={projetoSelecionado} />
               </div>
             )}
           </section>

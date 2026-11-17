@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { Loader2, RotateCcw, RotateCw } from 'lucide-react';
-import { GuiaModeloServico, GuiaServicoId } from '../../../types';
+import { GuiaModeloServico, GuiaServicoId, ProjetoGuia, ProjetoGuiaArquivo } from '../../../types';
+import { db } from '../../../lib/firebase';
 
 interface Visualizador3DGuiaProps {
   servico: GuiaServicoId;
   modelo: GuiaModeloServico;
+  projeto?: ProjetoGuia;
 }
 
 function material(cor: string, opacidade = 1): THREE.MeshStandardMaterial {
@@ -20,7 +24,7 @@ function material(cor: string, opacidade = 1): THREE.MeshStandardMaterial {
   });
 }
 
-export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico, modelo }) => {
+export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico, modelo, projeto }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const girarRef = useRef(false);
   const [girar, setGirar] = useState(false);
@@ -28,6 +32,22 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
   const [pronto, setPronto] = useState(false);
   const [movimentoReduzido, setMovimentoReduzido] = useState(false);
   const [versaoEnquadramento, setVersaoEnquadramento] = useState(0);
+  const [modeloRealUrl, setModeloRealUrl] = useState<string | null>(null);
+  const [mostrarModeloReal, setMostrarModeloReal] = useState(false);
+  const [erroModeloReal, setErroModeloReal] = useState(false);
+
+  useEffect(() => {
+    setModeloRealUrl(null);
+    setMostrarModeloReal(false);
+    if (!projeto) return;
+    return onSnapshot(collection(db, 'projetos_guia', projeto.id, 'arquivos'), (snapshot) => {
+      const modelos3d = snapshot.docs.map((item) => item.data() as ProjetoGuiaArquivo)
+        .filter((item) => ['GLB', 'GLTF'].includes(item.formato.toUpperCase()))
+        .sort((a, b) => b.enviadoEm.localeCompare(a.enviadoEm));
+      setModeloRealUrl(modelos3d[0]?.url || null);
+      setMostrarModeloReal(false);
+    }, (error) => console.warn('[Guia Técnico] Falha ao localizar modelo 3D do projeto:', error));
+  }, [projeto?.id]);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -48,9 +68,13 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
     let controls: OrbitControls;
     let animationId = 0;
     let resizeObserver: ResizeObserver | undefined;
+    let descartado = false;
+    let modeloCarregado: THREE.Object3D | null = null;
+    let cenaMontada: THREE.Scene | undefined;
 
     try {
       const scene = new THREE.Scene();
+      cenaMontada = scene;
       scene.background = new THREE.Color('#0b1728');
       scene.fog = new THREE.Fog('#0b1728', 18, 55);
       const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
@@ -181,6 +205,28 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
         cilindro(0.78, 0.55, -0.25, 0.07, 0.32, '#38bdf8');
       }
 
+      if (modeloRealUrl && mostrarModeloReal) {
+        grupo.visible = false;
+        setErroModeloReal(false);
+        new GLTFLoader().load(modeloRealUrl, (gltf) => {
+          if (descartado) return;
+          modeloCarregado = gltf.scene;
+          const caixaModelo = new THREE.Box3().setFromObject(modeloCarregado);
+          const tamanho = caixaModelo.getSize(new THREE.Vector3());
+          const centro = caixaModelo.getCenter(new THREE.Vector3());
+          const escalaModelo = 8 / (Math.max(tamanho.x, tamanho.y, tamanho.z) || 1);
+          modeloCarregado.scale.setScalar(escalaModelo);
+          modeloCarregado.position.set(-centro.x * escalaModelo, -caixaModelo.min.y * escalaModelo, -centro.z * escalaModelo);
+          scene.add(modeloCarregado);
+        }, undefined, (falha) => {
+          console.warn('[Guia Técnico] Falha ao carregar modelo 3D enviado:', falha);
+          if (!descartado) {
+            grupo.visible = true;
+            setErroModeloReal(true);
+          }
+        });
+      }
+
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.075;
@@ -221,10 +267,20 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
       cancelAnimationFrame(animationId);
       resizeObserver?.disconnect();
       controls?.dispose();
+      descartado = true;
+      if (modeloCarregado) {
+        modeloCarregado.traverse((objeto) => {
+          if (!(objeto instanceof THREE.Mesh)) return;
+          objeto.geometry.dispose();
+          const materiais = Array.isArray(objeto.material) ? objeto.material : [objeto.material];
+          materiais.forEach((item) => item.dispose());
+        });
+        cenaMontada?.remove(modeloCarregado);
+      }
       renderer?.dispose();
       renderer?.domElement.remove();
     };
-  }, [servico, versaoEnquadramento]);
+  }, [servico, versaoEnquadramento, modeloRealUrl, mostrarModeloReal]);
 
   const reiniciarVista = () => {
     setGirar(false);
@@ -240,6 +296,11 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
         {erro && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-5 text-center text-sm text-slate-200">A visualização 3D não pôde ser iniciada neste dispositivo. Os demais recursos do módulo continuam disponíveis.</div>}
         {pronto && (
           <div className="absolute right-3 top-3 z-10 flex gap-2">
+            {modeloRealUrl && (
+              <button type="button" onClick={() => setMostrarModeloReal((mostrar) => !mostrar)} className="min-h-9 px-2.5 rounded-lg bg-slate-900/85 border border-slate-500 text-xs font-semibold text-white">
+                {mostrarModeloReal ? 'Voltar ao esquemático' : 'Ver modelo do projeto'}
+              </button>
+            )}
             <button type="button" onClick={() => setGirar((atual) => !atual)} aria-pressed={girar} className="min-h-9 px-2.5 rounded-lg bg-slate-900/85 border border-slate-500 text-xs font-semibold text-white inline-flex items-center gap-1.5">
               <RotateCw className="w-3.5 h-3.5" />{girar ? 'Parar giro' : 'Girar'}
             </button>
@@ -250,6 +311,7 @@ export const Visualizador3DGuia: React.FC<Visualizador3DGuiaProps> = ({ servico,
         )}
         {movimentoReduzido && <span className="absolute left-3 bottom-3 z-10 rounded-md bg-slate-900/85 px-2 py-1 text-[10px] text-slate-200">Movimento automático reduzido conforme sua preferência do sistema.</span>}
       </div>
+      {erroModeloReal && <p role="alert" className="text-xs text-amber-400">O modelo enviado não carregou (GLB recomendado). O esquema ilustrativo permanece disponível.</p>}
       <p className="text-xs text-[var(--adm-mut)]">{modelo.modelo3d.descricao}</p>
       <p className="text-[10px] text-[var(--adm-mut)]">Esquema paramétrico ilustrativo — não representa projeto executivo ou dimensionamento normativo.</p>
     </div>
