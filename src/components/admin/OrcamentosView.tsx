@@ -28,7 +28,6 @@ import { Orcamento } from '../../types';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
 import { parseDataLocalSegura, obterYmLocal, formatarDataBrSegura } from '../../lib/dateUtils';
-import { SERVICOS_LISTA, ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
 import { 
   gerarSecoesPadraoOrcamento, 
   gerarSecoesPadraoOrcamentoV2, 
@@ -44,7 +43,8 @@ export const OrcamentosView: React.FC = () => {
     adicionarOrcamento, 
     atualizarOrcamento,
     atualizarStatusOrcamento,
-    removerOrcamento 
+    removerOrcamento,
+    servicosCatalogo,
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -103,7 +103,7 @@ export const OrcamentosView: React.FC = () => {
       return;
     }
 
-    const item = SERVICOS_LISTA.find(s => s.id === catId);
+    const item = servicosCatalogo.find(s => s.id === catId);
     if (item) {
       setServicoTitulo(item.nome);
       setNormasTecnicas(item.norma);
@@ -122,7 +122,7 @@ export const OrcamentosView: React.FC = () => {
 
   const handleSelectSubtipo = (subId: string) => {
     setSubtipoSelecionadoId(subId);
-    const item = SERVICOS_LISTA.find(s => s.id === servicoCategoriaId);
+    const item = servicosCatalogo.find(s => s.id === servicoCategoriaId);
     if (!item) return;
 
     const sub = item.subtipos.find(s => s.id === subId);
@@ -745,7 +745,7 @@ export const OrcamentosView: React.FC = () => {
                     onChange={(e) => handleSelectCategoria(e.target.value)}
                     className="w-full p-2.5 text-sm border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
                   >
-                    {SERVICOS_LISTA.map(s => (
+                    {servicosCatalogo.map(s => (
                       <option key={s.id} value={s.id}>{s.nome} ({s.norma})</option>
                     ))}
                     <option value="personalizado">Outro serviço (Personalizado)</option>
@@ -790,7 +790,7 @@ export const OrcamentosView: React.FC = () => {
 
               {/* Subtipo do Serviço Selecionado (se houver) */}
               {servicoCategoriaId !== 'personalizado' && (() => {
-                const item = SERVICOS_LISTA.find(s => s.id === servicoCategoriaId);
+                const item = servicosCatalogo.find(s => s.id === servicoCategoriaId);
                 if (!item || !item.subtipos || item.subtipos.length === 0) return null;
                 return (
                   <label className="block text-xs font-bold text-[var(--ink)]">

@@ -23,7 +23,6 @@ import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { AnexarLaudoAssinadoModal } from './AnexarLaudoAssinadoModal';
 import { PublicarNoSiteModal } from './PublicarNoSiteModal';
 import { Laudo, TrabalhoPublicadoSite } from '../../types';
-import { SERVICOS_LISTA } from '../../data/servicosCatalogo';
 import { resolverUrlPdfVisualizacao } from '../../lib/pdfStorage';
 
 export const LaudosCentralView: React.FC = () => {
@@ -35,7 +34,8 @@ export const LaudosCentralView: React.FC = () => {
     criarNovoLaudo,
     criarLaudoPorTaxonomia,
     atualizarLaudo,
-    removerLaudo 
+    removerLaudo,
+    servicosCatalogo,
   } = useData();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -307,7 +307,11 @@ export const LaudosCentralView: React.FC = () => {
     }
     setErroAtivoNovo(null);
 
-    const activeCategory = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
+    const activeCategory = servicosCatalogo[categoriaIndex] || servicosCatalogo[0];
+    if (!activeCategory?.subtipos?.length) {
+      showToast('Cadastre ao menos um subtipo na página Serviços antes de criar o laudo.');
+      return;
+    }
     const activeSubtipo = activeCategory.subtipos[subtipoIndex] || activeCategory.subtipos[0];
     const equip = ativoSel.identificacao;
 
@@ -413,7 +417,7 @@ export const LaudosCentralView: React.FC = () => {
             Central de Laudos
           </h1>
           <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
-            {laudos.length} documentos emitidos · Modelos pré-prontos das {SERVICOS_LISTA.length} especialidades da VL Engenharia.
+            {laudos.length} documentos emitidos · Modelos pré-prontos de {servicosCatalogo.length} especialidades.
           </p>
         </div>
 
@@ -777,7 +781,7 @@ export const LaudosCentralView: React.FC = () => {
                     }}
                     className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-medium"
                   >
-                    {SERVICOS_LISTA.map((serv, idx) => (
+                    {servicosCatalogo.map((serv, idx) => (
                       <option key={serv.id || idx} value={idx}>
                         {serv.nome} ({serv.norma})
                       </option>
@@ -793,7 +797,7 @@ export const LaudosCentralView: React.FC = () => {
                     onChange={(e) => setSubtipoIndex(parseInt(e.target.value, 10))}
                     className="w-full p-2.5 border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] font-medium"
                   >
-                    {SERVICOS_LISTA[categoriaIndex]?.subtipos.map((sub, sIdx) => (
+                    {servicosCatalogo[categoriaIndex]?.subtipos.map((sub, sIdx) => (
                       <option key={sub.id || sIdx} value={sIdx}>
                         {sub.nome}
                       </option>
@@ -803,7 +807,7 @@ export const LaudosCentralView: React.FC = () => {
 
                 {/* Template Info Card */}
                 {(() => {
-                  const activeCat = SERVICOS_LISTA[categoriaIndex] || SERVICOS_LISTA[0];
+                  const activeCat = servicosCatalogo[categoriaIndex] || servicosCatalogo[0];
                   const activeSub = activeCat?.subtipos[subtipoIndex] || activeCat?.subtipos[0];
                   if (!activeSub) return null;
                   return (

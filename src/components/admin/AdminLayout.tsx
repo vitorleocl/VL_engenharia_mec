@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Sun,
   Moon,
-  RefreshCw
+  RefreshCw,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -115,6 +116,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: FileSpreadsheet,
       badge: String(orcamentos.length),
       title: `${orcamentos.length} orçamentos no total (${orcamentosAbertosCount} em aberto)`,
+      visible: isColaborador
+    },
+    {
+      id: 'servicos',
+      label: 'Serviços',
+      path: '/admin/servicos',
+      icon: Wrench,
+      badge: '',
+      title: 'Catálogo Oficial de Serviços e subtipos',
       visible: isColaborador
     },
     {

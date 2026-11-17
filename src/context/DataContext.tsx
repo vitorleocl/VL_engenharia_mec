@@ -35,6 +35,7 @@ import {
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
+import { SERVICOS_LISTA, ServicoItem } from '../data/servicosCatalogo';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { db, auth } from '../lib/firebase';
@@ -83,6 +84,8 @@ interface DataContextType {
   solicitacoesAcesso: SolicitacaoAcesso[];
   usoIA: UsoIAMetricas;
   categoriasLaudo: CategoriaLaudoDef[];
+  servicosCatalogo: ServicoItem[];
+  atualizarServicosCatalogo: (servicos: ServicoItem[]) => void;
   
   // Clientes Actions
   adicionarCliente: (cliente: Omit<Cliente, 'id' | 'criadoEm'>) => string;
@@ -752,6 +755,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return cat;
     });
   });
+  const [servicosCatalogo, setServicosCatalogo] = useState<ServicoItem[]>(() => {
+    const stored = loadStorage('vl_servicos_catalogo', SERVICOS_LISTA);
+    return Array.isArray(stored) ? stored : SERVICOS_LISTA;
+  });
   const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => {
     const loaded: LogAuditoria[] = loadStorage('vl_logs', []);
     return (Array.isArray(loaded) ? loaded : [])
@@ -828,6 +835,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
   useEffect(() => saveStorage('vl_checklist_modelos', checklistModelos), [checklistModelos]);
   useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
+  useEffect(() => saveStorage('vl_servicos_catalogo', servicosCatalogo), [servicosCatalogo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
   useEffect(() => saveStorage('vl_contatos', contatos), [contatos]);
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
@@ -844,6 +852,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checklistsCampo?: ChecklistCampo[];
     agenda?: AgendaVistoria[];
     usuarios?: Usuario[];
+    servicosCatalogo?: ServicoItem[];
     clientesRemovidosIds?: string[];
     ativosRemovidosIds?: string[];
     orcamentosRemovidosIds?: string[];
@@ -980,7 +989,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[Firestore] Erro listener usuarios:', error);
       });
 
-      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios);
+      const unsubServicos = onSnapshot(doc(db, 'configuracoes', 'servicosCatalogo'), (snapshot) => {
+        const remoto = snapshot.data()?.servicos;
+        if (Array.isArray(remoto)) {
+          setServicosCatalogo(remoto);
+          saveStorage('vl_servicos_catalogo', remoto);
+        }
+      }, (error) => {
+        console.warn('[Firestore] Erro ao carregar catálogo de serviços:', error);
+      });
+
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios, unsubServicos);
 
       if (currentUser.role === 'master') {
         const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
@@ -1095,6 +1114,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
 
+        if (Array.isArray(data.servicosCatalogo)) {
+          setServicosCatalogo(data.servicosCatalogo);
+          saveStorage('vl_servicos_catalogo', data.servicosCatalogo);
+        }
+
         isHydratedRef.current = true;
       })
       .catch(err => {
@@ -1119,6 +1143,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           checklistsCampo,
           agenda,
           usuarios,
+          servicosCatalogo,
           clientesRemovidosIds: loadStorage('vl_clientes_removidos_ids', []),
           ativosRemovidosIds: loadStorage('vl_ativos_removidos_ids', []),
           orcamentosRemovidosIds: loadStorage('vl_orcamentos_removidos_ids', []),
@@ -1132,7 +1157,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios]);
+  }, [clientes, ativos, orcamentos, laudos, checklistsCampo, agenda, usuarios, servicosCatalogo]);
 
   // Taxonomia de laudos é servida localmente via CATEGORIAS_LAUDOS_TAXONOMIA e localStorage,
   // evitando centenas de gravações automáticas por carregamento que esgotam a cota diária do Firestore.
@@ -2330,6 +2355,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('laudos', id, 'excluir', `Laudo removido: ${id}`);
   };
 
+  const atualizarServicosCatalogo = (servicos: ServicoItem[]) => {
+    setServicosCatalogo(servicos);
+    saveStorage('vl_servicos_catalogo', servicos);
+    salvarServidorDireto({ servicosCatalogo: servicos });
+    registrarLog('servicosCatalogo', 'catalogo', 'editar', `Catálogo oficial atualizado (${servicos.length} serviços).`);
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'configuracoes', 'servicosCatalogo'), {
+        servicos,
+        atualizadoEm: new Date().toISOString(),
+      }, { merge: true }).catch(err => {
+        console.warn('[Firestore] Erro ao salvar catálogo de serviços:', err);
+      });
+    }
+  };
+
   // Templates
   const salvarTemplate = (dados: Omit<LaudoTemplate, 'id' | 'criadoEm'>) => {
     const id = `tpl-${Date.now()}`;
@@ -2979,6 +3019,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         solicitacoesAcesso,
         usoIA,
         categoriasLaudo,
+        servicosCatalogo,
+        atualizarServicosCatalogo,
         adicionarCliente,
         atualizarCliente,
         removerCliente,
