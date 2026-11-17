@@ -265,6 +265,7 @@ export const GUIA_TECNICO_CATALOGO: Record<GuiaServicoId, ModeloGuiaBase> = {
       ],
     },
     layersDxf: ['CASCO', 'BOCAL', 'PSV', 'SUPORTE', 'COTA', 'TEXTO'],
+    tabelaCategoriasNr13: { 'D-4': 'V' },
   },
 };
 

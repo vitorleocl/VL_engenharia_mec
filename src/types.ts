@@ -50,6 +50,7 @@ export interface GuiaModeloServico {
     legenda: { nome: string; cor: string }[];
   };
   layersDxf: string[];
+  tabelaCategoriasNr13?: Record<string, string>;
   atualizadoEm: string;
   atualizadoPor: string;
 }

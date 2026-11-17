@@ -113,6 +113,25 @@ export const EditorModeloGuia: React.FC<EditorModeloGuiaProps> = ({ modelo, onCl
         Normas (separadas por vírgula)
         <input value={rascunho.normas.join(', ')} onChange={(event) => setRascunho((anterior) => ({ ...anterior, normas: event.target.value.split(',').map((norma) => norma.trim()).filter(Boolean) }))} className="mt-1 w-full min-h-10 px-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)]" />
       </label>
+      {modelo.servico === 'nr13' && (
+        <label className="block text-xs font-semibold text-[var(--adm-mut)]">
+          Tabela de categoria NR-13 (uma entrada por linha: classe-grupo=categoria)
+          <textarea
+            rows={5}
+            value={Object.entries(rascunho.tabelaCategoriasNr13 || {}).map(([chave, categoria]) => `${chave}=${categoria}`).join('\n')}
+            onChange={(event) => {
+              const tabela = Object.fromEntries(event.target.value.split(/\r?\n/)
+                .map((linha) => linha.split('='))
+                .filter((partes) => partes.length >= 2 && partes[0].trim() && partes[1].trim())
+                .map(([chave, categoria]) => [chave.trim().toUpperCase(), categoria.trim().toUpperCase()]));
+              setRascunho((anterior) => ({ ...anterior, tabelaCategoriasNr13: tabela }));
+            }}
+            placeholder={'D-4=V\nA-1=I'}
+            className="mt-1 w-full rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-line)] p-3 font-mono text-xs text-[var(--adm-text)]"
+          />
+          <span className="block mt-1 font-normal">A tabela deve ser conferida e mantida pelo MASTER conforme a NR-13 vigente. O valor inicial D-4=V é apenas o exemplo fornecido.</span>
+        </label>
+      )}
       {rascunho.grupos.map((grupo, grupoIndex) => (
         <fieldset key={`${grupo.titulo}-${grupoIndex}`} className="rounded-xl border border-[var(--adm-line)] p-3 space-y-2">
           <legend className="px-1 text-sm font-bold text-[var(--adm-text)]">{grupo.titulo}</legend>

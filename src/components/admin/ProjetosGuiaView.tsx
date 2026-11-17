@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { collection, doc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore';
-import { AlertCircle, BookOpen, Box, Calculator, Check, ClipboardCheck, FileStack, Loader2, Plus, Save, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Box, Calculator, Check, ClipboardCheck, FileStack, Loader2, Plus, Save, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { GuiaModeloServico, GuiaServicoId, ProjetoGuia, ProjetoGuiaChecklistItem } from '../../types';
@@ -10,6 +10,7 @@ import { inicializarModelosGuiaAusentes } from '../../lib/guiaTecnicoFirestore';
 import { db } from '../../lib/firebase';
 import { ChecklistProjetoGuia } from './guia/ChecklistProjetoGuia';
 import { EditorModeloGuia } from './guia/EditorModeloGuia';
+import { CalculadoraProjetoGuia } from './guia/CalculadoraProjetoGuia';
 
 const SERVICOS: { id: GuiaServicoId; nome: string; descricao: string }[] = [
   { id: 'hvac', nome: 'HVAC-R', descricao: 'Climatização, ventilação e refrigeração' },
@@ -358,8 +359,13 @@ export const ProjetosGuiaView: React.FC = () => {
                 )}
               </div>
             ) : indice === 1 ? (
-              <div className="mt-3 rounded-xl border border-amber-500/35 bg-amber-500/10 p-3 text-xs text-amber-400 flex gap-2">
-                <BookOpen className="w-4 h-4 shrink-0" />{texto}
+              <div className="mt-3">
+                <CalculadoraProjetoGuia
+                  key={servicoAtivo}
+                  servico={servicoAtivo}
+                  modelo={modeloAtivo}
+                  projeto={projetoSelecionado}
+                />
               </div>
             ) : indice === 2 ? (
               <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 items-start">
