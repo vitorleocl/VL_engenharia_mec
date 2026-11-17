@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { AlertCircle, BookOpen, Box, Calculator, ClipboardCheck, FileStack, Loader2, ShieldCheck } from 'lucide-react';
+import { collection, doc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore';
+import { AlertCircle, BookOpen, Box, Calculator, Check, ClipboardCheck, FileStack, Loader2, Plus, Save, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { GuiaModeloServico, GuiaServicoId } from '../../types';
+import { useData } from '../../context/DataContext';
+import { GuiaModeloServico, GuiaServicoId, ProjetoGuia, ProjetoGuiaChecklistItem } from '../../types';
 import { GUIA_TECNICO_CATALOGO, criarDocumentosGuiaPadrao } from '../../lib/guiaTecnicoCatalogo';
 import { inicializarModelosGuiaAusentes } from '../../lib/guiaTecnicoFirestore';
 import { db } from '../../lib/firebase';
+import { ChecklistProjetoGuia } from './guia/ChecklistProjetoGuia';
+import { EditorModeloGuia } from './guia/EditorModeloGuia';
 
 const SERVICOS: { id: GuiaServicoId; nome: string; descricao: string }[] = [
   { id: 'hvac', nome: 'HVAC-R', descricao: 'Climatização, ventilação e refrigeração' },
@@ -24,6 +27,7 @@ const BLOCOS = [
 
 export const ProjetosGuiaView: React.FC = () => {
   const { currentUser } = useAuth();
+  const { clientes, ativos } = useData();
   const location = useLocation();
   const navigate = useNavigate();
   const permitido = currentUser?.role === 'master'
@@ -31,10 +35,26 @@ export const ProjetosGuiaView: React.FC = () => {
   const [modelos, setModelos] = useState<GuiaModeloServico[]>(() => criarDocumentosGuiaPadrao(''));
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [projetos, setProjetos] = useState<ProjetoGuia[]>([]);
+  const [carregandoProjetos, setCarregandoProjetos] = useState(true);
+  const [nomeNovoProjeto, setNomeNovoProjeto] = useState('');
+  const [clienteNovoProjetoId, setClienteNovoProjetoId] = useState('');
+  const [ativoNovoProjetoId, setAtivoNovoProjetoId] = useState('');
+  const [criandoProjeto, setCriandoProjeto] = useState(false);
+  const [projetoSelecionadoId, setProjetoSelecionadoId] = useState('');
+  const [nomeEdicaoProjeto, setNomeEdicaoProjeto] = useState('');
+  const [salvandoProjeto, setSalvandoProjeto] = useState(false);
+  const [editorModeloAberto, setEditorModeloAberto] = useState(false);
   const servicoHash = location.hash.replace(/^#/, '') as GuiaServicoId;
   const servicoAtivo: GuiaServicoId = SERVICOS.some((servico) => servico.id === servicoHash) ? servicoHash : 'hvac';
   const modeloAtivo = modelos.find((modelo) => modelo.servico === servicoAtivo)
     || (GUIA_TECNICO_CATALOGO[servicoAtivo] as GuiaModeloServico);
+  const projetosServico = useMemo(
+    () => projetos.filter((projeto) => projeto.servico === servicoAtivo).sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)),
+    [projetos, servicoAtivo],
+  );
+  const projetoSelecionado = projetosServico.find((projeto) => projeto.id === projetoSelecionadoId);
+  const clienteSelecionado = clientes.find((cliente) => cliente.id === projetoSelecionado?.clienteId);
   const nomeUsuario = currentUser?.nome || currentUser?.email || 'Usuário autorizado';
 
   useEffect(() => {
@@ -63,6 +83,33 @@ export const ProjetosGuiaView: React.FC = () => {
   }, [permitido, currentUser?.email]);
 
   useEffect(() => {
+    if (!permitido) return;
+    const unsubscribe = onSnapshot(collection(db, 'projetos_guia'), (snapshot) => {
+      const carregados = snapshot.docs.map((documento) => ({ ...documento.data(), id: documento.id } as ProjetoGuia));
+      setProjetos(carregados);
+      setCarregandoProjetos(false);
+      setErro(null);
+    }, (erroSnapshot) => {
+      console.warn('[Guia Técnico] Falha ao carregar projetos:', erroSnapshot);
+      setCarregandoProjetos(false);
+      setErro('Não foi possível carregar os projetos. Verifique a permissão do módulo e as regras do Firestore.');
+    });
+    return unsubscribe;
+  }, [permitido]);
+
+  useEffect(() => {
+    if (!projetoSelecionado && projetosServico.length) {
+      setProjetoSelecionadoId(projetosServico[0].id);
+    } else if (!projetosServico.length) {
+      setProjetoSelecionadoId('');
+    }
+  }, [projetosServico, projetoSelecionado]);
+
+  useEffect(() => {
+    setNomeEdicaoProjeto(projetoSelecionado?.nome || '');
+  }, [projetoSelecionado?.id, projetoSelecionado?.nome]);
+
+  useEffect(() => {
     if (!location.hash || !SERVICOS.some((servico) => `#${servico.id}` === location.hash)) {
       navigate({ pathname: location.pathname, search: location.search, hash: '#hvac' }, { replace: true });
     }
@@ -72,6 +119,82 @@ export const ProjetosGuiaView: React.FC = () => {
     () => modeloAtivo.grupos.reduce((total, grupo) => total + grupo.itens.length, 0),
     [modeloAtivo]
   );
+
+  const criarProjeto = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nome = nomeNovoProjeto.trim();
+    if (!clienteNovoProjetoId || !nome || !currentUser) return;
+    setCriandoProjeto(true);
+    setErro(null);
+    const id = `guia-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const agora = new Date().toISOString();
+    const projeto: ProjetoGuia = {
+      id,
+      clienteId: clienteNovoProjetoId,
+      ...(ativoNovoProjetoId ? { ativoId: ativoNovoProjetoId } : {}),
+      servico: servicoAtivo,
+      nome,
+      status: 'aberto',
+      criadoEm: agora,
+      criadoPor: currentUser.uid,
+      atualizadoEm: agora,
+    };
+    try {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'projetos_guia', id), projeto);
+      modeloAtivo.grupos.forEach((grupo, grupoIndex) => {
+        grupo.itens.forEach((item, itemIndex) => {
+          const itemId = `${grupoIndex + 1}-${item.id}`;
+          const checklist: ProjetoGuiaChecklistItem = {
+            id: itemId,
+            modeloItemId: item.id,
+            grupo: grupo.titulo,
+            texto: item.texto,
+            estado: 'pendente',
+            observacao: '',
+            anexos: [],
+            atualizadoEm: agora,
+            atualizadoPor: currentUser.uid,
+          };
+          batch.set(doc(db, 'projetos_guia', id, 'checklist', itemId), checklist);
+        });
+      });
+      await batch.commit();
+      setNomeNovoProjeto('');
+      setClienteNovoProjetoId('');
+      setAtivoNovoProjetoId('');
+      setProjetoSelecionadoId(id);
+    } catch (error) {
+      console.warn('[Guia Técnico] Falha ao criar projeto:', error);
+      setErro('Não foi possível criar o projeto e seu checklist. Confirme a permissão e tente novamente.');
+    } finally {
+      setCriandoProjeto(false);
+    }
+  };
+
+  const salvarDadosProjeto = async () => {
+    if (!projetoSelecionado || !nomeEdicaoProjeto.trim()) return;
+    setSalvandoProjeto(true);
+    try {
+      await setDoc(doc(db, 'projetos_guia', projetoSelecionado.id), {
+        nome: nomeEdicaoProjeto.trim(),
+        atualizadoEm: new Date().toISOString(),
+      }, { merge: true });
+    } catch (error) {
+      console.warn('[Guia Técnico] Falha ao atualizar projeto:', error);
+      setErro('Não foi possível atualizar os dados do projeto.');
+    } finally {
+      setSalvandoProjeto(false);
+    }
+  };
+
+  const alterarStatusProjeto = async (status: ProjetoGuia['status']) => {
+    if (!projetoSelecionado) return;
+    await setDoc(doc(db, 'projetos_guia', projetoSelecionado.id), {
+      status,
+      atualizadoEm: new Date().toISOString(),
+    }, { merge: true });
+  };
 
   if (!currentUser) return <Navigate to="/login" replace />;
   if (!permitido) return <Navigate to="/admin" replace />;
@@ -136,13 +259,22 @@ export const ProjetosGuiaView: React.FC = () => {
             </div>
           </div>
           {currentUser.role === 'master' && (
-            <span className="text-[11px] text-[var(--adm-mut)]">Modelo padrão · alterações futuras serão exclusivas para novos projetos</span>
+            <button
+              type="button"
+              onClick={() => setEditorModeloAberto((aberto) => !aberto)}
+              className="min-h-10 px-3 rounded-lg border border-[var(--adm-line)] text-xs font-semibold text-[var(--adm-text)]"
+            >
+              {editorModeloAberto ? 'Fechar edição do modelo' : 'Editar checklist-modelo'}
+            </button>
           )}
         </div>
         {modeloAtivo.alertas?.map((alerta) => (
           <p key={alerta} className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">{alerta}</p>
         ))}
       </section>
+      {currentUser.role === 'master' && editorModeloAberto && (
+        <EditorModeloGuia modelo={modeloAtivo} onClose={() => setEditorModeloAberto(false)} />
+      )}
 
       <div className="space-y-4">
         {BLOCOS.map(({ titulo, icon: Icon, texto }, indice) => (
@@ -153,9 +285,77 @@ export const ProjetosGuiaView: React.FC = () => {
               <h3 className="text-base font-bold text-[var(--adm-text)]">{titulo}</h3>
             </div>
             {indice === 0 ? (
-              <div className="mt-3">
-                <p className="text-xs text-[var(--adm-mut)]">{itensChecklist} itens-modelo organizados em {modeloAtivo.grupos.length} grupos.</p>
-                <p className="mt-2 text-sm text-[var(--adm-mut)]">Nenhum projeto ainda. Crie o primeiro.</p>
+              <div className="mt-3 space-y-4">
+                <p className="text-xs text-[var(--adm-mut)]">{itensChecklist} itens-modelo em {modeloAtivo.grupos.length} grupos. Cada projeto recebe uma cópia imutável do checklist atual.</p>
+                <form onSubmit={(event) => void criarProjeto(event)} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1.3fr_1.3fr_auto] gap-2.5 rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] p-3.5">
+                  <label className="text-[11px] font-semibold text-[var(--adm-mut)]">
+                    Nome do projeto
+                    <input required value={nomeNovoProjeto} onChange={(event) => setNomeNovoProjeto(event.target.value)} placeholder="Ex.: Projeto de climatização — unidade Recife" className="mt-1 w-full min-h-11 px-3 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)]" />
+                  </label>
+                  <label className="text-[11px] font-semibold text-[var(--adm-mut)]">
+                    Cliente (obrigatório)
+                    <select required value={clienteNovoProjetoId} onChange={(event) => { setClienteNovoProjetoId(event.target.value); setAtivoNovoProjetoId(''); }} className="mt-1 w-full min-h-11 px-3 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)]">
+                      <option value="">Selecione um cliente</option>
+                      {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nomeFantasia || cliente.razaoSocial}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-[11px] font-semibold text-[var(--adm-mut)]">
+                    Ativo (opcional)
+                    <select value={ativoNovoProjetoId} onChange={(event) => setAtivoNovoProjetoId(event.target.value)} disabled={!clienteNovoProjetoId} className="mt-1 w-full min-h-11 px-3 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)] disabled:opacity-50">
+                      <option value="">Sem ativo vinculado</option>
+                      {ativos.filter((ativo) => ativo.clienteId === clienteNovoProjetoId).map((ativo) => <option key={ativo.id} value={ativo.id}>{ativo.identificacao || ativo.id}</option>)}
+                    </select>
+                  </label>
+                  <button type="submit" disabled={criandoProjeto || !clientes.length} className="self-end min-h-11 px-4 rounded-lg bg-[var(--adm-blue,#2160db)] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 disabled:opacity-50">
+                    {criandoProjeto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}Criar projeto
+                  </button>
+                </form>
+                {!clientes.length && <p className="text-xs text-amber-400">Cadastre um cliente antes de criar o projeto.</p>}
+                {carregandoProjetos ? (
+                  <p role="status" className="text-xs text-[var(--adm-mut)] inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Carregando projetos…</p>
+                ) : projetosServico.length === 0 ? (
+                  <p className="text-sm text-[var(--adm-mut)]">Nenhum projeto ainda. Crie o primeiro.</p>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,1.6fr)] gap-3">
+                    <div className="space-y-2">
+                      {projetosServico.map((projeto) => {
+                        const cliente = clientes.find((item) => item.id === projeto.clienteId);
+                        return (
+                          <button key={projeto.id} type="button" onClick={() => setProjetoSelecionadoId(projeto.id)} className={`w-full text-left rounded-xl border p-3 transition-colors ${projetoSelecionadoId === projeto.id ? 'border-blue-500 bg-blue-500/10' : 'border-[var(--adm-line)] bg-[var(--adm-bg)]'}`}>
+                            <span className="block text-sm font-bold text-[var(--adm-text)]">{projeto.nome}</span>
+                            <span className="block mt-1 text-xs text-[var(--adm-mut)]">{cliente?.nomeFantasia || cliente?.razaoSocial || 'Cliente indisponível'}</span>
+                            <span className="inline-block mt-2 text-[10px] text-[var(--adm-blue-soft)]">{projeto.status.replace('_', ' ')}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {projetoSelecionado && (
+                      <div className="min-w-0 rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] p-3.5 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-end">
+                          <label className="text-[11px] font-semibold text-[var(--adm-mut)]">
+                            Nome do projeto
+                            <input value={nomeEdicaoProjeto} onChange={(event) => setNomeEdicaoProjeto(event.target.value)} className="mt-1 w-full min-h-10 px-3 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)]" />
+                          </label>
+                          <button type="button" onClick={() => void salvarDadosProjeto()} disabled={salvandoProjeto || !nomeEdicaoProjeto.trim()} className="min-h-10 px-3 rounded-lg border border-[var(--adm-line)] text-xs font-semibold text-[var(--adm-text)] inline-flex items-center justify-center gap-1.5 disabled:opacity-50"><Save className="w-4 h-4" />Salvar projeto</button>
+                        </div>
+                        <label className="block text-[11px] font-semibold text-[var(--adm-mut)]">
+                          Status do projeto
+                          <select value={projetoSelecionado.status} onChange={(event) => void alterarStatusProjeto(event.target.value as ProjetoGuia['status'])} className="mt-1 w-full sm:w-auto min-h-10 px-3 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)]">
+                            <option value="aberto">Aberto</option><option value="em_andamento">Em andamento</option><option value="concluido">Concluído</option>
+                          </select>
+                        </label>
+                        <div className="border-t border-[var(--adm-line)] pt-3">
+                          <h4 className="text-sm font-bold text-[var(--adm-text)] mb-3">Checklist do projeto · {clienteSelecionado?.nomeFantasia || clienteSelecionado?.razaoSocial}</h4>
+                          <ChecklistProjetoGuia
+                            projeto={projetoSelecionado}
+                            modelo={modeloAtivo}
+                            clienteNome={clienteSelecionado?.nomeFantasia || clienteSelecionado?.razaoSocial || 'Cliente'}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : indice === 1 ? (
               <div className="mt-3 rounded-xl border border-amber-500/35 bg-amber-500/10 p-3 text-xs text-amber-400 flex gap-2">
