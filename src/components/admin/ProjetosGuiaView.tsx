@@ -11,6 +11,7 @@ import { db } from '../../lib/firebase';
 import { ChecklistProjetoGuia } from './guia/ChecklistProjetoGuia';
 import { EditorModeloGuia } from './guia/EditorModeloGuia';
 import { CalculadoraProjetoGuia } from './guia/CalculadoraProjetoGuia';
+import { Visualizador3DGuia } from './guia/Visualizador3DGuia';
 
 const SERVICOS: { id: GuiaServicoId; nome: string; descricao: string }[] = [
   { id: 'hvac', nome: 'HVAC-R', descricao: 'Climatização, ventilação e refrigeração' },
@@ -369,7 +370,7 @@ export const ProjetosGuiaView: React.FC = () => {
               </div>
             ) : indice === 2 ? (
               <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 items-start">
-                <p className="text-sm text-[var(--adm-mut)]">{modeloAtivo.modelo3d.descricao}</p>
+                <Visualizador3DGuia servico={servicoAtivo} modelo={modeloAtivo} />
                 <div className="flex flex-wrap gap-2">
                   {modeloAtivo.modelo3d.legenda.map((item) => (
                     <span key={item.nome} className="inline-flex items-center gap-1.5 text-xs text-[var(--adm-mut)]">
