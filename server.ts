@@ -3,6 +3,13 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
+import { initializeApp as initializeAdminApp, cert, getApps as getAdminApps, applicationDefault } from "firebase-admin/app";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
+import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
+import { resolveMx, resolveTxt } from "dns/promises";
+import { dentroJanelaComercial, limiteDiarioAtingido } from "./src/lib/prospeccaoPolicy";
 import { GoogleGenAI } from "@google/genai";
 import { 
   gerarLaudoCausaRaizOffline, 
@@ -17,6 +24,105 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2kb" }));
+
+const MASTER_EMAILS = new Set([
+  "vitorleonardocl@gmail.com",
+  "vlengenhariamec@gmail.com",
+  "atendimento@vlengenhariamecanica.com.br",
+]);
+
+function getProspeccaoAdminApp() {
+  if (getAdminApps().length) return getAdminApps()[0];
+  const rawCredentials = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (rawCredentials) {
+    const credentials = JSON.parse(rawCredentials);
+    return initializeAdminApp({ credential: cert(credentials) });
+  }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return initializeAdminApp({ credential: applicationDefault() });
+  }
+  return null;
+}
+
+function getProspeccaoDb() {
+  const adminApp = getProspeccaoAdminApp();
+  if (!adminApp) return null;
+  const databaseId = process.env.FIRESTORE_DATABASE_ID || process.env.VITE_FIRESTORE_DATABASE_ID;
+  return databaseId ? getAdminFirestore(adminApp, databaseId) : getAdminFirestore(adminApp);
+}
+
+function sha256(value: string) {
+  return createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
+}
+
+function unsubscribeSecret() {
+  return process.env.PROSPECCAO_UNSUBSCRIBE_SECRET || "";
+}
+
+function signUnsubscribePayload(payload: Record<string, unknown>) {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = createHmac("sha256", unsubscribeSecret()).update(body).digest("base64url");
+  return `${body}.${signature}`;
+}
+
+function verifyUnsubscribeToken(token: string): Record<string, any> | null {
+  const [body, signature] = token.split(".");
+  if (!body || !signature || !unsubscribeSecret()) return null;
+  const expected = createHmac("sha256", unsubscribeSecret()).update(body).digest();
+  let actual: Buffer;
+  try {
+    actual = Buffer.from(signature, "base64url");
+  } catch {
+    return null;
+  }
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof payload.exp !== "number" || payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+async function verifyProspeccaoMaster(req: express.Request, res: express.Response, next: express.NextFunction) {
+  try {
+    const db = getProspeccaoDb();
+    if (!db) return res.status(503).json({ error: "Firebase Admin não configurado no servidor." });
+    const authorization = String(req.headers.authorization || "");
+    const match = authorization.match(/^Bearer\s+(.+)$/i);
+    if (!match) return res.status(401).json({ error: "Sessão necessária." });
+    const decoded = await getAdminAuth(getProspeccaoAdminApp()!).verifyIdToken(match[1]);
+    const email = String(decoded.email || "").toLowerCase();
+    let isMaster = MASTER_EMAILS.has(email) || decoded.role === "master" || decoded.master === true;
+    if (!isMaster) {
+      const user = await db.collection("usuarios").doc(decoded.uid).get();
+      isMaster = user.exists && user.data()?.role === "master" && user.data()?.ativo !== false;
+    }
+    if (!isMaster) return res.status(403).json({ error: "Acesso restrito ao MASTER." });
+    (req as any).prospeccaoUser = { uid: decoded.uid, email };
+    (req as any).prospeccaoDb = db;
+    return next();
+  } catch (error: any) {
+    console.error("[Prospecção] Falha ao validar sessão:", error?.message);
+    return res.status(401).json({ error: "Sessão inválida ou expirada." });
+  }
+}
+
+const unsubscribeRateLimit = new Map<string, { count: number; resetAt: number }>();
+function limitPublicUnsubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const key = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+  const now = Date.now();
+  const state = unsubscribeRateLimit.get(key);
+  if (!state || state.resetAt <= now) {
+    unsubscribeRateLimit.set(key, { count: 1, resetAt: now + 60_000 });
+    return next();
+  }
+  if (state.count >= 20) return res.status(429).send("Muitas solicitações. Tente novamente em alguns minutos.");
+  state.count += 1;
+  return next();
+}
 
 const DATA_FILE = path.join(process.cwd(), "data", "app_storage.json");
 
@@ -526,6 +632,408 @@ app.get("/health", (req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", company: "VL Engenharia", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/prospeccao/status", verifyProspeccaoMaster, async (req, res) => {
+  const email = String(process.env.ZOHO_FROM_EMAIL || "");
+  const domain = email.split("@")[1] || "";
+  const result: any = {
+    apiDisponivel: true,
+    providers: {
+      cnpj: Boolean(process.env.PROSPECCAO_CNPJ_API_URL),
+      places: Boolean(process.env.GOOGLE_PLACES_API_KEY),
+    },
+    smtp: { configurado: Boolean(process.env.ZOHO_SMTP_HOST && process.env.ZOHO_SMTP_USER && process.env.ZOHO_SMTP_PASS) },
+    email: { spf: false, dkim: false, dmarc: false },
+  };
+  if (domain) {
+    try {
+      const txtRecords = await resolveTxt(domain);
+      result.email.spf = txtRecords.flat().some((record) => record.toLowerCase().startsWith("v=spf1"));
+    } catch { /* DNS ausente ou indisponível. */ }
+    try {
+      const dmarcRecords = await resolveTxt(`_dmarc.${domain}`);
+      result.email.dmarc = dmarcRecords.flat().some((record) => record.toLowerCase().startsWith("v=dmarc1"));
+    } catch { /* DNS ausente ou indisponível. */ }
+    try {
+      const selectors = (process.env.PROSPECCAO_DKIM_SELECTORS || "zoho,zoho._domainkey").split(",").map((item) => item.trim()).filter(Boolean);
+      for (const selector of selectors) {
+        const host = selector.includes("._domainkey") ? selector : `${selector}._domainkey`;
+        try {
+          const records = await resolveTxt(`${host}.${domain}`);
+          if (records.flat().length) { result.email.dkim = true; break; }
+        } catch { /* Tentar próximo seletor. */ }
+      }
+    } catch { /* Sem seletor. */ }
+  }
+  res.json(result);
+});
+
+app.post("/api/prospeccao/token-descadastro", verifyProspeccaoMaster, (req, res) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const phone = String(req.body?.telefoneE164 || "").trim();
+  if (!email && !phone) return res.status(400).json({ error: "O lead precisa ter e-mail ou telefone para gerar o link." });
+  if (!unsubscribeSecret()) return res.status(503).json({ error: "Configure PROSPECCAO_UNSUBSCRIBE_SECRET no servidor." });
+  const token = signUnsubscribePayload({
+    emailHash: email ? sha256(email) : "",
+    telefoneHash: phone ? sha256(phone) : "",
+    exp: Date.now() + 180 * 24 * 60 * 60 * 1000,
+  });
+  return res.json({ token });
+});
+
+app.get("/api/prospeccao/descadastrar", limitPublicUnsubscribe, async (req, res) => {
+  const token = String(req.query.token || "");
+  const payload = verifyUnsubscribeToken(token);
+  if (!payload) return res.status(400).send("Link de descadastro inválido ou expirado.");
+  try {
+    const db = getProspeccaoDb();
+    if (!db) return res.status(503).send("O serviço está temporariamente indisponível. Tente novamente.");
+    const now = new Date().toISOString();
+    const batch = db.batch();
+    for (const [tipo, hash] of [["email", payload.emailHash], ["telefone", payload.telefoneHash]] as const) {
+      if (!hash || !/^[a-f0-9]{64}$/.test(hash)) continue;
+      const ref = db.collection("supressao").doc(`${tipo}-${hash}`);
+      batch.set(ref, {
+        id: `${tipo}-${hash}`,
+        tipo,
+        chaveHash: hash,
+        motivo: "Pedido de descadastro pelo link da mensagem",
+        origem: "descadastro",
+        criadoEm: now,
+      }, { merge: true });
+    }
+    await batch.commit();
+    return res.status(200).type("html").send("<!doctype html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><title>Descadastro confirmado</title><body style=\"font:16px Arial,sans-serif;max-width:640px;margin:12vh auto;padding:24px;color:#172033\"><h1>Descadastro confirmado</h1><p>O contato foi incluído na lista de supressão da VL Engenharia. Não enviaremos novas mensagens de prospecção para este endereço ou número.</p></body></html>");
+  } catch (error) {
+    console.error("[Prospecção] Falha no descadastro:", error);
+    return res.status(500).send("Não foi possível concluir o descadastro neste momento.");
+  }
+});
+
+app.post("/api/prospeccao/descadastrar", limitPublicUnsubscribe, async (req, res) => {
+  const token = String(req.query.token || req.body?.token || "");
+  const payload = verifyUnsubscribeToken(token);
+  if (!payload) return res.status(400).send("Link de descadastro inválido ou expirado.");
+  try {
+    const db = getProspeccaoDb();
+    if (!db) return res.status(503).send("O serviço está temporariamente indisponível.");
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    for (const [tipo, hash] of [["email", payload.emailHash], ["telefone", payload.telefoneHash]] as const) {
+      if (!hash || !/^[a-f0-9]{64}$/.test(hash)) continue;
+      const ref = db.collection("supressao").doc(`${tipo}-${hash}`);
+      batch.set(ref, {
+        id: `${tipo}-${hash}`,
+        tipo,
+        chaveHash: hash,
+        motivo: "Pedido de descadastro one-click",
+        origem: "descadastro",
+        criadoEm: now,
+      }, { merge: true });
+    }
+    await batch.commit();
+    return res.status(204).end();
+  } catch (error) {
+    console.error("[Prospecção] Falha no descadastro one-click:", error);
+    return res.status(500).send("Não foi possível concluir o descadastro neste momento.");
+  }
+});
+
+app.post("/api/prospeccao/buscar", verifyProspeccaoMaster, async (req, res) => {
+  const { fonte, municipio, uf, cnae, servicoId, termos } = req.body || {};
+  const db = (req as any).prospeccaoDb;
+  if (typeof municipio !== "string" || municipio.trim().length < 2 || municipio.length > 100) {
+    return res.status(400).json({ error: "Informe um município válido." });
+  }
+  if (String(uf || "PE").toUpperCase() !== "PE") return res.status(400).json({ error: "Por enquanto, a busca está restrita a Pernambuco." });
+  if (cnae && String(cnae).replace(/\D/g, "").length !== 7) return res.status(400).json({ error: "CNAE inválido: informe os 7 dígitos da subclasse." });
+  if (fonte === "cnpj") {
+    const endpoint = process.env.PROSPECCAO_CNPJ_API_URL;
+    if (!endpoint) return res.status(503).json({ error: "Fonte CNPJ não configurada. Importe a base pública por CSV ou configure PROSPECCAO_CNPJ_API_URL para um provedor compatível." });
+    try {
+      const url = new URL(endpoint);
+      url.searchParams.set("uf", "PE");
+      url.searchParams.set("municipio", municipio.trim());
+      const configSnapshot = await db.collection("config_prospeccao").doc("principal").get();
+      const service = (configSnapshot.data()?.servicos || []).find((item: any) => item.id === servicoId);
+      const serviceCnaes = (service?.segmentos_alvo || [])
+        .flatMap((segment: any) => segment.cnaes || [])
+        .map((item: any) => String(item.codigo || "").replace(/\D/g, ""))
+        .filter((code: string) => code.length === 7);
+      const selectedCnaes = cnae ? [String(cnae).replace(/\D/g, "")] : serviceCnaes;
+      if (selectedCnaes.length) url.searchParams.set("cnaes", selectedCnaes.join(","));
+      if (Array.isArray(termos) && termos.length) {
+        url.searchParams.set("termos", termos.map((item: unknown) => String(item).slice(0, 80)).slice(0, 8).join(","));
+      }
+      url.searchParams.set("situacao", "ativa");
+      url.searchParams.set("limit", "50");
+      const response = await fetch(url, {
+        headers: { Accept: "application/json", ...(process.env.PROSPECCAO_CNPJ_API_KEY ? { Authorization: `Bearer ${process.env.PROSPECCAO_CNPJ_API_KEY}` } : {}) },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok) return res.status(502).json({ error: `A fonte CNPJ retornou HTTP ${response.status}.` });
+      const payload: any = await response.json();
+      const records = Array.isArray(payload) ? payload : payload.leads || payload.data || payload.estabelecimentos || [];
+      const leads = records.slice(0, 200).filter((item: any) => {
+        const status = String(item.situacao || item.situacao_cadastral || item.status || "").trim().toLowerCase();
+        return ["ativa", "active", "2", "02"].includes(status);
+      }).slice(0, 50).map((item: any) => ({
+        razaoSocial: item.razaoSocial || item.razao_social || item.nome || item.company_name || "",
+        nomeFantasia: item.nomeFantasia || item.nome_fantasia || item.fantasia || "",
+        cnpj: item.cnpj || item.cnpj_completo || "",
+        cnae: item.cnae || item.cnae_fiscal || item.cnae_principal || "",
+        cnaesSecundarios: item.cnaesSecundarios || item.cnaes_secundarios || [],
+        segmento: item.segmento || item.descricao_cnae || "",
+        porte: item.porte || "",
+        municipio: item.municipio || item.city || municipio,
+        uf: item.uf || "PE",
+        email: item.email || "",
+        telefone: item.telefone || item.phone || "",
+        site: item.site || item.website || "",
+        fonte: "Base pública CNPJ via API configurada",
+      })).filter((item: any) => item.razaoSocial);
+      return res.json({ leads, fonte: "Base pública CNPJ via API configurada" });
+    } catch (error: any) {
+      return res.status(502).json({ error: error?.name === "TimeoutError" ? "Tempo limite da fonte CNPJ excedido." : "Não foi possível consultar a fonte CNPJ." });
+    }
+  }
+  if (fonte === "places") {
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "Google Places não configurado. Cadastre GOOGLE_PLACES_API_KEY no servidor." });
+    const termsList = Array.isArray(termos) ? termos.map((value: unknown) => String(value).slice(0, 80)).slice(0, 5) : [];
+    const queryText = `${termsList.join(" ")} ${municipio} Pernambuco`.trim();
+    try {
+      const url = new URL("https://maps.googleapis.com/maps/api/place/textsearch/json");
+      url.searchParams.set("query", queryText);
+      url.searchParams.set("region", "br");
+      url.searchParams.set("key", apiKey);
+      const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+      const payload: any = await response.json();
+      if (!response.ok || !["OK", "ZERO_RESULTS"].includes(payload.status)) {
+        return res.status(502).json({ error: `Google Places indisponível (${payload.status || response.status}).` });
+      }
+      const places = (payload.results || []).slice(0, 20);
+      const leads = await Promise.all(places.map(async (place: any) => {
+        let phone = "";
+        let site = "";
+        if (place.place_id) {
+          const detailsUrl = new URL("https://maps.googleapis.com/maps/api/place/details/json");
+          detailsUrl.searchParams.set("place_id", place.place_id);
+          detailsUrl.searchParams.set("fields", "name,formatted_phone_number,website,formatted_address,business_status");
+          detailsUrl.searchParams.set("key", apiKey);
+          const detailResponse = await fetch(detailsUrl, { signal: AbortSignal.timeout(8_000) });
+          if (detailResponse.ok) {
+            const detail = await detailResponse.json() as any;
+            phone = detail.result?.formatted_phone_number || "";
+            site = detail.result?.website || "";
+          }
+        }
+        return {
+          razaoSocial: place.name || "",
+          nomeFantasia: place.name || "",
+          municipio,
+          uf: "PE",
+          telefone: phone,
+          site,
+          segmento: place.types?.join(", ") || "",
+          fonte: "Google Places API",
+        };
+      }));
+      return res.json({ leads: leads.filter((item: any) => item.razaoSocial), fonte: "Google Places API" });
+    } catch {
+      return res.status(502).json({ error: "Não foi possível consultar o Google Places." });
+    }
+  }
+  return res.status(400).json({ error: "Fonte de busca não reconhecida." });
+});
+
+app.post("/api/prospeccao/gerar-mensagem", verifyProspeccaoMaster, async (req, res) => {
+  const { lead, service, channel, draft } = req.body || {};
+  if (!lead || !service || !["email", "whatsapp"].includes(channel) || typeof draft !== "string" || draft.length > 6000) {
+    return res.status(400).json({ error: "Dados de mensagem inválidos." });
+  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: "Geração com Gemini não configurada; revise o modelo manualmente." });
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = [
+      "Reescreva a mensagem comercial B2B abaixo em português brasileiro, curta, profissional, consultiva e respeitosa.",
+      "Não crie fatos, multas, prazos, obrigações específicas, garantias nem promessas de resultado. Preserve rigorosamente os nomes das normas fornecidas.",
+      "Mantenha identificação do remetente, um único CTA e a instrução/link de descadastro existente. Não acrescente informação pessoal.",
+      `Canal: ${channel}. Empresa: ${String(lead.nome || "").slice(0, 150)}. Cidade: ${String(lead.cidade || "").slice(0, 80)}. Segmento: ${String(lead.segmento || "").slice(0, 100)}.`,
+      `Serviço: ${String(service.nome || "").slice(0, 150)}. Normas válidas: ${(Array.isArray(service.normas) ? service.normas : []).join(", ")}.`,
+      `Contexto: ${String(service.dor || "").slice(0, 600)} ${String(service.argumento || "").slice(0, 600)} CTA: ${String(service.cta || "").slice(0, 250)}.`,
+      `Rascunho para variar:\n${draft}`,
+      "Retorne apenas o texto final, sem aspas, sem explicações.",
+    ].join("\n");
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { temperature: 0.35, maxOutputTokens: 700 },
+    });
+    const text = String(response.text || "").trim();
+    if (!text) return res.status(502).json({ error: "O modelo não retornou uma variação." });
+    return res.json({ text, provider: "gemini" });
+  } catch (error: any) {
+    console.error("[Prospecção] Gemini:", error?.message);
+    return res.status(502).json({ error: "Falha ao gerar mensagem; o modelo original continua disponível para revisão." });
+  }
+});
+
+async function getProspecConfig(db: FirebaseFirestore.Firestore) {
+  const snapshot = await db.collection("config_prospeccao").doc("principal").get();
+  return {
+    dryRun: true,
+    limiteDiarioEmail: 20,
+    janelaInicio: "08:00",
+    janelaFim: "17:00",
+    intervaloMinimoSegundos: 60,
+    intervaloMaximoSegundos: 180,
+    assinatura: "VL Engenharia Mecânica · CREA-PE 182229949-0",
+    ...(snapshot.data() || {}),
+  };
+}
+
+async function suppressionExists(db: FirebaseFirestore.Firestore, email: string, phone: string) {
+  const refs = [
+    email ? db.collection("supressao").doc(`email-${sha256(email)}`).get() : Promise.resolve(null),
+    phone ? db.collection("supressao").doc(`telefone-${sha256(phone)}`).get() : Promise.resolve(null),
+  ];
+  const snapshots = await Promise.all(refs);
+  return snapshots.some((snapshot: any) => snapshot?.exists);
+}
+
+async function countSendsToday(db: FirebaseFirestore.Firestore) {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife", year: "numeric", month: "2-digit", day: "2-digit" });
+  const today = formatter.format(new Date());
+  const start = `${today}T00:00:00-03:00`;
+  const snapshot = await db.collection("envios").where("criadoEm", ">=", start).get();
+  return snapshot.docs.map((item) => item.data());
+}
+
+app.post("/api/prospeccao/test-email", verifyProspeccaoMaster, async (req, res) => {
+  const db = (req as any).prospeccaoDb as FirebaseFirestore.Firestore;
+  const user = (req as any).prospeccaoUser;
+  const config = await getProspecConfig(db);
+  if (config.dryRun !== false) return res.json({ status: "simulado", message: "Dry-run ativo." });
+  if (!process.env.ZOHO_SMTP_HOST || !process.env.ZOHO_SMTP_USER || !process.env.ZOHO_SMTP_PASS) {
+    return res.status(503).json({ error: "SMTP Zoho não configurado no servidor." });
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.ZOHO_SMTP_HOST,
+      port: Number(process.env.ZOHO_SMTP_PORT || 465),
+      secure: Number(process.env.ZOHO_SMTP_PORT || 465) === 465,
+      auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
+      connectionTimeout: 10_000,
+      socketTimeout: 15_000,
+    });
+    await transporter.verify();
+    await transporter.sendMail({
+      from: { name: process.env.ZOHO_FROM_NAME || "VL Engenharia", address: process.env.ZOHO_FROM_EMAIL || process.env.ZOHO_SMTP_USER },
+      to: user.email,
+      subject: "Teste de conexão — Prospecção VL Engenharia",
+      text: "Teste de conexão Zoho realizado pelo painel MASTER.",
+    });
+    return res.json({ status: "enviado" });
+  } catch (error: any) {
+    return res.status(502).json({ error: `Falha ao testar SMTP Zoho: ${error?.message || "erro desconhecido"}` });
+  }
+});
+
+app.post("/api/prospeccao/enviar-email", verifyProspeccaoMaster, async (req, res) => {
+  const db = (req as any).prospeccaoDb as FirebaseFirestore.Firestore;
+  const body = req.body || {};
+  const email = String(body.email || "").trim().toLowerCase();
+  const phone = String(body.telefoneE164 || "").trim();
+  const subject = String(body.subject || "").trim();
+  const text = String(body.text || "").trim();
+  const unsubscribeUrl = String(body.unsubscribeUrl || "");
+  const personalDomains = new Set(["gmail.com", "googlemail.com", "yahoo.com", "yahoo.com.br", "outlook.com", "hotmail.com", "hotmail.com.br", "live.com", "icloud.com", "uol.com.br", "bol.com.br", "proton.me", "protonmail.com"]);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) || personalDomains.has(email.split("@")[1]) || !subject || subject.length > 180 || !text || text.length > 6000) {
+    return res.status(400).json({ error: "Informe e-mail corporativo válido, assunto e mensagem revisada." });
+  }
+  if (!/^https?:\/\/[^/]+\/(?:api\/prospeccao\/)?descadastrar\?token=/.test(unsubscribeUrl)) {
+    return res.status(400).json({ error: "Link de descadastro obrigatório e inválido." });
+  }
+  const config = await getProspecConfig(db);
+  if (await suppressionExists(db, email, phone)) return res.status(409).json({ error: "Contato consta na lista de supressão." });
+  const sends = await countSendsToday(db);
+  const dailyLimit = Math.min(30, Math.max(1, Number(config.limiteDiarioEmail || 20)));
+  if (limiteDiarioAtingido(sends as Array<{ canal: string; status: string }>, "email", dailyLimit)) {
+    return res.status(429).json({ error: `Limite diário de e-mail atingido (${dailyLimit}).` });
+  }
+  if (!dentroJanelaComercial(new Date(), config)) return res.status(403).json({ error: "Envio permitido somente de segunda a sexta, dentro da janela configurada em America/Recife." });
+  const minInterval = Math.min(180, Math.max(60, Number(config.intervaloMinimoSegundos || 60)));
+  const maxInterval = Math.min(180, Math.max(minInterval, Number(config.intervaloMaximoSegundos || 180)));
+  const lastSent = sends.filter((item) => item.canal === "email" && item.status === "enviado")
+    .sort((a, b) => String(b.enviadoEm || b.criadoEm).localeCompare(String(a.enviadoEm || a.criadoEm)))[0];
+  if (lastSent) {
+    const seconds = (Date.now() - new Date(lastSent.enviadoEm || lastSent.criadoEm).getTime()) / 1000;
+    const requiredInterval = Math.max(minInterval, Number(lastSent.proximoIntervaloSegundos || minInterval));
+    if (seconds < requiredInterval) return res.status(429).json({ error: `Aguarde ${Math.ceil(requiredInterval - seconds)} segundos antes do próximo envio.` });
+  }
+  const proximoIntervaloSegundos = Math.floor(minInterval + Math.random() * (maxInterval - minInterval + 1));
+  const envioId = `envio-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const now = new Date().toISOString();
+  if (config.dryRun !== false) {
+    await db.collection("envios").doc(envioId).set({
+      id: envioId, leadId: String(body.leadId || ""), canal: "email", status: "simulado",
+      emailHash: sha256(email), assunto: subject, mensagem: text, criadoEm: now,
+    });
+    return res.json({ status: "simulado", envioId });
+  }
+  if (!process.env.ZOHO_SMTP_HOST || !process.env.ZOHO_SMTP_USER || !process.env.ZOHO_SMTP_PASS || !process.env.ZOHO_FROM_EMAIL) {
+    return res.status(503).json({ error: "SMTP Zoho não configurado no servidor." });
+  }
+  try {
+    const domain = process.env.ZOHO_FROM_EMAIL.split("@")[1] || "";
+    try {
+      const mx = await resolveMx(email.split("@")[1]);
+      if (!mx.length) return res.status(400).json({ error: "O domínio do destinatário não possui registro MX." });
+    } catch {
+      return res.status(400).json({ error: "Não foi possível validar o domínio do e-mail (MX ausente ou DNS indisponível)." });
+    }
+    const withUnsubscribe = text.includes(unsubscribeUrl)
+      ? text
+      : `${text}\n\nDescadastro: ${unsubscribeUrl}`;
+    const finalText = /vlengenhariamecanica\.com\.br/i.test(withUnsubscribe)
+      ? withUnsubscribe
+      : `${withUnsubscribe}\n\nVL Engenharia Mecânica · Vitor Leonardo Cordeiro Linhares · CREA-PE 182229949-0\nhttps://www.vlengenhariamecanica.com.br/ · (81) 98444-2592`;
+    const transporter = nodemailer.createTransport({
+      host: process.env.ZOHO_SMTP_HOST,
+      port: Number(process.env.ZOHO_SMTP_PORT || 465),
+      secure: Number(process.env.ZOHO_SMTP_PORT || 465) === 465,
+      auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
+      connectionTimeout: 10_000,
+      socketTimeout: 15_000,
+    });
+    const result = await transporter.sendMail({
+      from: { name: process.env.ZOHO_FROM_NAME || "VL Engenharia Mecânica", address: process.env.ZOHO_FROM_EMAIL },
+      to: email,
+      subject,
+      text: finalText,
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    });
+    await db.collection("envios").doc(envioId).set({
+      id: envioId, leadId: String(body.leadId || ""), canal: "email", status: "enviado",
+      emailHash: sha256(email), assunto: subject, mensagem: finalText.replace(unsubscribeUrl, "[link de descadastro]"),
+      criadoEm: now, enviadoEm: new Date().toISOString(), messageId: result.messageId,
+      remetenteDominio: domain, proximoIntervaloSegundos,
+    });
+    return res.json({ status: "enviado", envioId });
+  } catch (error: any) {
+    await db.collection("envios").doc(envioId).set({
+      id: envioId, leadId: String(body.leadId || ""), canal: "email", status: "falhou",
+      emailHash: sha256(email), assunto: subject, mensagem: text, criadoEm: now,
+      erro: String(error?.message || "Falha SMTP").slice(0, 500),
+    });
+    return res.status(502).json({ error: "Falha no envio Zoho. O resultado foi registrado para auditoria." });
+  }
 });
 
 app.get("/api/cnpj/:cnpj", async (req, res) => {

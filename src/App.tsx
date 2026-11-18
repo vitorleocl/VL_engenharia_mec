@@ -18,6 +18,7 @@ import { LoginView } from './components/admin/LoginView';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { DashboardView } from './components/admin/DashboardView';
 import { ClientesView } from './components/admin/ClientesView';
+import { ProspeccaoView } from './components/admin/ProspeccaoView';
 import { AtivosView } from './components/admin/AtivosView';
 import { OrcamentosView } from './components/admin/OrcamentosView';
 import { OrcamentoEditorView } from './components/admin/OrcamentoEditorView';
@@ -133,6 +134,14 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <OrcamentosView />
+                  </AdminLayout>
+                }
+              />
+              <Route
+                path="/admin/prospeccao"
+                element={
+                  <AdminLayout>
+                    <ProspeccaoView />
                   </AdminLayout>
                 }
               />

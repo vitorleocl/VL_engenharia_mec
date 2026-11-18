@@ -15,7 +15,8 @@ import {
   Sun,
   Moon,
   RefreshCw,
-  Wrench
+  Wrench,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -127,6 +128,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       badge: String(orcamentos.length),
       title: `${orcamentos.length} orçamentos no total (${orcamentosAbertosCount} em aberto)`,
       visible: isColaborador
+    },
+    {
+      id: 'prospeccao',
+      label: 'Prospecção',
+      path: '/admin/prospeccao',
+      icon: Target,
+      badge: '',
+      title: 'CRM de prospecção B2B (MASTER)',
+      visible: isMaster
     },
     {
       id: 'servicos',

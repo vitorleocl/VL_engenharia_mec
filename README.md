@@ -94,3 +94,46 @@ firebase deploy --only hosting
 ## 4. Persistência Offline
 
 O aplicativo vem configurado com persistência offline do Firestore (`persistentLocalCache` com IndexedDB) e fallback local reativo no painel administrativo. Em locais de campo (fábricas, canteiros ou minerações sem sinal de internet), todos os cadastros, laudos, checklists e orçamentos continuam 100% operacionais e sincronizam automaticamente ao restabelecer a conexão.
+
+---
+
+## 5. Módulo de Prospecção B2B
+
+O módulo `/admin/prospeccao` é restrito ao MASTER. Os dados ficam nas coleções Firestore `leads`, `campanhas`, `mensagens_modelo`, `envios`, `supressao` e `config_prospeccao`. Aplique as regras atualizadas antes de habilitar o painel:
+
+```bash
+firebase deploy --only firestore:rules
+npm run test:prospeccao
+npm run lint
+npm run build
+```
+
+O catálogo inicial está em `config/servicos-prospeccao.json`. Os códigos e descrições de CNAE foram comparados com o endpoint oficial de subclasses do IBGE/CONCLA (`https://servicodados.ibge.gov.br/api/v2/cnae/subclasses`); segmentos sem correspondência inequívoca usam palavras-chave para revisão humana. O MASTER pode editar as normas, argumentos e dados de segmentos no painel; as alterações operacionais são gravadas em `config_prospeccao/principal`.
+
+### Backend e segredos
+
+As rotas de envio, busca e descadastro exigem o Express ativo (Vercel `api/[...path].ts` ou servidor Node). Firebase Hosting estático sozinho não executa essas rotas. Configure os segredos no ambiente do backend, nunca no navegador:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON` **ou** `GOOGLE_APPLICATION_CREDENTIALS`: credencial de serviço Firebase Admin com acesso ao mesmo projeto Firestore usado pelo front-end.
+- `VITE_FIRESTORE_DATABASE_ID`: database ID não-default, caso o projeto use um.
+- `PROSPECCAO_UNSUBSCRIBE_SECRET`: segredo aleatório longo para assinar tokens de descadastro.
+- `ZOHO_SMTP_HOST`, `ZOHO_SMTP_PORT`, `ZOHO_SMTP_USER`, `ZOHO_SMTP_PASS`, `ZOHO_FROM_NAME`, `ZOHO_FROM_EMAIL`: SMTP Zoho. Use senha de aplicativo gerada em **Conta Zoho → Segurança → Senhas de aplicativo**, não sua senha principal.
+- `GEMINI_API_KEY`: usada apenas no servidor para sugerir variações de texto.
+- Opcionais: `PROSPECCAO_CNPJ_API_URL`/`PROSPECCAO_CNPJ_API_KEY` para um fornecedor que consulte a base aberta; `GOOGLE_PLACES_API_KEY`; `PROSPECCAO_DKIM_SELECTORS`.
+
+Copie `.env.example` como referência. No Vercel, cadastre os mesmos valores em Project Settings → Environment Variables. Nunca publique JSON de service account nem credenciais Zoho no Firebase Hosting.
+
+### Fluxo e limites
+
+- O modo **dry-run começa ligado**. O envio direto só é possível após o MASTER desligá-lo em Configurações.
+- WhatsApp funciona em modo assistido (`wa.me`), com revisão/envio manual. Não há automação por gateway não oficial.
+- E-mail oferece preparação via `mailto:` e, se SMTP estiver configurado, envio individual Zoho após confirmação. Máximo efetivo de 30 e-mails/dia, janela seg–sex configurada para `America/Recife`, limite de intervalo mínimo, validação de MX e verificação da supressão no servidor.
+- O link `/api/prospeccao/descadastrar?token=...` grava hashes de e-mail/telefone em `supressao`; não mantém o contato em claro. Tokens expiram em 180 dias e o endpoint aplica rate limit simples por IP.
+- Busca CNPJ online depende de um provedor compatível configurado por ambiente. A importação CSV funciona sem esse serviço. Google Places é opcional e fornece somente dados que o próprio Places disponibiliza.
+- Todas as mensagens devem ser revisadas individualmente. Campanhas são listas/rascunhos; iniciar uma campanha não dispara em lote. Follow-up automatizado, controle de duas tentativas por campanha, pausa por taxa de bounce e monitoramento de respostas não estão implementados nesta etapa.
+
+### Entregabilidade e conformidade
+
+Antes de enviar, publique SPF, DKIM e DMARC para o domínio remetente e confirme os registros com o painel. O checklist DNS é indicativo; os registros corretos e limites devem ser confirmados no console Zoho. Respeite os limites do plano, aqueça a conta gradualmente e pare ao observar bounces ou reclamações. Use apenas contatos corporativos de pessoas jurídicas, registre fonte/finalidade de legítimo interesse e honre descadastro imediatamente. Não importe listas compradas nem contate endereços pessoais sem base legal.
+
+Zoho Mail API/OAuth, rascunhos nativos IMAP/API, leitura IMAP de respostas/bounces, webhook WhatsApp Cloud API, extração de contatos de sites com `robots.txt` e follow-up não estão ativados nesta etapa; não configure envio em massa esperando esses recursos. O modo disponível de rascunho é `mailto:` e o WhatsApp é assistido.
