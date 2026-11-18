@@ -54,7 +54,9 @@ export const ProjetosGuiaView: React.FC = () => {
   const modeloAtivo = modelos.find((modelo) => modelo.servico === servicoAtivo)
     || (GUIA_TECNICO_CATALOGO[servicoAtivo] as GuiaModeloServico);
   const projetosServico = useMemo(
-    () => projetos.filter((projeto) => projeto.servico === servicoAtivo).sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)),
+    () => projetos
+      .filter((projeto) => projeto.servico === servicoAtivo)
+      .sort((a, b) => String(b.criadoEm || '').localeCompare(String(a.criadoEm || ''))),
     [projetos, servicoAtivo],
   );
   const projetoSelecionado = projetosServico.find((projeto) => projeto.id === projetoSelecionadoId);
@@ -75,7 +77,17 @@ export const ProjetosGuiaView: React.FC = () => {
       const padroes = criarDocumentosGuiaPadrao(currentUser?.email || '');
       const remotos = snapshot.docs.map((documento) => documento.data() as GuiaModeloServico);
       const porServico = new Map(remotos.map((modelo) => [modelo.servico, modelo]));
-      setModelos(padroes.map((modelo) => porServico.get(modelo.servico) || modelo));
+      setModelos(padroes.map((modelo) => {
+        const remoto = porServico.get(modelo.servico);
+        const estruturaValida = remoto
+          && Array.isArray(remoto.normas)
+          && Array.isArray(remoto.grupos)
+          && remoto.grupos.every((grupo) => grupo && Array.isArray(grupo.itens))
+          && Array.isArray(remoto.entregas)
+          && remoto.modelo3d
+          && Array.isArray(remoto.modelo3d.legenda);
+        return estruturaValida ? remoto : modelo;
+      }));
       setCarregando(false);
       setErro(null);
     }, (erroSnapshot) => {

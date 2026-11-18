@@ -154,17 +154,22 @@ export const ProspeccaoView: React.FC = () => {
       setLoading(false);
       return;
     }
-    const fail = (error: Error) => {
-      console.error('[Prospecção] Falha ao carregar dados:', error);
-      setErro('Não foi possível carregar os dados de prospecção. Verifique o acesso MASTER e as regras do Firestore.');
+    const fail = (fonte: string) => (error: Error & { code?: string }) => {
+      const codigo = error.code ? ` (${error.code})` : '';
+      console.error(`[Prospecção] Falha ao carregar ${fonte}${codigo}:`, error);
+      setErro((atual) => {
+        const detalhe = `${fonte}${codigo}`;
+        if (atual.includes(detalhe)) return atual;
+        return `${atual ? `${atual} ` : ''}Falha ao acessar ${detalhe}. Verifique o acesso MASTER e as regras publicadas do Firestore.`;
+      });
       setLoading(false);
     };
     const subscriptions = [
-      onSnapshot(collection(db, 'leads'), (snapshot) => setLeads(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as LeadProspeccao))), fail),
-      onSnapshot(collection(db, 'campanhas'), (snapshot) => setCampanhas(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as CampanhaProspeccao))), fail),
-      onSnapshot(collection(db, 'mensagens_modelo'), (snapshot) => setModelos(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as MensagemModeloProspeccao))), fail),
-      onSnapshot(collection(db, 'envios'), (snapshot) => setEnvios(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as EnvioProspeccao))), fail),
-      onSnapshot(collection(db, 'supressao'), (snapshot) => setSupressoes(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as SupressaoProspeccao))), fail),
+      onSnapshot(collection(db, 'leads'), (snapshot) => setLeads(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as LeadProspeccao))), fail('leads')),
+      onSnapshot(collection(db, 'campanhas'), (snapshot) => setCampanhas(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as CampanhaProspeccao))), fail('campanhas')),
+      onSnapshot(collection(db, 'mensagens_modelo'), (snapshot) => setModelos(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as MensagemModeloProspeccao))), fail('mensagens_modelo')),
+      onSnapshot(collection(db, 'envios'), (snapshot) => setEnvios(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as EnvioProspeccao))), fail('envios')),
+      onSnapshot(collection(db, 'supressao'), (snapshot) => setSupressoes(snapshot.docs.map((item) => ({ ...item.data(), id: item.id } as SupressaoProspeccao))), fail('supressao')),
       onSnapshot(doc(db, 'config_prospeccao', 'principal'), (snapshot) => {
         const data = snapshot.data();
         if (data) {
@@ -175,10 +180,10 @@ export const ProspeccaoView: React.FC = () => {
             ...DEFAULT_CONFIG,
             servicos: catalogoInicial.servicos,
             atualizadoEm: new Date().toISOString(),
-          }, { merge: true }).catch(fail);
+          }, { merge: true }).catch(fail('config_prospeccao'));
         }
         setLoading(false);
-      }, fail),
+      }, fail('config_prospeccao')),
     ];
     const token = firebaseUser?.getIdToken();
     void token?.then((idToken) => fetch('/api/prospeccao/status', {

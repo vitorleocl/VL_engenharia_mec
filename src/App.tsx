@@ -32,6 +32,7 @@ import { GestaoView } from './components/admin/GestaoView';
 import { PropostaPrintView } from './components/admin/PropostaPrintView';
 import { LaudoPrintView } from './components/admin/LaudoPrintView';
 import { VerificacaoPublicaView } from './components/public/VerificacaoPublicaView';
+import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
 const ProjetosGuiaView = lazy(() => import('./components/admin/ProjetosGuiaView').then((modulo) => ({
   default: modulo.ProjetosGuiaView,
 })));
@@ -229,14 +230,16 @@ export default function App() {
                 path="/admin/projetos-guia"
                 element={
                   <AdminLayout>
-                    <Suspense fallback={
+                    <RouteErrorBoundary>
+                      <Suspense fallback={
                       <div role="status" className="min-h-48 flex items-center justify-center gap-2 text-sm text-[var(--adm-mut)]">
                         <span className="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin" />
                         Carregando Projetos e Guia Técnico…
                       </div>
                     }>
-                      <ProjetosGuiaView />
-                    </Suspense>
+                        <ProjetosGuiaView />
+                      </Suspense>
+                    </RouteErrorBoundary>
                   </AdminLayout>
                 }
               />
