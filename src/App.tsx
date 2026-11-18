@@ -218,6 +218,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/admin/servicos/checklists"
+                element={
+                  <AdminLayout>
+                    <ChecklistCampoView />
+                  </AdminLayout>
+                }
+              />
+              <Route
                 path="/admin/projetos-guia"
                 element={
                   <AdminLayout>
@@ -234,7 +242,7 @@ export default function App() {
               />
               <Route
                 path="/admin/banco-checklists"
-                element={<Navigate to="/admin/checklists-campo" replace />}
+                element={<Navigate to="/admin/servicos/checklists" replace />}
               />
               <Route
                 path="/admin/templates"

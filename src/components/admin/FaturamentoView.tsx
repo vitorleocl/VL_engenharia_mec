@@ -841,7 +841,7 @@ export const FaturamentoView: React.FC = () => {
                                   <button
                                     key={chk.id}
                                     type="button"
-                                    onClick={() => navigate('/admin/checklists-campo')}
+                                    onClick={() => navigate('/admin/servicos/checklists')}
                                     className="text-left p-2.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] hover:border-[var(--adm-blue-soft,#6ea1ff)] bg-[var(--adm-card,#0f2038)] transition flex items-center justify-between gap-2 cursor-pointer"
                                   >
                                     <div className="min-w-0">

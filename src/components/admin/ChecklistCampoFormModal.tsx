@@ -110,6 +110,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     orcamentos,
     laudos,
     checklistModelos,
+    servicosCatalogo,
     adicionarChecklistCampo,
     atualizarChecklistCampo,
     gerarOuAtualizarLaudoDeChecklist,
@@ -118,7 +119,37 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   } = useData();
   const { currentUser, isOnline } = useAuth();
 
-  const modelosAtivos = checklistModelos.length > 0 ? checklistModelos : CHECKLIST_MODELOS_PADRAO;
+  const modelosAtivos = useMemo(() => {
+    const modelosBase = checklistModelos.length > 0 ? checklistModelos : CHECKLIST_MODELOS_PADRAO;
+    const modelosDoCatalogo = servicosCatalogo.flatMap((servico, servicoIndex) =>
+      servico.subtipos.flatMap((subtipo, subtipoIndex) => {
+        const itensChecklist = subtipo.checklistSugerido || [];
+        if (itensChecklist.length === 0) return [];
+        const idServico = (servico.id || servico.nome || `servico-${servicoIndex}`)
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const idSubtipo = (subtipo.id || subtipo.nome || `subtipo-${subtipoIndex}`)
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const secoes = subtipo.secoesSugeridas || [];
+        return [{
+          id: `servico-${idServico}-${idSubtipo}`,
+          nome: subtipo.nome,
+          subtitulo: servico.nome,
+          norma: subtipo.normaRef || servico.norma,
+          secoesLaudoPadrao: secoes,
+          itens: itensChecklist.map((texto, index) => ({
+            id: `servico-${idSubtipo}-${index + 1}`,
+            numero: `${index + 1}`,
+            texto,
+            norma: subtipo.normaRef || servico.norma,
+            secaoLaudo: secoes[index] || secoes[0] || 'Verificações Técnicas',
+          })),
+        }];
+      }),
+    );
+    const unicos = new Map(modelosBase.map((modelo) => [modelo.id, modelo]));
+    modelosDoCatalogo.forEach((modelo) => unicos.set(modelo.id, modelo));
+    return Array.from(unicos.values());
+  }, [checklistModelos, servicosCatalogo]);
   const draftKeyRef = useRef<string>(checklistParaEditar?.id || `draft-new-${Date.now()}`);
 
   const [vinculadoAOrcamentoId, setVinculadoAOrcamentoId] = useState<string>(
@@ -948,7 +979,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                         : 'bg-[var(--adm-bg)] text-[var(--adm-text)] border-[var(--adm-line)] hover:border-[var(--adm-blue-soft)]'
                     }`}
                   >
-                    {mod.id.toUpperCase()}
+                    {mod.id.startsWith('servico-') ? mod.nome : mod.id.toUpperCase()}
                   </button>
                 ))}
               </div>

@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { Check, ChevronDown, ChevronRight, ChevronsDownUp, Layers3, Pencil, Plus, Save, Trash2, Wrench } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, ChevronDown, ChevronRight, ChevronsDownUp, ClipboardCheck, Layers3, Pencil, Plus, Save, Trash2, Wrench } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { ServicoItem, SubtipoServico } from '../../data/servicosCatalogo';
 
 const novoId = (prefixo: string) => `${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const ServicosView: React.FC = () => {
-  const { servicosCatalogo, atualizarServicosCatalogo } = useData();
+  const { servicosCatalogo, atualizarServicosCatalogo, checklistsCampo } = useData();
+  const navigate = useNavigate();
   const [servicoEditandoId, setServicoEditandoId] = useState<string | null>(null);
   const [subtipoEditandoId, setSubtipoEditandoId] = useState<string | null>(null);
   const [servicoNome, setServicoNome] = useState('');
@@ -145,6 +147,14 @@ export const ServicosView: React.FC = () => {
         <div className="flex gap-4 text-sm text-[var(--adm-mut)]">
           <span><strong className="text-[var(--adm-text)]">{servicosCatalogo.length}</strong> serviços</span>
           <span><strong className="text-[var(--adm-text)]">{totalSubtipos}</strong> especificações</span>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/servicos/checklists')}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--adm-line)] bg-[var(--adm-card)] px-3 py-2 text-xs font-semibold text-[var(--adm-text)] transition hover:border-[var(--adm-blue,#2160db)]"
+          >
+            <ClipboardCheck className="h-4 w-4 text-[var(--adm-blue,#2160db)]" />
+            Checklists <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5">{checklistsCampo.length}</span>
+          </button>
         </div>
       </header>
 

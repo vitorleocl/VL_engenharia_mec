@@ -100,7 +100,7 @@ export const DashboardView: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
-            to="/admin/checklists-campo?novo=1"
+            to="/admin/servicos/checklists?novo=1"
             className="h-[44px] px-4 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-[var(--adm-card,#0f2038)] hover:border-[#6ea1ff] text-[var(--adm-text,#f4f7fc)] text-[0.85rem] font-medium inline-flex items-center gap-2 transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff]"
           >
             <ClipboardCheck className="w-4 h-4 text-[var(--adm-blue-soft,#6ea1ff)]" />
@@ -315,7 +315,7 @@ export const DashboardView: React.FC = () => {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 <Link
-                  to="/admin/checklists-campo?novo=1"
+                  to="/admin/servicos/checklists?novo=1"
                   className="h-10 px-4 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-text,#f4f7fc)] text-[0.85rem] font-medium inline-flex items-center gap-1.5 hover:border-[#6ea1ff] transition-colors"
                 >
                   <ClipboardCheck className="w-4 h-4" />

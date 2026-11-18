@@ -11,6 +11,7 @@ import {
   X,
   ClipboardCheck,
   MessageCircle,
+  ArrowLeft,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -104,7 +105,7 @@ export const ChecklistCampoView: React.FC = () => {
   return (
     <div className="space-y-4 max-w-[920px] mx-auto">
       {/* Cabeçalho estilo mobile/painel VL Engenharia */}
-      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-[26px] sm:text-[30px] font-bold tracking-tight text-[var(--adm-text)] leading-tight">
             Checklists
@@ -115,6 +116,15 @@ export const ChecklistCampoView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/servicos')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-mut)] hover:text-[var(--adm-text)] transition cursor-pointer"
+            title="Voltar ao catálogo de Serviços"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Serviços</span>
+          </button>
           {/* Indicador de Sincronização B6 */}
           <button
             type="button"

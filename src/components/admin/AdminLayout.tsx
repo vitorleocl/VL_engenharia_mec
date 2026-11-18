@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
-  ClipboardCheck, 
   Users, 
   Cpu, 
   FileSpreadsheet, 
@@ -80,17 +79,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: FileText,
       badge: String(laudos.length),
       title: `${laudos.length} laudos registrados`,
-      visible: true
-    },
-    {
-      id: 'checklist',
-      label: 'Checklist de campo',
-      path: '/admin/checklists-campo',
-      icon: ClipboardCheck,
-      badge: pendingSyncCount > 0 ? String(pendingSyncCount) : '',
-      title: pendingSyncCount > 0
-        ? `${pendingSyncCount} checklist(s) pendente(s) de sincronização`
-        : 'Checklists e vistorias de campo',
       visible: true
     },
     {
