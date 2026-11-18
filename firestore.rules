@@ -115,31 +115,5 @@ service cloud.firestore {
       allow read, write: if isColaborador() || isMaster();
     }
 
-    // Prospecção comercial — leads e credenciais/configurações restritos ao MASTER.
-    match /leads/{leadId} {
-      allow read, create, update, delete: if isMaster();
-    }
-
-    match /campanhas/{campanhaId} {
-      allow read, create, update, delete: if isMaster();
-    }
-
-    match /mensagens_modelo/{modeloId} {
-      allow read, create, update, delete: if isMaster();
-    }
-
-    match /envios/{envioId} {
-      allow read, create, update, delete: if isMaster();
-    }
-
-    match /supressao/{supressaoId} {
-      allow read, update, delete: if isMaster();
-      // O endpoint server-side verifica HMAC e limite de requisições antes de gravar.
-      allow create: if isMaster();
-    }
-
-    match /config_prospeccao/{configId} {
-      allow read, create, update, delete: if isMaster();
-    }
   }
 }
