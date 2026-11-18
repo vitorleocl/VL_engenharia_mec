@@ -35,7 +35,7 @@ import {
   NR12_REQUISITOS_PADRAO
 } from '../data/initialData';
 import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
-import { SERVICOS_LISTA, ServicoItem } from '../data/servicosCatalogo';
+import { incluirChecklistCaminhaoPipa, SERVICOS_LISTA, ServicoItem } from '../data/servicosCatalogo';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { db, auth } from '../lib/firebase';
@@ -757,7 +757,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [servicosCatalogo, setServicosCatalogo] = useState<ServicoItem[]>(() => {
     const stored = loadStorage('vl_servicos_catalogo', SERVICOS_LISTA);
-    return Array.isArray(stored) ? stored : SERVICOS_LISTA;
+    return incluirChecklistCaminhaoPipa(Array.isArray(stored) ? stored : SERVICOS_LISTA);
   });
   const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>(() => {
     const loaded: LogAuditoria[] = loadStorage('vl_logs', []);
@@ -992,8 +992,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const unsubServicos = onSnapshot(doc(db, 'configuracoes', 'servicosCatalogo'), (snapshot) => {
         const remoto = snapshot.data()?.servicos;
         if (Array.isArray(remoto)) {
-          setServicosCatalogo(remoto);
-          saveStorage('vl_servicos_catalogo', remoto);
+          const catalogoAtualizado = incluirChecklistCaminhaoPipa(remoto);
+          setServicosCatalogo(catalogoAtualizado);
+          saveStorage('vl_servicos_catalogo', catalogoAtualizado);
         }
       }, (error) => {
         console.warn('[Firestore] Erro ao carregar catálogo de serviços:', error);
@@ -1115,8 +1116,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (Array.isArray(data.servicosCatalogo)) {
-          setServicosCatalogo(data.servicosCatalogo);
-          saveStorage('vl_servicos_catalogo', data.servicosCatalogo);
+          const catalogoAtualizado = incluirChecklistCaminhaoPipa(data.servicosCatalogo);
+          setServicosCatalogo(catalogoAtualizado);
+          saveStorage('vl_servicos_catalogo', catalogoAtualizado);
         }
 
         isHydratedRef.current = true;

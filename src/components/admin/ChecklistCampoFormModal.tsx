@@ -141,7 +141,12 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
             numero: `${index + 1}`,
             texto,
             norma: subtipo.normaRef || servico.norma,
-            secaoLaudo: secoes[index] || secoes[0] || 'Verificações Técnicas',
+            secaoLaudo: secoes.length
+              ? secoes[Math.min(secoes.length - 1, Math.floor(index * secoes.length / itensChecklist.length))]
+              : 'Verificações Técnicas',
+            ...(texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
+              ? { tipoResposta: 'medida' as const, unidade: 'mg/L', metodoVerificacao: 'instrumental' as const }
+              : {}),
           })),
         }];
       }),

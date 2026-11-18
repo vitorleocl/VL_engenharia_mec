@@ -442,6 +442,44 @@ export const SERVICOS_LISTA: ServicoItem[] = [
     ]
   },
   {
+    id: 'integridade-implementos-frota',
+    nome: 'Integridade Física e Operacional em Implementos de Frota',
+    norma: 'Requisitos sanitários e de transporte aplicáveis ao serviço',
+    descricao: 'Inspeção física, operacional e sanitária de implementos veiculares, incluindo tanques de transporte de água potável.',
+    subtipos: [
+      {
+        id: 'laudo-conformidade-sanitaria-caminhao-pipa',
+        nome: 'Laudo Técnico de Conformidade Sanitária de Caminhão-Pipa',
+        normaRef: 'Requisitos sanitários aplicáveis à água potável e legislação veicular vigente',
+        detalhe: 'Inspeção documental, estrutural e sanitária do tanque, acessórios, identificação e condições de transferência de água potável, conforme o escopo e os requisitos aplicáveis.',
+        checklistSugerido: [
+          'Verificação da documentação e certificados de higienização e desinfecção anteriores.',
+          'Confirmação do uso exclusivo do tanque para transporte de água potável (sem cargas cruzadas).',
+          'Checagem da identificação visual externa obrigatória ("ÁGUA POTÁVEL") nas laterais e traseira.',
+          'Inspeção da integridade estrutural externa do tanque, cintas de fixação e chassi do caminhão.',
+          'Verificação das condições físicas da escada de acesso lateral, guarda-corpo e plataforma superior.',
+          'Inspeção visual do bocal, tampa da boca de visita e estado das borrachas de vedação.',
+          'Inspeção do respiro superior e conferência da presença da tela milimétrica de proteção contra vetores.',
+          'Inspeção visual interna do costado e fundos (revestimento epóxi atóxico ou aço inox sem trincas ou corrosão).',
+          'Verificação estrutural e de soldas dos quebra-ondas internos pelo bocal.',
+          'Inspeção das tubulações, registros, válvulas de descarga e conexões de mangotes inferiores.',
+          'Verificação de vazamentos, estanqueidade e proteção contra contaminação externa nas saídas.',
+          'Medição em campo do cloro residual livre e aspecto físico da água (se aplicável ao momento da vistoria).',
+          'Verificação da plaqueta de identificação do fabricante e da capacidade nominal do tanque.',
+          'Inspeção das condições de armazenamento e tampões dos mangotes de transferência de água.',
+        ],
+        secoesSugeridas: [
+          'Documentação, histórico sanitário e identificação do tanque',
+          'Uso, estrutura externa e acessos do implemento',
+          'Inspeção interna, vedação e componentes de proteção',
+          'Tubulações, descargas e transferência de água',
+          'Condições da água e identificação de capacidade',
+          'Armazenamento e proteção dos mangotes',
+        ],
+      },
+    ],
+  },
+  {
     id: 'playgrounds',
     nome: 'Laudo de playgrounds',
     norma: 'NBR 16071',
@@ -1268,3 +1306,41 @@ export const SERVICOS_LISTA: ServicoItem[] = [
     ]
   }
 ];
+
+/**
+ * Mantém o checklist de caminhão-pipa disponível também em catálogos antigos
+ * já persistidos no navegador/Firestore, sem substituir os demais serviços.
+ */
+export function incluirChecklistCaminhaoPipa(servicos: ServicoItem[]): ServicoItem[] {
+  const servicoPadrao = SERVICOS_LISTA.find((servico) => servico.id === 'integridade-implementos-frota');
+  const subtipoPadrao = servicoPadrao?.subtipos.find((subtipo) => subtipo.id === 'laudo-conformidade-sanitaria-caminhao-pipa');
+  if (!servicoPadrao || !subtipoPadrao) return servicos;
+
+  const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const indiceServico = servicos.findIndex((servico) =>
+    servico.id === servicoPadrao.id || normalizar(servico.nome) === normalizar(servicoPadrao.nome),
+  );
+  if (indiceServico < 0) return [...servicos, servicoPadrao];
+
+  return servicos.map((servico, index) => {
+    if (index !== indiceServico) return servico;
+    const subtipos = Array.isArray(servico.subtipos) ? servico.subtipos : [];
+    const indiceSubtipo = subtipos.findIndex((subtipo) =>
+      subtipo.id === subtipoPadrao.id || normalizar(subtipo.nome) === normalizar(subtipoPadrao.nome),
+    );
+    if (indiceSubtipo < 0) return { ...servico, subtipos: [...subtipos, subtipoPadrao] };
+
+    return {
+      ...servico,
+      subtipos: subtipos.map((subtipo, subtipoIndex) => subtipoIndex === indiceSubtipo
+        ? {
+            ...subtipo,
+            normaRef: subtipoPadrao.normaRef,
+            detalhe: subtipoPadrao.detalhe,
+            checklistSugerido: subtipoPadrao.checklistSugerido,
+            secoesSugeridas: subtipoPadrao.secoesSugeridas,
+          }
+        : subtipo),
+    };
+  });
+}
