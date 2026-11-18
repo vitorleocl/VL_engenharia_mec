@@ -1,4 +1,3 @@
-import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -32,11 +31,6 @@ import { GestaoView } from './components/admin/GestaoView';
 import { PropostaPrintView } from './components/admin/PropostaPrintView';
 import { LaudoPrintView } from './components/admin/LaudoPrintView';
 import { VerificacaoPublicaView } from './components/public/VerificacaoPublicaView';
-import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
-const ProjetosGuiaView = lazy(() => import('./components/admin/ProjetosGuiaView').then((modulo) => ({
-  default: modulo.ProjetosGuiaView,
-})));
-
 function FloatingContactHelper() {
   const location = useLocation();
   // Don't show WhatsApp floating badge inside operations admin panel or login routes
@@ -223,23 +217,6 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <ChecklistCampoView />
-                  </AdminLayout>
-                }
-              />
-              <Route
-                path="/admin/projetos-guia"
-                element={
-                  <AdminLayout>
-                    <RouteErrorBoundary>
-                      <Suspense fallback={
-                      <div role="status" className="min-h-48 flex items-center justify-center gap-2 text-sm text-[var(--adm-mut)]">
-                        <span className="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin" />
-                        Carregando Projetos e Guia Técnico…
-                      </div>
-                    }>
-                        <ProjetosGuiaView />
-                      </Suspense>
-                    </RouteErrorBoundary>
                   </AdminLayout>
                 }
               />

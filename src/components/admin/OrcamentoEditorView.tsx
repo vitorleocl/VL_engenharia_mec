@@ -48,7 +48,6 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase, OrcamentoParcela } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
-import { criarHtmlTabelaGuia, limparGuiaInsercaoPendente, lerGuiaInsercaoPendente } from '../../lib/guiaInsercaoEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
 import { redimensionarImagemArquivo } from '../../lib/imageUtils';
@@ -620,30 +619,6 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       secoes: novasSecoes,
     }, `Edição na ${secaoAtiva.titulo}`);
   };
-
-  // A tabela é anexada ao HTML da seção escolhida. O editor não descarta
-  // nem substitui o conteúdo preexistente.
-  useEffect(() => {
-    if (!id || !orcamentoState) return;
-    const insercao = lerGuiaInsercaoPendente();
-    if (!insercao || insercao.destino !== 'orcamento' || insercao.documentoId !== id) return;
-    const secaoExiste = orcamentoState.secoes?.some((secao) => secao.id === insercao.secaoId);
-    if (!secaoExiste) {
-      limparGuiaInsercaoPendente();
-      window.alert('A seção escolhida não foi encontrada neste orçamento. O conteúdo existente foi mantido.');
-      return;
-    }
-    const htmlTabela = criarHtmlTabelaGuia(insercao);
-    const novoEstado = {
-      ...orcamentoState,
-      secoes: orcamentoState.secoes.map((secao) => secao.id === insercao.secaoId
-        ? { ...secao, conteudoHtml: `${secao.conteudoHtml || ''}<hr />${htmlTabela}` }
-        : secao),
-    };
-    limparGuiaInsercaoPendente();
-    setSecaoAtivaId(insercao.secaoId);
-    agendarAutoSave(novoEstado, `Tabela de cálculo ${insercao.servico.toUpperCase()} inserida pelo Guia Técnico`);
-  }, [id, orcamentoState, agendarAutoSave]);
 
   // Section Title / Subtitle change
   const handleTituloSecaoChange = (novoTitulo: string, novoSubtitulo?: string) => {

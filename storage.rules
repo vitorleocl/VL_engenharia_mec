@@ -11,38 +11,5 @@ service firebase.storage {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Projetos e Guia Técnico. A checagem Firestore é somente leitura e não
-    // modifica os documentos nem as regras preexistentes de outros arquivos.
-    function isMaster() {
-      return request.auth != null && (
-        request.auth.token.email == "vitorleonardocl@gmail.com" ||
-        (firestore.exists(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)) &&
-         firestore.get(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)).data.role == "master")
-      );
-    }
-
-    function hasProjetosGuiaPermission() {
-      return isMaster() || (
-        request.auth != null &&
-        firestore.exists(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)) &&
-        firestore.get(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)).data.role == "colaborador" &&
-        firestore.get(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)).data.get("ativo", true) == true &&
-        firestore.get(/databases/ai-studio-vlengenharia-d49d141e-9a79-4062-9b93-1502675c2f71/documents/usuarios/$(request.auth.uid)).data.get("permissoes", {}).get("projetosGuia", false) == true
-      );
-    }
-
-    match /projetos-guia/{clienteId}/{projetoId}/{allPaths=**} {
-      allow read, delete: if hasProjetosGuiaPermission();
-      allow create, update: if hasProjetosGuiaPermission()
-        && request.resource != null
-        && request.resource.size < 50 * 1024 * 1024;
-    }
-
-    match /guia-modelos/{servico}/exemplos/{allPaths=**} {
-      allow read, delete: if hasProjetosGuiaPermission();
-      allow create, update: if hasProjetosGuiaPermission()
-        && request.resource != null
-        && request.resource.size < 50 * 1024 * 1024;
-    }
   }
 }
