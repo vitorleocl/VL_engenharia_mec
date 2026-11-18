@@ -382,7 +382,7 @@ export const ClientesView: React.FC = () => {
               <tr className="border-b-[1.5px] border-[var(--ink)] text-[var(--muted)] text-[13.5px] bg-[var(--paper)]">
                 <th className="py-2.5 px-4 font-semibold">Cliente & CNPJ/CPF</th>
                 <th className="py-2.5 px-4 font-semibold">Principal Contato</th>
-                <th className="py-2.5 px-4 font-semibold">Equipamentos</th>
+                <th className="py-2.5 px-4 font-semibold">Ativos</th>
                 <th className="py-2.5 px-4 font-semibold">Último laudo</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Ações</th>
               </tr>

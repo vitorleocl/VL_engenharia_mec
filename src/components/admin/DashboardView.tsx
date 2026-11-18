@@ -172,13 +172,13 @@ export const DashboardView: React.FC = () => {
         <Link 
           to="/admin/ativos"
           className="p-5 sm:p-6 border-r border-[var(--adm-line,rgba(159,176,200,0.16))] hover:bg-[rgba(110,161,255,0.07)] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-[-2px] block no-underline text-inherit"
-          title="Ver inventário de equipamentos"
+          title="Ver inventário de ativos"
         >
           <b className="block text-[2rem] font-semibold leading-[1.1] text-[var(--adm-text,#f4f7fc)]">
             {equipamentosTotal}
           </b>
           <span className="text-[var(--adm-mut,#a9b8cf)] text-[0.9rem] mt-1 block">
-            Equipamentos
+            Ativos
           </span>
         </Link>
 

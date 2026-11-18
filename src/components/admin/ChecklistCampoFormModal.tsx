@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
   HardDrive,
+  Search,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -151,9 +152,8 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
         }];
       }),
     );
-    const unicos = new Map<string, ChecklistModeloServico>(
-      modelosDoCatalogo.map((modelo) => [modelo.id, modelo] as const),
-    );
+    const unicos = new Map<string, ChecklistModeloServico>();
+    modelosDoCatalogo.forEach(modelo => unicos.set(modelo.id, modelo));
     // Modelos configurados pelo usuário têm precedência sobre os valores sugeridos do catálogo.
     modelosBase.forEach((modelo) => unicos.set(modelo.id, modelo));
     return Array.from(unicos.values());
@@ -166,6 +166,18 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     });
     return Array.from(grupos.entries());
   }, [modelosAtivos]);
+  const [buscaModelo, setBuscaModelo] = useState('');
+  const [listaModelosAberta, setListaModelosAberta] = useState(false);
+  const modelosAgrupadosFiltrados = useMemo(() => {
+    const termo = buscaModelo.trim().toLocaleLowerCase('pt-BR');
+    if (!termo) return modelosAgrupados;
+    return modelosAgrupados
+      .map(([grupo, modelos]) => [
+        grupo,
+        modelos.filter(modelo => `${modelo.nome} ${modelo.subtitulo || ''} ${modelo.norma || ''}`.toLocaleLowerCase('pt-BR').includes(termo)),
+      ] as [string, ChecklistModeloServico[]])
+      .filter(([, modelos]) => modelos.length > 0);
+  }, [buscaModelo, modelosAgrupados]);
   const draftKeyRef = useRef<string>(checklistParaEditar?.id || `draft-new-${Date.now()}`);
 
   const [vinculadoAOrcamentoId, setVinculadoAOrcamentoId] = useState<string>(
@@ -689,7 +701,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       return null;
     }
     if (!ativoId) {
-      setErroValidacao('Selecione o Equipamento / TAG inspecionado (obrigatório).');
+      setErroValidacao('Selecione o ativo / TAG inspecionado (obrigatório).');
       return null;
     }
 
@@ -841,12 +853,12 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
 
         {/* Corpo com scroll */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-6 pb-6 space-y-4 sm:space-y-5 bg-[var(--adm-bg)]">
-          {/* 1. Vínculos (B3: Orçamento aprovado, Cliente, Equipamento, Data/Hora, GPS) */}
+          {/* 1. Vínculos (B3: Orçamento aprovado, Cliente, Ativo, Data/Hora, GPS) */}
           <div className="bg-[var(--adm-card)] p-4 sm:p-5 rounded-2xl border border-[var(--adm-line)] space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--adm-line)] pb-2.5">
               <h3 className="text-xs font-bold text-[var(--adm-text)] uppercase tracking-wider flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-[var(--adm-blue-soft,#6ea1ff)]" />
-                <span>1. Orçamento, Equipamento & Local</span>
+                <span>1. Orçamento, Ativo & Local</span>
               </h3>
               <span className="text-[10.5px] font-mono text-[var(--adm-mut)]">VÍNCULOS</span>
             </div>
@@ -904,10 +916,10 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                 )}
               </div>
 
-              {/* Equipamento / TAG */}
+              {/* Ativo / TAG */}
               <div>
                 <label className="block text-xs font-semibold text-[var(--adm-mut)] mb-1">
-                  Equipamento / TAG <span className="text-rose-500">*</span>
+                  Ativo / TAG <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={ativoId}
@@ -915,7 +927,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                   disabled={!clienteId}
                   className="w-full text-xs font-semibold bg-[var(--adm-bg)] border border-[var(--adm-line)] rounded-xl px-3 py-2.5 text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-blue-soft)] disabled:opacity-50"
                 >
-                  <option value="">-- Selecione o equipamento --</option>
+                  <option value="">-- Selecione o ativo --</option>
                   {ativosDoCliente.map((atv, idx) => (
                     <option key={atv.id ? `${atv.id}-${idx}` : `atv-${idx}`} value={atv.id}>
                       {atv.identificacao} · {atv.tipo}
@@ -982,26 +994,59 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                 </p>
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="checklist-modelo-servico" className="mb-1.5 block text-[11px] font-semibold text-[var(--adm-mut)]">
-                  Modelo de serviço
+                  Buscar modelo de serviço
                 </label>
-                <select
-                  id="checklist-modelo-servico"
-                  value={tipoServicoSelecionado}
-                  onChange={(event) => handleTrocarModeloServico(event.target.value)}
-                  className="min-h-11 w-full rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] px-3 text-sm font-semibold text-[var(--adm-text)] focus:border-[var(--adm-blue-soft)] focus:outline-none"
-                >
-                  {modelosAgrupados.map(([grupo, modelos]) => (
-                    <optgroup key={grupo} label={grupo}>
-                      {modelos.map((modelo) => (
-                        <option key={modelo.id} value={modelo.id}>
-                          {modelo.nome} · {modelo.itens.length} itens
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--adm-mut)]" />
+                  <input
+                    id="checklist-modelo-servico"
+                    type="search"
+                    value={buscaModelo}
+                    onFocus={() => setListaModelosAberta(true)}
+                    onChange={(event) => { setBuscaModelo(event.target.value); setListaModelosAberta(true); }}
+                    placeholder={modeloAtivo?.nome || 'Digite para buscar modelo...'}
+                    autoComplete="off"
+                    role="combobox"
+                    aria-expanded={listaModelosAberta}
+                    aria-controls="checklist-modelos-opcoes"
+                    aria-autocomplete="list"
+                    className="min-h-11 w-full rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] py-2 pl-9 pr-3 text-sm font-semibold text-[var(--adm-text)] placeholder:font-normal focus:border-[var(--adm-blue-soft)] focus:outline-none"
+                  />
+                </div>
+                {listaModelosAberta && (
+                  <div id="checklist-modelos-opcoes" role="listbox" aria-label="Modelos disponíveis" className="absolute inset-x-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-xl border border-[var(--adm-line)] bg-[var(--adm-card)] p-1 shadow-xl">
+                    {modelosAgrupadosFiltrados.length ? modelosAgrupadosFiltrados.map(([grupo, modelos]) => (
+                      <div key={grupo}>
+                        <p className="sticky top-0 bg-[var(--adm-card)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--adm-mut)]">{grupo}</p>
+                        {modelos.map(modelo => (
+                          <button
+                            key={modelo.id}
+                            type="button"
+                            role="option"
+                            aria-selected={tipoServicoSelecionado === modelo.id}
+                            onClick={() => {
+                              handleTrocarModeloServico(modelo.id);
+                              setBuscaModelo('');
+                              setListaModelosAberta(false);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-[var(--adm-bg)] ${tipoServicoSelecionado === modelo.id ? 'bg-[var(--adm-blue,#2160db)]/10 text-[var(--adm-blue-soft,#6ea1ff)]' : 'text-[var(--adm-text)]'}`}
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-semibold">{modelo.nome}</span>
+                              <span className="block truncate text-[10px] text-[var(--adm-mut)]">{modelo.norma}</span>
+                            </span>
+                            <span className="shrink-0 text-[10px] text-[var(--adm-mut)]">{modelo.itens.length} itens</span>
+                          </button>
+                        ))}
+                      </div>
+                    )) : (
+                      <p className="px-3 py-4 text-center text-xs text-[var(--adm-mut)]">Nenhum modelo encontrado.</p>
+                    )}
+                    <button type="button" onClick={() => setListaModelosAberta(false)} className="w-full border-t border-[var(--adm-line)] px-3 py-2 text-xs font-semibold text-[var(--adm-mut)]">Fechar lista</button>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -115,5 +115,11 @@ service cloud.firestore {
       allow read, write: if isColaborador() || isMaster();
     }
 
+    // Configurações operacionais do painel.
+    match /configuracoes/{configId} {
+      allow read: if isColaborador() || isMaster();
+      allow write: if isColaborador() || isMaster();
+    }
+
   }
 }

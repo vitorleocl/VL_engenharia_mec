@@ -144,19 +144,30 @@ export const ServicosView: React.FC = () => {
             Cadastre serviços e organize as especificações de subtipo/laudo usadas na criação de laudos e orçamentos.
           </p>
         </div>
-        <div className="flex gap-4 text-sm text-[var(--adm-mut)]">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--adm-mut)]">
           <span><strong className="text-[var(--adm-text)]">{servicosCatalogo.length}</strong> serviços</span>
           <span><strong className="text-[var(--adm-text)]">{totalSubtipos}</strong> especificações</span>
-          <button
-            type="button"
-            onClick={() => navigate('/admin/servicos/checklists')}
-            className="inline-flex items-center gap-2 rounded-lg border border-[var(--adm-line)] bg-[var(--adm-card)] px-3 py-2 text-xs font-semibold text-[var(--adm-text)] transition hover:border-[var(--adm-blue,#2160db)]"
-          >
-            <ClipboardCheck className="h-4 w-4 text-[var(--adm-blue,#2160db)]" />
-            Checklists <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5">{checklistsCampo.length}</span>
-          </button>
         </div>
       </header>
+
+      <nav aria-label="Seções de Serviços" className="flex w-full gap-2 overflow-x-auto border-b border-[var(--adm-line)]">
+        <button
+          type="button"
+          onClick={() => navigate('/admin/servicos')}
+          aria-current="page"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-[var(--adm-blue,#2160db)] px-4 text-sm font-bold text-[var(--adm-blue,#2160db)]"
+        >
+          <Wrench className="h-4 w-4" /> Serviços
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/admin/servicos/checklists')}
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 text-sm font-bold uppercase text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]"
+        >
+          <ClipboardCheck className="h-4 w-4" /> CHECKLIST
+          <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5 text-xs">{checklistsCampo.length}</span>
+        </button>
+      </nav>
 
       {mensagem && (
         <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">
@@ -172,7 +183,7 @@ export const ServicosView: React.FC = () => {
             <h2 className="font-semibold text-[var(--adm-text)]">{servicoEditandoId ? 'Editar serviço' : 'Novo serviço'}</h2>
           </div>
           <label className={labelClass}>Nome do serviço
-            <input className={inputClass} value={servicoNome} onChange={(e) => setServicoNome(e.target.value)} placeholder="Ex.: Inspeção de equipamentos" required />
+            <input className={inputClass} value={servicoNome} onChange={(e) => setServicoNome(e.target.value)} placeholder="Ex.: Inspeção de ativos" required />
           </label>
           <label className={labelClass}>Norma(s) de referência
             <input className={inputClass} value={servicoNorma} onChange={(e) => setServicoNorma(e.target.value)} placeholder="Ex.: NR-12 · ABNT NBR ISO 12100" required />

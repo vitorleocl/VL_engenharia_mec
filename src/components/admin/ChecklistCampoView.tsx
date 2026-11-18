@@ -11,7 +11,6 @@ import {
   X,
   ClipboardCheck,
   MessageCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -116,15 +115,6 @@ export const ChecklistCampoView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/servicos')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-mut)] hover:text-[var(--adm-text)] transition cursor-pointer"
-            title="Voltar ao catálogo de Serviços"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Serviços</span>
-          </button>
           {/* Indicador de Sincronização B6 */}
           <button
             type="button"
@@ -183,6 +173,24 @@ export const ChecklistCampoView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <nav aria-label="Seções de Serviços" className="flex w-full gap-2 overflow-x-auto border-b border-[var(--adm-line)]">
+        <button
+          type="button"
+          onClick={() => navigate('/admin/servicos')}
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 text-sm font-bold text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]"
+        >
+          Serviços
+        </button>
+        <button
+          type="button"
+          aria-current="page"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-[var(--adm-blue,#2160db)] px-4 text-sm font-bold uppercase text-[var(--adm-blue-soft,#6ea1ff)]"
+        >
+          CHECKLIST
+          <span className="rounded-full bg-[var(--adm-card)] px-2 py-0.5 text-xs">{checklistsCampo.length}</span>
+        </button>
+      </nav>
 
       {/* Botão Primário + Nova vistoria */}
       <button
@@ -289,7 +297,7 @@ export const ChecklistCampoView: React.FC = () => {
             Nenhuma vistoria encontrada
           </h3>
           <p className="text-xs text-[var(--adm-mut)] max-w-sm mx-auto">
-            Inicie uma nova vistoria técnica ligada a um orçamento aprovado e equipamento.
+            Inicie uma nova vistoria técnica ligada a um orçamento aprovado e ativo.
           </p>
           <button
             type="button"

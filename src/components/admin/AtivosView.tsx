@@ -6,9 +6,12 @@ import {
   Trash2,
   X,
   Check,
+  ImagePlus,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Ativo } from '../../types';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 
 const TIPOS_EQUIPAMENTO_PADRAO = [
   'Caminhão Munck',
@@ -22,11 +25,11 @@ const TIPOS_EQUIPAMENTO_PADRAO = [
   'Caldeira / Vaso de Pressão',
   'Ponte Rolante / Talha',
   'Empilhadeira',
-  'Outro Equipamento',
+  'Outro ativo',
 ];
 
 export const AtivosView: React.FC = () => {
-  const { ativos, clientes, adicionarAtivo, atualizarAtivo, removerAtivo } = useData();
+  const { ativos, clientes, categoriasAtivos, atualizarCategoriasAtivos, adicionarAtivo, atualizarAtivo, removerAtivo } = useData();
 
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
@@ -45,6 +48,10 @@ export const AtivosView: React.FC = () => {
   const [chassi, setChassi] = useState('');
   const [capacidade, setCapacidade] = useState('');
   const [localizacao, setLocalizacao] = useState('');
+  const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState('');
+  const [novaCategoria, setNovaCategoria] = useState('');
+  const [erroFormulario, setErroFormulario] = useState('');
 
   const ativosFiltrados = ativos.filter((a) =>
     `${a.identificacao || ''} ${a.tipo || ''} ${a.fabricante || ''} ${a.modelo || ''} ${a.placa || ''} ${a.localizacao || ''} ${a.clienteNome || ''}`
@@ -65,6 +72,9 @@ export const AtivosView: React.FC = () => {
     setChassi('');
     setCapacidade('');
     setLocalizacao('Recife - PE');
+    setFotoArquivo(null);
+    setFotoPreview('');
+    setErroFormulario('');
     setModalAberto(true);
   };
 
@@ -81,12 +91,16 @@ export const AtivosView: React.FC = () => {
     setChassi(ativo.chassi || '');
     setCapacidade(ativo.capacidade || '');
     setLocalizacao(ativo.localizacao || '');
+    setFotoArquivo(null);
+    setFotoPreview(ativo.fotoUrl || '');
+    setErroFormulario('');
     setModalAberto(true);
   };
 
-  const handleSalvar = (e: React.FormEvent) => {
+  const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identificacao.trim()) return;
+    setErroFormulario('');
 
     const anoParsed = ano.trim()
       ? /^\d{4}$/.test(ano.trim())
@@ -94,9 +108,22 @@ export const AtivosView: React.FC = () => {
         : ano.trim()
       : new Date().getFullYear();
 
+    let fotoUrl = fotoPreview;
+    if (fotoArquivo) {
+      try {
+        const fotoRef = ref(storage, `ativos/${ativoEditando?.id || `novo-${Date.now()}`}/${Date.now()}-${fotoArquivo.name.replace(/[^\w.-]/g, '_')}`);
+        await uploadBytes(fotoRef, fotoArquivo, { contentType: fotoArquivo.type });
+        fotoUrl = await getDownloadURL(fotoRef);
+      } catch (error) {
+        console.error('Falha ao enviar foto do ativo:', error);
+        setErroFormulario('Não foi possível enviar a foto. Verifique sua conexão e tente novamente.');
+        return;
+      }
+    }
+
     const payload = {
       clienteId,
-      tipo: tipo.trim() || 'Outro Equipamento',
+      tipo: tipo.trim() || 'Outro ativo',
       identificacao: identificacao.trim(),
       fabricante: fabricante.trim(),
       modelo: modelo.trim(),
@@ -106,6 +133,7 @@ export const AtivosView: React.FC = () => {
       chassi: chassi.trim(),
       capacidade: capacidade.trim(),
       localizacao: localizacao.trim(),
+      fotoUrl: fotoUrl || '',
     };
 
     if (ativoEditando) {
@@ -118,8 +146,27 @@ export const AtivosView: React.FC = () => {
   };
 
   const opcoesTipo = tipo && !TIPOS_EQUIPAMENTO_PADRAO.includes(tipo)
-    ? [tipo, ...TIPOS_EQUIPAMENTO_PADRAO]
-    : TIPOS_EQUIPAMENTO_PADRAO;
+    ? Array.from(new Set([tipo, ...categoriasAtivos]))
+    : categoriasAtivos;
+
+  const adicionarCategoria = (event: React.FormEvent) => {
+    event.preventDefault();
+    const categoria = novaCategoria.trim();
+    if (!categoria || categoriasAtivos.some(item => item.toLocaleLowerCase('pt-BR') === categoria.toLocaleLowerCase('pt-BR'))) return;
+    atualizarCategoriasAtivos([...categoriasAtivos, categoria]);
+    setTipo(categoria);
+    setNovaCategoria('');
+  };
+
+  const removerCategoria = (categoria: string) => {
+    if (ativos.some(ativo => ativo.tipo === categoria)) {
+      window.alert('Esta categoria está vinculada a um ou mais ativos e não pode ser removida.');
+      return;
+    }
+    if (!TIPOS_EQUIPAMENTO_PADRAO.includes(categoria)) {
+      atualizarCategoriasAtivos(categoriasAtivos.filter(item => item !== categoria));
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-[1200px]">
@@ -127,10 +174,10 @@ export const AtivosView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight">
-            Equipamentos
+            Ativos
           </h1>
           <p className="text-[var(--muted)] text-[15px] sm:text-[16px] mt-0.5">
-            Inventário técnico de máquinas, veículos e equipamentos vinculados aos clientes.
+            Inventário técnico de máquinas, veículos e ativos vinculados aos clientes.
           </p>
         </div>
 
@@ -141,7 +188,7 @@ export const AtivosView: React.FC = () => {
             className="btn-tech pri text-[14.5px] px-4 py-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-1.5" />
-            <span>Novo equipamento</span>
+            <span>Novo ativo</span>
           </button>
         </div>
       </div>
@@ -185,6 +232,7 @@ export const AtivosView: React.FC = () => {
                 return (
                   <tr key={ativo.id} className="hover:bg-[var(--paper)] transition-colors">
                     <td className="py-3 px-4 align-top">
+                      {ativo.fotoUrl && <img src={ativo.fotoUrl} alt={`Foto de ${ativo.identificacao}`} className="mb-2 h-12 w-16 rounded-md border border-[var(--line)] object-cover" />}
                       <span className="font-semibold text-[var(--ink)] block">
                         {ativo.identificacao}
                       </span>
@@ -211,7 +259,7 @@ export const AtivosView: React.FC = () => {
                         type="button"
                         onClick={() => abrirEdicao(ativo)}
                         className="btn-tech sm text-xs py-1 px-2.5 inline-flex items-center gap-1 cursor-pointer"
-                        title="Editar equipamento"
+                        title="Editar ativo"
                       >
                         <Edit className="w-3.5 h-3.5" />
                         <span>Editar</span>
@@ -245,7 +293,7 @@ export const AtivosView: React.FC = () => {
                           type="button"
                           onClick={() => setConfirmandoExclusaoId(ativo.id)}
                           className="p-1.5 rounded-lg text-[var(--muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors inline-flex items-center cursor-pointer"
-                          title="Excluir equipamento"
+                            title="Excluir ativo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -258,7 +306,7 @@ export const AtivosView: React.FC = () => {
               {ativosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-[var(--muted)]">
-                    Nenhum equipamento encontrado.
+                    Nenhum ativo encontrado.
                   </td>
                 </tr>
               )}
@@ -277,7 +325,7 @@ export const AtivosView: React.FC = () => {
           <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
               <h2 className="text-[20px] font-bold">
-                {ativoEditando ? 'Editar equipamento' : 'Novo equipamento'}
+                {ativoEditando ? 'Editar ativo' : 'Novo ativo'}
               </h2>
               <button
                 type="button"
@@ -318,7 +366,7 @@ export const AtivosView: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block text-xs font-bold text-[var(--ink)]">
-                  <span className="mb-1 block">Tipo de equipamento</span>
+                  <span className="mb-1 block">Categoria do ativo</span>
                   <select
                     value={tipo}
                     onChange={(e) => setTipo(e.target.value)}
@@ -425,6 +473,45 @@ export const AtivosView: React.FC = () => {
                 />
               </label>
 
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-[var(--ink)]">Foto do ativo <span className="font-normal text-[var(--muted)]">(opcional)</span></span>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-[var(--line)] bg-[var(--paper)] p-3 text-sm text-[var(--muted)] hover:border-[var(--blue)]">
+                  {fotoPreview
+                    ? <img src={fotoPreview} alt="Pré-visualização do ativo" className="h-16 w-20 rounded-md object-cover" />
+                    : <span className="flex h-16 w-20 items-center justify-center rounded-md bg-[var(--card)]"><ImagePlus className="h-6 w-6" /></span>}
+                  <span>Escolher foto (JPG, PNG ou WebP; até 5 MB)</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        setErroFormulario('Selecione uma imagem JPG, PNG ou WebP.');
+                        event.target.value = '';
+                        return;
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        setErroFormulario('A foto deve ter no máximo 5 MB.');
+                        event.target.value = '';
+                        return;
+                      }
+                      setErroFormulario('');
+                      setFotoArquivo(file);
+                      setFotoPreview(URL.createObjectURL(file));
+                    }}
+                  />
+                </label>
+                {fotoPreview && (
+                  <button type="button" onClick={() => { setFotoArquivo(null); setFotoPreview(''); }} className="text-xs font-semibold text-rose-500 hover:underline">
+                    Remover foto
+                  </button>
+                )}
+              </div>
+
+              {erroFormulario && <p role="alert" className="rounded-lg bg-rose-500/10 p-2.5 text-xs font-medium text-rose-600">{erroFormulario}</p>}
+
               <div className="pt-3 flex justify-end gap-2 border-t border-[var(--line)]">
                 <button
                   type="button"
@@ -437,13 +524,42 @@ export const AtivosView: React.FC = () => {
                   type="submit"
                   className="btn-tech pri text-sm px-5 font-bold cursor-pointer"
                 >
-                  {ativoEditando ? 'Salvar alterações' : 'Salvar equipamento'}
+                  {ativoEditando ? 'Salvar alterações' : 'Salvar ativo'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--card)] p-4 sm:p-5">
+        <div className="mb-3">
+          <h2 className="text-lg font-bold text-[var(--ink)]">Categorias de ativos</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">Cadastre categorias para selecionar nos próximos ativos.</p>
+        </div>
+        <form onSubmit={adicionarCategoria} className="mb-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={novaCategoria}
+            onChange={event => setNovaCategoria(event.target.value)}
+            placeholder="Ex.: Plataforma elevatória"
+            aria-label="Nova categoria de ativo"
+            className="min-h-11 flex-1 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm text-[var(--ink)]"
+          />
+          <button type="submit" className="btn-tech pri min-h-11 cursor-pointer"><Plus className="mr-1.5 h-4 w-4" />Adicionar categoria</button>
+        </form>
+        <div className="flex flex-wrap gap-2">
+          {categoriasAtivos.map(categoria => (
+            <span key={categoria} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--paper)] px-3 py-1.5 text-xs font-medium text-[var(--ink)]">
+              {categoria}
+              {!TIPOS_EQUIPAMENTO_PADRAO.includes(categoria) && (
+                <button type="button" onClick={() => removerCategoria(categoria)} aria-label={`Remover categoria ${categoria}`} className="rounded-full p-0.5 text-[var(--muted)] hover:bg-rose-500/10 hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

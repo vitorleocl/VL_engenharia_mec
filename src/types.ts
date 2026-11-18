@@ -84,6 +84,7 @@ export interface Ativo {
   numeroSerie?: string;
   capacidade?: string;
   localizacao?: string;
+  fotoUrl?: string;
   historico: AtivoHistoricoItem[];
   criadoEm: string;
   atualizadoEm?: string;

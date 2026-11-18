@@ -300,7 +300,7 @@ export const LaudosCentralView: React.FC = () => {
     if (!ativoSel) {
       setErroAtivoNovo(
         ativosDoCliente.length === 0
-          ? 'Este cliente não possui ativos cadastrados. Cadastre o equipamento em Equipamentos antes de abrir o laudo.'
+          ? 'Este cliente não possui ativos cadastrados. Cadastre um ativo na página Ativos antes de abrir o laudo.'
           : 'Selecione o ativo periciado.'
       );
       return;
@@ -901,7 +901,7 @@ export const LaudosCentralView: React.FC = () => {
 
                 <div>
                   <div className="flex items-baseline justify-between gap-2 mb-1">
-                    <label className="block text-[12px] font-semibold">Equipamento / Ativo periciado *</label>
+                    <label className="block text-[12px] font-semibold">Ativo periciado *</label>
                     <Link to="/admin/ativos" className="text-[11px] font-medium text-[var(--blue)] hover:underline">
                       Gerenciar ativos
                     </Link>
@@ -938,9 +938,9 @@ export const LaudosCentralView: React.FC = () => {
 
                   {ativosDoCliente.length === 0 && (
                     <p className="text-[11.5px] text-[var(--muted)] mt-1">
-                      Cadastre o equipamento em{' '}
+                      Cadastre o ativo em{' '}
                       <Link to="/admin/ativos" className="text-[var(--blue)] font-semibold hover:underline">
-                        Equipamentos
+                        Ativos
                       </Link>{' '}
                       para poder abrir o laudo.
                     </p>

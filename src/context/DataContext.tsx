@@ -84,6 +84,8 @@ interface DataContextType {
   solicitacoesAcesso: SolicitacaoAcesso[];
   usoIA: UsoIAMetricas;
   categoriasLaudo: CategoriaLaudoDef[];
+  categoriasAtivos: string[];
+  atualizarCategoriasAtivos: (categorias: string[]) => void;
   servicosCatalogo: ServicoItem[];
   atualizarServicosCatalogo: (servicos: ServicoItem[]) => void;
   
@@ -724,6 +726,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveStorage('vl_checklist_modelos', modelos);
     return modelos;
   });
+  const [categoriasAtivos, setCategoriasAtivos] = useState<string[]>(() => {
+    const categoriasSalvas: string[] = loadStorage('vl_ativos_categorias', [
+      'Caminhão Munck',
+      'Guindaste Rodoviário',
+      'Prensa Hidráulica',
+      'Injetora de Plástico',
+      'Playground Infantil',
+      'Sistema de Climatização',
+      'Veículo Sinistrado',
+      'Veículo Oficial / Utilitário',
+      'Caldeira / Vaso de Pressão',
+      'Ponte Rolante / Talha',
+      'Empilhadeira',
+      'Outro ativo',
+    ]);
+    return Array.from(new Set(categoriasSalvas.map(item => item === 'Outro Equipamento' ? 'Outro ativo' : item)));
+  });
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [syncConflicts, setSyncConflicts] = useState<OfflineSyncConflict[]>([]);
   const [sincronizandoOffline, setSincronizandoOffline] = useState<boolean>(false);
@@ -834,6 +853,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_templates', templates), [templates]);
   useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
   useEffect(() => saveStorage('vl_checklist_modelos', checklistModelos), [checklistModelos]);
+  useEffect(() => saveStorage('vl_ativos_categorias', categoriasAtivos), [categoriasAtivos]);
   useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
   useEffect(() => saveStorage('vl_servicos_catalogo', servicosCatalogo), [servicosCatalogo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
@@ -999,8 +1019,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }, (error) => {
         console.warn('[Firestore] Erro ao carregar catálogo de serviços:', error);
       });
+      const unsubCategoriasAtivos = onSnapshot(doc(db, 'configuracoes', 'categoriasAtivos'), (snapshot) => {
+        const remoto = snapshot.data()?.categorias;
+        if (Array.isArray(remoto)) {
+          const categoriasUnicas = Array.from(new Set(remoto
+            .filter((item): item is string => typeof item === 'string')
+            .map(item => item.trim() === 'Outro Equipamento' ? 'Outro ativo' : item.trim())
+            .filter(Boolean)));
+          setCategoriasAtivos(categoriasUnicas);
+          saveStorage('vl_ativos_categorias', categoriasUnicas);
+        }
+      }, (error) => {
+        console.warn('[Firestore] Erro ao carregar categorias de ativos:', error);
+      });
 
-      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios, unsubServicos);
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos);
 
       if (currentUser.role === 'master') {
         const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
@@ -2372,6 +2405,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const atualizarCategoriasAtivos = (categorias: string[]) => {
+    const limpas = Array.from(new Set(categorias.map(item => item.trim()).filter(Boolean)));
+    setCategoriasAtivos(limpas);
+    saveStorage('vl_ativos_categorias', limpas);
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'configuracoes', 'categoriasAtivos'), {
+        categorias: limpas,
+        atualizadoEm: new Date().toISOString(),
+      }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.WRITE, 'configuracoes/categoriasAtivos');
+      });
+    }
+  };
+
   // Templates
   const salvarTemplate = (dados: Omit<LaudoTemplate, 'id' | 'criadoEm'>) => {
     const id = `tpl-${Date.now()}`;
@@ -3021,6 +3068,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         solicitacoesAcesso,
         usoIA,
         categoriasLaudo,
+        categoriasAtivos,
+        atualizarCategoriasAtivos,
         servicosCatalogo,
         atualizarServicosCatalogo,
         adicionarCliente,

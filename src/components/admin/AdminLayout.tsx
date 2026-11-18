@@ -89,12 +89,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       visible: isColaborador
     },
     {
-      id: 'equipamentos',
-      label: 'Equipamentos',
+      id: 'ativos',
+      label: 'Ativos',
       path: '/admin/ativos',
       icon: Cpu,
       badge: String(ativos.length),
-      title: `${ativos.length} equipamentos cadastrados`,
+      title: `${ativos.length} ativos cadastrados`,
       visible: true
     },
     {
@@ -146,7 +146,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <div className="vl-painel min-h-screen bg-[var(--adm-bg,#0b1a30)] text-[var(--adm-text,#f4f7fc)] font-['Poppins',system-ui,sans-serif] flex flex-col antialiased">
       
       {/* 1. Header do Painel com Logo Oficial e Ações Rápidas */}
-      <header className="sticky top-0 z-40 bg-[var(--adm-top,#0a1628)] border-b border-[var(--adm-line,rgba(159,176,200,0.16))] px-4 sm:px-7 h-[68px] flex items-center justify-between gap-2">
+      <header className="sticky top-0 z-40 bg-[var(--adm-top,#0a1628)] border-b border-[var(--adm-line,rgba(159,176,200,0.16))] px-2 sm:px-7 h-[68px] flex items-center justify-between gap-1 sm:gap-2">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link 
             to="/admin" 
@@ -156,7 +156,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <img 
               src={theme === 'dark' ? '/vl-logo-compacto-escuro.svg' : '/vl-logo-compacto.svg'} 
               alt="VL Engenharia" 
-              className="h-[38px] w-auto block select-none" 
+              className="h-7 sm:h-[38px] w-auto max-w-[104px] sm:max-w-none block select-none"
             />
           </Link>
           <span className="text-[0.78rem] font-medium py-1 px-3 rounded-full border border-[var(--adm-line,rgba(159,176,200,0.16))] text-[var(--adm-mut,#a9b8cf)] hidden sm:inline-block whitespace-nowrap">
@@ -214,17 +214,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           <Link
             to="/"
-            className="h-10 px-3.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] text-[0.88rem] font-medium inline-flex items-center gap-2 hover:border-[#6ea1ff] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
+            className="h-9 sm:h-10 px-2 sm:px-3.5 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] text-[0.78rem] sm:text-[0.88rem] font-medium inline-flex items-center gap-1 sm:gap-2 hover:border-[#6ea1ff] transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
             title="Ver o site institucional"
+            aria-label="Ver site"
           >
-            <span>Ver site</span>
+            <span className="hidden sm:inline">Ver site</span>
             <ExternalLink className="w-4 h-4 opacity-75" />
           </Link>
 
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] flex items-center justify-center hover:border-[#6ea1ff] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] flex items-center justify-center hover:border-[#6ea1ff] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#6ea1ff] focus-visible:outline-offset-2"
             aria-label="Alternar tema"
             title="Alternar tema"
           >
@@ -234,7 +235,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <button
             type="button"
             onClick={handleLogout}
-            className="w-10 h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] hover:text-[#ff8a8a] hover:border-[#ff8a8a] flex items-center justify-center transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#ff8a8a] focus-visible:outline-offset-2"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-[var(--adm-line,rgba(159,176,200,0.16))] bg-transparent text-[var(--adm-text,#f4f7fc)] hover:text-[#ff8a8a] hover:border-[#ff8a8a] flex items-center justify-center transition-colors cursor-pointer focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-[#ff8a8a] focus-visible:outline-offset-2"
             aria-label="Sair"
             title="Sair"
           >
