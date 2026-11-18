@@ -3,5 +3,11 @@
     "api/[...path].ts": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/admin/:path*",
+      "destination": "/"
+    }
+  ]
 }
