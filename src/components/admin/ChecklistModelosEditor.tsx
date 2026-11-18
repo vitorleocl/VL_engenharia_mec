@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus,
   Trash2,
@@ -25,7 +25,7 @@ interface ChecklistModelosEditorProps {
 }
 
 export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ onSaved }) => {
-  const { checklistModelos, atualizarChecklistModelos, resetarChecklistModelos } = useData();
+  const { checklistModelos, servicosCatalogo, atualizarChecklistModelos, resetarChecklistModelos } = useData();
 
   const [modelosLocais, setModelosLocais] = useState<ChecklistModeloServico[]>(checklistModelos);
   const [modeloAtivoId, setModeloAtivoId] = useState<string>(checklistModelos[0]?.id || 'nr11');
@@ -35,17 +35,72 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
   const [errosImportacao, setErrosImportacao] = useState<string[]>([]);
   const [modoImportacao, setModoImportacao] = useState<'substituir' | 'acrescentar'>('substituir');
 
-  useEffect(() => {
-    setModelosLocais(checklistModelos);
-  }, [checklistModelos]);
+  const modelosDoCatalogo = useMemo<ChecklistModeloServico[]>(() =>
+    servicosCatalogo.flatMap((servico, servicoIndex) =>
+      servico.subtipos.flatMap((subtipo, subtipoIndex) => {
+        const itens = subtipo.checklistSugerido || [];
+        if (!itens.length) return [];
+        const slug = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const idServico = slug(servico.id || servico.nome || `servico-${servicoIndex}`);
+        const idSubtipo = slug(subtipo.id || subtipo.nome || `subtipo-${subtipoIndex}`);
+        const secoes = subtipo.secoesSugeridas || [];
+        return [{
+          id: `servico-${idServico}-${idSubtipo}`,
+          nome: subtipo.nome,
+          subtitulo: servico.nome,
+          norma: subtipo.normaRef || servico.norma,
+          secoesLaudoPadrao: secoes,
+          itens: itens.map((texto, index) => ({
+            id: `servico-${idSubtipo}-${index + 1}`,
+            numero: `${index + 1}`,
+            texto,
+            norma: subtipo.normaRef || servico.norma,
+            secaoLaudo: secoes.length
+              ? secoes[Math.min(secoes.length - 1, Math.floor(index * secoes.length / itens.length))]
+              : 'Verificações Técnicas',
+            ...(texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
+              ? { tipoResposta: 'medida' as const, unidade: 'mg/L', metodoVerificacao: 'instrumental' as const }
+              : {}),
+          })),
+        }];
+      }),
+    ), [servicosCatalogo]);
 
-  const modeloAtivo = modelosLocais.find(m => m.id === modeloAtivoId) || modelosLocais[0];
+  const modelosDisponiveis = useMemo(() => {
+    const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
+    modelosLocais.forEach((modelo) => unicos.set(modelo.id, modelo));
+    return Array.from(unicos.values());
+  }, [modelosDoCatalogo, modelosLocais]);
+  const modelosAgrupados = useMemo(() => {
+    const grupos = new Map<string, ChecklistModeloServico[]>();
+    modelosDisponiveis.forEach((modelo) => {
+      const grupo = modelo.subtitulo || 'Modelos padrão';
+      grupos.set(grupo, [...(grupos.get(grupo) || []), modelo]);
+    });
+    return Array.from(grupos.entries());
+  }, [modelosDisponiveis]);
+
+  useEffect(() => {
+    const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
+    checklistModelos.forEach((modelo) => unicos.set(modelo.id, modelo));
+    const modelosAtualizados = Array.from(unicos.values());
+    setModelosLocais(modelosAtualizados);
+    if (!modelosAtualizados.some((modelo) => modelo.id === modeloAtivoId)) {
+      setModeloAtivoId(modelosAtualizados[0]?.id || '');
+    }
+  }, [checklistModelos, modelosDoCatalogo]);
+
+  const modeloAtivo = modelosDisponiveis.find(m => m.id === modeloAtivoId) || modelosDisponiveis[0];
 
   const atualizarModeloAtivo = (patch: Partial<ChecklistModeloServico>) => {
     if (!modeloAtivo) return;
-    setModelosLocais(prev =>
-      prev.map(m => (m.id === modeloAtivo.id ? { ...m, ...patch } : m))
-    );
+    setModelosLocais((prev) => {
+      const existe = prev.some((modelo) => modelo.id === modeloAtivo.id);
+      return existe
+        ? prev.map((modelo) => (modelo.id === modeloAtivo.id ? { ...modelo, ...patch } : modelo))
+        : [...prev, { ...modeloAtivo, ...patch }];
+    });
   };
 
   const atualizarItem = (itemId: string, patch: Partial<ChecklistModeloItemDef>) => {
@@ -164,7 +219,7 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
             <span>Modelos de Checklist por Tipo de Serviço</span>
           </h3>
           <p className="text-xs text-[var(--adm-mut)] mt-0.5">
-            Configure número, texto, norma de referência e o item/seção do laudo ao qual cada critério pertence.
+            Modelos cadastrados em Serviços aparecem aqui automaticamente, com seus itens prontos para revisar e editar.
           </p>
         </div>
 
@@ -259,31 +314,29 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
         </div>
       )}
 
-      {/* Seletor de modelos horizontal com alvo confortável no celular */}
-      <div className="flex flex-nowrap gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-        {modelosLocais.map(mod => {
-          const ativo = mod.id === modeloAtivo.id;
-          return (
-            <button
-              key={mod.id}
-              type="button"
-              onClick={() => {
-                setModeloAtivoId(mod.id);
-                setItemEmEdicaoId(null);
-              }}
-              aria-pressed={ativo}
-              aria-label={`${mod.nome}, ${mod.itens.length} critérios`}
-              className={`min-h-11 px-3.5 rounded-xl text-xs font-bold border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                ativo
-                  ? 'bg-[var(--adm-blue,#2160db)] text-white border-[var(--adm-blue,#2160db)] shadow-xs'
-                  : 'bg-[var(--adm-card)] text-[var(--adm-text)] border-[var(--adm-line)] hover:border-[var(--adm-blue-soft)]'
-              }`}
-            >
-              <span className="uppercase">{mod.id}</span>
-              <span className="ml-1.5 opacity-80 font-normal">({mod.itens.length})</span>
-            </button>
-          );
-        })}
+      <div className="max-w-2xl">
+        <label htmlFor="editor-modelo-checklist" className="mb-1.5 block text-[11px] font-semibold text-[var(--adm-mut)]">
+          Selecione o serviço para revisar os critérios
+        </label>
+        <select
+          id="editor-modelo-checklist"
+          value={modeloAtivo.id}
+          onChange={(event) => {
+            setModeloAtivoId(event.target.value);
+            setItemEmEdicaoId(null);
+          }}
+          className="min-h-11 w-full rounded-xl border border-[var(--adm-line)] bg-[var(--adm-card)] px-3 text-sm font-semibold text-[var(--adm-text)] focus:border-[var(--adm-blue-soft)] focus:outline-none"
+        >
+          {modelosAgrupados.map(([grupo, modelos]) => (
+            <optgroup key={grupo} label={grupo}>
+              {modelos.map((modelo) => (
+                <option key={modelo.id} value={modelo.id}>
+                  {modelo.nome} · {modelo.itens.length} itens
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
       </div>
 
       {/* Resumo e edição simplificada do modelo */}

@@ -151,10 +151,21 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
         }];
       }),
     );
-    const unicos = new Map(modelosBase.map((modelo) => [modelo.id, modelo]));
-    modelosDoCatalogo.forEach((modelo) => unicos.set(modelo.id, modelo));
+    const unicos = new Map<string, ChecklistModeloServico>(
+      modelosDoCatalogo.map((modelo) => [modelo.id, modelo] as const),
+    );
+    // Modelos configurados pelo usuário têm precedência sobre os valores sugeridos do catálogo.
+    modelosBase.forEach((modelo) => unicos.set(modelo.id, modelo));
     return Array.from(unicos.values());
   }, [checklistModelos, servicosCatalogo]);
+  const modelosAgrupados = useMemo(() => {
+    const grupos = new Map<string, ChecklistModeloServico[]>();
+    modelosAtivos.forEach((modelo) => {
+      const grupo = modelo.subtitulo || 'Modelos padrão';
+      grupos.set(grupo, [...(grupos.get(grupo) || []), modelo]);
+    });
+    return Array.from(grupos.entries());
+  }, [modelosAtivos]);
   const draftKeyRef = useRef<string>(checklistParaEditar?.id || `draft-new-${Date.now()}`);
 
   const [vinculadoAOrcamentoId, setVinculadoAOrcamentoId] = useState<string>(
@@ -960,47 +971,47 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
 
           {/* 2. Modelo por Tipo de Serviço & Itens */}
           <div className="bg-[var(--adm-card)] p-4 sm:p-5 rounded-2xl border border-[var(--adm-line)] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--adm-line)] pb-3">
+            <div className="grid gap-4 border-b border-[var(--adm-line)] pb-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)] md:items-end">
               <div>
                 <h3 className="text-xs font-bold text-[var(--adm-text)] uppercase tracking-wider flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-[var(--adm-blue-soft,#6ea1ff)]" />
                   <span>2. Modelo de Inspeção & Critérios</span>
                 </h3>
-                <p className="text-[11px] text-[var(--adm-mut)] mt-0.5">
-                  Critérios configuráveis por tipo de serviço (sem pré-marcação inicial).
+                <p className="text-[11px] text-[var(--adm-mut)] mt-1">
+                  Escolha um modelo para carregar seus critérios. Nenhum item começa pré-marcado.
                 </p>
               </div>
 
-              <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
-                {modelosAtivos.map((mod, idx) => (
-                  <button
-                    key={mod.id ? `${mod.id}-${idx}` : `mod-${idx}`}
-                    type="button"
-                    onClick={() => handleTrocarModeloServico(mod.id)}
-                    aria-pressed={tipoServicoSelecionado === mod.id}
-                    className={`min-h-10 px-3 rounded-xl text-xs font-bold border transition cursor-pointer whitespace-nowrap shrink-0 ${
-                      tipoServicoSelecionado === mod.id
-                        ? 'bg-[var(--adm-blue,#2160db)] text-white border-[var(--adm-blue,#2160db)]'
-                        : 'bg-[var(--adm-bg)] text-[var(--adm-text)] border-[var(--adm-line)] hover:border-[var(--adm-blue-soft)]'
-                    }`}
-                  >
-                    {mod.id.startsWith('servico-') ? mod.nome : mod.id.toUpperCase()}
-                  </button>
-                ))}
+              <div>
+                <label htmlFor="checklist-modelo-servico" className="mb-1.5 block text-[11px] font-semibold text-[var(--adm-mut)]">
+                  Modelo de serviço
+                </label>
+                <select
+                  id="checklist-modelo-servico"
+                  value={tipoServicoSelecionado}
+                  onChange={(event) => handleTrocarModeloServico(event.target.value)}
+                  className="min-h-11 w-full rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] px-3 text-sm font-semibold text-[var(--adm-text)] focus:border-[var(--adm-blue-soft)] focus:outline-none"
+                >
+                  {modelosAgrupados.map(([grupo, modelos]) => (
+                    <optgroup key={grupo} label={grupo}>
+                      {modelos.map((modelo) => (
+                        <option key={modelo.id} value={modelo.id}>
+                          {modelo.nome} · {modelo.itens.length} itens
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
             </div>
 
             {/* Resumo do modelo ativo */}
-            <div className="p-3.5 rounded-xl bg-[var(--adm-bg)] border border-[var(--adm-line)] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <strong className="text-xs font-bold text-[var(--adm-text)] block">
-                  {modeloAtivo?.nome}
-                </strong>
-                <span className="text-[11px] text-[var(--adm-mut)]">
-                  Normas: {modeloAtivo?.norma}
-                </span>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--adm-line)] bg-[var(--adm-bg)] px-3.5 py-3">
+              <div className="min-w-0">
+                <strong className="block text-sm font-bold text-[var(--adm-text)]">{modeloAtivo?.nome}</strong>
+                <span className="mt-0.5 block text-[11px] text-[var(--adm-mut)]">{modeloAtivo?.norma}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs font-bold shrink-0">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold shrink-0">
                 <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                   {conformesCount} C
                 </span>

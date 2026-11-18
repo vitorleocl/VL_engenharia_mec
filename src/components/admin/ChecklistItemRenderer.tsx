@@ -162,12 +162,6 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
           <div className="flex-1 min-w-0">
             {/* Badges de Norma, Seção do Laudo e Status */}
             <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-              {item.criterioReferencia && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[var(--adm-blue,#2160db)]/15 text-[var(--adm-blue-soft,#6ea1ff)] border border-[var(--adm-blue,#2160db)]/30">
-                  Norma: <strong>{item.criterioReferencia}</strong>
-                </span>
-              )}
-
               {item.secaoLaudo && (
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-[var(--adm-bg)] text-[var(--adm-mut)] border border-[var(--adm-line)]">
                   <Layers className="w-3 h-3 opacity-75" />
