@@ -73,6 +73,40 @@ function criarNomeArquivoPdf(identificacaoAtivo: string, data: Date): string {
   return `Checklist_${ativoSeguro}_${dataSegura}.pdf`;
 }
 
+function carregarDimensoesImagem(src: string): Promise<{ largura: number; altura: number }> {
+  return new Promise((resolve, reject) => {
+    const imagem = new Image();
+    imagem.onload = () => resolve({ largura: imagem.naturalWidth, altura: imagem.naturalHeight });
+    imagem.onerror = () => reject(new Error('Não foi possível interpretar a imagem da evidência.'));
+    imagem.src = src;
+  });
+}
+
+/** Obtém a foto como data URL (sem depender de CORS) e suas dimensões reais. */
+async function carregarFotoParaPdf(url: string): Promise<{ dataUrl: string; largura: number; altura: number }> {
+  if (url.startsWith('data:')) {
+    return { dataUrl: url, ...(await carregarDimensoesImagem(url)) };
+  }
+  const origemAtual = window.location.origin;
+  const candidatos = url.startsWith('http')
+    ? [`${origemAtual}/api/proxy-image?url=${encodeURIComponent(url)}`, url]
+    : [url];
+  let ultimoErro: unknown = null;
+  for (const candidato of candidatos) {
+    try {
+      const resposta = await fetch(candidato, { mode: 'cors', credentials: 'omit' });
+      if (!resposta.ok) throw new Error(`Resposta ${resposta.status} ao carregar a foto.`);
+      const blob = await resposta.blob();
+      if (!blob.type.startsWith('image/')) throw new Error('O arquivo da evidência não é uma imagem.');
+      const dataUrl = await blobParaDataUrl(blob);
+      return { dataUrl, ...(await carregarDimensoesImagem(dataUrl)) };
+    } catch (error) {
+      ultimoErro = error;
+    }
+  }
+  throw ultimoErro instanceof Error ? ultimoErro : new Error('Não foi possível carregar a foto da evidência.');
+}
+
 function blobParaDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -347,6 +381,68 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
       pdf.text(`Página ${page + 1}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
       y += currentHeight;
       page += 1;
+    }
+
+    // As fotos são inseridas diretamente no PDF (uma por página) para garantir que
+    // apareçam mesmo se o html2canvas não conseguir capturar a imagem no layout.
+    if (fotosChecklist.length > 0) {
+      const fotosCarregadas: { foto: FotoChecklistPdf; dataUrl: string; largura: number; altura: number }[] = [];
+      for (const foto of fotosChecklist) {
+        try {
+          fotosCarregadas.push({ foto, ...(await carregarFotoParaPdf(foto.url)) });
+        } catch (error) {
+          console.warn('Foto do checklist não pôde ser incluída no PDF:', foto.url, error);
+        }
+      }
+      if (fotosCarregadas.length === 0) {
+        throw new Error('As fotos registradas não puderam ser carregadas. Verifique a conexão e tente novamente.');
+      }
+
+      const margemFoto = 12;
+      const larguraMax = pageWidth - margemFoto * 2;
+      const alturaMax = pageHeight - 80;
+
+      fotosCarregadas.forEach((item, indice) => {
+        pdf.addPage();
+        const paginaAtual = page + indice + 1;
+
+        pdf.setFontSize(12);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text('Registro fotográfico', margemFoto, 15);
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(
+          `Checklist ${checklist.numero} · Evidência ${indice + 1} de ${fotosCarregadas.length}`,
+          margemFoto,
+          21,
+        );
+        pdf.text(`Item ${item.foto.numeroItem}`, pageWidth - margemFoto, 15, { align: 'right' });
+
+        const escala = Math.min(larguraMax / Math.max(item.largura, 1), alturaMax / Math.max(item.altura, 1));
+        const larguraMm = Math.max(1, item.largura * escala);
+        const alturaMm = Math.max(1, item.altura * escala);
+        const x = (pageWidth - larguraMm) / 2;
+        const yImagem = 27;
+        const formato = item.dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        pdf.addImage(item.dataUrl, formato, x, yImagem, larguraMm, alturaMm);
+
+        const textoY = Math.min(yImagem + alturaMm + 6, pageHeight - 24);
+        pdf.setFontSize(8);
+        pdf.setTextColor(51, 65, 85);
+        const descricao = `Item ${item.foto.numeroItem} · ${item.foto.descricaoItem}`;
+        pdf.text(pdf.splitTextToSize(descricao, larguraMax).slice(0, 2), margemFoto, textoY);
+        if (item.foto.legenda) {
+          pdf.setTextColor(100, 116, 139);
+          pdf.text(pdf.splitTextToSize(item.foto.legenda, larguraMax).slice(0, 1), margemFoto, textoY + 5);
+        }
+
+        pdf.setDrawColor(220, 226, 234);
+        pdf.line(margemFoto, pageHeight - 10, pageWidth - margemFoto, pageHeight - 10);
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(`VL Engenharia · Checklist ${checklist.numero}`, margemFoto, pageHeight - 5);
+        pdf.text(`Página ${paginaAtual}`, pageWidth - margemFoto, pageHeight - 5, { align: 'right' });
+      });
     }
 
     pdf.setProperties({
@@ -768,7 +864,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
             </div>
 
             {fotosChecklist.length > 0 && (
-              <section className="mt-7" aria-label="Registro fotográfico">
+              <section className="mt-7" aria-label="Registro fotográfico" data-pdf-hide>
                 <div className="mb-3 flex items-end justify-between border-b border-slate-300 pb-2">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">Registro fotográfico</h3>
