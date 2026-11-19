@@ -56,7 +56,8 @@ import {
   getDocs, 
   onSnapshot, 
   getDocFromServer,
-  deleteField
+  deleteField,
+  arrayUnion
 } from 'firebase/firestore';
 import { getHojeLocalYmd } from '../lib/dateUtils';
 import { 
@@ -1150,6 +1151,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
+  // Exclusões precisam chegar aos outros aparelhos. O deleteDoc sozinho remove o
+  // documento da nuvem, mas cada aparelho mantém sua cópia local e a reenvia.
+  // Guardamos uma lista de tombstones em configuracoes (coleção já liberada nas
+  // regras) e replicamos para o armazenamento local de quem receber a exclusão.
+  const aplicarExclusaoRemotaChecklist = useCallback((id: string) => {
+    if (!id) return;
+    addTombstone('vl_checklists_removidos_ids', id);
+    void removeChecklistCopiaLocal(id);
+    void removeChecklistFromQueue(id);
+    void removeDraftOffline(id);
+    if (id.startsWith('chk-recuperado-')) {
+      void removeDraftOffline(`draft-new-${id.replace(/^chk-recuperado-/, '')}`);
+    }
+    setChecklistsCampo(prev => {
+      const filtrados = prev.filter(c => c.id !== id);
+      saveStorage('vl_checklists_campo', filtrados);
+      return filtrados;
+    });
+  }, []);
+
+  const registrarExclusaoRemotaChecklist = useCallback(async (id: string) => {
+    if (!db || !auth?.currentUser || isFirestoreWriteQuotaBlocked()) return;
+    try {
+      await setDoc(
+        doc(db, 'configuracoes', 'checklistExclusoes'),
+        { ids: arrayUnion(id) },
+        { merge: true }
+      );
+    } catch (erro) {
+      console.warn('[Firestore] Falha ao registrar exclusão remota:', id, erro);
+    }
+  }, []);
+
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)
   useEffect(() => {
     // SÓ conecta listeners e sincroniza com o Firestore se houver usuário real autenticado no Firebase Auth E autorizado
@@ -1292,6 +1326,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(error, OperationType.GET, 'checklistsCampo');
       });
 
+      // Tombstones de exclusão: remove também a cópia local dos outros aparelhos e
+      // impede que a reconciliação reenvie o checklist apagado para a nuvem.
+      const unsubExclusoesChecklist = onSnapshot(doc(db, 'configuracoes', 'checklistExclusoes'), (snap) => {
+        const ids: string[] = Array.isArray(snap.data()?.ids) ? snap.data()!.ids : [];
+        ids.forEach(id => aplicarExclusaoRemotaChecklist(id));
+      }, (error) => {
+        console.warn('[Firestore] Erro no listener de exclusões de checklist:', error);
+      });
+
       const unsubAgenda = onSnapshot(collection(db, 'agendaVistorias'), (snapshot) => {
         if (!snapshot.empty) {
           const removidosSet = new Set<string>(loadStorage('vl_agenda_removidos_ids', []));
@@ -1344,7 +1387,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[Firestore] Erro ao carregar categorias de ativos:', error);
       });
 
-      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos);
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubExclusoesChecklist, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos);
 
       if (currentUser.role === 'master') {
         const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
@@ -3014,6 +3057,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     for (const id of pendentes) {
       try {
         await deleteDoc(doc(db, 'checklistsCampo', id));
+        // Publica o tombstone para que os outros aparelhos removam a cópia local.
+        await registrarExclusaoRemotaChecklist(id);
       } catch (err) {
         if (isQuotaExceededError(err)) {
           markFirestoreWriteQuotaBlocked();
@@ -3025,7 +3070,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     saveStorage('vl_checklists_exclusao_pendente', restantes);
-  }, []);
+  }, [registrarExclusaoRemotaChecklist]);
 
   const sincronizarChecklistsOffline = useCallback(async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -3360,9 +3405,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
       deleteDoc(doc(db, 'checklistsCampo', id))
-        .then(() => {
+        .then(async () => {
           const pendentes: string[] = loadStorage('vl_checklists_exclusao_pendente', []);
           saveStorage('vl_checklists_exclusao_pendente', pendentes.filter(x => x !== id));
+          // Tombstone remoto: sem isso os outros aparelhos mantêm a cópia antiga
+          // e a reconciliação reenvia o checklist excluído para a nuvem.
+          await registrarExclusaoRemotaChecklist(id);
         })
         .catch(err => {
           handleFirestoreError(err, OperationType.DELETE, `checklistsCampo/${id}`);
