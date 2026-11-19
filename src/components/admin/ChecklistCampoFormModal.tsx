@@ -744,7 +744,8 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   ]);
 
   const construirPayloadChecklist = (
-    statusDesejado: 'rascunho' | 'finalizado'
+    statusDesejado: 'rascunho' | 'finalizado',
+    preservarConclusao = false
   ): Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'> => ({
     clienteId,
     clienteNome: clienteSelecionado?.razaoSocial || clienteSelecionado?.nomeFantasia || 'Cliente',
@@ -767,7 +768,11 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     responsavelNome,
     responsavelCrea,
     dataPreenchimento,
-    concluidaEm: statusDesejado === 'finalizado' ? new Date().toISOString() : checklistParaEditar?.concluidaEm,
+    concluidaEm: statusDesejado === 'finalizado'
+      ? (preservarConclusao
+        ? checklistParaEditar?.concluidaEm || new Date().toISOString()
+        : new Date().toISOString())
+      : checklistParaEditar?.concluidaEm,
     geolocalizacao,
     disponibilizadoParaCliente: checklistParaEditar?.disponibilizadoParaCliente ?? false,
     status: statusDesejado,
@@ -776,7 +781,8 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
   });
 
   const executarSalvarVistoria = (
-    statusDesejado: 'rascunho' | 'finalizado'
+    statusDesejado: 'rascunho' | 'finalizado',
+    opcoes: { preservarConclusao?: boolean; pularValidacaoConclusao?: boolean } = {}
   ): { id: string; registro: ChecklistCampo } | null => {
     setErroValidacao(null);
 
@@ -789,7 +795,9 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       return null;
     }
 
-    if (statusDesejado === 'finalizado') {
+    // Ao editar uma vistoria já concluída, as validações de conclusão não se aplicam:
+    // o registro já passou por elas e o usuário só está corrigindo itens.
+    if (statusDesejado === 'finalizado' && !opcoes.pularValidacaoConclusao) {
       if (pendentesCount > 0) {
         setErroValidacao(
           `Ainda há ${pendentesCount} item(ns) sem resposta. Marque Conforme, Não conforme ou N.A. em todos os itens.`
@@ -810,7 +818,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       }
     }
 
-    const payload = construirPayloadChecklist(statusDesejado);
+    const payload = construirPayloadChecklist(statusDesejado, opcoes.preservarConclusao);
     const agora = new Date().toISOString();
     let chkIdSalvo = '';
     let numeroSalvo = checklistParaEditar?.numero || 'CHK';
@@ -842,6 +850,17 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     }
   };
 
+  // Salva correções em uma vistoria concluída sem rebaixá-la para rascunho e sem
+  // exigir novamente as validações de conclusão.
+  const checklistJaConcluido = checklistParaEditar?.status === 'finalizado';
+  const handleSalvarAlteracoes = () => {
+    const res = executarSalvarVistoria(checklistJaConcluido ? 'finalizado' : 'rascunho', {
+      preservarConclusao: checklistJaConcluido,
+      pularValidacaoConclusao: checklistJaConcluido,
+    });
+    if (res) onSaved(res.id);
+  };
+
   const handleFechar = () => {
     // Checklist novo só existe como rascunho até clicar em Salvar; avisa antes de fechar.
     if (!checklistParaEditar && itens.length > 0) {
@@ -855,7 +874,10 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
 
   // B7: Gerar ou atualizar Laudo sem duplicar
   const handleGerarLaudoAPartirDestaVistoria = () => {
-    const res = executarSalvarVistoria('finalizado');
+    const res = executarSalvarVistoria('finalizado', {
+      preservarConclusao: checklistJaConcluido,
+      pularValidacaoConclusao: checklistJaConcluido,
+    });
     if (!res) return;
 
     const { laudoId } = gerarOuAtualizarLaudoDeChecklist(res.registro);
@@ -1337,28 +1359,42 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
               Fechar
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleSalvar('rascunho')}
-              className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold text-[var(--adm-text)] bg-[var(--adm-bg)] hover:border-[var(--adm-blue-soft)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Salvar rascunho</span>
-            </button>
+            {checklistJaConcluido ? (
+              <button
+                type="button"
+                onClick={handleSalvarAlteracoes}
+                className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl border border-emerald-500/60 bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 cursor-pointer"
+                title="Salva as alterações mantendo a vistoria concluída"
+              >
+                <Save className="w-4 h-4" />
+                <span>Salvar alterações</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSalvar('rascunho')}
+                  className="min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold text-[var(--adm-text)] bg-[var(--adm-bg)] hover:border-[var(--adm-blue-soft)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar rascunho</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => handleSalvar('finalizado')}
-              disabled={!podeConcluirVistoria}
-              className={`min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl border transition ${
-                podeConcluirVistoria
-                  ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 cursor-pointer'
-                  : 'border-[var(--adm-line)] bg-[var(--adm-bg)] text-[var(--adm-mut)] opacity-50 cursor-not-allowed'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Concluir vistoria</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => handleSalvar('finalizado')}
+                  disabled={!podeConcluirVistoria}
+                  className={`min-h-11 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl border transition ${
+                    podeConcluirVistoria
+                      ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 cursor-pointer'
+                      : 'border-[var(--adm-line)] bg-[var(--adm-bg)] text-[var(--adm-mut)] opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Concluir vistoria</span>
+                </button>
+              </>
+            )}
 
             <button
               type="button"

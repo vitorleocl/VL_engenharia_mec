@@ -553,18 +553,20 @@ Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta m
                     <button
                       type="button"
                       onClick={() => abrirEditarChecklist(chk)}
-                      className="p-1.5 rounded-lg text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-bg)] transition cursor-pointer"
-                      title="Editar / continuar vistoria"
+                      className="p-2 rounded-lg text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-bg)] transition cursor-pointer"
+                      title="Editar itens (mesmo concluído)"
+                      aria-label="Editar itens"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleExcluirChecklist(chk)}
-                      className="p-1.5 rounded-lg text-[var(--adm-mut)] hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                      className="p-2 rounded-lg text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
                       title="Excluir checklist"
+                      aria-label="Excluir checklist"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -631,13 +633,23 @@ Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta m
                     Continuar
                   </button>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setChecklistVisualizandoPdf(chk)}
-                      className="min-h-[42px] py-2.5 px-4 rounded-xl border border-[var(--adm-line)] bg-transparent hover:border-[var(--adm-blue-soft)] text-[var(--adm-text)] text-xs sm:text-sm font-semibold transition cursor-pointer"
+                      className="min-h-[44px] py-2.5 px-4 rounded-xl border border-[var(--adm-line)] bg-transparent hover:border-[var(--adm-blue-soft)] text-[var(--adm-text)] text-xs sm:text-sm font-semibold transition cursor-pointer"
                     >
-                      Ver
+                      Ver PDF
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarChecklist(chk)}
+                      className="min-h-[44px] py-2.5 px-4 rounded-xl border border-[var(--adm-blue-soft)] bg-[var(--adm-blue,#2160db)]/10 text-[var(--adm-blue,#2160db)] text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 hover:brightness-110 transition cursor-pointer"
+                      title="Editar itens mesmo com a vistoria concluída"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Editar itens
                     </button>
 
                     <button
@@ -667,10 +679,10 @@ Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta m
                 <button
                   type="button"
                   onClick={() => handleExcluirChecklist(chk)}
-                  className="w-full min-h-[38px] mt-1 rounded-xl border border-rose-500/35 text-rose-500 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-rose-500/10 transition cursor-pointer"
+                  className="w-full min-h-[44px] mt-2 rounded-xl border border-rose-500/45 bg-rose-500/5 text-rose-500 text-xs font-bold inline-flex items-center justify-center gap-1.5 hover:bg-rose-500/15 transition cursor-pointer"
                   title="Excluir este checklist definitivamente"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                   Excluir checklist
                 </button>
               </article>
