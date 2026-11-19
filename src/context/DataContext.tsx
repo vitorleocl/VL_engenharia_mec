@@ -965,10 +965,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(error, OperationType.GET, 'laudos');
       });
 
+      // Checklists existentes apenas neste aparelho (sem sincronização) precisam subir
+      // para a nuvem; caso contrário desktop e mobile exibem quantidades diferentes.
+      const reconciliarChecklistsLocais = async (idsNuvem: Set<string>) => {
+        if (!isHydratedRef.current) return;
+        const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+        const locais = normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', []));
+        const fila = await getPendingQueue();
+        const idsNaFila = new Set(fila.map((item) => item.checklistId));
+        let enfileirou = false;
+        for (const local of locais) {
+          if (!local?.id || idsNuvem.has(local.id) || idsNaFila.has(local.id) || removidos.has(local.id)) continue;
+          await enqueueSync({
+            id: `sync-${local.id}-${Date.now()}`,
+            checklistId: local.id,
+            action: 'create',
+            payload: local,
+            enqueuedAt: new Date().toISOString(),
+          });
+          enfileirou = true;
+        }
+        if (enfileirou) void sincronizarChecklistsOffline();
+      };
+
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
-        if (!snapshot.empty) {
-          const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
-          const docs = normalizarChecklistsCampo(snapshot.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
+        if (snapshot.metadata.fromCache && snapshot.empty) return;
+        const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+        const docs = normalizarChecklistsCampo(snapshot.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
+        if (docs.length > 0) {
           setChecklistsCampo(prev => {
             const merged = normalizarChecklistsCampo(
               mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
@@ -977,6 +1001,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return merged;
           });
         }
+        void reconciliarChecklistsLocais(new Set(docs.map(d => d.id)));
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'checklistsCampo');
       });

@@ -67,6 +67,92 @@ function criarNomeArquivoPdf(identificacaoAtivo: string, data: Date): string {
   return `Checklist_${ativoSeguro}_${dataSegura}.pdf`;
 }
 
+function blobParaDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Garante que a imagem esteja carregada e acessível ao canvas da captura. */
+async function prepararImagemParaCaptura(image: HTMLImageElement): Promise<void> {
+  if (!image.complete) {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error('Tempo esgotado ao carregar uma imagem do checklist.')), 10_000);
+      image.onload = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      image.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error(`Não foi possível carregar a imagem ${image.alt || 'do documento'}.`));
+      };
+    });
+  }
+  if (image.naturalWidth === 0) {
+    throw new Error(`Uma imagem do checklist não foi carregada: ${image.alt || image.currentSrc || image.src}`);
+  }
+  // Fotos do Storage podem estar em outra origem; converte para data URL para evitar
+  // que o canvas fique contaminado (tainted) e saia em branco no PDF.
+  if (/^https?:/i.test(image.src)) {
+    try {
+      const resposta = await fetch(image.src, { mode: 'cors', credentials: 'omit' });
+      if (resposta.ok) {
+        const dataUrl = await blobParaDataUrl(await resposta.blob());
+        await new Promise<void>((resolve, reject) => {
+          image.onload = () => resolve();
+          image.onerror = () => reject(new Error(`Não foi possível recarregar a imagem ${image.alt || 'do documento'}.`));
+          image.src = dataUrl;
+        });
+      }
+    } catch (error) {
+      console.info('Imagem remota mantida sem conversão para data URL.', error);
+    }
+  }
+}
+
+/** Troca <img> por <canvas> para que o html2canvas sempre copie os pixels da foto. */
+async function trocarImagensPorCanvas(element: HTMLElement) {
+  const trocas: { img: HTMLImageElement; canvas: HTMLCanvasElement }[] = [];
+  try {
+    for (const image of Array.from(element.querySelectorAll('img'))) {
+      await prepararImagemParaCaptura(image);
+      const caixa = image.getBoundingClientRect();
+      const largura = Math.max(1, Math.round(caixa.width));
+      const altura = Math.max(1, Math.round(caixa.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = largura * 2;
+      canvas.height = altura * 2;
+      const contexto = canvas.getContext('2d');
+      if (!contexto) continue;
+      contexto.fillStyle = '#ffffff';
+      contexto.fillRect(0, 0, canvas.width, canvas.height);
+      const escala = Math.min(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+      const larguraDesenho = image.naturalWidth * escala;
+      const alturaDesenho = image.naturalHeight * escala;
+      contexto.drawImage(
+        image,
+        (canvas.width - larguraDesenho) / 2,
+        (canvas.height - alturaDesenho) / 2,
+        larguraDesenho,
+        alturaDesenho,
+      );
+      canvas.className = image.className;
+      canvas.style.display = image.style.display || 'block';
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', image.alt || 'Imagem do checklist');
+      image.replaceWith(canvas);
+      trocas.push({ img: image, canvas });
+    }
+    return trocas;
+  } catch (error) {
+    trocas.forEach(({ img, canvas }) => canvas.replaceWith(img));
+    throw error;
+  }
+}
+
 export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   checklist,
   onClose,
@@ -131,60 +217,45 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     const element = printRef.current;
     let quebrasDeLinhaTabela: number[] = [];
     let alturaConteudoClonado = 0;
-    await Promise.all(Array.from(element.querySelectorAll('img')).map(async (image) => {
-      if (!image.complete) {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = window.setTimeout(() => reject(new Error('Tempo esgotado ao carregar uma imagem do checklist.')), 10_000);
-          image.onload = () => {
-            window.clearTimeout(timeout);
-            resolve();
-          };
-          image.onerror = () => {
-            window.clearTimeout(timeout);
-            reject(new Error(`Não foi possível carregar a imagem ${image.alt || 'do documento'}.`));
-          };
-        });
-      }
-      if (image.naturalWidth === 0) {
-        throw new Error(`Uma imagem do checklist não foi carregada: ${image.alt || image.currentSrc || image.src}`);
-      }
-      if (typeof image.decode === 'function') {
-        await image.decode();
-      }
-    }));
-    const canvas = await html2canvas(element, {
-      scale: 1.35,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      backgroundColor: '#ffffff',
-      windowWidth: Math.max(element.scrollWidth, 794),
-      onclone: (documentClone) => {
-        documentClone.querySelectorAll<HTMLElement>('[data-pdf-hide]').forEach((node) => {
-          node.style.display = 'none';
-        });
-        const conteudo = documentClone.querySelector<HTMLElement>('[data-pdf-document]');
-        if (!conteudo) return;
-        conteudo.style.width = '794px';
-        conteudo.style.maxWidth = '794px';
-        conteudo.style.padding = '34px';
-        conteudo.style.border = '0';
-        conteudo.style.borderRadius = '0';
-        conteudo.style.boxShadow = 'none';
-        const topoConteudo = conteudo.getBoundingClientRect().top;
-        quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr, [data-pdf-break-before], [data-pdf-break-after]'))
-          .flatMap((bloco) => {
-            const caixa = bloco.getBoundingClientRect();
-            const inicio = caixa.top - topoConteudo;
-            const fim = caixa.bottom - topoConteudo;
-            return bloco.matches('tr') || bloco.hasAttribute('data-pdf-break-before')
-              ? [inicio, fim]
-              : [fim];
-          })
-          .filter((posicao) => posicao > 0);
-        alturaConteudoClonado = conteudo.getBoundingClientRect().height;
-      },
-    });
+    const trocasImagens = await trocarImagensPorCanvas(element);
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(element, {
+        scale: 1.35,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: Math.max(element.scrollWidth, 794),
+        onclone: (documentClone) => {
+          documentClone.querySelectorAll<HTMLElement>('[data-pdf-hide]').forEach((node) => {
+            node.style.display = 'none';
+          });
+          const conteudo = documentClone.querySelector<HTMLElement>('[data-pdf-document]');
+          if (!conteudo) return;
+          conteudo.style.width = '794px';
+          conteudo.style.maxWidth = '794px';
+          conteudo.style.padding = '34px';
+          conteudo.style.border = '0';
+          conteudo.style.borderRadius = '0';
+          conteudo.style.boxShadow = 'none';
+          const topoConteudo = conteudo.getBoundingClientRect().top;
+          quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr, [data-pdf-break-before], [data-pdf-break-after]'))
+            .flatMap((bloco) => {
+              const caixa = bloco.getBoundingClientRect();
+              const inicio = caixa.top - topoConteudo;
+              const fim = caixa.bottom - topoConteudo;
+              return bloco.matches('tr') || bloco.hasAttribute('data-pdf-break-before')
+                ? [inicio, fim]
+                : [fim];
+            })
+            .filter((posicao) => posicao > 0);
+          alturaConteudoClonado = conteudo.getBoundingClientRect().height;
+        },
+      });
+    } finally {
+      trocasImagens.forEach(({ img, canvas: canvasTrocado }) => canvasTrocado.replaceWith(img));
+    }
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -468,7 +539,6 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                   <img
                     src="/vl-logo-horizontal.svg"
                     alt="VL Engenharia"
-                    crossOrigin="anonymous"
                     className="h-12 w-auto max-w-[245px] object-contain object-left"
                   />
                 </div>
@@ -692,7 +762,6 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                         <img
                           src={foto.url}
                           alt={`Evidência fotográfica do item ${foto.numeroItem}: ${foto.legenda}`}
-                          crossOrigin="anonymous"
                           loading="eager"
                           className="block max-h-[380px] w-full object-contain"
                         />

@@ -33,6 +33,8 @@ import {
 import { RubricaSignatureCanvas } from './RubricaSignatureCanvas';
 import { ChecklistItemRenderer } from './ChecklistItemRenderer';
 import { CHECKLIST_MODELOS_PADRAO } from '../../lib/checklistModelosPadrao';
+import { auth, storage } from '../../lib/firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import {
   saveDraftOffline,
   getDraftOffline,
@@ -464,6 +466,22 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     else setItens(updater);
   };
 
+  const enviarFotoParaStorage = async (dataUrl: string): Promise<string | null> => {
+    if (!isOnline || !auth?.currentUser) return null;
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const extensao = blob.type === 'image/png' ? 'png' : 'jpg';
+      const caminho = `checklists/${draftKeyRef.current}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+      const referencia = ref(storage, caminho);
+      await uploadBytes(referencia, blob, { contentType: blob.type || 'image/jpeg' });
+      return await getDownloadURL(referencia);
+    } catch (error) {
+      // Sem internet ou sem permissão: a foto continua embutida no checklist local.
+      console.warn('Falha ao enviar foto para o Storage; mantendo no aparelho.', error);
+      return null;
+    }
+  };
+
   const handleItemFotoUpload = (
     id: string,
     fileOrBase64: File | string,
@@ -494,6 +512,30 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
 
       if (isExtra) setItensExtras(updater);
       else setItens(updater);
+
+      // Troca a imagem embutida por uma URL do Storage assim que o upload terminar.
+      // Isso mantém o documento pequeno o suficiente para sincronizar entre aparelhos.
+      if (url.startsWith('data:')) {
+        void enviarFotoParaStorage(url).then((urlRemota) => {
+          if (!urlRemota) return;
+          const trocarUrl = (list: ChecklistCampoItem[]) =>
+            list.map((it) => {
+              if (it.id !== id) return it;
+              return {
+                ...it,
+                fotoUrl: it.fotoUrl === url ? urlRemota : it.fotoUrl,
+                fotos: (it.fotos || []).map((foto) =>
+                  foto.url === url ? { ...foto, url: urlRemota } : foto
+                ),
+                fotosUrls: (it.fotosUrls || []).map((fotoUrl) =>
+                  fotoUrl === url ? urlRemota : fotoUrl
+                ),
+              };
+            });
+          if (isExtra) setItensExtras(trocarUrl);
+          else setItens(trocarUrl);
+        });
+      }
     };
 
     if (typeof fileOrBase64 === 'string') {
