@@ -3003,11 +3003,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSyncConflicts(conflictsList);
   }, []);
 
+  // Exclusões feitas sem rede (ou com a cota do Firestore estourada) ficam pendentes:
+  // precisam ser reenviadas, senão o checklist volta a aparecer nos outros aparelhos.
+  const processarExclusoesPendentes = useCallback(async () => {
+    if (!db || !auth?.currentUser || isFirestoreWriteQuotaBlocked()) return;
+    const pendentes: string[] = loadStorage('vl_checklists_exclusao_pendente', []);
+    if (pendentes.length === 0) return;
+
+    const restantes: string[] = [];
+    for (const id of pendentes) {
+      try {
+        await deleteDoc(doc(db, 'checklistsCampo', id));
+      } catch (err) {
+        if (isQuotaExceededError(err)) {
+          markFirestoreWriteQuotaBlocked();
+          restantes.push(id);
+          break;
+        }
+        console.warn('[OfflineSync] Exclusão pendente falhou:', id, err);
+        restantes.push(id);
+      }
+    }
+    saveStorage('vl_checklists_exclusao_pendente', restantes);
+  }, []);
+
   const sincronizarChecklistsOffline = useCallback(async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       await atualizarContagemSync();
       return;
     }
+
+    await processarExclusoesPendentes();
 
     const queue = await getPendingQueue();
     if (queue.length === 0) {
@@ -3112,7 +3138,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSincronizandoOffline(false);
       await atualizarContagemSync();
     }
-  }, [atualizarContagemSync]);
+  }, [atualizarContagemSync, processarExclusoesPendentes]);
 
   const resolverConflitoChecklist = async (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => {
     const conflito = syncConflicts.find(c => c.id === conflictId);
@@ -3313,6 +3339,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removerChecklistCampo = (id: string) => {
     const novosRemovidos = addTombstone('vl_checklists_removidos_ids', id);
+    // Marca a exclusão para reenvio: se estiver offline ou sem cota, o documento
+    // remoto precisa ser apagado depois — senão o checklist volta nos outros aparelhos.
+    const exclusoesPendentes: string[] = loadStorage('vl_checklists_exclusao_pendente', []);
+    if (!exclusoesPendentes.includes(id)) {
+      saveStorage('vl_checklists_exclusao_pendente', [...exclusoesPendentes, id]);
+    }
     void removeChecklistCopiaLocal(id);
     void removeChecklistFromQueue(id).then(() => atualizarContagemSync());
     // Remove também os rascunhos que poderiam "ressuscitar" o registro na abertura.
@@ -3327,9 +3359,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return filtrados;
     });
     if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
-      deleteDoc(doc(db, 'checklistsCampo', id)).catch(err => {
-        handleFirestoreError(err, OperationType.DELETE, `checklistsCampo/${id}`);
-      });
+      deleteDoc(doc(db, 'checklistsCampo', id))
+        .then(() => {
+          const pendentes: string[] = loadStorage('vl_checklists_exclusao_pendente', []);
+          saveStorage('vl_checklists_exclusao_pendente', pendentes.filter(x => x !== id));
+        })
+        .catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `checklistsCampo/${id}`);
+        });
     }
     registrarLog('checklistsCampo', id, 'excluir', `Checklist de Campo excluído: ${id}`);
   };
