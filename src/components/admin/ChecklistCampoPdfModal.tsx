@@ -14,7 +14,7 @@ import {
   Camera,
   ClipboardCheck,
 } from 'lucide-react';
-import { ChecklistCampo } from '../../types';
+import { ChecklistCampo, ChecklistCampoItem } from '../../types';
 import { DADOS_VL_PADRAO } from '../../lib/orcamentoTemplatePadrao';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
@@ -23,6 +23,33 @@ import html2canvas from 'html2canvas-pro';
 interface ChecklistCampoPdfModalProps {
   checklist: ChecklistCampo;
   onClose: () => void;
+}
+
+interface FotoChecklistPdf {
+  url: string;
+  legenda: string;
+  numeroItem: string;
+  descricaoItem: string;
+  indice: number;
+}
+
+function obterFotosDoItem(item: ChecklistCampoItem): Omit<FotoChecklistPdf, 'numeroItem' | 'descricaoItem' | 'indice'>[] {
+  if (item.fotos?.length) {
+    return item.fotos.map((foto, indice) => ({
+      url: foto.url,
+      legenda: foto.legenda || foto.titulo || `Foto ${indice + 1}`,
+    }));
+  }
+  if (item.fotosVinculadas?.length) {
+    return item.fotosVinculadas.map((foto, indice) => ({
+      url: foto.url,
+      legenda: foto.descricao || `Foto ${foto.numeroFoto || indice + 1}`,
+    }));
+  }
+  if (item.fotosUrls?.length) {
+    return item.fotosUrls.map((url, indice) => ({ url, legenda: `Foto ${indice + 1}` }));
+  }
+  return item.fotoUrl ? [{ url: item.fotoUrl, legenda: item.fotoNome || 'Evidência fotográfica' }] : [];
 }
 
 export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
@@ -42,12 +69,19 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
 
   const totalItens = (checklist.itens?.length || 0) + (checklist.itensExtras?.length || 0);
   const todosItens = [...(checklist.itens || []), ...(checklist.itensExtras || [])];
+  const fotosChecklist: FotoChecklistPdf[] = todosItens.flatMap((item, indiceItem) =>
+    obterFotosDoItem(item).map((foto, indiceFoto) => ({
+      ...foto,
+      numeroItem: item.numero || String(indiceItem + 1),
+      descricaoItem: item.descricao,
+      indice: indiceFoto + 1,
+    })),
+  );
   const conformes = todosItens.filter(i => i.status === 'conforme').length;
   const naoConformes = todosItens.filter(i => i.status === 'nao_conforme').length;
   const naoAplicaveis = todosItens.filter(i => i.status === 'nao_aplicavel').length;
   const pendentes = todosItens.filter((item) => !item.status || item.status === 'pendente').length;
-  const fotosTotais = todosItens.reduce((total, item) =>
-    total + (item.fotos?.length || item.fotosVinculadas?.length || item.fotosUrls?.length || (item.fotoUrl ? 1 : 0)), 0);
+  const fotosTotais = fotosChecklist.length;
   const dataVistoria = new Date(checklist.dataPreenchimento || checklist.criadoEm);
   const dataBr = dataVistoria.toLocaleDateString('pt-BR');
   const horaBr = dataVistoria.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -106,8 +140,15 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
         conteudo.style.borderRadius = '0';
         conteudo.style.boxShadow = 'none';
         const topoConteudo = conteudo.getBoundingClientRect().top;
-        quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr'))
-          .map((linha) => linha.getBoundingClientRect().bottom - topoConteudo)
+        quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr, [data-pdf-break-before], [data-pdf-break-after]'))
+          .flatMap((bloco) => {
+            const caixa = bloco.getBoundingClientRect();
+            const inicio = caixa.top - topoConteudo;
+            const fim = caixa.bottom - topoConteudo;
+            return bloco.matches('tr') || bloco.hasAttribute('data-pdf-break-before')
+              ? [inicio, fim]
+              : [fim];
+          })
           .filter((posicao) => posicao > 0);
         alturaConteudoClonado = conteudo.getBoundingClientRect().height;
       },
@@ -133,7 +174,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
       if (y + currentHeight < canvas.height) {
         const limitesDeLinha = quebrasDeLinhaTabela
           .map((posicao) => Math.round(posicao * escalaVertical))
-          .filter((posicao) => posicao > y + sliceHeight * 0.4 && posicao <= y + sliceHeight);
+          .filter((posicao) => posicao > y + 24 && posicao <= y + sliceHeight);
         if (limitesDeLinha.length > 0) {
           currentHeight = Math.max(...limitesDeLinha) - y;
         }
@@ -509,15 +550,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {todosItens.map((item, idx) => {
-                    const fotos = item.fotos && item.fotos.length > 0
-                      ? item.fotos.map((f, i) => ({ url: f.url, legenda: f.legenda || f.titulo || `Foto ${i + 1}` }))
-                      : item.fotosVinculadas && item.fotosVinculadas.length > 0
-                      ? item.fotosVinculadas.map((foto, i) => ({ url: foto.url, legenda: foto.descricao || `Foto ${foto.numeroFoto || i + 1}` }))
-                      : item.fotosUrls && item.fotosUrls.length > 0
-                      ? item.fotosUrls.map((url, i) => ({ url, legenda: `Foto ${i + 1}` }))
-                      : item.fotoUrl
-                      ? [{ url: item.fotoUrl, legenda: item.fotoNome || 'Evidência' }]
-                      : [];
+                    const fotos = obterFotosDoItem(item);
                     const valorMedido = item.medicao?.valorEncontrado ?? item.valorResposta;
                     const unidadeMedida = item.medicao?.unidade || (item.unidade && item.unidade !== 'texto' ? item.unidade : '');
 
@@ -582,19 +615,8 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                           </p>
                         )}
                         {fotos.length > 0 && (
-                          <div className="mt-1.5 flex flex-wrap gap-2">
-                            {fotos.map((ft, fIdx) => (
-                              <div key={fIdx} className="flex items-center gap-1.5 mt-1">
-                                <img
-                                  src={ft.url}
-                                  alt={ft.legenda}
-                                  className="w-12 h-10 object-cover border border-slate-200"
-                                />
-                                <span className="text-[9.5px] text-slate-600 max-w-[110px] leading-tight">
-                                  Foto {fIdx + 1}: {ft.legenda}
-                                </span>
-                              </div>
-                            ))}
+                          <div className="mt-1 text-[9px] text-slate-500">
+                            {fotos.length} foto{fotos.length === 1 ? '' : 's'} no registro fotográfico
                           </div>
                         )}
                       </td>
@@ -604,8 +626,53 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
               </table>
             </div>
 
+            {fotosChecklist.length > 0 && (
+              <section className="mt-7" aria-label="Registro fotográfico">
+                <div className="mb-3 flex items-end justify-between border-b border-slate-300 pb-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">Registro fotográfico</h3>
+                    <p className="mt-0.5 text-[10px] text-slate-500">
+                      {fotosChecklist.length} evidência{fotosChecklist.length === 1 ? '' : 's'} vinculada{fotosChecklist.length === 1 ? '' : 's'} aos itens da vistoria
+                    </p>
+                  </div>
+                  <Camera className="h-4 w-4 text-slate-500" />
+                </div>
+                <div className="space-y-4">
+                  {fotosChecklist.map((foto, indice) => (
+                    <figure
+                      key={`${foto.numeroItem}-${foto.indice}-${indice}`}
+                      data-pdf-break-before
+                      data-pdf-break-after
+                      className="overflow-hidden border-b border-slate-200 pb-4"
+                    >
+                      <figcaption className="mb-2 flex items-baseline justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold text-slate-800">
+                            Item {foto.numeroItem} · {foto.descricaoItem}
+                          </p>
+                          <p className="mt-0.5 text-[9px] text-slate-500">
+                            Evidência {indice + 1} de {fotosChecklist.length}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-[9px] text-slate-500">{foto.legenda}</span>
+                      </figcaption>
+                      <div className="flex min-h-[250px] w-full items-center justify-center bg-slate-50">
+                        <img
+                          src={foto.url}
+                          alt={`Evidência fotográfica do item ${foto.numeroItem}: ${foto.legenda}`}
+                          crossOrigin="anonymous"
+                          loading="eager"
+                          className="block max-h-[380px] w-full object-contain"
+                        />
+                      </div>
+                    </figure>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Rubrica e Assinatura Técnica */}
-            <div className="mt-8 pt-5 border-t border-slate-300 flex justify-between items-end">
+            <div data-pdf-break-before data-pdf-break-after className="mt-8 pt-5 border-t border-slate-300 flex justify-between items-end">
               <div className="text-[11px] text-slate-500 max-w-sm">
                 <p className="font-semibold text-slate-700">Nota Legal de Campo:</p>
                 <p>
