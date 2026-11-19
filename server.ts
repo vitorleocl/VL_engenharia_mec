@@ -1811,7 +1811,16 @@ async function startServer() {
 }
 
 // Vercel imports the Express app as a serverless function instead of opening a port.
-if (!process.env.VERCEL) {
+// Calls to app.listen() inside a function invocation make it fail with
+// FUNCTION_INVOCATION_FAILED, so the guard checks every Vercel runtime marker.
+const emServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.VERCEL_ENV ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.FUNCTION_TARGET
+);
+if (!emServerless && process.env.NODE_ENV !== 'production') {
   void startServer();
 }
 
