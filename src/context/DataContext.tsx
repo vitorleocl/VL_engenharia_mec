@@ -76,6 +76,15 @@ import {
   gerarSecoesPadraoOrcamento
 } from '../lib/orcamentoTemplatePadrao';
 
+export interface ResumoRecuperacaoChecklists {
+  copiaIndexedDB: number;
+  rascunhos: number;
+  fila: number;
+  recuperados: number;
+  ativos: string[];
+  ocultos: Array<{ id: string; numero: string; ativo: string }>;
+}
+
 interface DataContextType {
   clientes: Cliente[];
   ativos: Ativo[];
@@ -169,13 +178,8 @@ interface DataContextType {
   syncConflicts: OfflineSyncConflict[];
   sincronizandoOffline: boolean;
   sincronizarChecklistsOffline: () => Promise<void>;
-  recuperarChecklistsDoAparelho: () => Promise<{
-    copiaIndexedDB: number;
-    rascunhos: number;
-    fila: number;
-    recuperados: number;
-    ativos: string[];
-  }>;
+  recuperarChecklistsDoAparelho: () => Promise<ResumoRecuperacaoChecklists>;
+  restaurarChecklistOculto: (id: string) => Promise<ResumoRecuperacaoChecklists>;
   resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
   atualizarContagemSync: () => Promise<void>;
 }
@@ -1053,9 +1057,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } as ChecklistCampo);
     });
 
-    const candidatos = Array.from(mapa.values()).filter(
-      c => c?.id && !removidosSet.has(c.id) && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
+    const todosCandidatos = Array.from(mapa.values()).filter(
+      c => c?.id && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
     );
+    // Registros que existem no aparelho mas estão ocultos por uma exclusão anterior
+    // (tombstone sincronizado de outro dispositivo). Ficam visíveis no diagnóstico
+    // para o usuário poder restaurar sem perder o preenchimento.
+    const ocultos = todosCandidatos
+      .filter(c => removidosSet.has(c.id))
+      .map(c => ({
+        id: c.id,
+        numero: c.numero || c.id,
+        ativo: (c.ativoIdentificacao || '').split(' (')[0] || 'Ativo',
+      }));
+    const candidatos = todosCandidatos.filter(c => !removidosSet.has(c.id));
     const resumo = {
       copiaIndexedDB: copia.length,
       rascunhos: drafts.length,
@@ -1064,6 +1079,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ativos: Array.from(new Set(
         candidatos.map(c => (c.ativoIdentificacao || '').split(' (')[0]).filter(Boolean)
       )),
+      ocultos,
     };
     console.info('[Checklists] Recuperação local:', resumo);
     if (candidatos.length === 0) return resumo;
@@ -1086,6 +1102,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return resumo;
   }, []);
+
+  const restaurarChecklistOculto = useCallback(async (id: string) => {
+    const atuais: string[] = loadStorage('vl_checklists_removidos_ids', []);
+    saveStorage('vl_checklists_removidos_ids', atuais.filter(x => x !== id));
+    return recuperarChecklistsDoAparelho();
+  }, [recuperarChecklistsDoAparelho]);
 
   useEffect(() => {
     void recuperarChecklistsDoAparelho();
@@ -3490,6 +3512,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sincronizandoOffline,
         sincronizarChecklistsOffline,
         recuperarChecklistsDoAparelho,
+        restaurarChecklistOculto,
         resolverConflitoChecklist,
         atualizarContagemSync,
       }}

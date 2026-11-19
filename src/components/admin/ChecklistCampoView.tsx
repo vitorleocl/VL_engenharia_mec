@@ -13,7 +13,7 @@ import {
   MessageCircle,
   HardDriveDownload,
 } from 'lucide-react';
-import { useData } from '../../context/DataContext';
+import { useData, type ResumoRecuperacaoChecklists } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { ChecklistCampoFormModal } from './ChecklistCampoFormModal';
 import { ChecklistCampoPdfModal } from './ChecklistCampoPdfModal';
@@ -39,6 +39,7 @@ export const ChecklistCampoView: React.FC = () => {
     sincronizandoOffline,
     sincronizarChecklistsOffline,
     recuperarChecklistsDoAparelho,
+    restaurarChecklistOculto,
     resolverConflitoChecklist,
     gerarOuAtualizarLaudoDeChecklist,
   } = useData();
@@ -61,13 +62,7 @@ export const ChecklistCampoView: React.FC = () => {
   const [buscaTexto, setBuscaTexto] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'rascunho' | 'finalizado'>('todos');
   const [recuperandoLocal, setRecuperandoLocal] = useState(false);
-  const [resultadoRecuperacao, setResultadoRecuperacao] = useState<{
-    copiaIndexedDB: number;
-    rascunhos: number;
-    fila: number;
-    recuperados: number;
-    ativos: string[];
-  } | null>(null);
+  const [resultadoRecuperacao, setResultadoRecuperacao] = useState<ResumoRecuperacaoChecklists | null>(null);
 
   const handleRecuperarDoAparelho = async () => {
     setRecuperandoLocal(true);
@@ -78,6 +73,21 @@ export const ChecklistCampoView: React.FC = () => {
     } catch (erro) {
       console.error('[Checklists] Falha na recuperação local:', erro);
       window.alert('Não foi possível ler o armazenamento deste aparelho.');
+    } finally {
+      setRecuperandoLocal(false);
+    }
+  };
+
+  const handleRestaurarOculto = async (id: string) => {
+    const confirmar = window.confirm(
+      'Restaurar este checklist mesmo ele tendo sido excluído antes?\n\nEle voltará para a lista neste aparelho e será reenviado para a nuvem.'
+    );
+    if (!confirmar) return;
+    setRecuperandoLocal(true);
+    try {
+      const resumo = await restaurarChecklistOculto(id);
+      setResultadoRecuperacao(resumo);
+      await sincronizarChecklistsOffline();
     } finally {
       setRecuperandoLocal(false);
     }
@@ -197,6 +207,7 @@ export const ChecklistCampoView: React.FC = () => {
               ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               : <HardDriveDownload className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">Recuperar do aparelho</span>
+            <span className="sm:hidden">Recuperar</span>
           </button>
 
           {/* Atalho Configurações de Modelos B4 */}
@@ -263,6 +274,27 @@ export const ChecklistCampoView: React.FC = () => {
             <p className="text-[var(--adm-mut)]">
               Cópia local: {resultadoRecuperacao.copiaIndexedDB} · rascunhos: {resultadoRecuperacao.rascunhos} · fila de envio: {resultadoRecuperacao.fila}
             </p>
+
+            {resultadoRecuperacao.ocultos.length > 0 && (
+              <div className="mt-2 space-y-1 border-t border-[var(--adm-line)] pt-2">
+                <p className="font-semibold text-amber-500">
+                  Encontrado(s) no aparelho, mas oculto(s) por uma exclusão anterior:
+                </p>
+                {resultadoRecuperacao.ocultos.map((oculto) => (
+                  <div key={oculto.id} className="flex items-center justify-between gap-2">
+                    <span>{oculto.ativo} · {oculto.numero}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRestaurarOculto(oculto.id)}
+                      disabled={recuperandoLocal}
+                      className="px-2.5 py-1 rounded-lg bg-[var(--adm-blue,#2160db)] text-white font-semibold cursor-pointer disabled:opacity-60"
+                    >
+                      Restaurar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -380,16 +412,30 @@ export const ChecklistCampoView: React.FC = () => {
             Nenhuma vistoria encontrada
           </h3>
           <p className="text-xs text-[var(--adm-mut)] max-w-sm mx-auto">
-            Inicie uma nova vistoria técnica ligada a um orçamento aprovado e ativo.
+            Se você já salvou uma vistoria neste aparelho, toque em <strong>Recuperar do aparelho</strong>.
+            Caso contrário, inicie uma nova vistoria técnica ligada a um orçamento aprovado e ativo.
           </p>
-          <button
-            type="button"
-            onClick={abrirNovoChecklist}
-            className="px-4 py-2 rounded-xl bg-[var(--adm-blue,#2160db)] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nova vistoria</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={abrirNovoChecklist}
+              className="px-4 py-2 rounded-xl bg-[var(--adm-blue,#2160db)] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nova vistoria</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRecuperarDoAparelho}
+              disabled={recuperandoLocal}
+              className="px-4 py-2 rounded-xl border border-[var(--adm-line)] text-[var(--adm-text)] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              {recuperandoLocal
+                ? <RefreshCw className="w-4 h-4 animate-spin" />
+                : <HardDriveDownload className="w-4 h-4" />}
+              <span>Recuperar do aparelho</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3.5">
