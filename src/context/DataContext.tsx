@@ -962,9 +962,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (item.payload?.id) mapa.set(item.payload.id, item.payload);
       });
       drafts.forEach(draft => {
+        const payload = (draft.payload || {}) as ChecklistCampo;
+
+        // Checklist novo que nunca chegou a ser salvo na lista: o formulário guarda
+        // o preenchimento automaticamente com id "draft-new-...". Sem esta recuperação
+        // o usuário vê "salvo no aparelho", mas o registro não aparece em lugar nenhum.
+        if (draft.id?.startsWith('draft-new-')) {
+          if (!draft.dirty || !Array.isArray(payload.itens) || payload.itens.length === 0) return;
+          const id = `chk-recuperado-${draft.id.replace(/^draft-new-/, '')}`;
+          const quando = draft.localUpdatedAt || new Date().toISOString();
+          mapa.set(id, {
+            ...payload,
+            id,
+            numero: payload.numero && payload.numero !== 'RASCUNHO'
+              ? payload.numero
+              : `CHK-REC-${id.slice(-6).toUpperCase()}`,
+            status: payload.status || 'rascunho',
+            criadoEm: payload.criadoEm || quando,
+            atualizadoEm: payload.atualizadoEm || quando,
+            disponibilizadoParaCliente: payload.disponibilizadoParaCliente ?? false,
+          } as ChecklistCampo);
+          return;
+        }
+
         if (!draft.id?.startsWith('chk-')) return;
         const base = mapa.get(draft.id);
-        const payload = (draft.payload || {}) as ChecklistCampo;
         if (!base && !Array.isArray(payload.itens)) return;
         mapa.set(draft.id, {
           ...(base || {}),
@@ -985,6 +1007,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
         saveStorage('vl_checklists_campo', merged);
         return merged;
+      });
+
+      // Dá tempo de a hidratação terminar e então envia os recuperados para a nuvem.
+      [1500, 6000].forEach(delay => {
+        window.setTimeout(() => {
+          if (!cancelado) void reconciliarChecklistsLocaisRef.current?.();
+        }, delay);
       });
     };
     void recuperar();

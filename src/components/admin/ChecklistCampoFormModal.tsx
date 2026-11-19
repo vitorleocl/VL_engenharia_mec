@@ -721,7 +721,11 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
       dirtyFieldsCount: respondidosCount,
     }).then(() => {
       const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      setStatusSalvoLocal(`Salvo no aparelho às ${hora}`);
+      setStatusSalvoLocal(
+        checklistParaEditar
+          ? `Salvo no aparelho às ${hora}`
+          : `Rascunho salvo neste aparelho às ${hora} — toque em Salvar para incluir na lista`
+      );
       atualizarContagemSync();
     });
   }, [
@@ -838,6 +842,17 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     }
   };
 
+  const handleFechar = () => {
+    // Checklist novo só existe como rascunho até clicar em Salvar; avisa antes de fechar.
+    if (!checklistParaEditar && itens.length > 0) {
+      const confirmar = window.confirm(
+        'Este checklist ainda não foi incluído na lista. O preenchimento continua salvo como rascunho neste aparelho.\n\nDeseja fechar mesmo assim?'
+      );
+      if (!confirmar) return;
+    }
+    onClose();
+  };
+
   // B7: Gerar ou atualizar Laudo sem duplicar
   const handleGerarLaudoAPartirDestaVistoria = () => {
     const res = executarSalvarVistoria('finalizado');
@@ -913,7 +928,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
               </div>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleFechar}
                 className="p-2 text-[var(--adm-mut)] hover:text-[var(--adm-text)] rounded-xl hover:bg-[var(--adm-bg)] transition-colors cursor-pointer"
                 title="Fechar"
               >
@@ -1316,7 +1331,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleFechar}
               className="hidden sm:block px-3.5 py-2.5 text-xs font-semibold text-[var(--adm-mut)] hover:text-[var(--adm-text)] rounded-xl border border-[var(--adm-line)] cursor-pointer"
             >
               Fechar
