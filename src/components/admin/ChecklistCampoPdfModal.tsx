@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { 
   X, 
   Download, 
@@ -257,6 +257,61 @@ function substituirImagensNoClone(conteudo: HTMLElement, preparadas: ImagemPrepa
     canvas.setAttribute('aria-label', image.alt || 'Imagem do checklist');
     image.replaceWith(canvas);
   });
+}
+
+/**
+ * A prévia precisa usar o mesmo carregamento do PDF (SDK autenticado → proxy →
+ * fetch direto). Um <img src> com a URL do Storage falha quando a requisição do
+ * navegador não leva a autenticação — e é exatamente por isso que a foto aparece
+ * no PDF baixado, mas não na visualização.
+ */
+function ImagemFotoChecklist({
+  url,
+  alt,
+  className,
+}: {
+  url: string;
+  alt: string;
+  className: string;
+}) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    setSrc(null);
+    setFalhou(false);
+    carregarFotoParaPdf(url)
+      .then(({ dataUrl }) => {
+        if (ativo) setSrc(dataUrl);
+      })
+      .catch((erro) => {
+        if (!ativo) return;
+        console.warn('[Checklist] Não foi possível exibir a foto na prévia:', url, erro);
+        setFalhou(true);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [url]);
+
+  if (falhou) {
+    return (
+      <div className="flex min-h-[120px] w-full flex-col items-center justify-center gap-2 bg-slate-50 px-4 text-center text-[11px] text-slate-500">
+        <Camera className="h-5 w-5 opacity-60" />
+        <span>Foto registrada, mas indisponível para visualização. Ela ainda pode ser baixada no PDF.</span>
+      </div>
+    );
+  }
+  if (!src) {
+    return (
+      <div className="flex min-h-[120px] w-full items-center justify-center bg-slate-50 text-[11px] text-slate-500">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Carregando foto...
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} loading="eager" className={className} />;
 }
 
 export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
@@ -933,10 +988,9 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                         <span className="shrink-0 text-[9px] text-slate-500">{foto.legenda}</span>
                       </figcaption>
                       <div className="flex min-h-[250px] w-full items-center justify-center bg-slate-50">
-                        <img
-                          src={foto.url}
+                        <ImagemFotoChecklist
+                          url={foto.url}
                           alt={`Evidência fotográfica do item ${foto.numeroItem}: ${foto.legenda}`}
-                          loading="eager"
                           className="block max-h-[380px] w-full object-contain"
                         />
                       </div>
@@ -963,8 +1017,8 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
               <div className="text-center">
                 {checklist.rubricaUrl ? (
                   <div className="flex flex-col items-center">
-                    <img
-                      src={checklist.rubricaUrl}
+                    <ImagemFotoChecklist
+                      url={checklist.rubricaUrl}
                       alt="Rubrica Técnica"
                       className="h-14 max-w-[200px] object-contain mb-1"
                     />
