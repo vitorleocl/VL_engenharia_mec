@@ -52,6 +52,21 @@ function obterFotosDoItem(item: ChecklistCampoItem): Omit<FotoChecklistPdf, 'num
   return item.fotoUrl ? [{ url: item.fotoUrl, legenda: item.fotoNome || 'Evidência fotográfica' }] : [];
 }
 
+function criarNomeArquivoPdf(identificacaoAtivo: string, data: Date): string {
+  const tagAtivo = (identificacaoAtivo.match(/^([^(]+)/)?.[1] || identificacaoAtivo).trim();
+  const ativoSeguro = tagAtivo
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '') || 'Ativo';
+  const dataSegura = Number.isNaN(data.getTime())
+    ? new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')
+    : data.toLocaleDateString('pt-BR').replace(/\//g, '-');
+  return `Checklist_${ativoSeguro}_${dataSegura}.pdf`;
+}
+
 export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   checklist,
   onClose,
@@ -82,7 +97,10 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   const naoAplicaveis = todosItens.filter(i => i.status === 'nao_aplicavel').length;
   const pendentes = todosItens.filter((item) => !item.status || item.status === 'pendente').length;
   const fotosTotais = fotosChecklist.length;
-  const dataVistoria = new Date(checklist.dataPreenchimento || checklist.criadoEm);
+  const dataVistoriaInformada = new Date(checklist.dataPreenchimento || checklist.criadoEm || Date.now());
+  const dataVistoria = Number.isNaN(dataVistoriaInformada.getTime())
+    ? new Date(checklist.criadoEm || Date.now())
+    : dataVistoriaInformada;
   const dataBr = dataVistoria.toLocaleDateString('pt-BR');
   const horaBr = dataVistoria.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const ativoDetalhes = [
@@ -93,6 +111,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     ativo?.proprietario && `Proprietário: ${ativo.proprietario}`,
   ].filter(Boolean).join(' · ');
   const ativoIdentificacao = ativo?.identificacao || checklist.ativoIdentificacao || 'Ativo não informado';
+  const nomeArquivoPdf = criarNomeArquivoPdf(ativoIdentificacao, dataVistoria);
   const capacidadeAtivo = ativo?.capacidade;
   const identificadoresAtivo = [
     ativo?.placa && `Placa: ${ativo.placa}`,
@@ -112,13 +131,26 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     const element = printRef.current;
     let quebrasDeLinhaTabela: number[] = [];
     let alturaConteudoClonado = 0;
-    await Promise.all(Array.from(element.querySelectorAll('img')).map((image) => {
-      if (image.complete) return Promise.resolve();
-      return new Promise<void>((resolve) => {
-        image.onload = () => resolve();
-        image.onerror = () => resolve();
-        window.setTimeout(resolve, 10_000);
-      });
+    await Promise.all(Array.from(element.querySelectorAll('img')).map(async (image) => {
+      if (!image.complete) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = window.setTimeout(() => reject(new Error('Tempo esgotado ao carregar uma imagem do checklist.')), 10_000);
+          image.onload = () => {
+            window.clearTimeout(timeout);
+            resolve();
+          };
+          image.onerror = () => {
+            window.clearTimeout(timeout);
+            reject(new Error(`Não foi possível carregar a imagem ${image.alt || 'do documento'}.`));
+          };
+        });
+      }
+      if (image.naturalWidth === 0) {
+        throw new Error(`Uma imagem do checklist não foi carregada: ${image.alt || image.currentSrc || image.src}`);
+      }
+      if (typeof image.decode === 'function') {
+        await image.decode();
+      }
     }));
     const canvas = await html2canvas(element, {
       scale: 1.35,
@@ -224,7 +256,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Checklist_Campo_${checklist.numero}.pdf`;
+      link.download = nomeArquivoPdf;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -277,7 +309,7 @@ Este resumo não substitui o laudo técnico completo. Em caso de dúvida, fale c
     try {
       const blob = await gerarPdfBlob();
       if (!blob) throw new Error('A prévia do checklist ainda não está pronta.');
-      const file = new File([blob], `Checklist_Campo_${checklist.numero}.pdf`, { type: 'application/pdf' });
+      const file = new File([blob], nomeArquivoPdf, { type: 'application/pdf' });
       const texto = `Prezados,
 
 Encaminhamos, em anexo, o Checklist de Campo ${checklist.numero}, referente à vistoria técnica realizada pela VL Engenharia.
@@ -328,7 +360,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
       window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
       const subject = encodeURIComponent(`Checklist de Campo ${checklist.numero} | VL Engenharia`);
       const emailDestino = cliente?.contatos?.find((contato) => contato.email?.trim())?.email || '';
-      window.location.href = `mailto:${encodeURIComponent(emailDestino)}?subject=${subject}&body=${encodeURIComponent(`${texto}\n\nO PDF foi baixado para este dispositivo. Anexe o arquivo Checklist_Campo_${checklist.numero}.pdf antes de enviar.`)}`;
+      window.location.href = `mailto:${encodeURIComponent(emailDestino)}?subject=${subject}&body=${encodeURIComponent(`${texto}\n\nO PDF foi baixado para este dispositivo. Anexe o arquivo ${nomeArquivoPdf} antes de enviar.`)}`;
       setAvisoEmail('O PDF foi baixado. Seu aplicativo de e-mail não aceita anexos pelo navegador; anexe o arquivo antes de enviar.');
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;

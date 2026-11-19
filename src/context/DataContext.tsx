@@ -2742,11 +2742,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             continue;
           }
 
-          // Envia para /api/app-data e Firestore
+          // Envia apenas o item da fila; o servidor mescla por id sem depender do estado local.
           await fetch('/api/app-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ checklistsCampo: checklistsCampo.map(c => c.id === item.checklistId ? item.payload : c) }),
+            body: JSON.stringify({ checklistsCampo: [item.payload] }),
           }).catch(() => undefined);
 
           if (db && auth?.currentUser) {
@@ -2770,7 +2770,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSincronizandoOffline(false);
       await atualizarContagemSync();
     }
-  }, [atualizarContagemSync, checklistsCampo]);
+  }, [atualizarContagemSync]);
 
   const resolverConflitoChecklist = async (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => {
     const conflito = syncConflicts.find(c => c.id === conflictId);
@@ -2821,7 +2821,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       atualizarContagemSync();
     }
-  }, [isOnline]);
+  }, [isOnline, sincronizarChecklistsOffline, firebaseUser?.uid, atualizarContagemSync]);
+
+  // Retoma o envio da fila quando o app volta ao primeiro plano, garantindo a mesma
+  // quantidade de checklists em todos os dispositivos assim que houver conexão.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const retomarSincronizacao = () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      sincronizarChecklistsOffline();
+    };
+    const aoVoltarParaAba = () => {
+      if (document.visibilityState === 'visible') retomarSincronizacao();
+    };
+    window.addEventListener('focus', retomarSincronizacao);
+    document.addEventListener('visibilitychange', aoVoltarParaAba);
+    return () => {
+      window.removeEventListener('focus', retomarSincronizacao);
+      document.removeEventListener('visibilitychange', aoVoltarParaAba);
+    };
+  }, [sincronizarChecklistsOffline]);
 
   // Checklist de Campo Handlers
   const gerarNumeroChecklistCampo = (): string => {
@@ -2859,7 +2878,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('checklistsCampo', id, 'criar', `Checklist de Campo criado: ${numero} (${novo.tipoLaudoNome || novo.tipoLaudoId})`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (offline || isFirestoreWriteQuotaBlocked()) {
+    if (offline || isFirestoreWriteQuotaBlocked() || !db || !auth?.currentUser) {
       enqueueSync({
         id: `sync-${id}-${Date.now()}`,
         checklistId: id,
@@ -2901,7 +2920,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registrarLog('checklistsCampo', id, 'editar', `Checklist de Campo atualizado: ${id}`);
 
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if ((offline || isFirestoreWriteQuotaBlocked()) && atualizado) {
+    if ((offline || isFirestoreWriteQuotaBlocked() || !db || !auth?.currentUser) && atualizado) {
       enqueueSync({
         id: `sync-${id}-${Date.now()}`,
         checklistId: id,

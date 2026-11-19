@@ -188,7 +188,7 @@ export const ChecklistCampoView: React.FC = () => {
           className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-[var(--adm-blue,#2160db)] px-4 text-sm font-bold uppercase text-[var(--adm-blue-soft,#6ea1ff)]"
         >
           CHECKLIST
-          <span className="rounded-full bg-[var(--adm-card)] px-2 py-0.5 text-xs">{checklistsCampo.length}</span>
+          <span className="rounded-full bg-[var(--adm-card)] px-2 py-0.5 text-xs">{checklistsFiltrados.length}</span>
         </button>
       </nav>
 

@@ -41,6 +41,13 @@ import {
 
 export const MODELOS_CHECKLIST_SERVICO = CHECKLIST_MODELOS_PADRAO;
 
+function formatarDataHoraLocal(valor: string): string {
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  const doisDigitos = (numero: number) => String(numero).padStart(2, '0');
+  return `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}T${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`;
+}
+
 const MODELOS_LEGADOS_SUBSTITUIDOS = new Set([
   'nr11',
   'nr12',
@@ -980,7 +987,7 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
                 </label>
                 <input
                   type="datetime-local"
-                  value={dataPreenchimento ? dataPreenchimento.slice(0, 16) : ''}
+                  value={formatarDataHoraLocal(dataPreenchimento)}
                   onChange={(e) => {
                     if (e.target.value) setDataPreenchimento(new Date(e.target.value).toISOString());
                   }}
