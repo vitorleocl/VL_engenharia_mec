@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -1789,6 +1788,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    // Import dinâmico: o Vite é necessário apenas no dev server. Importá-lo no topo
+    // faz a função serverless da Vercel falhar na inicialização (todas as rotas /api
+    // caem com FUNCTION_INVOCATION_FAILED) e quebra a sincronização entre aparelhos.
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: false },
       appType: "spa",
