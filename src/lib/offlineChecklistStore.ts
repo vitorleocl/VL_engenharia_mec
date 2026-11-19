@@ -1,11 +1,12 @@
 import { ChecklistCampo } from '../types';
 
 const DB_NAME = 'vl_field_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORE_DRAFTS = 'drafts';
 const STORE_QUEUE = 'syncQueue';
 const STORE_CONFLICTS = 'conflicts';
+const STORE_CHECKLISTS = 'checklists';
 
 export interface OfflineChecklistDraft {
   id: string; // checklist id or 'new' or temp id
@@ -54,6 +55,9 @@ function openOfflineDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_CONFLICTS)) {
         db.createObjectStore(STORE_CONFLICTS, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORE_CHECKLISTS)) {
+        db.createObjectStore(STORE_CHECKLISTS, { keyPath: 'id' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -178,6 +182,41 @@ export async function getConflicts(): Promise<OfflineSyncConflict[]> {
 
 export async function resolveConflictInStore(id: string): Promise<void> {
   await idbDelete(STORE_CONFLICTS, id);
+}
+
+/**
+ * Cópia de segurança dos checklists em IndexedDB.
+ *
+ * O localStorage tem cota de ~5 MB e falha silenciosamente quando o checklist
+ * carrega fotos em base64 — o registro continua na tela, mas desaparece no
+ * próximo carregamento. O IndexedDB tem cota muito maior e serve de fonte de
+ * recuperação para esses casos.
+ */
+export async function saveChecklistsCopiaLocal(checklists: ChecklistCampo[]): Promise<void> {
+  if (!Array.isArray(checklists)) return;
+  try {
+    const db = await openOfflineDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_CHECKLISTS, 'readwrite');
+      const store = tx.objectStore(STORE_CHECKLISTS);
+      checklists.forEach(checklist => {
+        if (checklist?.id) store.put(checklist);
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('[OfflineDB] Falha ao gravar cópia local dos checklists:', err);
+  }
+}
+
+export async function getChecklistsCopiaLocal(): Promise<ChecklistCampo[]> {
+  return idbGetAll<ChecklistCampo>(STORE_CHECKLISTS);
+}
+
+export async function removeChecklistCopiaLocal(id: string): Promise<void> {
+  await idbDelete(STORE_CHECKLISTS, id);
 }
 
 /**

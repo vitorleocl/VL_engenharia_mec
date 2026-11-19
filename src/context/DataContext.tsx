@@ -24,13 +24,16 @@ import {
   countPendingSyncItems,
   enqueueSync,
   getAllDraftsOffline,
+  getChecklistsCopiaLocal,
   getConflicts,
   getDraftOffline,
   getPendingQueue,
   recordConflict,
+  removeChecklistCopiaLocal,
   removeDraftOffline,
   removeFromQueue,
   resolveConflictInStore,
+  saveChecklistsCopiaLocal,
 } from '../lib/offlineChecklistStore';
 import { 
   TEMPLATES_INICIAIS,
@@ -194,7 +197,18 @@ function saveStorage<T>(key: string, data: T) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
-    console.warn('Erro ao salvar no storage local:', e);
+    const tamanhoKb = (() => {
+      try {
+        return Math.round(JSON.stringify(data).length / 1024);
+      } catch {
+        return -1;
+      }
+    })();
+    console.error(
+      `[Storage] Falha ao gravar "${key}" no localStorage (${tamanhoKb} KB). ` +
+      'A cota do navegador provavelmente foi excedida; a cópia em IndexedDB será usada na recuperação.',
+      e,
+    );
   }
 }
 
@@ -926,6 +940,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_usuarios', usuarios), [usuarios]);
   useEffect(() => saveStorage('vl_solicitacoes_acesso', solicitacoesAcesso), [solicitacoesAcesso]);
   useEffect(() => saveStorage('vl_uso_ia', usoIA), [usoIA]);
+
+  // Recupera checklists que não couberam no localStorage (geralmente por causa das
+  // fotos em base64), além dos que ficaram só na fila/rascunho offline.
+  useEffect(() => {
+    let cancelado = false;
+    const recuperar = async () => {
+      const [copia, drafts, fila] = await Promise.all([
+        getChecklistsCopiaLocal(),
+        getAllDraftsOffline(),
+        getPendingQueue(),
+      ]);
+      if (cancelado) return;
+
+      const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+      const mapa = new Map<string, ChecklistCampo>();
+      copia.forEach(checklist => {
+        if (checklist?.id) mapa.set(checklist.id, checklist);
+      });
+      fila.forEach(item => {
+        if (item.payload?.id) mapa.set(item.payload.id, item.payload);
+      });
+      drafts.forEach(draft => {
+        if (!draft.id?.startsWith('chk-')) return;
+        const base = mapa.get(draft.id);
+        if (!base) return;
+        mapa.set(draft.id, { ...base, ...draft.payload, id: draft.id });
+      });
+
+      const candidatos = Array.from(mapa.values());
+      if (candidatos.length === 0) return;
+
+      setChecklistsCampo(prev => {
+        const merged = normalizarChecklistsCampo(
+          mesclarColecaoPorId(candidatos, prev, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
+        );
+        saveStorage('vl_checklists_campo', merged);
+        return merged;
+      });
+    };
+    void recuperar();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  // Cópia de segurança em IndexedDB, com cota muito maior que o localStorage.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void saveChecklistsCopiaLocal(checklistsCampo);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [checklistsCampo]);
 
   const isHydratedRef = useRef(false);
 
@@ -3108,6 +3174,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removerChecklistCampo = (id: string) => {
     const novosRemovidos = addTombstone('vl_checklists_removidos_ids', id);
+    void removeChecklistCopiaLocal(id);
     setChecklistsCampo(prev => {
       const filtrados = prev.filter(c => c.id !== id);
       saveStorage('vl_checklists_campo', filtrados);

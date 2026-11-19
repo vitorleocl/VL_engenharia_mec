@@ -18,5 +18,15 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
+    // Fotos das evidências dos checklists de campo.
+    // Sem esta regra o upload falha, as fotos ficam em base64 e o documento do
+    // Firestore passa do limite de 1 MB — o checklist não sincroniza.
+    match /checklists/{checklistId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
   }
 }
