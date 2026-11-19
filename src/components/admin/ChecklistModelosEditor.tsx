@@ -53,12 +53,16 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
           secoesLaudoPadrao: secoes,
           itens: itens.map((texto, index) => ({
             id: `servico-${idSubtipo}-${index + 1}`,
-            numero: `${index + 1}`,
-            texto,
+            numero: texto.match(/^\[([A-Z]\d+)\]/)?.[1] || `${index + 1}`,
+            texto: texto.replace(/^\[[A-Z]\d+\]\s*/, ''),
             norma: subtipo.normaRef || servico.norma,
-            secaoLaudo: secoes.length
-              ? secoes[Math.min(secoes.length - 1, Math.floor(index * secoes.length / itens.length))]
-              : 'Verificações Técnicas',
+            secaoLaudo: (() => {
+              const codigo = texto.match(/^\[([A-Z]\d+)\]/)?.[1] || '';
+              const indiceSecao = codigo.startsWith('S')
+                ? 0
+                : codigo.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+              return secoes[indiceSecao] || secoes[0] || 'Verificações Técnicas';
+            })(),
             ...(texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
               ? { tipoResposta: 'medida' as const, unidade: 'mg/L', metodoVerificacao: 'instrumental' as const }
               : {}),
@@ -83,7 +87,11 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
 
   useEffect(() => {
     const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
-    checklistModelos.forEach((modelo) => unicos.set(modelo.id, modelo));
+    checklistModelos.forEach((modelo) => {
+      const legadoCaminhaoPipa = modelo.id.includes('laudo-conformidade-sanitaria-caminhao-pipa')
+        && modelo.itens.length === 14;
+      if (!legadoCaminhaoPipa) unicos.set(modelo.id, modelo);
+    });
     const modelosAtualizados = Array.from(unicos.values());
     setModelosLocais(modelosAtualizados);
     if (!modelosAtualizados.some((modelo) => modelo.id === modeloAtivoId)) {
