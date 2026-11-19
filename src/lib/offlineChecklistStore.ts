@@ -171,6 +171,17 @@ export async function removeFromQueue(id: string): Promise<void> {
   await idbDelete(STORE_QUEUE, id);
 }
 
+/**
+ * Remove da fila todos os envios pendentes de um checklist.
+ * Usado ao excluir: sem isso o item voltaria a ser criado na próxima sincronização.
+ */
+export async function removeChecklistFromQueue(checklistId: string): Promise<void> {
+  const fila = await getPendingQueue();
+  await Promise.all(
+    fila.filter(item => item.checklistId === checklistId).map(item => idbDelete(STORE_QUEUE, item.id))
+  );
+}
+
 export async function recordConflict(conflict: OfflineSyncConflict): Promise<void> {
   await idbPut(STORE_CONFLICTS, conflict);
 }

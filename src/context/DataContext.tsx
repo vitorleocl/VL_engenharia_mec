@@ -30,6 +30,7 @@ import {
   getPendingQueue,
   recordConflict,
   removeChecklistCopiaLocal,
+  removeChecklistFromQueue,
   removeDraftOffline,
   removeFromQueue,
   resolveConflictInStore,
@@ -3313,6 +3314,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const removerChecklistCampo = (id: string) => {
     const novosRemovidos = addTombstone('vl_checklists_removidos_ids', id);
     void removeChecklistCopiaLocal(id);
+    void removeChecklistFromQueue(id).then(() => atualizarContagemSync());
+    // Remove também os rascunhos que poderiam "ressuscitar" o registro na abertura.
+    void removeDraftOffline(id);
+    if (id.startsWith('chk-recuperado-')) {
+      void removeDraftOffline(`draft-new-${id.replace(/^chk-recuperado-/, '')}`);
+    }
     setChecklistsCampo(prev => {
       const filtrados = prev.filter(c => c.id !== id);
       saveStorage('vl_checklists_campo', filtrados);

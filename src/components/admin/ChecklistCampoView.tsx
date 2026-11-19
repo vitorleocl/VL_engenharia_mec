@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   MessageCircle,
   HardDriveDownload,
+  Trash2,
 } from 'lucide-react';
 import { useData, type ResumoRecuperacaoChecklists } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +42,7 @@ export const ChecklistCampoView: React.FC = () => {
     recuperarChecklistsDoAparelho,
     restaurarChecklistOculto,
     resolverConflitoChecklist,
+    removerChecklistCampo,
     gerarOuAtualizarLaudoDeChecklist,
   } = useData();
   const { isOnline } = useAuth();
@@ -128,6 +130,23 @@ export const ChecklistCampoView: React.FC = () => {
   const abrirEditarChecklist = (chk: ChecklistCampo) => {
     setChecklistParaEditar(chk);
     setModalFormAberto(true);
+  };
+
+  const handleExcluirChecklist = (chk: ChecklistCampo) => {
+    const tag = extrairTagCurta(chk.ativoIdentificacao) || 'este ativo';
+    const possuiLaudo = Boolean(
+      chk.vinculadoALaudoId || laudos.some((l) => l.checklistCampoOrigemId === chk.id)
+    );
+    const confirmar = window.confirm(
+      `Excluir o checklist ${chk.numero || chk.id} do ativo ${tag}?\n\n` +
+      'O registro será removido deste aparelho e da nuvem. Essa ação não pode ser desfeita.' +
+      (possuiLaudo ? '\n\nO laudo já gerado a partir desta vistoria NÃO será excluído.' : '')
+    );
+    if (!confirmar) return;
+
+    if (checklistParaEditar?.id === chk.id) setChecklistParaEditar(null);
+    if (checklistVisualizandoPdf?.id === chk.id) setChecklistVisualizandoPdf(null);
+    removerChecklistCampo(chk.id);
   };
 
   const handleGerarOuAbrirLaudo = (chk: ChecklistCampo) => {
@@ -539,6 +558,14 @@ Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta m
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExcluirChecklist(chk)}
+                      className="p-1.5 rounded-lg text-[var(--adm-mut)] hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                      title="Excluir checklist"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
@@ -637,6 +664,15 @@ Este é um resumo do checklist de campo. Para esclarecimentos, responda a esta m
                     </button>
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleExcluirChecklist(chk)}
+                  className="w-full min-h-[38px] mt-1 rounded-xl border border-rose-500/35 text-rose-500 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-rose-500/10 transition cursor-pointer"
+                  title="Excluir este checklist definitivamente"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Excluir checklist
+                </button>
               </article>
             );
           })}
