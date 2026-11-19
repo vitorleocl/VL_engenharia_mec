@@ -964,8 +964,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       drafts.forEach(draft => {
         if (!draft.id?.startsWith('chk-')) return;
         const base = mapa.get(draft.id);
-        if (!base) return;
-        mapa.set(draft.id, { ...base, ...draft.payload, id: draft.id });
+        const payload = (draft.payload || {}) as ChecklistCampo;
+        if (!base && !Array.isArray(payload.itens)) return;
+        mapa.set(draft.id, {
+          ...(base || {}),
+          ...payload,
+          id: draft.id,
+          numero: payload.numero || base?.numero || 'CHK',
+          criadoEm: payload.criadoEm || base?.criadoEm || draft.localUpdatedAt,
+          atualizadoEm: payload.atualizadoEm || draft.localUpdatedAt,
+        } as ChecklistCampo);
       });
 
       const candidatos = Array.from(mapa.values());
