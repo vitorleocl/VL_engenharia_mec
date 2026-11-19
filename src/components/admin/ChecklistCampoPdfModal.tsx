@@ -19,6 +19,8 @@ import { DADOS_VL_PADRAO } from '../../lib/orcamentoTemplatePadrao';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+import { getBlob, ref as storageRef } from 'firebase/storage';
+import { storage } from '../../lib/firebase';
 
 interface ChecklistCampoPdfModalProps {
   checklist: ChecklistCampo;
@@ -88,20 +90,48 @@ async function carregarFotoParaPdf(url: string): Promise<{ dataUrl: string; larg
     return { dataUrl: url, ...(await carregarDimensoesImagem(url)) };
   }
   const origemAtual = window.location.origin;
-  const candidatos = url.startsWith('http')
-    ? [`${origemAtual}/api/proxy-image?url=${encodeURIComponent(url)}`, url]
-    : [url];
-  let ultimoErro: unknown = null;
-  for (const candidato of candidatos) {
-    try {
-      const resposta = await fetch(candidato, { mode: 'cors', credentials: 'omit' });
+  const ehUrlFirebaseStorage = /^https:\/\/(firebasestorage|storage)\.googleapis\.com\//i.test(url);
+
+  const fontes: { nome: string; obter: () => Promise<Blob> }[] = [];
+  if (ehUrlFirebaseStorage) {
+    // O SDK autenticado costuma funcionar mesmo quando o download direto é barrado por CORS.
+    fontes.push({
+      nome: 'sdk',
+      obter: () => getBlob(storageRef(storage, url)),
+    });
+  }
+  if (url.startsWith('http')) {
+    fontes.push({
+      nome: 'proxy',
+      obter: async () => {
+        const resposta = await fetch(`${origemAtual}/api/proxy-image?url=${encodeURIComponent(url)}`, {
+          mode: 'cors',
+          credentials: 'omit',
+        });
+        if (!resposta.ok) throw new Error(`Resposta ${resposta.status} ao carregar a foto.`);
+        return resposta.blob();
+      },
+    });
+  }
+  fontes.push({
+    nome: 'direto',
+    obter: async () => {
+      const resposta = await fetch(url, { mode: 'cors', credentials: 'omit' });
       if (!resposta.ok) throw new Error(`Resposta ${resposta.status} ao carregar a foto.`);
-      const blob = await resposta.blob();
+      return resposta.blob();
+    },
+  });
+
+  let ultimoErro: unknown = null;
+  for (const fonte of fontes) {
+    try {
+      const blob = await fonte.obter();
       if (!blob.type.startsWith('image/')) throw new Error('O arquivo da evidência não é uma imagem.');
       const dataUrl = await blobParaDataUrl(blob);
       return { dataUrl, ...(await carregarDimensoesImagem(dataUrl)) };
     } catch (error) {
       ultimoErro = error;
+      console.info(`[PDF] Falha ao carregar a foto pela via "${fonte.nome}".`, error);
     }
   }
   throw ultimoErro instanceof Error ? ultimoErro : new Error('Não foi possível carregar a foto da evidência.');
@@ -167,23 +197,32 @@ async function prepararImagemParaCaptura(image: HTMLImageElement): Promise<void>
 interface ImagemPreparada {
   imagem: HTMLImageElement;
   srcOriginal: string;
+  srcPreparado: string;
 }
 
 async function prepararImagensParaCaptura(element: HTMLElement): Promise<ImagemPreparada[]> {
   const preparadas: ImagemPreparada[] = [];
   for (const image of Array.from(element.querySelectorAll('img'))) {
+    // Fotos da seção de anexo são inseridas pelo jsPDF e não passam pelo html2canvas.
+    if (image.closest('[data-pdf-hide]')) continue;
     const srcOriginal = image.getAttribute('src') || image.src;
     await prepararImagemParaCaptura(image);
-    preparadas.push({ imagem: image, srcOriginal });
+    preparadas.push({
+      imagem: image,
+      srcOriginal,
+      srcPreparado: image.getAttribute('src') || image.src,
+    });
   }
   return preparadas;
 }
 
 /** No clone do html2canvas, troca cada <img> por um canvas com os pixels já carregados. */
 function substituirImagensNoClone(conteudo: HTMLElement, preparadas: ImagemPreparada[]): void {
+  const porSrc = new Map(preparadas.map(preparada => [preparada.srcPreparado, preparada]));
   const imagens = Array.from(conteudo.querySelectorAll('img'));
-  imagens.forEach((image, indice) => {
-    const original = preparadas[indice]?.imagem;
+  imagens.forEach(image => {
+    if (image.closest('[data-pdf-hide]')) return;
+    const original = porSrc.get(image.getAttribute('src') || image.src)?.imagem;
     if (!original?.naturalWidth || !original.naturalHeight) return;
     const caixa = image.getBoundingClientRect();
     const largura = Math.max(1, Math.round(caixa.width || original.naturalWidth));

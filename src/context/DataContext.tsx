@@ -25,6 +25,7 @@ import {
   enqueueSync,
   getAllDraftsOffline,
   getConflicts,
+  getDraftOffline,
   getPendingQueue,
   recordConflict,
   removeDraftOffline,
@@ -39,7 +40,8 @@ import { CATEGORIAS_LAUDOS_TAXONOMIA } from '../data/taxonomiaLaudos';
 import { incluirChecklistCaminhaoPipa, SERVICOS_LISTA, ServicoItem } from '../data/servicosCatalogo';
 import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
-import { db, auth } from '../lib/firebase';
+import { db, auth, storage } from '../lib/firebase';
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { removerPdfIndexedDb } from '../lib/pdfStorage';
 import { 
   doc, 
@@ -301,6 +303,65 @@ function normalizarChecklistsCampo(lista: ChecklistCampo[]): ChecklistCampo[] {
   });
 
   return Array.from(porId.values());
+}
+
+async function enviarDataUrlParaStorage(dataUrl: string, checklistId: string): Promise<string | null> {
+  try {
+    const resposta = await fetch(dataUrl);
+    const blob = await resposta.blob();
+    if (!blob.type.startsWith('image/')) return null;
+    const extensao = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const caminho = `checklists/${checklistId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`;
+    const referencia = storageRef(storage, caminho);
+    await uploadBytes(referencia, blob, { contentType: blob.type });
+    return await getDownloadURL(referencia);
+  } catch (erro) {
+    console.warn('[Checklist] Não foi possível enviar a foto para o Storage:', erro);
+    return null;
+  }
+}
+
+/**
+ * Converte fotos embutidas (data URL) em URLs do Storage antes de gravar no Firestore.
+ * Um checklist com várias fotos em base64 ultrapassa o limite de 1 MB por documento:
+ * a gravação falha, o registro fica apenas no aparelho onde foi criado e desktop e
+ * celular passam a exibir quantidades diferentes.
+ */
+async function compactarFotosChecklist(checklist: ChecklistCampo): Promise<ChecklistCampo> {
+  if (!checklist || !auth?.currentUser) return checklist;
+  const ehDataUrl = (valor?: string) => Boolean(valor && valor.startsWith('data:'));
+  const naoHaFotosEmbutidas =
+    !ehDataUrl(checklist.rubricaUrl) &&
+    !JSON.stringify([checklist.itens, checklist.itensExtras]).includes('"data:image');
+  if (naoHaFotosEmbutidas) return checklist;
+
+  const converter = async (url?: string): Promise<string | undefined> => {
+    if (!ehDataUrl(url)) return url;
+    const remota = await enviarDataUrlParaStorage(url as string, checklist.id || `chk-${Date.now()}`);
+    return remota || url;
+  };
+
+  const compactarItem = async (item: ChecklistCampo['itens'][number]): Promise<ChecklistCampo['itens'][number]> => {
+    const fotoUrl = await converter(item.fotoUrl);
+    const fotos = item.fotos?.length
+      ? await Promise.all(item.fotos.map(async foto => ({ ...foto, url: (await converter(foto.url)) || foto.url })))
+      : item.fotos;
+    const fotosUrls = item.fotosUrls?.length
+      ? await Promise.all(item.fotosUrls.map(async url => (await converter(url)) || url))
+      : item.fotosUrls;
+    const fotosVinculadas = item.fotosVinculadas?.length
+      ? await Promise.all(item.fotosVinculadas.map(async foto => ({ ...foto, url: (await converter(foto.url)) || foto.url })))
+      : item.fotosVinculadas;
+    return { ...item, fotoUrl, fotos, fotosUrls, fotosVinculadas };
+  };
+
+  const [itens, itensExtras, rubricaUrl] = await Promise.all([
+    Promise.all((checklist.itens || []).map(compactarItem)),
+    Promise.all((checklist.itensExtras || []).map(compactarItem)),
+    converter(checklist.rubricaUrl),
+  ]);
+
+  return { ...checklist, itens, itensExtras, rubricaUrl };
 }
 
 function incluirModelosPadraoAusentes(salvos: ChecklistModeloServico[]): ChecklistModeloServico[] {
@@ -714,6 +775,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
   const checklistsCampoRef = useRef<ChecklistCampo[]>([]);
+  const reconciliarChecklistsLocaisRef = useRef<((idsNuvem?: Set<string>) => Promise<void>) | null>(null);
   const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => {
     const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
     const loaded: ChecklistCampo[] = loadStorage('vl_checklists_campo', []);
@@ -970,8 +1032,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Checklists existentes apenas neste aparelho (sem sincronização) precisam subir
       // para a nuvem; caso contrário desktop e mobile exibem quantidades diferentes.
-      const reconciliarChecklistsLocais = async (idsNuvem: Set<string>) => {
-        if (!isHydratedRef.current) return;
+      const reconciliarChecklistsLocais = async (idsNuvemInformados?: Set<string>) => {
+        if (!isHydratedRef.current || !db || !auth?.currentUser) return;
+        let idsNuvem = idsNuvemInformados;
+        if (!idsNuvem) {
+          // Sem snapshot recente (por exemplo, nuvem vazia), consulta os IDs atuais.
+          try {
+            const snap = await getDocs(collection(db, 'checklistsCampo'));
+            idsNuvem = new Set(snap.docs.map(d => d.id));
+          } catch (erro) {
+            console.warn('[Sync] Não foi possível listar os checklists da nuvem:', erro);
+            return;
+          }
+        }
         const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
         const mapaLocal = new Map<string, ChecklistCampo>();
         checklistsCampoRef.current.forEach((chk) => {
@@ -981,10 +1054,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (chk?.id) mapaLocal.set(chk.id, chk);
         });
         // Rascunhos offline podem conter fotos e respostas que ainda não chegaram ao estado.
+        // O id do rascunho é o id do checklist; o payload guarda apenas os campos editáveis.
         const drafts = await getAllDraftsOffline();
         drafts.forEach((draft) => {
-          const id = draft.payload?.id;
-          if (draft.dirty && id?.startsWith('chk-')) mapaLocal.set(id, draft.payload);
+          if (!draft.dirty || !draft.id?.startsWith('chk-')) return;
+          const existente = mapaLocal.get(draft.id);
+          mapaLocal.set(draft.id, { ...(existente || {}), ...draft.payload, id: draft.id } as ChecklistCampo);
         });
         const fila = await getPendingQueue();
         const idsNaFila = new Set(fila.map((item) => item.checklistId));
@@ -1002,6 +1077,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (enfileirou) void sincronizarChecklistsOffline();
       };
+      reconciliarChecklistsLocaisRef.current = reconciliarChecklistsLocais;
 
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
         if (snapshot.metadata.fromCache && snapshot.empty) return;
@@ -1094,6 +1170,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       cancelado = true;
+      reconciliarChecklistsLocaisRef.current = null;
       unsubs.forEach(unsub => unsub());
     };
   }, [firebaseUser, currentUser?.role, currentUser?.uid]);
@@ -1105,6 +1182,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .then(data => {
         if (!data) {
           isHydratedRef.current = true;
+          void reconciliarChecklistsLocaisRef.current?.();
           return;
         }
 
@@ -1195,10 +1273,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         isHydratedRef.current = true;
+        void reconciliarChecklistsLocaisRef.current?.();
       })
       .catch(err => {
         console.warn('[Sync Servidor] Carregamento em segundo plano:', err);
         isHydratedRef.current = true;
+        void reconciliarChecklistsLocaisRef.current?.();
       });
   }, []);
 
@@ -2782,22 +2862,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             continue;
           }
 
+          // Compacta fotos embutidas antes de enviar para não estourar o limite do Firestore.
+          const payloadSincronizado = db && auth?.currentUser
+            ? await compactarFotosChecklist(item.payload)
+            : item.payload;
+
           // Envia apenas o item da fila; o servidor mescla por id sem depender do estado local.
           await fetch('/api/app-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ checklistsCampo: [item.payload] }),
+            body: JSON.stringify({ checklistsCampo: [payloadSincronizado] }),
           }).catch(() => undefined);
 
           if (db && auth?.currentUser) {
             if (isFirestoreWriteQuotaBlocked()) {
               break;
             }
-            await setDoc(doc(db, 'checklistsCampo', item.checklistId), item.payload, { merge: true });
+            await setDoc(doc(db, 'checklistsCampo', item.checklistId), payloadSincronizado, { merge: true });
           }
 
           await removeFromQueue(item.id);
-          await removeDraftOffline(item.checklistId);
+
+          // Não descarta edições salvas no aparelho depois que o item entrou na fila.
+          const rascunhoAtual = await getDraftOffline(item.checklistId);
+          const rascunhoMaisNovo = Boolean(
+            rascunhoAtual?.dirty &&
+            new Date(rascunhoAtual.localUpdatedAt).getTime() > new Date(item.enqueuedAt).getTime(),
+          );
+          if (!rascunhoMaisNovo) await removeDraftOffline(item.checklistId);
+
+          // Mantém o registro local com as URLs remotas para não voltar a enviar base64.
+          if (payloadSincronizado !== item.payload) {
+            setChecklistsCampo(prev => prev.map(chk => (
+              chk.id === item.checklistId && chk.atualizadoEm === item.payload.atualizadoEm
+                ? payloadSincronizado
+                : chk
+            )));
+          }
         } catch (err) {
           if (isQuotaExceededError(err)) {
             markFirestoreWriteQuotaBlocked();
@@ -2898,6 +2999,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return `${prefixo}${String(maxNum + 1).padStart(3, '0')}`;
   };
 
+  /**
+   * Reflete no estado local as URLs do Storage obtidas na compactação.
+   * Mantém o localStorage pequeno (evita estourar a cota do navegador) e faz a
+   * próxima sincronização já sair com as fotos em URL remota.
+   */
+  const aplicarFotosCompactadas = (original: ChecklistCampo, compactado: ChecklistCampo) => {
+    if (compactado === original) return;
+    setChecklistsCampo(prev => prev.map(chk => (
+      chk.id === original.id && chk.atualizadoEm === original.atualizadoEm ? compactado : chk
+    )));
+  };
+
   const adicionarChecklistCampo = (dados: Omit<ChecklistCampo, 'id' | 'numero' | 'criadoEm' | 'atualizadoEm'>): string => {
     const id = `chk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const numero = gerarNumeroChecklistCampo();
@@ -2927,11 +3040,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enqueuedAt: agora,
       }).then(() => atualizarContagemSync());
     } else if (db && auth?.currentUser) {
-      try {
-        setDoc(doc(db, 'checklistsCampo', id), novo).catch(err => {
+      void compactarFotosChecklist(novo)
+        .then(async payload => {
+          await setDoc(doc(db, 'checklistsCampo', id), payload);
+          aplicarFotosCompactadas(novo, payload);
+        })
+        .catch(err => {
           if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
-          enqueueSync({
+          return enqueueSync({
             id: `sync-${id}-${Date.now()}`,
             checklistId: id,
             action: 'create',
@@ -2939,9 +3056,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             enqueuedAt: agora,
           }).then(() => atualizarContagemSync());
         });
-      } catch (e) {
-        console.warn('Firestore write error:', e);
-      }
     }
     return id;
   };
@@ -2970,24 +3084,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enqueuedAt: agora,
       }).then(() => atualizarContagemSync());
     } else if (db && auth?.currentUser) {
-      try {
-        setDoc(doc(db, 'checklistsCampo', id), { ...dados, atualizadoEm: agora }, { merge: true }).catch(err => {
+      const completo: ChecklistCampo = atualizado
+        || ({ ...(dados as ChecklistCampo), id, atualizadoEm: agora } as ChecklistCampo);
+      void compactarFotosChecklist(completo)
+        .then(async payload => {
+          await setDoc(doc(db, 'checklistsCampo', id), payload, { merge: true });
+          aplicarFotosCompactadas(completo, payload);
+        })
+        .catch(err => {
           if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Sync Firestore checklistCampo (enfileirando offline):', err);
-          if (atualizado) {
-            enqueueSync({
-              id: `sync-${id}-${Date.now()}`,
-              checklistId: id,
-              action: 'update',
-              payload: atualizado,
-              baseUpdatedAt: existente?.atualizadoEm,
-              enqueuedAt: agora,
-            }).then(() => atualizarContagemSync());
-          }
+          return enqueueSync({
+            id: `sync-${id}-${Date.now()}`,
+            checklistId: id,
+            action: 'update',
+            payload: completo,
+            baseUpdatedAt: existente?.atualizadoEm,
+            enqueuedAt: agora,
+          }).then(() => atualizarContagemSync());
         });
-      } catch (e) {
-        console.warn('Firestore write error:', e);
-      }
     }
   };
 
@@ -3036,12 +3151,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enqueuedAt: agora,
       }).then(() => atualizarContagemSync());
     } else if (db && auth?.currentUser) {
-      try {
-        setDoc(doc(db, 'checklistsCampo', id), dadosFinais, { merge: true }).catch(err => {
+      const completo: ChecklistCampo | undefined = existente ? { ...existente, ...dadosFinais } : undefined;
+      void (completo ? compactarFotosChecklist(completo) : Promise.resolve(undefined))
+        .then(async payload => {
+          const dadosParaGravar = payload?.rubricaUrl
+            ? { ...dadosFinais, rubricaUrl: payload.rubricaUrl }
+            : dadosFinais;
+          await setDoc(doc(db, 'checklistsCampo', id), dadosParaGravar, { merge: true });
+          if (completo && payload) aplicarFotosCompactadas(completo, payload);
+        })
+        .catch(err => {
           if (isQuotaExceededError(err)) markFirestoreWriteQuotaBlocked();
           console.warn('Firestore sync err (enfileirando offline):', err);
           if (existente) {
-            enqueueSync({
+            return enqueueSync({
               id: `sync-${id}-${Date.now()}`,
               checklistId: id,
               action: 'finalize',
@@ -3051,9 +3174,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }).then(() => atualizarContagemSync());
           }
         });
-      } catch (e) {
-        console.warn('Firestore err:', e);
-      }
     }
   };
 
