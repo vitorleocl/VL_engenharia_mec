@@ -971,6 +971,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!draft.dirty || !Array.isArray(payload.itens) || payload.itens.length === 0) return;
           const id = `chk-recuperado-${draft.id.replace(/^draft-new-/, '')}`;
           const quando = draft.localUpdatedAt || new Date().toISOString();
+          console.warn('[Checklists] Recuperando rascunho de checklist novo:', {
+            draft: draft.id,
+            ativo: payload.ativoIdentificacao,
+            itens: payload.itens.length,
+            quando,
+          });
           mapa.set(id, {
             ...payload,
             id,
@@ -999,6 +1005,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       const candidatos = Array.from(mapa.values());
+      console.info('[Checklists] Recuperação local:', {
+        copiaIndexedDB: copia.length,
+        rascunhos: drafts.length,
+        fila: fila.length,
+        recuperados: candidatos.length,
+      });
       if (candidatos.length === 0) return;
 
       setChecklistsCampo(prev => {
