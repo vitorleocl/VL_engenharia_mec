@@ -1184,6 +1184,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // Exclusões feitas antes deste mecanismo existir ficaram apenas no aparelho.
+  // Publica os IDs já marcados como removidos para que os outros dispositivos
+  // também deixem de exibir e não os reenvie para a nuvem.
+  const publicarTombstonesLocais = useCallback(async () => {
+    if (!db || !auth?.currentUser || isFirestoreWriteQuotaBlocked()) return;
+    const locais: string[] = loadStorage('vl_checklists_removidos_ids', []);
+    if (locais.length === 0) return;
+    try {
+      await setDoc(
+        doc(db, 'configuracoes', 'checklistExclusoes'),
+        { ids: arrayUnion(...locais) },
+        { merge: true }
+      );
+    } catch (erro) {
+      console.warn('[Firestore] Falha ao publicar exclusões locais:', erro);
+    }
+  }, []);
+
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)
   useEffect(() => {
     // SÓ conecta listeners e sincroniza com o Firestore se houver usuário real autenticado no Firebase Auth E autorizado
@@ -1387,6 +1405,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[Firestore] Erro ao carregar categorias de ativos:', error);
       });
 
+      // Publica exclusões antigas (feitas antes do tombstone remoto existir).
+      void publicarTombstonesLocais();
+
       unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubExclusoesChecklist, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos);
 
       if (currentUser.role === 'master') {
@@ -1411,7 +1432,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       reconciliarChecklistsLocaisRef.current = null;
       unsubs.forEach(unsub => unsub());
     };
-  }, [firebaseUser, currentUser?.role, currentUser?.uid]);
+  }, [firebaseUser, currentUser?.role, currentUser?.uid, publicarTombstonesLocais]);
 
   // Sincronização com persistência do servidor (/api/app-data)
   useEffect(() => {
