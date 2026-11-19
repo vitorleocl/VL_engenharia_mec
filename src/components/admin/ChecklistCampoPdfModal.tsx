@@ -34,21 +34,27 @@ interface FotoChecklistPdf {
 }
 
 function obterFotosDoItem(item: ChecklistCampoItem): Omit<FotoChecklistPdf, 'numeroItem' | 'descricaoItem' | 'indice'>[] {
-  if (item.fotos?.length) {
-    return item.fotos.map((foto, indice) => ({
+  const fotos = (item.fotos || [])
+    .filter((foto) => Boolean(foto?.url))
+    .map((foto, indice) => ({
       url: foto.url,
       legenda: foto.legenda || foto.titulo || `Foto ${indice + 1}`,
     }));
-  }
-  if (item.fotosVinculadas?.length) {
-    return item.fotosVinculadas.map((foto, indice) => ({
+  if (fotos.length) return fotos;
+
+  const vinculadas = (item.fotosVinculadas || [])
+    .filter((foto) => Boolean(foto?.url))
+    .map((foto, indice) => ({
       url: foto.url,
       legenda: foto.descricao || `Foto ${foto.numeroFoto || indice + 1}`,
     }));
-  }
-  if (item.fotosUrls?.length) {
-    return item.fotosUrls.map((url, indice) => ({ url, legenda: `Foto ${indice + 1}` }));
-  }
+  if (vinculadas.length) return vinculadas;
+
+  const urls = (item.fotosUrls || [])
+    .filter((url) => Boolean(url))
+    .map((url, indice) => ({ url, legenda: `Foto ${indice + 1}` }));
+  if (urls.length) return urls;
+
   return item.fotoUrl ? [{ url: item.fotoUrl, legenda: item.fotoNome || 'Evidência fotográfica' }] : [];
 }
 
@@ -96,61 +102,88 @@ async function prepararImagemParaCaptura(image: HTMLImageElement): Promise<void>
   }
   // Fotos do Storage podem estar em outra origem; converte para data URL para evitar
   // que o canvas fique contaminado (tainted) e saia em branco no PDF.
-  if (/^https?:/i.test(image.src)) {
-    try {
-      const resposta = await fetch(image.src, { mode: 'cors', credentials: 'omit' });
-      if (resposta.ok) {
+  const origemAtual = window.location.origin;
+  const urlOriginal = image.src;
+  if (/^https?:/i.test(urlOriginal) && !urlOriginal.startsWith(origemAtual)) {
+    const candidatos = [
+      `${origemAtual}/api/proxy-image?url=${encodeURIComponent(urlOriginal)}`,
+      urlOriginal,
+    ];
+    for (const candidato of candidatos) {
+      try {
+        const resposta = await fetch(candidato, { mode: 'cors', credentials: 'omit' });
+        if (!resposta.ok) continue;
         const dataUrl = await blobParaDataUrl(await resposta.blob());
         await new Promise<void>((resolve, reject) => {
           image.onload = () => resolve();
-          image.onerror = () => reject(new Error(`Não foi possível recarregar a imagem ${image.alt || 'do documento'}.`));
+          image.onerror = () => {
+            image.src = urlOriginal;
+            reject(new Error(`Não foi possível recarregar a imagem ${image.alt || 'do documento'}.`));
+          };
           image.src = dataUrl;
         });
+        break;
+      } catch (error) {
+        console.info('Tentativa de conversão da imagem remota falhou; tentando alternativa.', error);
       }
-    } catch (error) {
-      console.info('Imagem remota mantida sem conversão para data URL.', error);
     }
   }
 }
 
-/** Troca <img> por <canvas> para que o html2canvas sempre copie os pixels da foto. */
-async function trocarImagensPorCanvas(element: HTMLElement) {
-  const trocas: { img: HTMLImageElement; canvas: HTMLCanvasElement }[] = [];
-  try {
-    for (const image of Array.from(element.querySelectorAll('img'))) {
-      await prepararImagemParaCaptura(image);
-      const caixa = image.getBoundingClientRect();
-      const largura = Math.max(1, Math.round(caixa.width));
-      const altura = Math.max(1, Math.round(caixa.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = largura * 2;
-      canvas.height = altura * 2;
-      const contexto = canvas.getContext('2d');
-      if (!contexto) continue;
-      contexto.fillStyle = '#ffffff';
-      contexto.fillRect(0, 0, canvas.width, canvas.height);
-      const escala = Math.min(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
-      const larguraDesenho = image.naturalWidth * escala;
-      const alturaDesenho = image.naturalHeight * escala;
-      contexto.drawImage(
-        image,
-        (canvas.width - larguraDesenho) / 2,
-        (canvas.height - alturaDesenho) / 2,
-        larguraDesenho,
-        alturaDesenho,
-      );
-      canvas.className = image.className;
-      canvas.style.display = image.style.display || 'block';
-      canvas.setAttribute('role', 'img');
-      canvas.setAttribute('aria-label', image.alt || 'Imagem do checklist');
-      image.replaceWith(canvas);
-      trocas.push({ img: image, canvas });
-    }
-    return trocas;
-  } catch (error) {
-    trocas.forEach(({ img, canvas }) => canvas.replaceWith(img));
-    throw error;
+interface ImagemPreparada {
+  imagem: HTMLImageElement;
+  srcOriginal: string;
+}
+
+async function prepararImagensParaCaptura(element: HTMLElement): Promise<ImagemPreparada[]> {
+  const preparadas: ImagemPreparada[] = [];
+  for (const image of Array.from(element.querySelectorAll('img'))) {
+    const srcOriginal = image.getAttribute('src') || image.src;
+    await prepararImagemParaCaptura(image);
+    preparadas.push({ imagem: image, srcOriginal });
   }
+  return preparadas;
+}
+
+/** No clone do html2canvas, troca cada <img> por um canvas com os pixels já carregados. */
+function substituirImagensNoClone(conteudo: HTMLElement, preparadas: ImagemPreparada[]): void {
+  const imagens = Array.from(conteudo.querySelectorAll('img'));
+  imagens.forEach((image, indice) => {
+    const original = preparadas[indice]?.imagem;
+    if (!original?.naturalWidth || !original.naturalHeight) return;
+    const caixa = image.getBoundingClientRect();
+    const largura = Math.max(1, Math.round(caixa.width || original.naturalWidth));
+    const altura = Math.max(1, Math.round(caixa.height || original.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = largura * 2;
+    canvas.height = altura * 2;
+    const contexto = canvas.getContext('2d');
+    if (!contexto) return;
+    contexto.fillStyle = '#ffffff';
+    contexto.fillRect(0, 0, canvas.width, canvas.height);
+    const escala = Math.min(canvas.width / original.naturalWidth, canvas.height / original.naturalHeight);
+    const larguraDesenho = original.naturalWidth * escala;
+    const alturaDesenho = original.naturalHeight * escala;
+    contexto.drawImage(
+      original,
+      (canvas.width - larguraDesenho) / 2,
+      (canvas.height - alturaDesenho) / 2,
+      larguraDesenho,
+      alturaDesenho,
+    );
+    try {
+      // Se a imagem remota não permitir CORS, o canvas fica contaminado e não pode
+      // ser exportado; nesse caso mantemos o <img> original.
+      contexto.getImageData(0, 0, 1, 1);
+    } catch {
+      return;
+    }
+    canvas.className = image.className;
+    canvas.style.display = image.style.display || 'block';
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', image.alt || 'Imagem do checklist');
+    image.replaceWith(canvas);
+  });
 }
 
 export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
@@ -217,7 +250,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     const element = printRef.current;
     let quebrasDeLinhaTabela: number[] = [];
     let alturaConteudoClonado = 0;
-    const trocasImagens = await trocarImagensPorCanvas(element);
+    const imagensPreparadas = await prepararImagensParaCaptura(element);
     let canvas: HTMLCanvasElement;
     try {
       canvas = await html2canvas(element, {
@@ -239,6 +272,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
           conteudo.style.border = '0';
           conteudo.style.borderRadius = '0';
           conteudo.style.boxShadow = 'none';
+          substituirImagensNoClone(conteudo, imagensPreparadas);
           const topoConteudo = conteudo.getBoundingClientRect().top;
           quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr, [data-pdf-break-before], [data-pdf-break-after]'))
             .flatMap((bloco) => {
@@ -254,7 +288,12 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
         },
       });
     } finally {
-      trocasImagens.forEach(({ img, canvas: canvasTrocado }) => canvasTrocado.replaceWith(img));
+      // Restaura as URLs originais das fotos convertidas temporariamente para data URL.
+      imagensPreparadas.forEach(({ imagem, srcOriginal }) => {
+        if (srcOriginal && !srcOriginal.startsWith('data:') && imagem.src.startsWith('data:')) {
+          imagem.src = srcOriginal;
+        }
+      });
     }
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });

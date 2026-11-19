@@ -23,6 +23,7 @@ import {
   OfflineSyncConflict,
   countPendingSyncItems,
   enqueueSync,
+  getAllDraftsOffline,
   getConflicts,
   getPendingQueue,
   recordConflict,
@@ -712,6 +713,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return loaded;
   });
   const [templates, setTemplates] = useState<LaudoTemplate[]>(() => loadStorage('vl_templates', TEMPLATES_INICIAIS));
+  const checklistsCampoRef = useRef<ChecklistCampo[]>([]);
   const [checklistsCampo, setChecklistsCampo] = useState<ChecklistCampo[]>(() => {
     const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
     const loaded: ChecklistCampo[] = loadStorage('vl_checklists_campo', []);
@@ -721,6 +723,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (limpos.length !== loaded.length) saveStorage('vl_checklists_campo', limpos);
     return limpos;
   });
+  checklistsCampoRef.current = checklistsCampo;
   const [checklistModelos, setChecklistModelos] = useState<ChecklistModeloServico[]>(() => {
     const modelos = incluirModelosPadraoAusentes(loadStorage('vl_checklist_modelos', CHECKLIST_MODELOS_PADRAO));
     saveStorage('vl_checklist_modelos', modelos);
@@ -970,11 +973,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const reconciliarChecklistsLocais = async (idsNuvem: Set<string>) => {
         if (!isHydratedRef.current) return;
         const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
-        const locais = normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', []));
+        const mapaLocal = new Map<string, ChecklistCampo>();
+        checklistsCampoRef.current.forEach((chk) => {
+          if (chk?.id) mapaLocal.set(chk.id, chk);
+        });
+        normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', [])).forEach((chk) => {
+          if (chk?.id) mapaLocal.set(chk.id, chk);
+        });
+        // Rascunhos offline podem conter fotos e respostas que ainda não chegaram ao estado.
+        const drafts = await getAllDraftsOffline();
+        drafts.forEach((draft) => {
+          const id = draft.payload?.id;
+          if (draft.dirty && id?.startsWith('chk-')) mapaLocal.set(id, draft.payload);
+        });
         const fila = await getPendingQueue();
         const idsNaFila = new Set(fila.map((item) => item.checklistId));
         let enfileirou = false;
-        for (const local of locais) {
+        for (const local of mapaLocal.values()) {
           if (!local?.id || idsNuvem.has(local.id) || idsNaFila.has(local.id) || removidos.has(local.id)) continue;
           await enqueueSync({
             id: `sync-${local.id}-${Date.now()}`,

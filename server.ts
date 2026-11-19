@@ -208,6 +208,33 @@ app.post("/api/app-data", (req, res) => {
   }
 });
 
+// Proxy same-origin para fotos do Firebase Storage: evita bloqueio de CORS
+// quando o PDF do checklist precisa copiar os pixels das imagens.
+app.get("/api/proxy-image", async (req, res) => {
+  try {
+    const url = String(req.query.url || "");
+    const permitido = /^https:\/\/(firebasestorage\.googleapis\.com|storage\.googleapis\.com)\//i.test(url);
+    if (!permitido) {
+      return res.status(400).json({ error: "URL de imagem não permitida." });
+    }
+    const resposta = await fetch(url);
+    if (!resposta.ok) {
+      return res.status(502).json({ error: "Não foi possível obter a imagem." });
+    }
+    const contentType = resposta.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      return res.status(415).json({ error: "Conteúdo não é uma imagem." });
+    }
+    const buffer = Buffer.from(await resposta.arrayBuffer());
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(buffer);
+  } catch (err: any) {
+    console.warn("Erro no proxy de imagem:", err);
+    return res.status(502).json({ error: "Falha ao carregar a imagem." });
+  }
+});
+
 app.delete("/api/orcamentos/:id", (req, res) => {
   try {
     const { id } = req.params;
