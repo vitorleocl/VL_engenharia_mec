@@ -11,6 +11,7 @@ import {
   X,
   ClipboardCheck,
   MessageCircle,
+  HardDriveDownload,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +38,7 @@ export const ChecklistCampoView: React.FC = () => {
     syncConflicts,
     sincronizandoOffline,
     sincronizarChecklistsOffline,
+    recuperarChecklistsDoAparelho,
     resolverConflitoChecklist,
     gerarOuAtualizarLaudoDeChecklist,
   } = useData();
@@ -58,6 +60,28 @@ export const ChecklistCampoView: React.FC = () => {
   const [modalModelosAberto, setModalModelosAberto] = useState(false);
   const [buscaTexto, setBuscaTexto] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'rascunho' | 'finalizado'>('todos');
+  const [recuperandoLocal, setRecuperandoLocal] = useState(false);
+  const [resultadoRecuperacao, setResultadoRecuperacao] = useState<{
+    copiaIndexedDB: number;
+    rascunhos: number;
+    fila: number;
+    recuperados: number;
+    ativos: string[];
+  } | null>(null);
+
+  const handleRecuperarDoAparelho = async () => {
+    setRecuperandoLocal(true);
+    try {
+      const resumo = await recuperarChecklistsDoAparelho();
+      setResultadoRecuperacao(resumo);
+      await sincronizarChecklistsOffline();
+    } catch (erro) {
+      console.error('[Checklists] Falha na recuperação local:', erro);
+      window.alert('Não foi possível ler o armazenamento deste aparelho.');
+    } finally {
+      setRecuperandoLocal(false);
+    }
+  };
 
   // Ordenar mais recentes primeiro e filtrar
   const checklistsFiltrados = useMemo(() => {
@@ -161,6 +185,20 @@ export const ChecklistCampoView: React.FC = () => {
             </span>
           </button>
 
+          {/* Recuperação de checklists salvos apenas neste aparelho */}
+          <button
+            type="button"
+            onClick={handleRecuperarDoAparelho}
+            disabled={recuperandoLocal}
+            title="Procurar checklists salvos neste aparelho (IndexedDB) e reenviar para a nuvem"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:border-[var(--adm-blue-soft)] transition cursor-pointer disabled:opacity-60"
+          >
+            {recuperandoLocal
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              : <HardDriveDownload className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Recuperar do aparelho</span>
+          </button>
+
           {/* Atalho Configurações de Modelos B4 */}
           <button
             type="button"
@@ -191,6 +229,51 @@ export const ChecklistCampoView: React.FC = () => {
           <span className="rounded-full bg-[var(--adm-card)] px-2 py-0.5 text-xs">{checklistsFiltrados.length}</span>
         </button>
       </nav>
+
+      {/* Checklists que existem só neste aparelho (localStorage estourado / sem rede) */}
+      {pendingSyncCount > 0 && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">
+              {pendingSyncCount} checklist(s) salvo(s) apenas neste aparelho
+            </p>
+            <p className="opacity-90">
+              Toque em <strong>Recuperar do aparelho</strong> para trazer o registro de volta à lista
+              e reenviá-lo para a nuvem. Não feche o navegador antes de concluir.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Resultado da busca no armazenamento local */}
+      {resultadoRecuperacao && (
+        <div className="rounded-xl border border-[var(--adm-blue-soft,#6ea1ff)]/40 bg-[var(--adm-card)] px-4 py-3 text-xs text-[var(--adm-text)] flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="font-bold">Busca no armazenamento deste aparelho</p>
+            <p className="text-[var(--adm-mut)]">
+              {resultadoRecuperacao.recuperados > 0
+                ? `${resultadoRecuperacao.recuperados} checklist(s) encontrado(s)${
+                    resultadoRecuperacao.ativos.length
+                      ? ` — ativos: ${resultadoRecuperacao.ativos.join(', ')}`
+                      : ''
+                  }.`
+                : 'Nenhum checklist adicional foi encontrado neste aparelho.'}
+            </p>
+            <p className="text-[var(--adm-mut)]">
+              Cópia local: {resultadoRecuperacao.copiaIndexedDB} · rascunhos: {resultadoRecuperacao.rascunhos} · fila de envio: {resultadoRecuperacao.fila}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setResultadoRecuperacao(null)}
+            className="p-1 rounded-lg text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-bg)] cursor-pointer"
+            title="Fechar aviso"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Botão Primário + Nova vistoria */}
       <button
