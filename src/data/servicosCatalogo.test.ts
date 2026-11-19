@@ -20,6 +20,7 @@ test('inclui o checklist sanitário de caminhão-pipa em catálogo persistido an
   assert.equal(subtipo?.nome, 'Laudo Técnico de Conformidade Sanitária de Caminhão-Pipa');
   assert.equal(subtipo?.checklistSugerido?.length, 32);
   assert.ok(subtipo?.checklistSugerido?.some((item) => item.startsWith('[A1] Plaqueta do fabricante')));
+  assert.ok(subtipo?.checklistSugerido?.some((item) => item.includes('capacidade nominal compatível com a capacidade do tanque.')));
   assert.ok(subtipo?.checklistSugerido?.some((item) => item.startsWith('[F4] Ponto de coleta de amostra')));
   assert.ok(!subtipo?.checklistSugerido?.some((item) => item.includes('cloro residual livre')));
   assert.equal(atualizado.find((item) => item.id === 'outro-servico')?.descricao, 'Mantido sem alterações');

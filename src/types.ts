@@ -757,6 +757,7 @@ export interface ChecklistModeloServico {
   secoesLaudoPadrao?: string[];
   itens: ChecklistModeloItemDef[];
   atualizadoEm?: string;
+  editadoManualmente?: boolean;
 }
 
 export interface PerigoApreciacaoRiscoNR12 {

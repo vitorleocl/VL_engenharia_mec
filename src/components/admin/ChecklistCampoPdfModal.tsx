@@ -76,6 +76,8 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   const gerarPdfBlob = async () => {
     if (!printRef.current) return;
     const element = printRef.current;
+    let quebrasDeLinhaTabela: number[] = [];
+    let alturaConteudoClonado = 0;
     await Promise.all(Array.from(element.querySelectorAll('img')).map((image) => {
       if (image.complete) return Promise.resolve();
       return new Promise<void>((resolve) => {
@@ -95,14 +97,19 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
         documentClone.querySelectorAll<HTMLElement>('[data-pdf-hide]').forEach((node) => {
           node.style.display = 'none';
         });
-        documentClone.querySelectorAll<HTMLElement>('[data-pdf-document]').forEach((node) => {
-          node.style.width = '794px';
-          node.style.maxWidth = '794px';
-          node.style.padding = '34px';
-          node.style.border = '0';
-          node.style.borderRadius = '0';
-          node.style.boxShadow = 'none';
-        });
+        const conteudo = documentClone.querySelector<HTMLElement>('[data-pdf-document]');
+        if (!conteudo) return;
+        conteudo.style.width = '794px';
+        conteudo.style.maxWidth = '794px';
+        conteudo.style.padding = '34px';
+        conteudo.style.border = '0';
+        conteudo.style.borderRadius = '0';
+        conteudo.style.boxShadow = 'none';
+        const topoConteudo = conteudo.getBoundingClientRect().top;
+        quebrasDeLinhaTabela = Array.from(conteudo.querySelectorAll('tbody tr'))
+          .map((linha) => linha.getBoundingClientRect().bottom - topoConteudo)
+          .filter((posicao) => posicao > 0);
+        alturaConteudoClonado = conteudo.getBoundingClientRect().height;
       },
     });
 
@@ -110,15 +117,28 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 8;
+    const contentTop = 12;
     const footerSpace = 14;
     const contentWidth = pageWidth - margin * 2;
-    const contentHeight = pageHeight - margin - footerSpace;
+    const contentHeight = pageHeight - contentTop - footerSpace;
     const sliceHeight = Math.floor((contentHeight * canvas.width) / contentWidth);
+    const escalaVertical = alturaConteudoClonado > 0
+      ? canvas.height / alturaConteudoClonado
+      : canvas.width / Math.max(element.scrollWidth, 794);
     let y = 0;
     let page = 0;
 
     while (y < canvas.height) {
-      const currentHeight = Math.min(sliceHeight, canvas.height - y);
+      let currentHeight = Math.min(sliceHeight, canvas.height - y);
+      if (y + currentHeight < canvas.height) {
+        const limitesDeLinha = quebrasDeLinhaTabela
+          .map((posicao) => Math.round(posicao * escalaVertical))
+          .filter((posicao) => posicao > y + sliceHeight * 0.4 && posicao <= y + sliceHeight);
+        if (limitesDeLinha.length > 0) {
+          currentHeight = Math.max(...limitesDeLinha) - y;
+        }
+      }
+      if (currentHeight <= 0) throw new Error('Não foi possível separar os itens entre as páginas do PDF.');
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
       pageCanvas.height = currentHeight;
@@ -130,7 +150,12 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
 
       if (page > 0) pdf.addPage();
       const heightMm = (currentHeight * contentWidth) / canvas.width;
-      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, contentWidth, heightMm);
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, contentTop, contentWidth, heightMm);
+      if (page > 0) {
+        pdf.setFontSize(8);
+        pdf.setTextColor(71, 85, 105);
+        pdf.text(`Checklist de Campo ${checklist.numero} · continuação`, margin, 8);
+      }
       pdf.setDrawColor(220, 226, 234);
       pdf.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
       pdf.setFontSize(7);

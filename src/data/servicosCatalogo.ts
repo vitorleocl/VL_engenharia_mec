@@ -467,7 +467,7 @@ const SERVICOS_LISTA_BASE: ServicoItem[] = [
           '[S3] EPIs da equipe: capacete, botina antiderrapante, luvas e óculos; usar cinturão paraquedista e talabarte quando aplicável.',
           '[S4] Veículo imobilizado: rodas calçadas e motor desligado durante a vistoria.',
           '[S5] Método de inspeção interna registrado: indicar se houve entrada no tanque ou avaliação visual realizada somente pela boca de visita.',
-          '[A1] Plaqueta do fabricante: metálica e legível, com fabricante, ano, número de série e capacidade nominal compatível com 20 m³.',
+          '[A1] Plaqueta do fabricante: metálica e legível, com fabricante, ano, número de série e capacidade nominal compatível com a capacidade do tanque.',
           '[A2] Documentos do veículo e do tanque: placa, chassi e número de série conferem com os dados registrados no laudo.',
           '[A3] Higienização e desinfecção: registro da última limpeza disponível, datado e dentro do prazo exigido pela Vigilância Sanitária local.',
           '[A4] Uso exclusivo para água potável: declaração do proprietário e ausência de indícios de transporte de outras cargas.',

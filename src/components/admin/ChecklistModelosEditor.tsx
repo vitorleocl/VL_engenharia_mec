@@ -87,7 +87,7 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
     const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
     const idsCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
     modelosLocais.forEach((modelo) => {
-      if (!idsCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+      if (idsCatalogo.has(modelo.id) || !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
         unicos.set(modelo.id, modelo);
       }
     });
@@ -106,7 +106,8 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
     const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
     const idsCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
     checklistModelos.forEach((modelo) => {
-      if (!idsCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+      if ((idsCatalogo.has(modelo.id) && modelo.editadoManualmente)
+        || (!idsCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id))) {
         unicos.set(modelo.id, modelo);
       }
     });
@@ -124,8 +125,10 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
     setModelosLocais((prev) => {
       const existe = prev.some((modelo) => modelo.id === modeloAtivo.id);
       return existe
-        ? prev.map((modelo) => (modelo.id === modeloAtivo.id ? { ...modelo, ...patch } : modelo))
-        : [...prev, { ...modeloAtivo, ...patch }];
+        ? prev.map((modelo) => (modelo.id === modeloAtivo.id
+          ? { ...modelo, ...patch, editadoManualmente: true }
+          : modelo))
+        : [...prev, { ...modeloAtivo, ...patch, editadoManualmente: true }];
     });
   };
 

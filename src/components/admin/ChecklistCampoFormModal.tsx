@@ -181,7 +181,9 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     const idsModelosCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
     // Os roteiros do catálogo Markdown substituem por completo as versões antigas correspondentes.
     modelosBase.forEach((modelo) => {
-      if (!idsModelosCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+      if (idsModelosCatalogo.has(modelo.id) && modelo.editadoManualmente) {
+        unicos.set(modelo.id, modelo);
+      } else if (!idsModelosCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
         unicos.set(modelo.id, modelo);
       }
     });
