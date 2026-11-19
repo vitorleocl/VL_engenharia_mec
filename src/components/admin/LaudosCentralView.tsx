@@ -349,7 +349,15 @@ export const LaudosCentralView: React.FC = () => {
         ];
 
     // Gerar checklist a partir do modelo pré-pronto
-    const checklistModelo = ehPrePreenchido && activeSubtipo.checklistSugerido
+    const checklistModelo = ehPrePreenchido && activeSubtipo.checklistDetalhado?.length
+      ? activeSubtipo.checklistDetalhado.map((item, idx) => ({
+          id: `ck-${idx + 1}`,
+          descricao: `${item.numero} · ${item.item}`,
+          criterioConformidade: item.criterio,
+          status: 'conforme' as const,
+          observacao: 'Conforme requisitos técnicos verificados in loco e ensaios operacionais de campo.'
+        }))
+      : ehPrePreenchido && activeSubtipo.checklistSugerido
       ? activeSubtipo.checklistSugerido.map((itemDesc, idx) => ({
           id: `ck-${idx + 1}`,
           descricao: itemDesc,

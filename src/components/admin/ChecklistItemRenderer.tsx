@@ -208,6 +208,12 @@ export const ChecklistItemRenderer: React.FC<ChecklistItemRendererProps> = ({
             <p className="text-sm font-semibold text-[var(--adm-text)] leading-snug">
               {item.descricao}
             </p>
+            {(item.criterioConformidade || item.criterioInspecao) && (
+              <p className="mt-1 text-xs leading-relaxed text-[var(--adm-muted)]">
+                <span className="font-semibold">Critério:</span>{' '}
+                {item.criterioConformidade || item.criterioInspecao}
+              </p>
+            )}
           </div>
         </div>
 

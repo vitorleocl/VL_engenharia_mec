@@ -714,6 +714,7 @@ export interface ChecklistCampoItem {
   campo?: string;
   grupoInspecao?: string;
   criterioInspecao?: string;
+  criterioConformidade?: string;
   status: ChecklistCampoItemStatus;
   fotoUrl?: string;
   fotoNome?: string;
@@ -740,6 +741,7 @@ export interface ChecklistModeloItemDef {
   secaoLaudo: string;
   tipoResposta?: TipoRespostaChecklist;
   unidade?: string;
+  criterioConformidade?: string;
   metodoVerificacao?: 'visual' | 'dimensional' | 'end' | 'funcional' | 'documental' | 'instrumental';
   criticidade?: ChecklistCriticidade;
   impeditivo?: boolean;

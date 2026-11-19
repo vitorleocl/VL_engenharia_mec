@@ -41,6 +41,20 @@ import {
 
 export const MODELOS_CHECKLIST_SERVICO = CHECKLIST_MODELOS_PADRAO;
 
+const MODELOS_LEGADOS_SUBSTITUIDOS = new Set([
+  'nr11',
+  'nr12',
+  'nr13',
+  'pmoc',
+  'linha-amarela',
+  'munck-guindaste',
+  'vasos-compressores',
+  'caldeiras',
+  'tubulacoes-tanques',
+  'redes-gas',
+  'incendio-hidromecanico',
+]);
+
 interface ChecklistCampoFormModalProps {
   checklistParaEditar?: ChecklistCampo | null;
   onClose: () => void;
@@ -54,19 +68,18 @@ function inferirModeloIdPorChecklist(
   if (!chk) return modelos[0]?.id || 'nr11';
   if (chk.modeloId && modelos.some((m) => m.id === chk.modeloId)) return chk.modeloId;
   const ref = `${chk.tipoLaudoId || ''} ${chk.tipoLaudoNome || ''} ${chk.categoriaLaudo || ''}`.toLowerCase();
-  if (ref.includes('nr12') || ref.includes('nr-12') || ref.includes('máquina') || ref.includes('prensa')) return 'nr12';
-  if (ref.includes('nr13') || ref.includes('nr-13') || ref.includes('vaso') || ref.includes('caldeira')) return 'nr13';
-  if (ref.includes('pmoc') || ref.includes('clima') || ref.includes('refrig')) return 'pmoc';
+  if (ref.includes('nr12') || ref.includes('nr-12') || ref.includes('máquina') || ref.includes('prensa')) return 'servico-nr12-projetos-nr12-hrn';
+  if (ref.includes('caldeira')) return 'servico-nr13-caldeiras-nr13-cald-periodica';
+  if (ref.includes('nr13') || ref.includes('nr-13') || ref.includes('vaso') || ref.includes('compressor')) return 'servico-nr13-vasos-compressores-nr13-vp-inspecao-seguranca';
+  if (ref.includes('pmoc') || ref.includes('clima') || ref.includes('refrig')) return 'servico-pmoc-hvac-pmoc-plano-operacao';
   if (ref.includes('fft') || ref.includes('vibra')) return 'fft';
-  if (ref.includes('linha-amarela') || ref.includes('escavadeira') || ref.includes('pá-carregadeira')) return 'linha-amarela';
-  if (ref.includes('munck') || ref.includes('guindaste') || ref.includes('içamento')) return 'munck-guindaste';
-  if (ref.includes('caldeira')) return 'caldeiras';
-  if (ref.includes('vaso') || ref.includes('compressor')) return 'vasos-compressores';
-  if (ref.includes('tubulação') || ref.includes('tanque')) return 'tubulacoes-tanques';
-  if (ref.includes('gás') || ref.includes('glp') || ref.includes('gn')) return 'redes-gas';
-  if (ref.includes('incêndio') || ref.includes('hidrante') || ref.includes('sprinkler')) return 'incendio-hidromecanico';
+  if (ref.includes('linha-amarela') || ref.includes('escavadeira') || ref.includes('pá-carregadeira')) return 'servico-maquinas-pesadas-maq-integridade';
+  if (ref.includes('munck') || ref.includes('guindaste') || ref.includes('içamento')) return 'servico-munck-guindastes-munck-liberacao';
+  if (ref.includes('tubulação') || ref.includes('tanque')) return 'servico-nr13-tubulacoes-tanques-nr13-tub-inspecao-espessura';
+  if (ref.includes('gás') || ref.includes('glp') || ref.includes('gn')) return 'servico-gas-combustivel-glp-gn-gas-abrigos-centrais-glp';
+  if (ref.includes('incêndio') || ref.includes('hidrante') || ref.includes('sprinkler')) return 'servico-combate-incendio-cbm-incendio-inspecao-sistemas';
   if (ref.includes('pcm') || ref.includes('utilidade') || ref.includes('gerador')) return 'pcm-utilidades';
-  if (ref.includes('nr11') || ref.includes('nr-11') || ref.includes('munck') || ref.includes('guindaste')) return 'nr11';
+  if (ref.includes('nr11') || ref.includes('nr-11')) return 'servico-munck-guindastes-munck-liberacao';
   return modelos[0]?.id || 'nr11';
 }
 
@@ -82,7 +95,8 @@ function construirItensDeModelo(modelo: ChecklistModeloServico | undefined): Che
     observacao: '',
     tipoResposta: it.tipoResposta || 'conformidade',
     unidade: it.unidade,
-    criterioInspecao: it.texto,
+    criterioInspecao: it.criterioConformidade,
+    criterioConformidade: it.criterioConformidade,
     criticidade: it.criticidade || 'media',
     impeditivo: it.impeditivo || false,
     fotoObrigatoria: it.fotoObrigatoria || false,
@@ -131,25 +145,31 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
         const idSubtipo = (subtipo.id || subtipo.nome || `subtipo-${subtipoIndex}`)
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
         const secoes = subtipo.secoesSugeridas || [];
+        const itensNormalizados = subtipo.checklistDetalhado
+          ? subtipo.checklistDetalhado.map((item) => ({
+              numero: item.numero,
+              texto: item.item,
+              criterioConformidade: item.criterio,
+            }))
+          : itensChecklist.map((texto, index) => ({
+              numero: texto.match(/^\[([A-Z0-9.]+)\]/)?.[1] || `${index + 1}`,
+              texto: texto.replace(/^\[[A-Z0-9.]+\]\s*/, ''),
+              criterioConformidade: undefined as string | undefined,
+            }));
         return [{
           id: `servico-${idServico}-${idSubtipo}`,
           nome: subtipo.nome,
           subtitulo: servico.nome,
           norma: subtipo.normaRef || servico.norma,
           secoesLaudoPadrao: secoes,
-          itens: itensChecklist.map((texto, index) => ({
+          itens: itensNormalizados.map((item, index) => ({
             id: `servico-${idSubtipo}-${index + 1}`,
-            numero: texto.match(/^\[([A-Z]\d+)\]/)?.[1] || `${index + 1}`,
-            texto: texto.replace(/^\[[A-Z]\d+\]\s*/, ''),
+            numero: item.numero,
+            texto: item.texto,
+            criterioConformidade: item.criterioConformidade,
             norma: subtipo.normaRef || servico.norma,
-            secaoLaudo: (() => {
-              const codigo = texto.match(/^\[([A-Z]\d+)\]/)?.[1] || '';
-              const indiceSecao = codigo.startsWith('S')
-                ? 0
-                : codigo.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-              return secoes[indiceSecao] || secoes[0] || 'Verificações Técnicas';
-            })(),
-            ...(texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
+            secaoLaudo: secoes[0] || 'Verificações Técnicas',
+            ...((item.texto || '').toLocaleLowerCase('pt-BR').includes('cloro residual livre')
               ? { tipoResposta: 'medida' as const, unidade: 'mg/L', metodoVerificacao: 'instrumental' as const }
               : {}),
           })),
@@ -158,11 +178,12 @@ export const ChecklistCampoFormModal: React.FC<ChecklistCampoFormModalProps> = (
     );
     const unicos = new Map<string, ChecklistModeloServico>();
     modelosDoCatalogo.forEach(modelo => unicos.set(modelo.id, modelo));
-    // Modelos configurados pelo usuário têm precedência sobre os valores sugeridos do catálogo.
+    const idsModelosCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
+    // Os roteiros do catálogo Markdown substituem por completo as versões antigas correspondentes.
     modelosBase.forEach((modelo) => {
-      const legadoCaminhaoPipa = modelo.id.includes('laudo-conformidade-sanitaria-caminhao-pipa')
-        && modelo.itens.length === 14;
-      if (!legadoCaminhaoPipa) unicos.set(modelo.id, modelo);
+      if (!idsModelosCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+        unicos.set(modelo.id, modelo);
+      }
     });
     return Array.from(unicos.values());
   }, [checklistModelos, servicosCatalogo]);

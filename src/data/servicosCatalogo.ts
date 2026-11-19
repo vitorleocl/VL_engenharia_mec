@@ -1,3 +1,11 @@
+import { CHECKLISTS_CATALOGO_MARKDOWN } from './checklistsCatalogoMarkdown';
+
+export interface ChecklistCatalogoItem {
+  numero: string;
+  item: string;
+  criterio: string;
+}
+
 export interface SubtipoServico {
   id?: string;
   nome: string;
@@ -5,6 +13,7 @@ export interface SubtipoServico {
   detalhe: string;
   checklistSugerido?: string[];
   secoesSugeridas?: string[];
+  checklistDetalhado?: ChecklistCatalogoItem[];
 }
 
 export interface ServicoItem {
@@ -15,7 +24,7 @@ export interface ServicoItem {
   subtipos: SubtipoServico[];
 }
 
-export const SERVICOS_LISTA: ServicoItem[] = [
+const SERVICOS_LISTA_BASE: ServicoItem[] = [
   {
     id: 'combate-incendio-cbm',
     nome: 'Sistemas de Combate a Incêndio e CBM',
@@ -1326,22 +1335,46 @@ export const SERVICOS_LISTA: ServicoItem[] = [
   }
 ];
 
+function aplicarChecklistsMarkdown(servicos: ServicoItem[]): ServicoItem[] {
+  return servicos.map((servico) => ({
+    ...servico,
+    subtipos: servico.subtipos.map((subtipo) => {
+      const roteiro = subtipo.id ? CHECKLISTS_CATALOGO_MARKDOWN[subtipo.id] : undefined;
+      if (!roteiro) return subtipo;
+      const checklistDetalhado = roteiro.items.map(({ number, item, criterion }) => ({
+        numero: number,
+        item,
+        criterio: criterion,
+      }));
+      return {
+        ...subtipo,
+        checklistDetalhado,
+        checklistSugerido: checklistDetalhado.map(({ numero, item }) => `[${numero}] ${item}`),
+        secoesSugeridas: [roteiro.title],
+      };
+    }),
+  }));
+}
+
+export const SERVICOS_LISTA: ServicoItem[] = aplicarChecklistsMarkdown(SERVICOS_LISTA_BASE);
+
 /**
  * Mantém o checklist de caminhão-pipa disponível também em catálogos antigos
  * já persistidos no navegador/Firestore, sem substituir os demais serviços.
  */
 export function incluirChecklistCaminhaoPipa(servicos: ServicoItem[]): ServicoItem[] {
+  const catalogoAtualizado = aplicarChecklistsMarkdown(servicos);
   const servicoPadrao = SERVICOS_LISTA.find((servico) => servico.id === 'integridade-implementos-frota');
   const subtipoPadrao = servicoPadrao?.subtipos.find((subtipo) => subtipo.id === 'laudo-conformidade-sanitaria-caminhao-pipa');
-  if (!servicoPadrao || !subtipoPadrao) return servicos;
+  if (!servicoPadrao || !subtipoPadrao) return catalogoAtualizado;
 
   const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const indiceServico = servicos.findIndex((servico) =>
+  const indiceServico = catalogoAtualizado.findIndex((servico) =>
     servico.id === servicoPadrao.id || normalizar(servico.nome) === normalizar(servicoPadrao.nome),
   );
-  if (indiceServico < 0) return [...servicos, servicoPadrao];
+  if (indiceServico < 0) return [...catalogoAtualizado, servicoPadrao];
 
-  return servicos.map((servico, index) => {
+  return catalogoAtualizado.map((servico, index) => {
     if (index !== indiceServico) return servico;
     const subtipos = Array.isArray(servico.subtipos) ? servico.subtipos : [];
     const indiceSubtipo = subtipos.findIndex((subtipo) =>
@@ -1358,6 +1391,7 @@ export function incluirChecklistCaminhaoPipa(servicos: ServicoItem[]): ServicoIt
             detalhe: subtipoPadrao.detalhe,
             checklistSugerido: subtipoPadrao.checklistSugerido,
             secoesSugeridas: subtipoPadrao.secoesSugeridas,
+            checklistDetalhado: subtipoPadrao.checklistDetalhado,
           }
         : subtipo),
     };

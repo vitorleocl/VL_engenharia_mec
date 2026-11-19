@@ -20,6 +20,12 @@ import { useData } from '../../context/DataContext';
 import { ChecklistModeloItemDef, ChecklistModeloServico } from '../../types';
 import { analisarImportacaoChecklistCsv, baixarModeloChecklistCsv } from '../../lib/checklistModelosCsv';
 
+const MODELOS_LEGADOS_SUBSTITUIDOS = new Set([
+  'nr11', 'nr12', 'nr13', 'pmoc', 'linha-amarela', 'munck-guindaste',
+  'vasos-compressores', 'caldeiras', 'tubulacoes-tanques', 'redes-gas',
+  'incendio-hidromecanico',
+]);
+
 interface ChecklistModelosEditorProps {
   onSaved?: () => void;
 }
@@ -45,25 +51,31 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
         const idServico = slug(servico.id || servico.nome || `servico-${servicoIndex}`);
         const idSubtipo = slug(subtipo.id || subtipo.nome || `subtipo-${subtipoIndex}`);
         const secoes = subtipo.secoesSugeridas || [];
+        const itensNormalizados = subtipo.checklistDetalhado
+          ? subtipo.checklistDetalhado.map((item) => ({
+              numero: item.numero,
+              texto: item.item,
+              criterioConformidade: item.criterio,
+            }))
+          : itens.map((texto, index) => ({
+              numero: texto.match(/^\[([A-Z0-9.]+)\]/)?.[1] || `${index + 1}`,
+              texto: texto.replace(/^\[[A-Z0-9.]+\]\s*/, ''),
+              criterioConformidade: undefined as string | undefined,
+            }));
         return [{
           id: `servico-${idServico}-${idSubtipo}`,
           nome: subtipo.nome,
           subtitulo: servico.nome,
           norma: subtipo.normaRef || servico.norma,
           secoesLaudoPadrao: secoes,
-          itens: itens.map((texto, index) => ({
+          itens: itensNormalizados.map((item, index) => ({
             id: `servico-${idSubtipo}-${index + 1}`,
-            numero: texto.match(/^\[([A-Z]\d+)\]/)?.[1] || `${index + 1}`,
-            texto: texto.replace(/^\[[A-Z]\d+\]\s*/, ''),
+            numero: item.numero,
+            texto: item.texto,
+            criterioConformidade: item.criterioConformidade,
             norma: subtipo.normaRef || servico.norma,
-            secaoLaudo: (() => {
-              const codigo = texto.match(/^\[([A-Z]\d+)\]/)?.[1] || '';
-              const indiceSecao = codigo.startsWith('S')
-                ? 0
-                : codigo.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-              return secoes[indiceSecao] || secoes[0] || 'Verificações Técnicas';
-            })(),
-            ...(texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
+            secaoLaudo: secoes[0] || 'Verificações Técnicas',
+            ...(item.texto.toLocaleLowerCase('pt-BR').includes('cloro residual livre')
               ? { tipoResposta: 'medida' as const, unidade: 'mg/L', metodoVerificacao: 'instrumental' as const }
               : {}),
           })),
@@ -73,7 +85,12 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
 
   const modelosDisponiveis = useMemo(() => {
     const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
-    modelosLocais.forEach((modelo) => unicos.set(modelo.id, modelo));
+    const idsCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
+    modelosLocais.forEach((modelo) => {
+      if (!idsCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+        unicos.set(modelo.id, modelo);
+      }
+    });
     return Array.from(unicos.values());
   }, [modelosDoCatalogo, modelosLocais]);
   const modelosAgrupados = useMemo(() => {
@@ -87,10 +104,11 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
 
   useEffect(() => {
     const unicos = new Map(modelosDoCatalogo.map((modelo) => [modelo.id, modelo]));
+    const idsCatalogo = new Set(modelosDoCatalogo.map((modelo) => modelo.id));
     checklistModelos.forEach((modelo) => {
-      const legadoCaminhaoPipa = modelo.id.includes('laudo-conformidade-sanitaria-caminhao-pipa')
-        && modelo.itens.length === 14;
-      if (!legadoCaminhaoPipa) unicos.set(modelo.id, modelo);
+      if (!idsCatalogo.has(modelo.id) && !MODELOS_LEGADOS_SUBSTITUIDOS.has(modelo.id)) {
+        unicos.set(modelo.id, modelo);
+      }
     });
     const modelosAtualizados = Array.from(unicos.values());
     setModelosLocais(modelosAtualizados);
@@ -402,7 +420,14 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
                     <span className="shrink-0 min-w-9 h-8 px-1.5 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] font-mono text-xs font-bold text-[var(--adm-text)] flex items-center justify-center">
                       {item.numero}
                     </span>
-                    <p className="flex-1 min-w-0 text-sm font-medium leading-snug text-[var(--adm-text)]">{item.texto}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-snug text-[var(--adm-text)]">{item.texto}</p>
+                      {item.criterioConformidade && (
+                        <p className="mt-1 text-xs leading-relaxed text-[var(--adm-mut)]">
+                          Conforme quando: {item.criterioConformidade}
+                        </p>
+                      )}
+                    </div>
                     <div className="flex shrink-0 -mr-1 -mt-1">
                       <button
                         type="button"
@@ -429,11 +454,12 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
                     <details className="group mt-1.5">
                       <summary className="list-none cursor-pointer min-h-9 flex items-center gap-1 text-xs text-[var(--adm-mut)]">
                         <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
-                        Detalhes (norma e seção do laudo)
+                         Detalhes do critério
                       </summary>
                       <div className="mt-1 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] p-2.5 text-xs space-y-1.5">
                         <p><span className="text-[var(--adm-mut)]">Norma:</span> <span className="font-mono">{item.norma}</span></p>
                         <p><span className="text-[var(--adm-mut)]">Seção do laudo:</span> {item.secaoLaudo}</p>
+                        {item.criterioConformidade && <p><span className="text-[var(--adm-mut)]">Conforme quando:</span> {item.criterioConformidade}</p>}
                       </div>
                     </details>
                   )}
@@ -447,6 +473,10 @@ export const ChecklistModelosEditor: React.FC<ChecklistModelosEditorProps> = ({ 
                       <label className="sm:col-span-2 text-[11px] font-semibold text-[var(--adm-mut)]">
                         Texto do critério
                         <textarea rows={3} value={item.texto} onChange={(e) => atualizarItem(item.id, { texto: e.target.value })} className="mt-1 w-full min-h-20 px-3 py-2.5 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)] resize-y" />
+                      </label>
+                      <label className="sm:col-span-2 text-[11px] font-semibold text-[var(--adm-mut)]">
+                        Critério de conformidade
+                        <textarea rows={2} value={item.criterioConformidade || ''} onChange={(e) => atualizarItem(item.id, { criterioConformidade: e.target.value })} className="mt-1 w-full min-h-16 px-3 py-2.5 rounded-lg bg-[var(--adm-card)] border border-[var(--adm-line)] text-sm text-[var(--adm-text)] resize-y" />
                       </label>
                       <label className="text-[11px] font-semibold text-[var(--adm-mut)]">
                         Norma

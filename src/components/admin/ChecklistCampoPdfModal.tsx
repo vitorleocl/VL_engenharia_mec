@@ -18,7 +18,7 @@ import { ChecklistCampo } from '../../types';
 import { DADOS_VL_PADRAO } from '../../lib/orcamentoTemplatePadrao';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 interface ChecklistCampoPdfModalProps {
   checklist: ChecklistCampo;
@@ -81,15 +81,29 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
       return new Promise<void>((resolve) => {
         image.onload = () => resolve();
         image.onerror = () => resolve();
+        window.setTimeout(resolve, 10_000);
       });
     }));
     const canvas = await html2canvas(element, {
-      scale: 1.5,
+      scale: 1.35,
       useCORS: true,
       allowTaint: false,
       logging: false,
       backgroundColor: '#ffffff',
       windowWidth: Math.max(element.scrollWidth, 794),
+      onclone: (documentClone) => {
+        documentClone.querySelectorAll<HTMLElement>('[data-pdf-hide]').forEach((node) => {
+          node.style.display = 'none';
+        });
+        documentClone.querySelectorAll<HTMLElement>('[data-pdf-document]').forEach((node) => {
+          node.style.width = '794px';
+          node.style.maxWidth = '794px';
+          node.style.padding = '34px';
+          node.style.border = '0';
+          node.style.borderRadius = '0';
+          node.style.boxShadow = 'none';
+        });
+      },
     });
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
@@ -151,7 +165,9 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
       window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      window.alert('Não foi possível gerar o PDF. Verifique se as fotos e a rubrica foram carregadas e tente novamente.');
+      const detalhe = error instanceof Error ? error.message : String(error);
+      console.error('Detalhe da falha ao gerar PDF:', detalhe);
+      window.alert(`Não foi possível gerar o PDF. ${detalhe || 'Confira a conexão e tente novamente.'}`);
     } finally {
       setGerandoPdf(false);
     }
@@ -220,20 +236,29 @@ Atenciosamente,
 VL Engenharia · Inspeções e Laudos Técnicos
 atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
 
-      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
-        await navigator.share({
-          files: [file],
-          title: `Checklist de Campo ${checklist.numero} · VL Engenharia`,
-          text: texto,
-        });
-        return;
+      let compartilhado = false;
+      try {
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Checklist de Campo ${checklist.numero} · VL Engenharia`,
+            text: texto,
+          });
+          compartilhado = true;
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        console.info('Compartilhamento de arquivo indisponível; usando e-mail como alternativa.', error);
       }
+      if (compartilhado) return;
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = file.name;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
       const subject = encodeURIComponent(`Checklist de Campo ${checklist.numero} | VL Engenharia`);
       const emailDestino = cliente?.contatos?.find((contato) => contato.email?.trim())?.email || '';
@@ -242,7 +267,8 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       console.error('Erro ao preparar e-mail com checklist:', error);
-      setAvisoEmail('Não foi possível preparar o anexo. Tente baixar o PDF e anexá-lo manualmente.');
+      const detalhe = error instanceof Error ? error.message : String(error);
+      setAvisoEmail(`Não foi possível preparar o PDF para compartilhar${detalhe ? `: ${detalhe}` : '.'} Baixe o arquivo e anexe-o manualmente.`);
     } finally {
       setGerandoPdf(false);
     }
@@ -334,10 +360,11 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
           )}
           <div
             ref={printRef}
-            className="mx-auto bg-white text-slate-900 w-full max-w-[800px] p-5 sm:p-8 rounded-xl shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0 print:m-0"
+            data-pdf-document
+            className="mx-auto bg-white text-slate-900 w-full max-w-[800px] p-5 sm:p-8 shadow-sm print:shadow-none print:p-0 print:m-0"
           >
             {/* Topo Oficial */}
-            <div className="border-b-2 border-blue-900 pb-4 mb-5 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+            <div className="border-b border-slate-300 pb-4 mb-5 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <img
@@ -346,22 +373,17 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                     crossOrigin="anonymous"
                     className="h-12 w-auto max-w-[245px] object-contain object-left"
                   />
-                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-100 font-bold tracking-wider uppercase">
-                    Checklist de Campo
-                  </span>
                 </div>
-                <p className="text-xs text-slate-600 font-medium mt-2">
-                  Engenharia Mecânica, Segurança do Trabalho e Perícias Técnicas
+                <p className="text-[10px] text-slate-600 mt-2">
+                  Engenharia mecânica · inspeções e laudos técnicos
                 </p>
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[9px] text-slate-500">
                   CREA-PE {DADOS_VL_PADRAO.crea} • CNPJ {DADOS_VL_PADRAO.cnpj} • {DADOS_VL_PADRAO.sede}
                 </p>
               </div>
 
               <div className="text-left sm:text-right">
-                <div className="text-xs font-mono font-bold text-blue-950 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block">
-                  REGISTRO: {checklist.numero}
-                </div>
+                <p className="text-sm font-semibold text-slate-900">{checklist.numero}</p>
                 <p className="text-[11px] text-slate-500 mt-1.5">
                   Vistoria: {dataBr} às {horaBr}
                 </p>
@@ -378,25 +400,20 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
             </div>
 
             {/* Quadro de Identificação */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5 text-xs">
               <div>
-                <span className="font-bold text-blue-800 uppercase tracking-wider block mb-2">
-                  Cliente e serviço
-                </span>
-                <div className="h-full min-h-24 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <p className="font-bold text-slate-900 text-sm">{checklist.clienteNome || cliente?.razaoSocial || cliente?.nomeFantasia || 'Cliente não informado'}</p>
+                <span className="text-[9px] text-slate-500 block mb-1">Cliente e serviço</span>
+                <div className="border-t border-slate-200 pt-2">
+                  <p className="font-semibold text-slate-900 text-sm">{checklist.clienteNome || cliente?.razaoSocial || cliente?.nomeFantasia || 'Cliente não informado'}</p>
                   {(checklist.clienteCnpj || cliente?.cnpj) && <p className="text-slate-600 mt-0.5">CNPJ: {checklist.clienteCnpj || cliente?.cnpj}</p>}
-                  <p className="text-slate-500 mt-2">Serviço</p>
-                  <p className="font-semibold text-blue-950">{checklist.tipoLaudoNome || checklist.categoriaLaudo || checklist.tipoLaudoId}</p>
+                  <p className="text-slate-700 mt-2">{checklist.tipoLaudoNome || checklist.categoriaLaudo || checklist.tipoLaudoId}</p>
                 </div>
               </div>
 
               <div>
-                <span className="font-bold text-blue-800 uppercase tracking-wider block mb-2">
-                  Ativo inspecionado
-                </span>
-                <div className="h-full min-h-24 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <p className="font-bold text-slate-900 text-sm">{ativoIdentificacao}</p>
+                <span className="text-[9px] text-slate-500 block mb-1">Ativo inspecionado</span>
+                <div className="border-t border-slate-200 pt-2">
+                  <p className="font-semibold text-slate-900 text-sm">{ativoIdentificacao}</p>
                   {ativoDetalhes && <p className="text-slate-600 mt-0.5">{ativoDetalhes}</p>}
                   {identificadoresAtivo.length > 0 && <p className="text-slate-600 mt-1.5">{identificadoresAtivo.join(' · ')}</p>}
                   {checklist.responsavelNome && (
@@ -409,7 +426,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
               </div>
             </div>
             {(checklist.geolocalizacao || checklist.vinculadoAOrcamentoId || laudoVinculado?.artNumero) && (
-              <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-[10px] text-slate-600">
+              <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 border-y border-slate-200 py-2.5 text-[10px] text-slate-600">
                 {checklist.geolocalizacao && (
                   <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3 text-blue-700" />
                     {checklist.geolocalizacao.enderecoAproximado || `Lat ${checklist.geolocalizacao.lat.toFixed(5)}, Lng ${checklist.geolocalizacao.lng.toFixed(5)}`}
@@ -420,49 +437,49 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
               </div>
             )}
             {/* Placar de Indicadores */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-2 text-center">
-              <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
-                <span className="block text-xl font-black text-emerald-700">{conformes}</span>
-                <span className="text-xs font-semibold text-emerald-800 flex items-center justify-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Conforme
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2 text-left">
+              <div className="border-t-2 border-emerald-600 pt-2">
+                <span className="block text-xl font-semibold text-slate-900">{conformes}</span>
+                <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-700" /> Conforme
                 </span>
               </div>
-              <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-200">
-                <span className="block text-xl font-black text-rose-700">{naoConformes}</span>
-                <span className="text-xs font-semibold text-rose-800 flex items-center justify-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Não conforme
+              <div className="border-t-2 border-rose-600 pt-2">
+                <span className="block text-xl font-semibold text-slate-900">{naoConformes}</span>
+                <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-rose-700" /> Não conforme
                 </span>
               </div>
-              <div className="p-2.5 bg-slate-100 rounded-xl border border-slate-300">
-                <span className="block text-xl font-black text-slate-700">{naoAplicaveis}</span>
-                <span className="text-xs font-semibold text-slate-800 flex items-center justify-center gap-1">
-                  <MinusCircle className="w-3.5 h-3.5" /> Não aplicável
+              <div className="border-t-2 border-slate-400 pt-2">
+                <span className="block text-xl font-semibold text-slate-900">{naoAplicaveis}</span>
+                <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                  <MinusCircle className="w-3 h-3 text-slate-600" /> Não aplicável
                 </span>
               </div>
-              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
-                <span className="block text-xl font-black text-amber-700">{pendentes}</span>
-                <span className="text-xs font-semibold text-amber-800">Pendente</span>
+              <div className="border-t-2 border-amber-500 pt-2">
+                <span className="block text-xl font-semibold text-slate-900">{pendentes}</span>
+                <span className="text-[10px] text-slate-600">Pendente</span>
               </div>
             </div>
-            <div className="mb-5 flex items-center justify-between gap-2 text-[10px] font-medium text-slate-500">
+            <div className="mb-5 flex items-center justify-between gap-2 text-[10px] text-slate-500">
               <span>{totalItens} itens no checklist</span>
               <span className="inline-flex items-center gap-1"><Camera className="w-3 h-3" />{fotosTotais} evidências fotográficas</span>
             </div>
 
             {/* Tabela de Verificação Técnica */}
             <div className="mb-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-blue-700" />
+              <h3 className="text-sm font-semibold text-slate-900 mb-2 border-b border-slate-300 pb-2 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-slate-600" />
                 Itens da vistoria ({totalItens})
               </h3>
 
-              <table className="w-full text-xs text-left border border-slate-200 rounded overflow-hidden">
-                <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <table className="w-full text-[10px] text-left border-collapse">
+                <thead className="text-slate-600 font-semibold border-b border-slate-300">
                   <tr>
-                    <th className="py-2 px-3 w-10 text-center">#</th>
-                    <th className="py-2 px-3">Requisito / Ponto de Inspeção</th>
-                    <th className="py-2 px-3 w-28 text-center">Status</th>
-                    <th className="py-2 px-3">Observações / Evidências</th>
+                    <th className="py-2 px-2 w-10 text-left">Nº</th>
+                    <th className="py-2 px-2">Item verificado</th>
+                    <th className="py-2 px-2 w-24 text-left">Resultado</th>
+                    <th className="py-2 px-2">Observações e evidências</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -480,29 +497,34 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                     const unidadeMedida = item.medicao?.unidade || (item.unidade && item.unidade !== 'texto' ? item.unidade : '');
 
                     return (
-                    <tr key={`${item.id || 'row'}-${idx}`} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
-                      <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[11px]">
+                    <tr key={`${item.id || 'row'}-${idx}`} className="align-top">
+                      <td className="py-2.5 px-2 text-slate-500 font-mono">
                         {item.numero || idx + 1}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-slate-800 leading-snug">
-                        {item.secaoLaudo && <p className="mb-1 text-[9px] font-bold uppercase tracking-wide text-blue-800">{item.secaoLaudo}</p>}
-                        <p>{item.descricao}</p>
+                      <td className="py-2.5 px-2 text-slate-800 leading-snug">
+                        {item.secaoLaudo && <p className="mb-1 text-[9px] font-medium text-slate-500">{item.secaoLaudo}</p>}
+                        <p className="font-medium">{item.descricao}</p>
+                        {(item.criterioConformidade || item.criterioInspecao) && (
+                          <p className="mt-1 text-[9px] leading-snug text-slate-500">
+                            Critério: {item.criterioConformidade || item.criterioInspecao}
+                          </p>
+                        )}
                         {(valorMedido !== undefined && valorMedido !== '' || item.criterioReferencia) && (
                           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                             {valorMedido !== undefined && valorMedido !== '' && (
-                              <span className="bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-bold">
+                              <span className="text-slate-700 font-semibold">
                                 Medição: {valorMedido} {unidadeMedida}
                               </span>
                             )}
                             {item.criterioReferencia && (
-                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                              <span className="text-slate-500">
                                 Ref.: {item.criterioReferencia}
                               </span>
                             )}
                           </div>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2.5 px-2">
                         <span
                           className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded uppercase ${
                             item.status === 'conforme'
@@ -525,7 +547,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                             : 'Pendente'}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-600 leading-snug">
+                      <td className="py-2.5 px-2 text-slate-600 leading-snug">
                         <p className={!item.observacao && (item.status === 'nao_conforme' || item.status === 'nao_aplicavel') ? 'font-semibold text-amber-800' : ''}>
                           {item.observacao || (item.status === 'nao_conforme' || item.status === 'nao_aplicavel' ? 'Observação não registrada' : '—')}
                         </p>
@@ -537,11 +559,11 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                         {fotos.length > 0 && (
                           <div className="mt-1.5 flex flex-wrap gap-2">
                             {fotos.map((ft, fIdx) => (
-                              <div key={fIdx} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded p-1">
+                              <div key={fIdx} className="flex items-center gap-1.5 mt-1">
                                 <img
                                   src={ft.url}
                                   alt={ft.legenda}
-                                  className="w-12 h-10 object-cover rounded border border-slate-300"
+                                  className="w-12 h-10 object-cover border border-slate-200"
                                 />
                                 <span className="text-[9.5px] text-slate-600 max-w-[110px] leading-tight">
                                   Foto {fIdx + 1}: {ft.legenda}
@@ -558,7 +580,7 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
             </div>
 
             {/* Rubrica e Assinatura Técnica */}
-            <div className="mt-8 pt-6 border-t border-slate-300 flex justify-between items-end">
+            <div className="mt-8 pt-5 border-t border-slate-300 flex justify-between items-end">
               <div className="text-[11px] text-slate-500 max-w-sm">
                 <p className="font-semibold text-slate-700">Nota Legal de Campo:</p>
                 <p>
