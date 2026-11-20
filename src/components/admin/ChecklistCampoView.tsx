@@ -73,6 +73,11 @@ export const ChecklistCampoView: React.FC = () => {
       window.alert('É preciso estar online para baixar a lista de checklists da nuvem.');
       return;
     }
+    const confirmar = window.confirm(
+      'A lista deste aparelho será substituída pela lista que está na nuvem.\n\n' +
+      'Checklists salvos apenas aqui (pendentes de envio) serão descartados. Continuar?'
+    );
+    if (!confirmar) return;
     setSincronizandoNuvem(true);
     try {
       const total = await forcarSincronizacaoChecklists();

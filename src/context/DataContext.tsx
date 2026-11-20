@@ -1224,48 +1224,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Força a lista local a refletir exatamente o que está na nuvem. Útil quando
-  // um aparelho acumulou cópias antigas de checklists já excluídos em outro lugar.
+  // Força a lista local a refletir EXATAMENTE o que está na nuvem. A versão antiga
+  // enchia a fila de envio com checklists já excluídos; mantê-los protegidos da
+  // limpeza era o que fazia a mobile insistir em dezenas de registros fantasmas.
   const forcarSincronizacaoChecklists = useCallback(async () => {
     if (!db || !auth?.currentUser) {
       throw new Error('SEM_LOGIN_FIREBASE');
     }
-    await publicarTombstonesLocais();
     const snap = await getDocs(collection(db, 'checklistsCampo'));
     const remotos = normalizarChecklistsCampo(
       snap.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id }))
     );
     const idsRemotos = new Set(remotos.map(c => c.id));
-    const [fila, drafts] = await Promise.all([getPendingQueue(), getAllDraftsOffline()]);
 
-    // Preserva apenas trabalho local que ainda não foi enviado.
-    const pendentes: ChecklistCampo[] = [];
-    fila.forEach(item => {
-      if (item.payload?.id && !idsRemotos.has(item.payload.id)) pendentes.push(item.payload);
-    });
-    drafts.forEach(d => {
-      if (d.dirty && d.payload?.id && !idsRemotos.has(d.payload.id)) pendentes.push(d.payload);
-    });
+    // Um checklist existe na nuvem → qualquer tombstone local dele está errado.
+    const tombstones: string[] = loadStorage('vl_checklists_removidos_ids', []);
+    saveStorage('vl_checklists_removidos_ids', tombstones.filter(id => !idsRemotos.has(id)));
 
-    const finais = normalizarChecklistsCampo([...remotos, ...pendentes]);
-    const idsFinais = new Set(finais.map(c => c.id));
-    setChecklistsCampo(finais);
-    saveStorage('vl_checklists_campo', finais);
-    void saveChecklistsCopiaLocal(finais);
-    await Promise.all(
-      Array.from(new Set([...remotos.map(c => c.id), ...fila.map(i => i.checklistId)]))
-        .filter(id => !idsFinais.has(id))
-        .map(async id => {
-          await removeChecklistCopiaLocal(id);
-          await removeChecklistFromQueue(id);
-          await removeDraftOffline(id);
-        })
-    );
+    // Descarta fila, rascunhos e cópias locais de tudo que não existe na nuvem.
+    const [fila, drafts, copia] = await Promise.all([
+      getPendingQueue(), getAllDraftsOffline(), getChecklistsCopiaLocal(),
+    ]);
+    await Promise.all([
+      ...fila.filter(i => !idsRemotos.has(i.checklistId)).map(i => removeFromQueue(i.id)),
+      ...drafts
+        .filter(d => d.id?.startsWith('chk-') && !idsRemotos.has(d.id))
+        .map(d => removeDraftOffline(d.id)),
+      ...copia.filter(c => c?.id && !idsRemotos.has(c.id)).map(c => removeChecklistCopiaLocal(c.id)),
+    ]);
+
+    setChecklistsCampo(remotos);
+    saveStorage('vl_checklists_campo', remotos);
+    void saveChecklistsCopiaLocal(remotos);
     await atualizarContagemSync();
-    return finais.length;
+    return remotos.length;
     // atualizarContagemSync é declarado mais adiante neste mesmo render; incluí-lo
     // no array de dependências causaria erro de TDZ. O callback só é chamado depois.
-  }, [publicarTombstonesLocais]);
+  }, []);
 
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)
   useEffect(() => {
