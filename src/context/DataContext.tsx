@@ -1087,6 +1087,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.info('[Checklists] Recuperação local:', resumo);
     if (candidatos.length === 0) return resumo;
 
+    // Enfileira os recuperados ANTES da reconciliação: como a nuvem é a fonte
+    // autoritativa, itens sem fila/rascunho sujo são removidos como órfãos.
+    // Sem isso, o checklist recuperado (ex.: THE3F49) desaparecia de novo.
+    const idsNaFila = new Set(fila.map(item => item.checklistId));
+    await Promise.all(candidatos
+      .filter(c => !idsNaFila.has(c.id))
+      .map(c => enqueueSync({
+        id: `sync-${c.id}-${Date.now()}`,
+        checklistId: c.id,
+        action: 'create',
+        payload: c,
+        enqueuedAt: new Date().toISOString(),
+      })));
+
     setChecklistsCampo(prev => {
       const merged = normalizarChecklistsCampo(
         mesclarColecaoPorId(candidatos, prev, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
