@@ -1404,6 +1404,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
+        // Nuvem vazia + dados locais = checklist ainda nunca publicado (foi criado
+        // sem sessão do Firebase). Nunca apagar nesse caso: o usuário precisa ter
+        // chance de usar "Publicar lista" primeiro.
+        if (idsNuvem.size === 0) return;
+
         // Nunca remover trabalho que ainda aguarda envio (offline / cota estourada).
         const [fila, drafts] = await Promise.all([getPendingQueue(), getAllDraftsOffline()]);
         const protegidos = new Set<string>();
