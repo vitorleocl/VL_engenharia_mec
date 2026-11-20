@@ -40,6 +40,7 @@ export const ChecklistCampoView: React.FC = () => {
     sincronizandoOffline,
     sincronizarChecklistsOffline,
     forcarSincronizacaoChecklists,
+    publicarChecklistsNaNuvem,
     recuperarChecklistsDoAparelho,
     restaurarChecklistOculto,
     resolverConflitoChecklist,
@@ -66,6 +67,7 @@ export const ChecklistCampoView: React.FC = () => {
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'rascunho' | 'finalizado'>('todos');
   const [recuperandoLocal, setRecuperandoLocal] = useState(false);
   const [sincronizandoNuvem, setSincronizandoNuvem] = useState(false);
+  const [publicandoNuvem, setPublicandoNuvem] = useState(false);
   const [resultadoRecuperacao, setResultadoRecuperacao] = useState<ResumoRecuperacaoChecklists | null>(null);
 
   const handleSincronizarDaNuvem = async () => {
@@ -95,6 +97,33 @@ export const ChecklistCampoView: React.FC = () => {
       }
     } finally {
       setSincronizandoNuvem(false);
+    }
+  };
+
+  const handlePublicarNaNuvem = async () => {
+    if (!isOnline) {
+      window.alert('É preciso estar online para publicar a lista na nuvem.');
+      return;
+    }
+    const confirmar = window.confirm(
+      'Esta lista será publicada como a versão OFICIAL na nuvem.\n\n' +
+      'Checklists que existem apenas na nuvem serão excluídos de todos os aparelhos. Continuar?'
+    );
+    if (!confirmar) return;
+    setPublicandoNuvem(true);
+    try {
+      const resumo = await publicarChecklistsNaNuvem();
+      window.alert(
+        `Lista publicada. ${resumo.enviados} checklist(s) enviado(s) e ` +
+        `${resumo.removidos} obsoleto(s) removido(s) da nuvem.`
+      );
+    } catch (erro: any) {
+      console.error('[Checklists] Falha ao publicar na nuvem:', erro);
+      window.alert(erro?.message === 'SEM_LOGIN_FIREBASE'
+        ? 'Entre com a Conta Google Master para publicar na nuvem.'
+        : 'Não foi possível publicar na nuvem. Verifique a conexão.');
+    } finally {
+      setPublicandoNuvem(false);
     }
   };
 
@@ -244,6 +273,21 @@ export const ChecklistCampoView: React.FC = () => {
                 ? `${pendingSyncCount} ite${pendingSyncCount > 1 ? 'ns' : 'm'} pendente${pendingSyncCount > 1 ? 's' : ''}`
                 : 'Sincronizado'}
             </span>
+          </button>
+
+          {/* Publica a lista deste aparelho como oficial na nuvem */}
+          <button
+            type="button"
+            onClick={handlePublicarNaNuvem}
+            disabled={publicandoNuvem}
+            title="Enviar esta lista para a nuvem e remover os checklists obsoletos de todos os aparelhos"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-blue-soft)] text-[var(--adm-blue-soft)] hover:text-[var(--adm-text)] transition cursor-pointer disabled:opacity-60"
+          >
+            {publicandoNuvem
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              : <HardDriveDownload className="w-3.5 h-3.5 rotate-180" />}
+            <span className="hidden sm:inline">Publicar lista</span>
+            <span className="sm:hidden">Publicar</span>
           </button>
 
           {/* Força a lista local a refletir exatamente a nuvem */}

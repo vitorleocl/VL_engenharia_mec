@@ -181,6 +181,7 @@ interface DataContextType {
   sincronizandoOffline: boolean;
   sincronizarChecklistsOffline: () => Promise<void>;
   forcarSincronizacaoChecklists: () => Promise<number>;
+  publicarChecklistsNaNuvem: () => Promise<{ enviados: number; removidos: number }>;
   recuperarChecklistsDoAparelho: () => Promise<ResumoRecuperacaoChecklists>;
   restaurarChecklistOculto: (id: string) => Promise<ResumoRecuperacaoChecklists>;
   resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
@@ -1261,6 +1262,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // atualizarContagemSync é declarado mais adiante neste mesmo render; incluí-lo
     // no array de dependências causaria erro de TDZ. O callback só é chamado depois.
   }, []);
+
+  // Publica a lista deste aparelho como a versão oficial na nuvem: envia os
+  // checklists locais (com fotos via Storage) e apaga os que só existem na nuvem.
+  // Necessário quando um checklist foi criado enquanto o Storage estava indisponível.
+  const publicarChecklistsNaNuvem = useCallback(async () => {
+    if (!db || !auth?.currentUser) throw new Error('SEM_LOGIN_FIREBASE');
+
+    const locais = new Map<string, ChecklistCampo>();
+    normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', []))
+      .forEach(c => { if (c?.id) locais.set(c.id, c); });
+    const copia = await getChecklistsCopiaLocal();
+    copia.forEach(c => { if (c?.id && !locais.has(c.id)) locais.set(c.id, c); });
+    checklistsCampoRef.current.forEach(c => { if (c?.id) locais.set(c.id, c); });
+
+    const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+    const oficiais = Array.from(locais.values()).filter(c =>
+      c?.id && !removidos.has(c.id) && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
+    );
+    const idsOficiais = new Set(oficiais.map(c => c.id));
+
+    let enviados = 0;
+    for (const checklist of oficiais) {
+      try {
+        const { payload } = await prepararChecklistParaNuvem(checklist);
+        await setDoc(doc(db, 'checklistsCampo', checklist.id), payload, { merge: true });
+        enviados++;
+      } catch (erro) {
+        console.warn('[Sync] Falha ao publicar checklist na nuvem:', checklist.id, erro);
+      }
+    }
+
+    const snap = await getDocs(collection(db, 'checklistsCampo'));
+    let removidosDaNuvem = 0;
+    for (const docSnap of snap.docs) {
+      if (idsOficiais.has(docSnap.id)) continue;
+      try {
+        await deleteDoc(doc(db, 'checklistsCampo', docSnap.id));
+        addTombstone('vl_checklists_removidos_ids', docSnap.id);
+        await registrarExclusaoRemotaChecklist(docSnap.id);
+        removidosDaNuvem++;
+      } catch (erro) {
+        console.warn('[Sync] Falha ao remover checklist obsoleto da nuvem:', docSnap.id, erro);
+      }
+    }
+
+    await publicarTombstonesLocais();
+    await atualizarContagemSync();
+    return { enviados, removidos: removidosDaNuvem };
+  }, [publicarTombstonesLocais, registrarExclusaoRemotaChecklist]);
 
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)
   useEffect(() => {
@@ -3690,6 +3740,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sincronizandoOffline,
         sincronizarChecklistsOffline,
         forcarSincronizacaoChecklists,
+        publicarChecklistsNaNuvem,
         recuperarChecklistsDoAparelho,
         restaurarChecklistOculto,
         resolverConflitoChecklist,
