@@ -181,7 +181,20 @@ interface DataContextType {
   sincronizandoOffline: boolean;
   sincronizarChecklistsOffline: () => Promise<void>;
   forcarSincronizacaoChecklists: () => Promise<number>;
-  publicarChecklistsNaNuvem: () => Promise<{ enviados: number; removidos: number }>;
+  publicarChecklistsNaNuvem: () => Promise<{
+    enviados: number;
+    removidos: number;
+    diagnostico: {
+      localStorage: number;
+      copiaIndexedDB: number;
+      rascunhos: number;
+      fila: number;
+      emMemoria: number;
+      candidatos: number;
+      ocultos: string[];
+      errosEnvio: string[];
+    };
+  }>;
   recuperarChecklistsDoAparelho: () => Promise<ResumoRecuperacaoChecklists>;
   restaurarChecklistOculto: (id: string) => Promise<ResumoRecuperacaoChecklists>;
   resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
@@ -1269,26 +1282,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const publicarChecklistsNaNuvem = useCallback(async () => {
     if (!db || !auth?.currentUser) throw new Error('SEM_LOGIN_FIREBASE');
 
-    const locais = new Map<string, ChecklistCampo>();
-    normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', []))
-      .forEach(c => { if (c?.id) locais.set(c.id, c); });
+    // Coleta de TODAS as fontes do aparelho, inclusive rascunhos do formulário.
+    // O CHK-2026-004 pode existir apenas como rascunho "draft-new-*", por exemplo.
+    const doLocalStorage = normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', []));
     const copia = await getChecklistsCopiaLocal();
-    copia.forEach(c => { if (c?.id && !locais.has(c.id)) locais.set(c.id, c); });
-    checklistsCampoRef.current.forEach(c => { if (c?.id) locais.set(c.id, c); });
+    const drafts = await getAllDraftsOffline();
+    const fila = await getPendingQueue();
+    const locais = new Map<string, ChecklistCampo>();
+    const colocar = (c?: ChecklistCampo) => { if (c?.id && !locais.has(c.id)) locais.set(c.id, c); };
+    doLocalStorage.forEach(colocar);
+    copia.forEach(colocar);
+    checklistsCampoRef.current.forEach(colocar);
+    fila.forEach(item => colocar(item.payload));
+    drafts.forEach(draft => {
+      const payload = (draft.payload || {}) as ChecklistCampo;
+      if (draft.id?.startsWith('draft-new-')) {
+        if (!draft.dirty || !Array.isArray(payload.itens) || payload.itens.length === 0) return;
+        const id = `chk-recuperado-${draft.id.replace(/^draft-new-/, '')}`;
+        colocar({
+          ...payload,
+          id,
+          numero: payload.numero && payload.numero !== 'RASCUNHO'
+            ? payload.numero
+            : `CHK-REC-${id.slice(-6).toUpperCase()}`,
+        } as ChecklistCampo);
+        return;
+      }
+      if (draft.id?.startsWith('chk-')) colocar({ ...payload, id: draft.id });
+    });
 
     const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
-    const oficiais = Array.from(locais.values()).filter(c =>
-      c?.id && !removidos.has(c.id) && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
+    const candidatos = Array.from(locais.values()).filter(c =>
+      c?.id && !FICTITIOUS_IDS.checklistsCampo.has(c.id)
     );
+    const ocultos = candidatos
+      .filter(c => removidos.has(c.id))
+      .map(c => `${c.numero || c.id} [${c.ativoIdentificacao || 'ativo ?'}]`);
+    const oficiais = candidatos.filter(c => !removidos.has(c.id));
     const idsOficiais = new Set(oficiais.map(c => c.id));
 
     let enviados = 0;
+    const errosEnvio: string[] = [];
     for (const checklist of oficiais) {
       try {
         const { payload } = await prepararChecklistParaNuvem(checklist);
         await setDoc(doc(db, 'checklistsCampo', checklist.id), payload, { merge: true });
         enviados++;
-      } catch (erro) {
+      } catch (erro: any) {
+        const mensagem = `${checklist.numero || checklist.id}: ${erro?.message || String(erro)}`;
+        errosEnvio.push(mensagem);
         console.warn('[Sync] Falha ao publicar checklist na nuvem:', checklist.id, erro);
       }
     }
@@ -1309,7 +1351,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     await publicarTombstonesLocais();
     await atualizarContagemSync();
-    return { enviados, removidos: removidosDaNuvem };
+    return {
+      enviados,
+      removidos: removidosDaNuvem,
+      diagnostico: {
+        localStorage: doLocalStorage.length,
+        copiaIndexedDB: copia.length,
+        rascunhos: drafts.length,
+        fila: fila.length,
+        emMemoria: checklistsCampoRef.current.length,
+        candidatos: candidatos.length,
+        ocultos,
+        errosEnvio,
+      },
+    };
   }, [publicarTombstonesLocais, registrarExclusaoRemotaChecklist]);
 
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)

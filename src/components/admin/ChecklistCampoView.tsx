@@ -113,9 +113,17 @@ export const ChecklistCampoView: React.FC = () => {
     setPublicandoNuvem(true);
     try {
       const resumo = await publicarChecklistsNaNuvem();
+      const d = resumo.diagnostico;
+      const detalhes =
+        `\n\nDiagnóstico deste aparelho:` +
+        `\nlocalStorage: ${d.localStorage} · cópia IndexedDB: ${d.copiaIndexedDB} · ` +
+        `rascunhos: ${d.rascunhos} · fila: ${d.fila} · em memória: ${d.emMemoria}` +
+        `\ncandidatos: ${d.candidatos}` +
+        (d.ocultos.length ? `\nOcultos por exclusão anterior: ${d.ocultos.join(', ')}` : '') +
+        (d.errosEnvio.length ? `\nErros ao enviar: ${d.errosEnvio.join(' | ')}` : '');
       window.alert(
         `Lista publicada. ${resumo.enviados} checklist(s) enviado(s) e ` +
-        `${resumo.removidos} obsoleto(s) removido(s) da nuvem.`
+        `${resumo.removidos} obsoleto(s) removido(s) da nuvem.` + detalhes
       );
     } catch (erro: any) {
       console.error('[Checklists] Falha ao publicar na nuvem:', erro);
