@@ -46,7 +46,7 @@ export const ChecklistCampoView: React.FC = () => {
     removerChecklistCampo,
     gerarOuAtualizarLaudoDeChecklist,
   } = useData();
-  const { isOnline } = useAuth();
+  const { isOnline, firebaseUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -77,9 +77,17 @@ export const ChecklistCampoView: React.FC = () => {
     try {
       const total = await forcarSincronizacaoChecklists();
       window.alert(`Lista sincronizada com a nuvem. ${total} checklist(s) encontrado(s).`);
-    } catch (erro) {
+    } catch (erro: any) {
       console.error('[Checklists] Falha ao sincronizar com a nuvem:', erro);
-      window.alert('Não foi possível baixar a lista da nuvem. Verifique o login e a conexão.');
+      if (erro?.message === 'SEM_LOGIN_FIREBASE') {
+        window.alert(
+          'Este aparelho está em MODO LOCAL: não há sessão do Firebase ativa.\n\n' +
+          'Saia e entre novamente usando a Conta Google Master (não use "Acesso direto"). ' +
+          'Sem isso a sincronização entre aparelhos fica desativada.'
+        );
+      } else {
+        window.alert('Não foi possível baixar a lista da nuvem. Verifique o login e a conexão.');
+      }
     } finally {
       setSincronizandoNuvem(false);
     }
@@ -293,6 +301,20 @@ export const ChecklistCampoView: React.FC = () => {
           <span className="rounded-full bg-[var(--adm-card)] px-2 py-0.5 text-xs">{checklistsFiltrados.length}</span>
         </button>
       </nav>
+
+      {/* Sem sessão do Firebase o aparelho fica isolado: mostra apenas dados locais */}
+      {!firebaseUser && (
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-xs text-red-600 dark:text-red-400 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">Modo local — sincronização desativada neste aparelho</p>
+            <p className="opacity-90">
+              Para ver os checklists da nuvem, saia e entre novamente com a <strong>Conta Google Master</strong>.
+              O botão &ldquo;Acesso direto&rdquo; não habilita a sincronização entre aparelhos.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Checklists que existem só neste aparelho (localStorage estourado / sem rede) */}
       {pendingSyncCount > 0 && (

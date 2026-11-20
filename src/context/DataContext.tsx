@@ -1227,7 +1227,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Força a lista local a refletir exatamente o que está na nuvem. Útil quando
   // um aparelho acumulou cópias antigas de checklists já excluídos em outro lugar.
   const forcarSincronizacaoChecklists = useCallback(async () => {
-    if (!db || !auth?.currentUser) return 0;
+    if (!db || !auth?.currentUser) {
+      throw new Error('SEM_LOGIN_FIREBASE');
+    }
     await publicarTombstonesLocais();
     const snap = await getDocs(collection(db, 'checklistsCampo'));
     const remotos = normalizarChecklistsCampo(
