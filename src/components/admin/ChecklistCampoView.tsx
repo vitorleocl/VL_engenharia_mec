@@ -39,6 +39,7 @@ export const ChecklistCampoView: React.FC = () => {
     syncConflicts,
     sincronizandoOffline,
     sincronizarChecklistsOffline,
+    forcarSincronizacaoChecklists,
     recuperarChecklistsDoAparelho,
     restaurarChecklistOculto,
     resolverConflitoChecklist,
@@ -64,7 +65,25 @@ export const ChecklistCampoView: React.FC = () => {
   const [buscaTexto, setBuscaTexto] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'rascunho' | 'finalizado'>('todos');
   const [recuperandoLocal, setRecuperandoLocal] = useState(false);
+  const [sincronizandoNuvem, setSincronizandoNuvem] = useState(false);
   const [resultadoRecuperacao, setResultadoRecuperacao] = useState<ResumoRecuperacaoChecklists | null>(null);
+
+  const handleSincronizarDaNuvem = async () => {
+    if (!isOnline) {
+      window.alert('É preciso estar online para baixar a lista de checklists da nuvem.');
+      return;
+    }
+    setSincronizandoNuvem(true);
+    try {
+      const total = await forcarSincronizacaoChecklists();
+      window.alert(`Lista sincronizada com a nuvem. ${total} checklist(s) encontrado(s).`);
+    } catch (erro) {
+      console.error('[Checklists] Falha ao sincronizar com a nuvem:', erro);
+      window.alert('Não foi possível baixar a lista da nuvem. Verifique o login e a conexão.');
+    } finally {
+      setSincronizandoNuvem(false);
+    }
+  };
 
   const handleRecuperarDoAparelho = async () => {
     setRecuperandoLocal(true);
@@ -212,6 +231,21 @@ export const ChecklistCampoView: React.FC = () => {
                 ? `${pendingSyncCount} ite${pendingSyncCount > 1 ? 'ns' : 'm'} pendente${pendingSyncCount > 1 ? 's' : ''}`
                 : 'Sincronizado'}
             </span>
+          </button>
+
+          {/* Força a lista local a refletir exatamente a nuvem */}
+          <button
+            type="button"
+            onClick={handleSincronizarDaNuvem}
+            disabled={sincronizandoNuvem}
+            title="Baixar a lista de checklists da nuvem e remover cópias excluídas em outro aparelho"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--adm-card)] border border-[var(--adm-line)] text-[var(--adm-mut)] hover:text-[var(--adm-text)] hover:border-[var(--adm-blue-soft)] transition cursor-pointer disabled:opacity-60"
+          >
+            {sincronizandoNuvem
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              : <RefreshCw className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Sincronizar da nuvem</span>
+            <span className="sm:hidden">Sincronizar</span>
           </button>
 
           {/* Recuperação de checklists salvos apenas neste aparelho */}

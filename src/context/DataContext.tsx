@@ -180,6 +180,7 @@ interface DataContextType {
   syncConflicts: OfflineSyncConflict[];
   sincronizandoOffline: boolean;
   sincronizarChecklistsOffline: () => Promise<void>;
+  forcarSincronizacaoChecklists: () => Promise<number>;
   recuperarChecklistsDoAparelho: () => Promise<ResumoRecuperacaoChecklists>;
   restaurarChecklistOculto: (id: string) => Promise<ResumoRecuperacaoChecklists>;
   resolverConflitoChecklist: (conflictId: string, escolha: 'local' | 'remoto' | 'ambos') => Promise<void>;
@@ -1164,6 +1165,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (id.startsWith('chk-recuperado-')) {
       void removeDraftOffline(`draft-new-${id.replace(/^chk-recuperado-/, '')}`);
     }
+    // O tombstone esconde o registro local; aqui também removemos o documento da
+    // nuvem, senão um aparelho recém-instalado volta a baixar o checklist excluído.
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      void deleteDoc(doc(db, 'checklistsCampo', id)).catch(erro => {
+        console.warn('[Firestore] Falha ao aplicar exclusão remota no documento:', id, erro);
+      });
+    }
     setChecklistsCampo(prev => {
       const filtrados = prev.filter(c => c.id !== id);
       saveStorage('vl_checklists_campo', filtrados);
@@ -1201,6 +1209,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('[Firestore] Falha ao publicar exclusões locais:', erro);
     }
   }, []);
+
+  // Força a lista local a refletir exatamente o que está na nuvem. Útil quando
+  // um aparelho acumulou cópias antigas de checklists já excluídos em outro lugar.
+  const forcarSincronizacaoChecklists = useCallback(async () => {
+    if (!db || !auth?.currentUser) return 0;
+    await publicarTombstonesLocais();
+    const snap = await getDocs(collection(db, 'checklistsCampo'));
+    const remotos = normalizarChecklistsCampo(
+      snap.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id }))
+    );
+    const idsRemotos = new Set(remotos.map(c => c.id));
+    const [fila, drafts] = await Promise.all([getPendingQueue(), getAllDraftsOffline()]);
+
+    // Preserva apenas trabalho local que ainda não foi enviado.
+    const pendentes: ChecklistCampo[] = [];
+    fila.forEach(item => {
+      if (item.payload?.id && !idsRemotos.has(item.payload.id)) pendentes.push(item.payload);
+    });
+    drafts.forEach(d => {
+      if (d.dirty && d.payload?.id && !idsRemotos.has(d.payload.id)) pendentes.push(d.payload);
+    });
+
+    const finais = normalizarChecklistsCampo([...remotos, ...pendentes]);
+    const idsFinais = new Set(finais.map(c => c.id));
+    setChecklistsCampo(finais);
+    saveStorage('vl_checklists_campo', finais);
+    void saveChecklistsCopiaLocal(finais);
+    await Promise.all(
+      Array.from(new Set([...remotos.map(c => c.id), ...fila.map(i => i.checklistId)]))
+        .filter(id => !idsFinais.has(id))
+        .map(async id => {
+          await removeChecklistCopiaLocal(id);
+          await removeChecklistFromQueue(id);
+          await removeDraftOffline(id);
+        })
+    );
+    await atualizarContagemSync();
+    return finais.length;
+    // atualizarContagemSync é declarado mais adiante neste mesmo render; incluí-lo
+    // no array de dependências causaria erro de TDZ. O callback só é chamado depois.
+  }, [publicarTombstonesLocais]);
 
   // Sincronização centralizada com o banco de dados em nuvem (Firestore)
   useEffect(() => {
@@ -1277,13 +1326,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(error, OperationType.GET, 'laudos');
       });
 
-      // Checklists existentes apenas neste aparelho (sem sincronização) precisam subir
-      // para a nuvem; caso contrário desktop e mobile exibem quantidades diferentes.
+      // A NUVEM é a fonte autoritativa de quais checklists existem. Cópias locais
+      // órfãs (excluídas em outro aparelho) devem ser REMOVIDAS, nunca reenviadas.
+      // O código antigo enfileirava essas cópias como "create" e as devolvia à nuvem,
+      // o que mantinha dezenas de checklists fantasmas aparecendo na mobile.
       const reconciliarChecklistsLocais = async (idsNuvemInformados?: Set<string>) => {
         if (!isHydratedRef.current || !db || !auth?.currentUser) return;
         let idsNuvem = idsNuvemInformados;
         if (!idsNuvem) {
-          // Sem snapshot recente (por exemplo, nuvem vazia), consulta os IDs atuais.
           try {
             const snap = await getDocs(collection(db, 'checklistsCampo'));
             idsNuvem = new Set(snap.docs.map(d => d.id));
@@ -1292,54 +1342,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
         }
-        const removidos = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
+
+        // Nunca remover trabalho que ainda aguarda envio (offline / cota estourada).
+        const [fila, drafts] = await Promise.all([getPendingQueue(), getAllDraftsOffline()]);
+        const protegidos = new Set<string>();
+        fila.forEach(item => protegidos.add(item.checklistId));
+        drafts.forEach(d => {
+          if (d.dirty && d.id?.startsWith('chk-')) protegidos.add(d.id);
+        });
+
         const mapaLocal = new Map<string, ChecklistCampo>();
-        checklistsCampoRef.current.forEach((chk) => {
+        checklistsCampoRef.current.forEach(chk => {
           if (chk?.id) mapaLocal.set(chk.id, chk);
         });
-        normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', [])).forEach((chk) => {
+        normalizarChecklistsCampo(loadStorage<ChecklistCampo[]>('vl_checklists_campo', [])).forEach(chk => {
           if (chk?.id) mapaLocal.set(chk.id, chk);
         });
-        // Rascunhos offline podem conter fotos e respostas que ainda não chegaram ao estado.
-        // O id do rascunho é o id do checklist; o payload guarda apenas os campos editáveis.
-        const drafts = await getAllDraftsOffline();
-        drafts.forEach((draft) => {
-          if (!draft.dirty || !draft.id?.startsWith('chk-')) return;
-          const existente = mapaLocal.get(draft.id);
-          mapaLocal.set(draft.id, { ...(existente || {}), ...draft.payload, id: draft.id } as ChecklistCampo);
+        const orfaos = Array.from(mapaLocal.keys())
+          .filter(id => !idsNuvem!.has(id) && !protegidos.has(id));
+        if (orfaos.length === 0) return;
+
+        const conjunto = new Set(orfaos);
+        setChecklistsCampo(prev => {
+          const mantidos = prev.filter(c => !c?.id || !conjunto.has(c.id));
+          saveStorage('vl_checklists_campo', mantidos);
+          void saveChecklistsCopiaLocal(mantidos);
+          return mantidos;
         });
-        const fila = await getPendingQueue();
-        const idsNaFila = new Set(fila.map((item) => item.checklistId));
-        let enfileirou = false;
-        for (const local of mapaLocal.values()) {
-          if (!local?.id || idsNuvem.has(local.id) || idsNaFila.has(local.id) || removidos.has(local.id)) continue;
-          await enqueueSync({
-            id: `sync-${local.id}-${Date.now()}`,
-            checklistId: local.id,
-            action: 'create',
-            payload: local,
-            enqueuedAt: new Date().toISOString(),
-          });
-          enfileirou = true;
-        }
-        if (enfileirou) void sincronizarChecklistsOffline();
+        orfaos.forEach(id => {
+          void removeChecklistCopiaLocal(id);
+          void removeChecklistFromQueue(id);
+          void removeDraftOffline(id);
+        });
       };
       reconciliarChecklistsLocaisRef.current = reconciliarChecklistsLocais;
 
       const unsubChecklists = onSnapshot(collection(db, 'checklistsCampo'), (snapshot) => {
+        // Snapshot vazio vindo do cache não é prova de que a nuvem está vazia.
         if (snapshot.metadata.fromCache && snapshot.empty) return;
         const removidosSet = new Set<string>(loadStorage('vl_checklists_removidos_ids', []));
         const docs = normalizarChecklistsCampo(snapshot.docs.map(d => ({ ...(d.data() as ChecklistCampo), id: d.id })));
-        if (docs.length > 0) {
-          setChecklistsCampo(prev => {
-            const merged = normalizarChecklistsCampo(
-              mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
-            );
-            saveStorage('vl_checklists_campo', merged);
-            return merged;
-          });
-        }
-        void reconciliarChecklistsLocais(new Set(docs.map(d => d.id)));
+        const idsNuvem = new Set(docs.map(d => d.id));
+
+        // Mescla o que veio da nuvem (inclusive snapshot vazio do servidor) e,
+        // em seguida, remove as cópias locais que não existem mais na nuvem.
+        setChecklistsCampo(prev => {
+          const merged = normalizarChecklistsCampo(
+            mesclarColecaoPorId(prev, docs, removidosSet, FICTITIOUS_IDS.checklistsCampo, 'id')
+          );
+          saveStorage('vl_checklists_campo', merged);
+          return merged;
+        });
+        void reconciliarChecklistsLocais(idsNuvem);
       }, (error) => {
         handleFirestoreError(error, OperationType.GET, 'checklistsCampo');
       });
@@ -3624,6 +3678,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         syncConflicts,
         sincronizandoOffline,
         sincronizarChecklistsOffline,
+        forcarSincronizacaoChecklists,
         recuperarChecklistsDoAparelho,
         restaurarChecklistOculto,
         resolverConflitoChecklist,
