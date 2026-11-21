@@ -438,13 +438,40 @@ function semFotosEmbutidas(checklist: ChecklistCampo): ChecklistCampo {
   };
 }
 
+/**
+ * O Firestore rejeita qualquer campo com valor `undefined`. Ao remover fotos
+ * embutidas, `semFotosEmbutidas()` troca a URL por `undefined` — o `setDoc`
+ * então falhava com "Unsupported field value: undefined" e o checklist ficava
+ * preso no aparelho. Remove recursivamente chaves undefined; em arrays, onde
+ * não há como omitir a posição, converte para `null`.
+ */
+function sanitizarParaFirestore<T>(valor: T): T {
+  if (valor === null || valor === undefined) return valor;
+  if (Array.isArray(valor)) {
+    return valor.map(item =>
+      item === undefined ? null : sanitizarParaFirestore(item)
+    ) as unknown as T;
+  }
+  if (typeof valor === 'object') {
+    const proto = Object.getPrototypeOf(valor);
+    if (proto !== Object.prototype && proto !== null) return valor;
+    const limpo: Record<string, unknown> = {};
+    Object.entries(valor as Record<string, unknown>).forEach(([chave, item]) => {
+      if (item === undefined) return;
+      limpo[chave] = sanitizarParaFirestore(item);
+    });
+    return limpo as T;
+  }
+  return valor;
+}
+
 async function prepararChecklistParaNuvem(checklist: ChecklistCampo): Promise<{
   payload: ChecklistCampo;
   restaramFotosEmbutidas: boolean;
 }> {
   const compactado = await compactarFotosChecklist(checklist);
   return {
-    payload: semFotosEmbutidas(compactado),
+    payload: sanitizarParaFirestore(semFotosEmbutidas(compactado)),
     restaramFotosEmbutidas: temFotosEmbutidas(compactado),
   };
 }
@@ -3390,7 +3417,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const atualizado = { ...conflito.localVersion, atualizadoEm: agora };
       setChecklistsCampo(prev => prev.map(c => (c.id === atualizado.id ? atualizado : c)));
       if (db && auth?.currentUser) {
-        await setDoc(doc(db, 'checklistsCampo', atualizado.id), semFotosEmbutidas(atualizado), { merge: true }).catch(() => undefined);
+        await setDoc(doc(db, 'checklistsCampo', atualizado.id), sanitizarParaFirestore(semFotosEmbutidas(atualizado)), { merge: true }).catch(() => undefined);
       }
     } else if (escolha === 'remoto') {
       setChecklistsCampo(prev => prev.map(c => (c.id === conflito.remoteVersion.id ? conflito.remoteVersion : c)));
@@ -3411,7 +3438,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev.map(c => (c.id === conflito.remoteVersion.id ? conflito.remoteVersion : c)),
       ]);
       if (db && auth?.currentUser) {
-        await setDoc(doc(db, 'checklistsCampo', copiaId), semFotosEmbutidas(copiaLocal), { merge: true }).catch(() => undefined);
+        await setDoc(doc(db, 'checklistsCampo', copiaId), sanitizarParaFirestore(semFotosEmbutidas(copiaLocal)), { merge: true }).catch(() => undefined);
       }
     }
 
@@ -3656,7 +3683,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const dadosParaGravar = rubricaRemota
             ? { ...dadosFinais, rubricaUrl: rubricaRemota }
             : dadosFinais;
-          await setDoc(doc(db, 'checklistsCampo', id), dadosParaGravar, { merge: true });
+          await setDoc(doc(db, 'checklistsCampo', id), sanitizarParaFirestore(dadosParaGravar), { merge: true });
           if (completo && payload && payload.rubricaUrl === rubricaRemota) aplicarFotosCompactadas(completo, payload);
         })
         .catch(err => {
