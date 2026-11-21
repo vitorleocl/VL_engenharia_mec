@@ -47,7 +47,7 @@ export const ChecklistCampoView: React.FC = () => {
     removerChecklistCampo,
     gerarOuAtualizarLaudoDeChecklist,
   } = useData();
-  const { isOnline, firebaseUser } = useAuth();
+  const { isOnline, firebaseUser, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -68,6 +68,7 @@ export const ChecklistCampoView: React.FC = () => {
   const [recuperandoLocal, setRecuperandoLocal] = useState(false);
   const [sincronizandoNuvem, setSincronizandoNuvem] = useState(false);
   const [publicandoNuvem, setPublicandoNuvem] = useState(false);
+  const [logandoGoogle, setLogandoGoogle] = useState(false);
   const [resultadoRecuperacao, setResultadoRecuperacao] = useState<ResumoRecuperacaoChecklists | null>(null);
 
   const handleSincronizarDaNuvem = async () => {
@@ -366,9 +367,27 @@ export const ChecklistCampoView: React.FC = () => {
           <div className="space-y-0.5">
             <p className="font-bold">Modo local — sincronização desativada neste aparelho</p>
             <p className="opacity-90">
-              Para ver os checklists da nuvem, saia e entre novamente com a <strong>Conta Google Master</strong>.
+              Para ver os checklists da nuvem, entre com a <strong>Conta Google Master</strong>.
               O botão &ldquo;Acesso direto&rdquo; não habilita a sincronização entre aparelhos.
             </p>
+            <button
+              type="button"
+              disabled={logandoGoogle}
+              onClick={async () => {
+                setLogandoGoogle(true);
+                try {
+                  await loginWithGoogle();
+                } catch (err) {
+                  console.error('[Checklists] Falha ao entrar com Google:', err);
+                  window.alert('Não foi possível entrar com Google. Verifique se pop-ups estão permitidos.');
+                } finally {
+                  setLogandoGoogle(false);
+                }
+              }}
+              className="mt-2 rounded-lg border border-red-500/60 bg-red-500/20 px-3 py-1.5 font-bold text-red-700 dark:text-red-300 hover:bg-red-500/30 disabled:opacity-60"
+            >
+              {logandoGoogle ? 'Conectando…' : 'Entrar com Google Master'}
+            </button>
           </div>
         </div>
       )}

@@ -46,6 +46,7 @@ import { gerarMinutaTecnicaSecao } from '../lib/geradorMinutasLaudo';
 import { gerarLaudoCausaRaizOffline } from '../lib/motorLaudoCausaRaiz';
 import { db, auth, storage } from '../lib/firebase';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
 import { removerPdfIndexedDb } from '../lib/pdfStorage';
 import { 
   doc, 
@@ -1307,6 +1308,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // checklists locais (com fotos via Storage) e apaga os que só existem na nuvem.
   // Necessário quando um checklist foi criado enquanto o Storage estava indisponível.
   const publicarChecklistsNaNuvem = useCallback(async () => {
+    // O Firebase Auth pode ainda estar restaurando a sessão do localStorage
+    // quando o botão é clicado logo após recarregar a página.
+    if (!auth?.currentUser) {
+      await new Promise<void>(resolve => {
+        const unsub = onAuthStateChanged(auth, () => { unsub(); resolve(); });
+      });
+    }
     if (!db || !auth?.currentUser) throw new Error('SEM_LOGIN_FIREBASE');
 
     // Coleta de TODAS as fontes do aparelho, inclusive rascunhos do formulário.
