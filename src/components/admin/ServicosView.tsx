@@ -162,9 +162,9 @@ export const ServicosView: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate('/admin/servicos/checklists')}
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 text-sm font-bold uppercase text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 text-sm font-bold text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]"
         >
-          <ClipboardCheck className="h-4 w-4" /> CHECKLIST
+          <ClipboardCheck className="h-4 w-4" /> Checklists
           <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5 text-xs">{checklistsCampo.length}</span>
         </button>
       </nav>

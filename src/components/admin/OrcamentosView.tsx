@@ -45,6 +45,7 @@ import {
   obterFormaPagamento,
   type FormaPagamentoId,
 } from '../../lib/textosPadraoVL';
+import { ComboboxSelect, type ComboboxOption } from './ComboboxSelect';
 
 export const OrcamentosView: React.FC = () => {
   const { 
@@ -104,6 +105,29 @@ export const OrcamentosView: React.FC = () => {
   const [horasTecnicas, setHorasTecnicas] = useState<string>(TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
   const [mobilizacao, setMobilizacao] = useState<string>(TEXTO_OPERACIONAL_PADRAO.mobilizacao);
   const [incluiNotaFiscal, setIncluiNotaFiscal] = useState(true);
+
+  // Listas grandes do gerador — pesquisáveis via ComboboxSelect.
+  const opcoesClientes: ComboboxOption[] = useMemo(
+    () => clientes.map(c => ({
+      value: c.id,
+      label: c.nomeFantasia || c.razaoSocial || 'Cliente sem nome',
+      description: c.cpfCnpj || c.cnpj || undefined,
+    })),
+    [clientes]
+  );
+
+  const opcoesServicos: ComboboxOption[] = useMemo(() => [
+    ...servicosCatalogo.map(s => ({
+      value: s.id,
+      label: s.nome,
+      description: s.norma,
+    })),
+    {
+      value: 'personalizado',
+      label: 'Outro serviço (Personalizado)',
+      description: 'Título, normas e escopo digitados manualmente',
+    },
+  ], [servicosCatalogo]);
 
   const animarCardOrcamento = (id: string) => {
     const timeoutAnterior = animacoesTimeoutRef.current.get(id);
@@ -887,29 +911,26 @@ export const OrcamentosView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <label className="block text-xs font-bold text-[var(--ink)]">
                   <span className="mb-1 block">Cliente Contratante</span>
-                  <select
+                  <ComboboxSelect
                     value={clienteId}
-                    onChange={(e) => setClienteId(e.target.value)}
-                    className="w-full p-2.5 text-sm border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                  >
-                    {clientes.map(c => (
-                      <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>
-                    ))}
-                  </select>
+                    options={opcoesClientes}
+                    onChange={setClienteId}
+                    placeholder="Digite para buscar o cliente..."
+                    emptyMessage="Nenhum cliente encontrado."
+                    ariaLabel="Cliente Contratante"
+                  />
                 </label>
 
                 <label className="block text-xs font-bold text-[var(--ink)]">
                   <span className="mb-1 block">Catálogo Oficial de Serviços</span>
-                  <select
+                  <ComboboxSelect
                     value={servicoCategoriaId}
-                    onChange={(e) => handleSelectCategoria(e.target.value)}
-                    className="w-full p-2.5 text-sm border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                  >
-                    {servicosCatalogo.map(s => (
-                      <option key={s.id} value={s.id}>{s.nome} ({s.norma})</option>
-                    ))}
-                    <option value="personalizado">Outro serviço (Personalizado)</option>
-                  </select>
+                    options={opcoesServicos}
+                    onChange={handleSelectCategoria}
+                    placeholder="Digite para buscar o serviço..."
+                    emptyMessage="Nenhum serviço encontrado."
+                    ariaLabel="Catálogo Oficial de Serviços"
+                  />
                 </label>
               </div>
 
@@ -952,20 +973,22 @@ export const OrcamentosView: React.FC = () => {
               {servicoCategoriaId !== 'personalizado' && (() => {
                 const item = servicosCatalogo.find(s => s.id === servicoCategoriaId);
                 if (!item || !item.subtipos || item.subtipos.length === 0) return null;
+                const opcoesSubtipos: ComboboxOption[] = item.subtipos.map(st => ({
+                  value: st.id || st.nome,
+                  label: st.nome,
+                  description: st.normaRef,
+                }));
                 return (
                   <label className="block text-xs font-bold text-[var(--ink)]">
                     <span className="mb-1 block">Especificação do Subtipo / Laudo</span>
-                    <select
+                    <ComboboxSelect
                       value={subtipoSelecionadoId}
-                      onChange={(e) => handleSelectSubtipo(e.target.value)}
-                      className="w-full p-2.5 text-xs sm:text-sm border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                    >
-                      {item.subtipos.map(st => (
-                        <option key={st.id || st.nome} value={st.id || st.nome}>
-                          {st.nome} — {st.normaRef}
-                        </option>
-                      ))}
-                    </select>
+                      options={opcoesSubtipos}
+                      onChange={handleSelectSubtipo}
+                      placeholder="Digite para buscar a especificação..."
+                      emptyMessage="Nenhuma especificação encontrada."
+                      ariaLabel="Especificação do Subtipo / Laudo"
+                    />
                   </label>
                 );
               })()}

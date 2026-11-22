@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Trash2,
   AlertTriangle,
+  Cpu,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Cliente } from '../../types';
@@ -82,33 +83,35 @@ export const ClientesView: React.FC = () => {
     <nav
       aria-label="Seções de Clientes"
       role="tablist"
-      className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] pb-2"
+      className="flex w-full gap-2 overflow-x-auto border-b border-[var(--adm-line)]"
     >
       <button
         type="button"
         role="tab"
         aria-current={!abaAtivos ? 'page' : undefined}
         onClick={() => trocarAba('clientes')}
-        className={`min-h-11 px-4 rounded-lg text-sm font-bold transition-colors cursor-pointer ${
+        className={`inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-bold ${
           !abaAtivos
-            ? 'bg-[#1565D8] text-white'
-            : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)]'
+            ? 'border-[var(--adm-blue,#2160db)] text-[var(--adm-blue,#2160db)]'
+            : 'border-transparent text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]'
         }`}
       >
-        Clientes <span className="ml-1 text-xs opacity-80">{clientes.length}</span>
+        <Users className="h-4 w-4" /> Clientes
+        <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5 text-xs">{clientes.length}</span>
       </button>
       <button
         type="button"
         role="tab"
         aria-current={abaAtivos ? 'page' : undefined}
         onClick={() => trocarAba('ativos')}
-        className={`min-h-11 px-4 rounded-lg text-sm font-bold transition-colors cursor-pointer ${
+        className={`inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-bold ${
           abaAtivos
-            ? 'bg-[#1565D8] text-white'
-            : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)]'
+            ? 'border-[var(--adm-blue,#2160db)] text-[var(--adm-blue,#2160db)]'
+            : 'border-transparent text-[var(--adm-mut)] transition hover:border-[var(--adm-blue,#2160db)] hover:text-[var(--adm-text)]'
         }`}
       >
-        Ativos <span className="ml-1 text-xs opacity-80">{ativos.length}</span>
+        <Cpu className="h-4 w-4" /> Ativos
+        <span className="rounded-full bg-[var(--adm-bg)] px-2 py-0.5 text-xs">{ativos.length}</span>
       </button>
     </nav>
   );
