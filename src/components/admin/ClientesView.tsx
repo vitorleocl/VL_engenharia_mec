@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Users,
   Plus,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Cliente } from '../../types';
+import { AtivosView } from './AtivosView';
 
 function formatarCnpj(digits: string): string {
   const d = digits.replace(/\D/g, '').slice(0, 14);
@@ -69,6 +71,47 @@ function titleCasePtBr(texto?: string | null): string {
 
 export const ClientesView: React.FC = () => {
   const { clientes, ativos, laudos, orcamentos, adicionarCliente, atualizarCliente, removerCliente } = useData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const abaAtivos = searchParams.get('aba') === 'ativos';
+
+  const trocarAba = (aba: 'clientes' | 'ativos') => {
+    setSearchParams(aba === 'ativos' ? { aba: 'ativos' } : {}, { replace: true });
+  };
+
+  const abas = (
+    <nav
+      aria-label="Seções de Clientes"
+      role="tablist"
+      className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] pb-2"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-current={!abaAtivos ? 'page' : undefined}
+        onClick={() => trocarAba('clientes')}
+        className={`min-h-11 px-4 rounded-lg text-sm font-bold transition-colors cursor-pointer ${
+          !abaAtivos
+            ? 'bg-[#1565D8] text-white'
+            : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)]'
+        }`}
+      >
+        Clientes <span className="ml-1 text-xs opacity-80">{clientes.length}</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-current={abaAtivos ? 'page' : undefined}
+        onClick={() => trocarAba('ativos')}
+        className={`min-h-11 px-4 rounded-lg text-sm font-bold transition-colors cursor-pointer ${
+          abaAtivos
+            ? 'bg-[#1565D8] text-white'
+            : 'bg-[var(--card)] text-[var(--muted)] hover:text-[var(--ink)]'
+        }`}
+      >
+        Ativos <span className="ml-1 text-xs opacity-80">{ativos.length}</span>
+      </button>
+    </nav>
+  );
 
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
@@ -337,8 +380,21 @@ export const ClientesView: React.FC = () => {
     setModalAberto(false);
   };
 
+  // Todas as abas vivem nesta página. A rota antiga /admin/ativos redireciona
+  // para ?aba=ativos, preservando links e atalhos já existentes.
+  if (abaAtivos) {
+    return (
+      <div className="space-y-6 max-w-[1200px]">
+        {abas}
+        <AtivosView />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-[1200px]">
+      {abas}
+
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

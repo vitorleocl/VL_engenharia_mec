@@ -5,6 +5,7 @@
 
 import { Orcamento, Cliente, OrcamentoParcela, OrcamentoCronogramaItem, OrcamentoAtivoItem, OrcamentoItemCalculo } from '../types';
 import { generatePixPayload, generatePixSvgQr, validatePixPayload } from './pixEmv';
+import { FASES_METODOLOGIA_PADRAO_TEXTO } from './textosPadraoVL';
 
 export interface NormalizedProposta {
   codigo: string;
@@ -335,44 +336,17 @@ export async function normalizePropostaData(
   const pixValidacao = validatePixPayload(pixPayloadCopiaECola);
   const svgQrCode = await generatePixSvgQr(pixPayloadCopiaECola);
 
-  // Metodologia em 5 fases
-  const fasesMetodologia = [
-    {
-      numero: '01',
-      titulo: 'Inspeção visual in loco e diagnóstico preliminar',
-      tag: 'Vistoria de campo',
-      descricao: 'Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.',
-      entregavel: 'levantamento fotográfico em alta resolução e registro de evidências fáticas.',
-    },
-    {
-      numero: '02',
-      titulo: 'Aplicação de checklists normativos técnicos',
-      tag: 'Conformidade legal',
-      descricao: `Auditoria item por item das exigências regulamentadoras vigentes (${orcamento.normasTecnicas || 'NR-11, NR-12, NR-13, ABNT NBR'}), analisando proteções mecânicas, distâncias de segurança, enclausuramentos e intertravamentos.`,
-      entregavel: 'relatório de conformidade item a item conforme normas ABNT e NRs federais.',
-    },
-    {
-      numero: '03',
-      titulo: 'Ensaios físicos, medições e testes funcionais',
-      tag: 'Instrumentado',
-      descricao: 'Ensaios não destrutivos cabíveis, testes funcionais de paradas de emergência, medição de espessura por ultrassom, análise dimensional e verificação estrutural com instrumentos calibrados.',
-      entregavel: 'tabela de grandezas físicas aferidas e comparação com parâmetros nominais de fábrica.',
-    },
-    {
-      numero: '04',
-      titulo: 'Emissão do laudo técnico pericial conclusivo',
-      tag: 'Parecer pericial',
-      descricao: 'Consolidação de parecer de engenharia diagnóstica, classificação de riscos, memória de cálculo e plano de ação corretivo detalhado com prioridades de intervenção.',
-      entregavel: 'documento pericial formal assinado digitalmente, com validade jurídica perante órgãos fiscalizadores.',
-    },
-    {
-      numero: '05',
-      titulo: 'Anotação de Responsabilidade Técnica (ART)',
-      tag: 'Homologação CREA',
-      descricao: 'Registro formal da responsabilidade técnica do laudo perante o Conselho Regional de Engenharia e Agronomia de Pernambuco (CREA-PE), assegurando respaldo cível e criminal ao trabalho.',
-      entregavel: 'certidão de registro da ART quitada, vinculada ao CNPJ do cliente e aos equipamentos.',
-    },
-  ];
+  // Metodologia em 5 fases — mesma fonte canônica de propostas e laudos.
+  const fasesMetodologia = FASES_METODOLOGIA_PADRAO_TEXTO.map((fase, indice) => ({
+    numero: String(indice + 1).padStart(2, '0'),
+    titulo: fase.titulo,
+    tag: fase.subtituloBadge,
+    descricao: fase.descricao.replace(
+      '{normasTecnicas}',
+      orcamento.normasTecnicas || 'NR-11, NR-12, NR-13, ABNT NBR'
+    ),
+    entregavel: fase.entregavel.charAt(0).toLocaleLowerCase('pt-BR') + fase.entregavel.slice(1),
+  }));
 
   return {
     codigo,

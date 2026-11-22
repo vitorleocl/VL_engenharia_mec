@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { ChecklistCampo, ChecklistCampoItem } from '../../types';
 import { DADOS_VL_PADRAO } from '../../lib/orcamentoTemplatePadrao';
+import {
+  DIRETRIZES_OPERACIONAIS_PADRAO,
+  obterResumoOperacional,
+} from '../../lib/textosPadraoVL';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
@@ -321,7 +325,7 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
   const printRef = useRef<HTMLDivElement | null>(null);
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [avisoEmail, setAvisoEmail] = useState('');
-  const { ativos, clientes, laudos } = useData();
+  const { ativos, clientes, laudos, orcamentos } = useData();
   const ativo = useMemo(() => ativos.find((item) => item.id === checklist.ativoId), [ativos, checklist.ativoId]);
   const cliente = useMemo(() => clientes.find((item) => item.id === checklist.clienteId), [clientes, checklist.clienteId]);
   const laudoVinculado = useMemo(
@@ -358,6 +362,13 @@ export const ChecklistCampoPdfModal: React.FC<ChecklistCampoPdfModalProps> = ({
     ativo?.proprietario && `Proprietário: ${ativo.proprietario}`,
   ].filter(Boolean).join(' · ');
   const ativoIdentificacao = ativo?.identificacao || checklist.ativoIdentificacao || 'Ativo não informado';
+  // Texto operacional vem da mesma fonte padronizada usada por orçamentos e laudos.
+  const orcamentoVinculado = orcamentos.find(o => o.id === checklist.vinculadoAOrcamentoId);
+  const resumoOperacional = obterResumoOperacional({
+    ativosInspecionados: orcamentoVinculado?.qtdEquipamentos || ativo?.tipo || checklist.tipoAtivo,
+    horasTecnicas: orcamentoVinculado?.horasEngenharia,
+    mobilizacao: orcamentoVinculado?.mobilizacao,
+  });
   const nomeArquivoPdf = criarNomeArquivoPdf(ativoIdentificacao, dataVistoria);
   const capacidadeAtivo = ativo?.capacidade;
   const identificadoresAtivo = [
@@ -821,6 +832,14 @@ atendimento@vlengenhariamecanica.com.br · (81) 98843-0965`;
                   )}
                 </div>
               </div>
+            </div>
+            {/* Informações operacionais — fonte única compartilhada com propostas e laudos */}
+            <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-[10px] text-slate-700">
+              <p className="font-bold text-[11px] text-[#0B1E3D] mb-1">Informações Técnicas Operacionais & Diretrizes</p>
+              <p className="font-medium">{resumoOperacional}</p>
+              <ul className="mt-1.5 space-y-0.5 list-disc list-inside">
+                {DIRETRIZES_OPERACIONAIS_PADRAO.map(item => <li key={item}>{item}</li>)}
+              </ul>
             </div>
             {(checklist.geolocalizacao || checklist.vinculadoAOrcamentoId || laudoVinculado?.artNumero) && (
               <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 border-y border-slate-200 py-2.5 text-[10px] text-slate-600">

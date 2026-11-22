@@ -1,5 +1,12 @@
 import { Orcamento, OrcamentoSecao, Cliente, Ativo, OrcamentoItemCalculo, OrcamentoMetodologiaFase } from '../types';
 import { QR_CODE_PIX_PADRAO_BASE64, CHAVE_PIX_FORMATADA_PADRAO, TITULAR_PIX_PADRAO } from './pixUtils';
+import {
+  FASES_METODOLOGIA_PADRAO_TEXTO,
+  TEXTO_NFS_E_COM,
+  TEXTO_NFS_E_SEM,
+  TEXTO_OPERACIONAL_PADRAO,
+  obterDiretrizesOperacionaisHtml,
+} from './textosPadraoVL';
 
 export interface SecaoDefinicao {
   id: string;
@@ -250,58 +257,9 @@ export function gerarCardClienteHtml(params: {
   </div>`;
 }
 
-export const FASES_METODOLOGIA_PADRAO: OrcamentoMetodologiaFase[] = [
-  {
-    id: 'fase-1',
-    faseNumero: 1,
-    tag: 'Fase',
-    titulo: 'Inspeção visual in loco e diagnóstico preliminar',
-    subtituloBadge: 'Vistoria de campo',
-    descricao: 'Vistoria presencial minuciosa do ativo para mapeamento visual de não-conformidades de segurança, desgastes mecânicos, corrosão, fixações e análise física do ambiente operacional.',
-    entregavel: 'Levantamento fotográfico em alta resolução e registro de evidências fáticas.',
-    ativa: true,
-  },
-  {
-    id: 'fase-2',
-    faseNumero: 2,
-    tag: 'Fase',
-    titulo: 'Aplicação de checklists normativos técnicos',
-    subtituloBadge: 'Conformidade legal',
-    descricao: 'Auditoria item por item das exigências regulamentadoras vigentes ({normasTecnicas}), analisando proteções mecânicas, distâncias de segurança (ABNT NBR ISO 13857/13855), enclausuramentos e intertravamentos.',
-    entregavel: 'Relatório de conformidade item a item conforme normas ABNT e NRs federais.',
-    ativa: true,
-  },
-  {
-    id: 'fase-3',
-    faseNumero: 3,
-    tag: 'Fase',
-    titulo: 'Ensaios físicos, medições e testes funcionais',
-    subtituloBadge: 'Instrumentado',
-    descricao: 'Ensaios não destrutivos cabíveis (ultrassom, líquidos penetrantes), testes funcionais de paradas de emergência, medição de espessura de chapas, verificação de folgas mecânicas e integridade de soldas.',
-    entregavel: 'Planilha de grandezas medidas com instrumentos calibrados e rastreáveis RBC/Inmetro.',
-    ativa: true,
-  },
-  {
-    id: 'fase-4',
-    faseNumero: 4,
-    tag: 'Fase',
-    titulo: 'Dossiê técnico, matriz de risco e parecer conclusivo',
-    subtituloBadge: 'Engenharia diagnóstica',
-    descricao: 'Elaboração de laudo pericial detalhado contendo análise de risco quantitativa (HRN/SIL), memorial técnico descritivo, plano de ação corretivo claro e cronograma prioritário de adequações físicas.',
-    entregavel: 'Laudo pericial conclusivo digital em PDF com assinatura eletrônica e certificado digital.',
-    ativa: true,
-  },
-  {
-    id: 'fase-5',
-    faseNumero: 5,
-    tag: 'Fase',
-    titulo: 'Emissão e registro oficial da ART CREA-PE',
-    subtituloBadge: 'Homologação legal',
-    descricao: 'Anotação de Responsabilidade Técnica emitida eletronicamente junto ao CREA-PE, conferindo fé pública, respaldo institucional e plena validade jurídica perante fiscalizações do Ministério do Trabalho, CBMPE e seguradoras.',
-    entregavel: 'Certidão oficial de ART quitada com chave de autenticidade e QR Code do CREA-PE.',
-    ativa: true,
-  },
-];
+/** Reexport das fases canônicas definidas em textosPadraoVL. */
+export const FASES_METODOLOGIA_PADRAO: OrcamentoMetodologiaFase[] =
+  FASES_METODOLOGIA_PADRAO_TEXTO.map(fase => ({ ...fase }));
 
 /**
  * Gera a visualização estilizada em cards para a Etapa 2 (Metodologia em Etapas)
@@ -562,6 +520,11 @@ export function gerarHtmlEtapa3Investimento(params: {
 
     </div>
 
+    <!-- POLÍTICA DE NOTA FISCAL — TEXTO PADRONIZADO (textosPadraoVL) -->
+    <p style="margin: 0 0 2px 0; color: #475569; font-size: 9.5px; line-height: 1.4; text-align: center;">
+      ${comNotaFiscal ? TEXTO_NFS_E_COM : TEXTO_NFS_E_SEM}
+    </p>
+
     <!-- CAIXINHA DE FATURAMENTO & PIX COM QR CODE EMBEDDED -->
     <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
@@ -777,7 +740,7 @@ export function obterDescricaoAtivosUnificada(
   if (dadosExtras?.ativo?.identificacao) {
     return dadosExtras.ativo.identificacao;
   }
-  return '01 Ativo Principal, conforme demanda do contratante';
+  return `${TEXTO_OPERACIONAL_PADRAO.ativosInspecionados}, conforme demanda do contratante`;
 }
 
 /**
@@ -1174,18 +1137,13 @@ export function gerarSecoesPadraoOrcamentoLegado(
       subtitulo: 'OBRIGAÇÕES E CONDIÇÕES OPERACIONAIS',
       conteudoHtml: `<div class="space-y-4 text-xs">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium">
-          <div><span class="text-slate-500 block text-[11px]">Ativos Inspecionados:</span> <strong>${orcamento.qtdEquipamentos || '01 Ativo Principal'}</strong></div>
-          <div><span class="text-slate-500 block text-[11px]">Horas Técnicas:</span> <strong>${orcamento.horasEngenharia || '16 horas de engenharia'}</strong></div>
-          <div><span class="text-slate-500 block text-[11px]">Mobilização:</span> <strong>${orcamento.mobilizacao || 'Imediata / até 48h úteis'}</strong></div>
+          <div><span class="text-slate-500 block text-[11px]">Ativos Inspecionados:</span> <strong>${orcamento.qtdEquipamentos || TEXTO_OPERACIONAL_PADRAO.ativosInspecionados}</strong></div>
+          <div><span class="text-slate-500 block text-[11px]">Horas Técnicas:</span> <strong>${orcamento.horasEngenharia || TEXTO_OPERACIONAL_PADRAO.horasTecnicas}</strong></div>
+          <div><span class="text-slate-500 block text-[11px]">Mobilização:</span> <strong>${orcamento.mobilizacao || TEXTO_OPERACIONAL_PADRAO.mobilizacao}</strong></div>
         </div>
         <div class="space-y-2">
           <h4 class="font-bold text-[#0B1E3D] text-xs">Diretrizes Operacionais e Condições de Acesso:</h4>
-          <ul class="space-y-1.5 list-disc list-inside text-slate-700 leading-relaxed">
-            <li>Livre acesso às instalações e máquinas objeto do laudo no dia e horário previamente agendados;</li>
-            <li>Acompanhamento por responsável técnico, encarregado de manutenção ou operador da máquina;</li>
-            <li>Disponibilização de manuais de operação, prontuários anteriores ou diagramas caso existentes;</li>
-            <li>Observância de protocolos de segurança do trabalho do pátio industrial (EPIs aplicáveis).</li>
-          </ul>
+          ${obterDiretrizesOperacionaisHtml()}
         </div>
       </div>`
     },

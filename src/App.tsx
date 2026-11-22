@@ -17,7 +17,6 @@ import { LoginView } from './components/admin/LoginView';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { DashboardView } from './components/admin/DashboardView';
 import { ClientesView } from './components/admin/ClientesView';
-import { AtivosView } from './components/admin/AtivosView';
 import { OrcamentosView } from './components/admin/OrcamentosView';
 import { OrcamentoEditorView } from './components/admin/OrcamentoEditorView';
 import { FaturamentoView } from './components/admin/FaturamentoView';
@@ -115,13 +114,11 @@ export default function App() {
                   </AdminLayout>
                 }
               />
+              {/* Ativos passou a ser uma aba dentro de Clientes. Link antigo
+                  continua funcionando via redirecionamento. */}
               <Route
                 path="/admin/ativos"
-                element={
-                  <AdminLayout>
-                    <AtivosView />
-                  </AdminLayout>
-                }
+                element={<Navigate to="/admin/clientes?aba=ativos" replace />}
               />
               <Route
                 path="/admin/orcamentos"

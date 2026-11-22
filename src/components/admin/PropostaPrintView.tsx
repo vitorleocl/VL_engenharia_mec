@@ -27,6 +27,7 @@ import {
   FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 import { gerarPixCopiaECola } from '../../lib/pixEmv';
+import { TEXTO_NFS_E_COM, TEXTO_NFS_E_SEM } from '../../lib/textosPadraoVL';
 import { exportarPropostaParaPdf } from '../../lib/propostaPdfExport';
 import { VlLogoVector } from './PropostaViewerModal';
 
@@ -1328,7 +1329,7 @@ export const PropostaPrintView: React.FC = () => {
                   <tr>
                     <td colSpan={2} className="lab">
                       Investimento total líquido
-                      <span>{orcamento.incluiNotaFiscal !== false ? 'Com emissão de nota fiscal (NFS-e) e taxa de ART inclusas.' : 'Com Recibo de prestação autônoma e taxa de ART inclusa.'} Deslocamento e laudo completo incluídos.</span>
+                      <span>{orcamento.incluiNotaFiscal !== false ? TEXTO_NFS_E_COM : TEXTO_NFS_E_SEM} Deslocamento e laudo completo incluídos.</span>
                     </td>
                     <td colSpan={3} className="r tot">{valorTotalFormatado}</td>
                   </tr>

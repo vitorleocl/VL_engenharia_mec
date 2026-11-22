@@ -1,4 +1,9 @@
 import { TipoLaudoDef } from '../types';
+import {
+  DIRETRIZES_OPERACIONAIS_PADRAO,
+  TEXTO_ART,
+  TEXTO_METODOLOGIA_PADRAO,
+} from './textosPadraoVL';
 
 /**
  * Gera conteúdo técnico estruturado, normativo e formal para uma seção pericial
@@ -29,7 +34,11 @@ export function gerarMinutaTecnicaSecao(
   <li><strong>Resoluções do Sistema CONFEA/CREA:</strong> Atribuições privativas e Anotação de Responsabilidade Técnica (ART);</li>
   <li><strong>Metodologia Pericial:</strong> Vistoria física <em>in loco</em>, inspeção visual macrográfica, medições instrumentadas e análise sistemática dos modos de falha e mecanismos de risco operacional.</li>
 </ul>
-<p>Todos os parâmetros aferidos foram confrontados com as tabelas de referência e tolerâncias dimensional/funcional estipuladas pelo fabricante e pelas normas supracitadas.</p>`;
+<p>${TEXTO_METODOLOGIA_PADRAO}</p>
+ <p>Diretrizes operacionais e condições de acesso consideradas:</p>
+ <ul>${DIRETRIZES_OPERACIONAIS_PADRAO.map(diretriz => `<li>${diretriz}</li>`).join('')}</ul>
+ <p>${TEXTO_ART}</p>
+ <p>Todos os parâmetros aferidos foram confrontados com as tabelas de referência e tolerâncias dimensional/funcional estipuladas pelo fabricante e pelas normas supracitadas.</p>`;
   }
 
   // 3. Vistoria / Inspeção / Levantamento / Diagnóstico / Exames

@@ -7,29 +7,47 @@ import {
   X,
   Check,
   ImagePlus,
+  Layers,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { Ativo } from '../../types';
+import { Ativo, CategoriaAtivoDef } from '../../types';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '../../lib/firebase';
 
-const TIPOS_EQUIPAMENTO_PADRAO = [
-  'Caminhão Munck',
-  'Guindaste Rodoviário',
-  'Prensa Hidráulica',
-  'Injetora de Plástico',
-  'Playground Infantil',
-  'Sistema de Climatização',
-  'Veículo Sinistrado',
-  'Veículo Oficial / Utilitário',
-  'Caldeira / Vaso de Pressão',
-  'Ponte Rolante / Talha',
-  'Empilhadeira',
-  'Outro ativo',
-];
+const CATEGORIA_LEGADO = '__legado__';
+
+/** Gera um mapa de renomes (valor antigo -> valor novo) comparando duas árvores. */
+function obterRenomesCategorias(
+  originais: CategoriaAtivoDef[],
+  novas: CategoriaAtivoDef[]
+): Map<string, string> {
+  const mapa = new Map<string, string>();
+  const porId = new Map(novas.map(cat => [cat.id, cat]));
+
+  originais.forEach(original => {
+    const nova = porId.get(original.id);
+    if (!nova) return;
+    if (original.nome !== nova.nome) mapa.set(original.nome, nova.nome);
+    original.subcategorias.forEach((sub, indice) => {
+      const novaSub = nova.subcategorias[indice];
+      if (novaSub && novaSub !== sub) mapa.set(sub, novaSub);
+    });
+  });
+
+  return mapa;
+}
 
 export const AtivosView: React.FC = () => {
-  const { ativos, clientes, categoriasAtivos, atualizarCategoriasAtivos, adicionarAtivo, atualizarAtivo, removerAtivo } = useData();
+  const {
+    ativos,
+    clientes,
+    categoriasAtivos,
+    categoriasAtivosArvore,
+    atualizarCategoriasAtivosArvore,
+    adicionarAtivo,
+    atualizarAtivo,
+    removerAtivo,
+  } = useData();
 
   const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
@@ -38,7 +56,9 @@ export const AtivosView: React.FC = () => {
 
   // Form fields
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
-  const [tipo, setTipo] = useState('Caminhão Munck');
+  const [categoriaId, setCategoriaId] = useState('');
+  const [subcategoria, setSubcategoria] = useState('');
+  const [tipo, setTipo] = useState('');
   const [identificacao, setIdentificacao] = useState('');
   const [fabricante, setFabricante] = useState('');
   const [modelo, setModelo] = useState('');
@@ -50,19 +70,40 @@ export const AtivosView: React.FC = () => {
   const [localizacao, setLocalizacao] = useState('');
   const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState('');
-  const [novaCategoria, setNovaCategoria] = useState('');
   const [erroFormulario, setErroFormulario] = useState('');
 
+  // Category manager
+  const [gerenciadorAberto, setGerenciadorAberto] = useState(false);
+  const [rascunhoCategorias, setRascunhoCategorias] = useState<CategoriaAtivoDef[]>([]);
+  const [novasSubcategorias, setNovasSubcategorias] = useState<Record<string, string>>({});
+  const [removendoCategoriaId, setRemovendoCategoriaId] = useState<string | null>(null);
+
   const ativosFiltrados = ativos.filter((a) =>
-    `${a.identificacao || ''} ${a.tipo || ''} ${a.fabricante || ''} ${a.modelo || ''} ${a.placa || ''} ${a.localizacao || ''} ${a.clienteNome || ''}`
+    `${a.identificacao || ''} ${a.tipo || ''} ${a.subcategoria || ''} ${a.fabricante || ''} ${a.modelo || ''} ${a.placa || ''} ${a.localizacao || ''} ${a.clienteNome || ''}`
       .toLowerCase()
       .includes(busca.toLowerCase())
   );
 
+  const primeiraCategoriaId = categoriasAtivosArvore[0]?.id || '';
+
+  const resolverCategoriaInicial = (ativo?: Ativo | null): string => {
+    if (ativo?.categoriaId && categoriasAtivosArvore.some(c => c.id === ativo.categoriaId)) {
+      return ativo.categoriaId;
+    }
+    const texto = ativo?.tipo || '';
+    const encontrada = categoriasAtivosArvore.find(
+      c => c.nome === texto || c.subcategorias.includes(texto)
+    );
+    return encontrada?.id || (texto ? CATEGORIA_LEGADO : primeiraCategoriaId);
+  };
+
   const abrirNovo = () => {
     setAtivoEditando(null);
     setClienteId(clientes[0]?.id || '');
-    setTipo('Caminhão Munck');
+    const catId = primeiraCategoriaId;
+    setCategoriaId(catId);
+    setSubcategoria('');
+    setTipo(categoriasAtivosArvore.find(c => c.id === catId)?.nome || 'Outro ativo');
     setIdentificacao('');
     setFabricante('');
     setModelo('');
@@ -81,7 +122,14 @@ export const AtivosView: React.FC = () => {
   const abrirEdicao = (ativo: Ativo) => {
     setAtivoEditando(ativo);
     setClienteId(ativo.clienteId || clientes[0]?.id || '');
-    setTipo(ativo.tipo || 'Caminhão Munck');
+    const catId = resolverCategoriaInicial(ativo);
+    const categoria = categoriasAtivosArvore.find(c => c.id === catId);
+    setCategoriaId(catId);
+    setSubcategoria(
+      ativo.subcategoria ||
+        (categoria?.subcategorias.includes(ativo.tipo || '') ? ativo.tipo || '' : '')
+    );
+    setTipo(ativo.tipo || categoria?.nome || 'Outro ativo');
     setIdentificacao(ativo.identificacao || '');
     setFabricante(ativo.fabricante || ativo.marca || '');
     setModelo(ativo.modelo || '');
@@ -95,6 +143,18 @@ export const AtivosView: React.FC = () => {
     setFotoPreview(ativo.fotoUrl || '');
     setErroFormulario('');
     setModalAberto(true);
+  };
+
+  const handleCategoriaChange = (id: string) => {
+    setCategoriaId(id);
+    setSubcategoria('');
+    const categoria = categoriasAtivosArvore.find(c => c.id === id);
+    if (categoria) setTipo(categoria.nome);
+  };
+
+  const handleSubcategoriaChange = (valor: string) => {
+    setSubcategoria(valor);
+    if (valor) setTipo(valor);
   };
 
   const handleSalvar = async (e: React.FormEvent) => {
@@ -121,9 +181,14 @@ export const AtivosView: React.FC = () => {
       }
     }
 
+    const categoria = categoriasAtivosArvore.find(c => c.id === categoriaId);
+    const tipoFinal = subcategoria || categoria?.nome || tipo.trim() || 'Outro ativo';
+
     const payload = {
       clienteId,
-      tipo: tipo.trim() || 'Outro ativo',
+      tipo: tipoFinal,
+      categoriaId: categoriaId === CATEGORIA_LEGADO ? '' : categoriaId,
+      subcategoria: subcategoria || '',
       identificacao: identificacao.trim(),
       fabricante: fabricante.trim(),
       modelo: modelo.trim(),
@@ -145,27 +210,87 @@ export const AtivosView: React.FC = () => {
     setModalAberto(false);
   };
 
-  const opcoesTipo = tipo && !TIPOS_EQUIPAMENTO_PADRAO.includes(tipo)
-    ? Array.from(new Set([tipo, ...categoriasAtivos]))
-    : categoriasAtivos;
+  const categoriaSelecionada = categoriasAtivosArvore.find(c => c.id === categoriaId);
+  const subcategorias = categoriaSelecionada?.subcategorias || [];
 
-  const adicionarCategoria = (event: React.FormEvent) => {
-    event.preventDefault();
-    const categoria = novaCategoria.trim();
-    if (!categoria || categoriasAtivos.some(item => item.toLocaleLowerCase('pt-BR') === categoria.toLocaleLowerCase('pt-BR'))) return;
-    atualizarCategoriasAtivos([...categoriasAtivos, categoria]);
-    setTipo(categoria);
-    setNovaCategoria('');
+  // ----- Category manager -----
+  const abrirGerenciador = () => {
+    setRascunhoCategorias(categoriasAtivosArvore.map(cat => ({
+      id: cat.id,
+      nome: cat.nome,
+      subcategorias: [...(cat.subcategorias || [])],
+    })));
+    setNovasSubcategorias({});
+    setRemovendoCategoriaId(null);
+    setGerenciadorAberto(true);
   };
 
-  const removerCategoria = (categoria: string) => {
-    if (ativos.some(ativo => ativo.tipo === categoria)) {
-      window.alert('Esta categoria está vinculada a um ou mais ativos e não pode ser removida.');
+  const minimizarCategoria = (cat: CategoriaAtivoDef): CategoriaAtivoDef => ({
+    id: String(cat.id || `cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
+    nome: String(cat.nome || '').trim(),
+    subcategorias: Array.isArray(cat.subcategorias)
+      ? Array.from(new Set(cat.subcategorias.map(s => String(s).trim()).filter(Boolean)))
+      : [],
+  });
+
+  const salvarGerenciador = () => {
+    const finais = rascunhoCategorias.map(minimizarCategoria).filter(c => c.nome || c.subcategorias.length);
+    if (finais.length === 0) {
+      window.alert('Mantenha ao menos uma categoria de ativo.');
       return;
     }
-    if (!TIPOS_EQUIPAMENTO_PADRAO.includes(categoria)) {
-      atualizarCategoriasAtivos(categoriasAtivos.filter(item => item !== categoria));
-    }
+
+    const renomes = obterRenomesCategorias(categoriasAtivosArvore, finais);
+    atualizarCategoriasAtivosArvore(finais);
+
+    // Propaga renomes para os ativos já cadastrados, mantendo tipo/subcategoria alinhados.
+    ativos.forEach(ativo => {
+      const novoTipo = (ativo.tipo && renomes.get(ativo.tipo)) || ativo.tipo;
+      const novaSubcategoria = (ativo.subcategoria && renomes.get(ativo.subcategoria)) || ativo.subcategoria;
+      const categoriaAindaExiste = finais.some(c => c.id === ativo.categoriaId);
+      const novaCategoriaId = categoriaAindaExiste ? ativo.categoriaId : '';
+      if (
+        novoTipo !== ativo.tipo ||
+        novaSubcategoria !== ativo.subcategoria ||
+        novaCategoriaId !== (ativo.categoriaId || '')
+      ) {
+        atualizarAtivo(ativo.id, {
+          tipo: novoTipo,
+          subcategoria: novaSubcategoria || '',
+          categoriaId: novaCategoriaId,
+        });
+      }
+    });
+
+    setGerenciadorAberto(false);
+  };
+
+  const atualizarCategoriaNoRascunho = (id: string, transformar: (cat: CategoriaAtivoDef) => CategoriaAtivoDef) => {
+    setRascunhoCategorias(prev => prev.map(cat => cat.id === id ? transformar(cat) : cat));
+  };
+
+  const adicionarNovaCategoria = () => {
+    const nova: CategoriaAtivoDef = {
+      id: `cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      nome: 'Nova categoria',
+      subcategorias: [],
+    };
+    setRascunhoCategorias(prev => [...prev, nova]);
+  };
+
+  const removerCategoriaDoRascunho = (id: string) => {
+    setRascunhoCategorias(prev => prev.filter(cat => cat.id !== id));
+    setRemovendoCategoriaId(null);
+  };
+
+  const adicionarSubcategoriaNoRascunho = (categoriaId: string) => {
+    const valor = (novasSubcategorias[categoriaId] || '').trim();
+    if (!valor) return;
+    atualizarCategoriaNoRascunho(categoriaId, cat => ({
+      ...cat,
+      subcategorias: Array.from(new Set([...cat.subcategorias, valor])),
+    }));
+    setNovasSubcategorias(prev => ({ ...prev, [categoriaId]: '' }));
   };
 
   return (
@@ -215,7 +340,7 @@ export const AtivosView: React.FC = () => {
               <tr className="border-b border-[var(--line)] text-[var(--muted)] text-xs bg-[var(--paper)]">
                 <th className="py-2.5 px-4 font-semibold">Identificação</th>
                 <th className="py-2.5 px-4 font-semibold">Cliente</th>
-                <th className="py-2.5 px-4 font-semibold">Tipo</th>
+                <th className="py-2.5 px-4 font-semibold">Categoria / Subcategoria</th>
                 <th className="py-2.5 px-4 font-semibold">Capacidade</th>
                 <th className="py-2.5 px-4 font-semibold">Localização</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Ações</th>
@@ -246,7 +371,10 @@ export const AtivosView: React.FC = () => {
                       {cliente?.nomeFantasia || cliente?.razaoSocial || ativo.clienteNome || 'Cliente'}
                     </td>
                     <td className="py-3 px-4 align-top text-[var(--muted)]">
-                      {ativo.tipo}
+                      <span className="font-semibold">{ativo.tipo}</span>
+                      {ativo.subcategoria && ativo.subcategoria !== ativo.tipo && (
+                        <small className="block text-xs">{ativo.subcategoria}</small>
+                      )}
                     </td>
                     <td className="py-3 px-4 align-top text-[var(--muted)]">
                       {ativo.capacidade || '—'}
@@ -293,7 +421,7 @@ export const AtivosView: React.FC = () => {
                           type="button"
                           onClick={() => setConfirmandoExclusaoId(ativo.id)}
                           className="p-1.5 rounded-lg text-[var(--muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors inline-flex items-center cursor-pointer"
-                            title="Excluir ativo"
+                          title="Excluir ativo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -366,20 +494,47 @@ export const AtivosView: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block text-xs font-bold text-[var(--ink)]">
-                  <span className="mb-1 block">Categoria do ativo</span>
+                  <span className="mb-1 block">Categoria *</span>
                   <select
-                    value={tipo}
-                    onChange={(e) => setTipo(e.target.value)}
+                    value={categoriaId}
+                    onChange={(e) => handleCategoriaChange(e.target.value)}
                     className="w-full p-2.5 text-sm border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
                   >
-                    {opcoesTipo.map((op) => (
-                      <option key={op} value={op}>
-                        {op}
-                      </option>
+                    {categoriaId === CATEGORIA_LEGADO && (
+                      <option value={CATEGORIA_LEGADO}>{tipo || 'Categoria antiga'}</option>
+                    )}
+                    {categoriasAtivosArvore.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.nome}</option>
                     ))}
                   </select>
                 </label>
 
+                <label className="block text-xs font-bold text-[var(--ink)]">
+                  <span className="mb-1 block">Subcategoria</span>
+                  {subcategorias.length > 0 ? (
+                    <select
+                      value={subcategoria}
+                      onChange={(e) => handleSubcategoriaChange(e.target.value)}
+                      className="w-full p-2.5 text-sm border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                    >
+                      <option value="">Selecione a subcategoria</option>
+                      {subcategorias.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={subcategoria}
+                      onChange={(e) => handleSubcategoriaChange(e.target.value)}
+                      placeholder="Ex.: Caminhão-pipa"
+                      className="w-full p-2.5 text-sm border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                    />
+                  )}
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="block text-xs font-bold text-[var(--ink)]">
                   <span className="mb-1 block">Capacidade</span>
                   <input
@@ -390,6 +545,11 @@ export const AtivosView: React.FC = () => {
                     className="w-full p-2.5 text-sm border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
                   />
                 </label>
+                <div className="flex items-end">
+                  <p className="text-xs text-[var(--muted)] pb-2">
+                    A classificação acima é usada em orçamentos, checklists e laudos.
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -532,34 +692,188 @@ export const AtivosView: React.FC = () => {
         </div>
       )}
 
+      {/* Categorias e subcategorias */}
       <section className="rounded-xl border border-[var(--line)] bg-[var(--card)] p-4 sm:p-5">
-        <div className="mb-3">
-          <h2 className="text-lg font-bold text-[var(--ink)]">Categorias de ativos</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">Cadastre categorias para selecionar nos próximos ativos.</p>
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--ink)]">Categorias e subcategorias de ativos</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {categoriasAtivosArvore.length} categorias · {categoriasAtivos.length} opções disponíveis. Edite, renomeie ou exclua qualquer item — inclusive os padrões.
+            </p>
+          </div>
+          <button type="button" onClick={abrirGerenciador} className="btn-tech pri min-h-11 cursor-pointer">
+            <Layers className="mr-1.5 h-4 w-4" />
+            Gerenciar categorias
+          </button>
         </div>
-        <form onSubmit={adicionarCategoria} className="mb-4 flex flex-col gap-2 sm:flex-row">
-          <input
-            value={novaCategoria}
-            onChange={event => setNovaCategoria(event.target.value)}
-            placeholder="Ex.: Plataforma elevatória"
-            aria-label="Nova categoria de ativo"
-            className="min-h-11 flex-1 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm text-[var(--ink)]"
-          />
-          <button type="submit" className="btn-tech pri min-h-11 cursor-pointer"><Plus className="mr-1.5 h-4 w-4" />Adicionar categoria</button>
-        </form>
         <div className="flex flex-wrap gap-2">
-          {categoriasAtivos.map(categoria => (
-            <span key={categoria} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--paper)] px-3 py-1.5 text-xs font-medium text-[var(--ink)]">
-              {categoria}
-              {!TIPOS_EQUIPAMENTO_PADRAO.includes(categoria) && (
-                <button type="button" onClick={() => removerCategoria(categoria)} aria-label={`Remover categoria ${categoria}`} className="rounded-full p-0.5 text-[var(--muted)] hover:bg-rose-500/10 hover:text-rose-500">
-                  <X className="h-3 w-3" />
-                </button>
-              )}
+          {categoriasAtivosArvore.map(cat => (
+            <span key={cat.id} className="inline-flex flex-col rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs">
+              <span className="font-bold text-[var(--ink)]">{cat.nome}</span>
+              <span className="mt-0.5 text-[var(--muted)]">
+                {cat.subcategorias.length > 0 ? cat.subcategorias.join(' · ') : 'sem subcategorias'}
+              </span>
             </span>
           ))}
         </div>
       </section>
+
+      {/* Modal Gerenciador de Categorias */}
+      {gerenciadorAberto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[rgba(5,14,28,0.75)] backdrop-blur-xs overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-[var(--card)] text-[var(--ink)] border-[1.5px] border-[var(--line)] rounded-2xl w-full max-w-3xl p-5 sm:p-6 space-y-4 shadow-2xl my-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+              <div>
+                <h2 className="text-[20px] font-bold">Gerenciar categorias de ativos</h2>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  Renomeie ou exclua categorias e subcategorias. As alterações também atualizam os ativos já cadastrados.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGerenciadorAberto(false)}
+                className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)] transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+              {rascunhoCategorias.map(cat => {
+                const emUso = ativos.some(a =>
+                  a.categoriaId === cat.id ||
+                  a.tipo === cat.nome ||
+                  a.subcategoria === cat.nome ||
+                  cat.subcategorias.some(sub => a.tipo === sub || a.subcategoria === sub)
+                );
+
+                return (
+                  <div key={cat.id} className="rounded-xl border border-[var(--line)] bg-[var(--paper)] p-3 space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                      <label className="flex-1 text-xs font-bold">
+                        <span className="mb-1 block text-[var(--muted)]">Nome da categoria</span>
+                        <input
+                          type="text"
+                          value={cat.nome}
+                          onChange={(e) => atualizarCategoriaNoRascunho(cat.id, anterior => ({ ...anterior, nome: e.target.value }))}
+                          className="w-full p-2 text-sm border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      </label>
+                      {removendoCategoriaId === cat.id ? (
+                        <div className="flex items-center gap-1.5 sm:mt-5">
+                          <button
+                            type="button"
+                            onClick={() => removerCategoriaDoRascunho(cat.id)}
+                            className="text-xs py-2 px-2.5 rounded-md bg-rose-600 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" /> Confirmar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRemovendoCategoriaId(null)}
+                            className="text-xs py-2 px-2.5 rounded-md border border-[var(--line)] text-[var(--muted)] cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setRemovendoCategoriaId(cat.id)}
+                          className="mt-4 sm:mt-5 p-2 rounded-lg text-[var(--muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title={emUso ? 'Categoria em uso — os ativos manterão o texto atual' : 'Excluir categoria'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {emUso && removendoCategoriaId === cat.id && (
+                      <p className="text-xs text-amber-600">
+                        Esta categoria está vinculada a ativos. Ao confirmar, os ativos manterão o texto atual, mas a categoria desaparecerá das opções.
+                      </p>
+                    )}
+
+                    <div className="pl-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)] mb-1.5">Subcategorias</p>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {cat.subcategorias.map((sub, indice) => (
+                          <span key={`${cat.id}-${indice}`} className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--card)] px-2 py-1 text-xs">
+                            <input
+                              type="text"
+                              value={sub}
+                              onChange={(e) => atualizarCategoriaNoRascunho(cat.id, anterior => ({
+                                ...anterior,
+                                subcategorias: anterior.subcategorias.map((s, i) => i === indice ? e.target.value : s),
+                              }))}
+                              className="w-32 bg-transparent text-[var(--ink)] focus:outline-none"
+                              aria-label={`Editar subcategoria ${sub}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => atualizarCategoriaNoRascunho(cat.id, anterior => ({
+                                ...anterior,
+                                subcategorias: anterior.subcategorias.filter((_, i) => i !== indice),
+                              }))}
+                              className="rounded-full p-0.5 text-[var(--muted)] hover:text-rose-500 cursor-pointer"
+                              aria-label={`Remover subcategoria ${sub}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                        {cat.subcategorias.length === 0 && (
+                          <span className="text-xs text-[var(--muted)]">Nenhuma subcategoria cadastrada.</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={novasSubcategorias[cat.id] || ''}
+                          onChange={(e) => setNovasSubcategorias(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              adicionarSubcategoriaNoRascunho(cat.id);
+                            }
+                          }}
+                          placeholder="Nova subcategoria (Ex.: Caminhão-pipa)"
+                          aria-label={`Nova subcategoria de ${cat.nome}`}
+                          className="flex-1 p-2 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)] focus:outline-none focus:border-[var(--blue)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => adicionarSubcategoriaNoRascunho(cat.id)}
+                          className="btn-tech sm text-xs px-3 cursor-pointer inline-flex items-center"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Adicionar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <button type="button" onClick={adicionarNovaCategoria} className="btn-tech text-sm cursor-pointer">
+                <Plus className="w-4 h-4 mr-1.5" /> Nova categoria
+              </button>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-[var(--line)]">
+              <button type="button" onClick={() => setGerenciadorAberto(false)} className="btn-tech text-sm cursor-pointer">
+                Cancelar
+              </button>
+              <button type="button" onClick={salvarGerenciador} className="btn-tech pri text-sm px-5 font-bold cursor-pointer">
+                Salvar categorias
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

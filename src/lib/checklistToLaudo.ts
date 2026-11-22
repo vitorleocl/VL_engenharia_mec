@@ -10,6 +10,12 @@ import {
   Orcamento,
   TipoLaudoItemChecklist,
 } from '../types';
+import {
+  DIRETRIZES_OPERACIONAIS_PADRAO,
+  TEXTO_ART,
+  TEXTO_METODOLOGIA_PADRAO,
+  obterResumoOperacional,
+} from './textosPadraoVL';
 
 function normalizarRiscoNC(crit?: string): 'baixo' | 'medio' | 'alto' | 'critico' {
   switch ((crit || '').toLowerCase()) {
@@ -270,6 +276,13 @@ export function montarDadosLaudoDeChecklist(params: {
     ? `${cliente.endereco.logradouro ? cliente.endereco.logradouro + ', ' : ''}${cliente.endereco.numero ? cliente.endereco.numero + ' - ' : ''}${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}`
     : '';
 
+  // Mesma fonte de texto de propostas/checklists (textosPadraoVL).
+  const resumoOperacional = obterResumoOperacional({
+    ativosInspecionados: orcamento?.qtdEquipamentos || ativo?.tipo || checklist.tipoAtivo,
+    horasTecnicas: orcamento?.horasEngenharia,
+    mobilizacao: orcamento?.mobilizacao,
+  });
+
   return {
     tipo: checklist.tipoLaudoNome || modelo?.nome || 'Laudo Técnico de Engenharia Mecânica',
     tipoLaudoId: checklist.tipoLaudoId,
@@ -300,14 +313,15 @@ export function montarDadosLaudoDeChecklist(params: {
     acompanhanteCargo: cliente?.contatos?.[0]?.cargo || '',
     responsavelNome: checklist.responsavelNome || 'Eng. Vitor Leonardo Cordeiro Linhares',
     responsavelCrea: checklist.responsavelCrea || 'CREA-PE 182229949-0',
-    metodo: `Vistoria técnica presencial (${checklist.numero}), verificação normativa de campo, registros fotográficos e análise dimensional/funcional.`,
+    metodo: `${TEXTO_METODOLOGIA_PADRAO} Vistoria técnica presencial (${checklist.numero}), verificação normativa de campo, registros fotográficos e análise dimensional/funcional. ${resumoOperacional}.`,
     normasReferencia: modelo?.norma || 'Normas Regulamentadoras MTE / ABNT NBR',
     normasLista,
     parecer: parecerSugerido,
     justificativaParecer,
     proximaInspecaoData,
     premissasLimitacoes:
-      'Avaliação restrita às partes visíveis e acessíveis durante a inspeção técnica em campo. Não foram realizados ensaios destrutivos além dos registrados neste documento.',
+      'Avaliação restrita às partes visíveis e acessíveis durante a inspeção técnica em campo. Não foram realizados ensaios destrutivos além dos registrados neste documento. ' +
+      `Diretrizes operacionais: ${DIRETRIZES_OPERACIONAIS_PADRAO.join(' ')} ${TEXTO_ART}`,
     checklist: checklistLaudo,
     naoConformidadesEstruturadas,
     secoes: secoesLaudo,

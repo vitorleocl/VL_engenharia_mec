@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   FileText, 
   Users, 
-  Cpu, 
   FileSpreadsheet, 
   TrendingUp,
   ShieldCheck, 
@@ -59,24 +58,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const isColaborador = currentUser.role === 'colaborador' || isMaster;
   const orcamentosAbertosCount = orcamentos.filter(o => o.status === 'enviado' || o.status === 'rascunho').length;
 
-  // Menu lateral ajustado conforme requisitos
+  // Menu lateral na ordem definida pelo usuário. Ativos sai do menu e passa a
+  // ser uma aba dentro de Clientes (/admin/clientes?aba=ativos).
   const navItems = [
     {
       id: 'visao-geral',
-      label: 'Visão geral',
+      label: 'Visão Geral',
       path: '/admin',
       icon: LayoutDashboard,
       badge: '',
       title: 'Visão geral do painel técnico',
-      visible: true
-    },
-    {
-      id: 'central-laudos',
-      label: 'Central de Laudos',
-      path: '/admin/laudos',
-      icon: FileText,
-      badge: String(laudos.length),
-      title: `${laudos.length} laudos registrados`,
       visible: true
     },
     {
@@ -85,25 +76,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/admin/clientes',
       icon: Users,
       badge: String(clientes.length),
-      title: `${clientes.length} clientes cadastrados`,
-      visible: isColaborador
-    },
-    {
-      id: 'ativos',
-      label: 'Ativos',
-      path: '/admin/ativos',
-      icon: Cpu,
-      badge: String(ativos.length),
-      title: `${ativos.length} ativos cadastrados`,
-      visible: true
-    },
-    {
-      id: 'orcamentos',
-      label: 'Orçamentos',
-      path: '/admin/orcamentos',
-      icon: FileSpreadsheet,
-      badge: String(orcamentos.length),
-      title: `${orcamentos.length} orçamentos no total (${orcamentosAbertosCount} em aberto)`,
+      title: `${clientes.length} clientes cadastrados · ${ativos.length} ativos`,
       visible: isColaborador
     },
     {
@@ -116,6 +89,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       visible: isColaborador
     },
     {
+      id: 'orcamentos',
+      label: 'Orçamentos',
+      path: '/admin/orcamentos',
+      icon: FileSpreadsheet,
+      badge: String(orcamentos.length),
+      title: `${orcamentos.length} orçamentos no total (${orcamentosAbertosCount} em aberto)`,
+      visible: isColaborador
+    },
+    {
+      id: 'central-laudos',
+      label: 'Central de Laudos',
+      path: '/admin/laudos',
+      icon: FileText,
+      badge: String(laudos.length),
+      title: `${laudos.length} laudos registrados`,
+      visible: true
+    },
+    {
       id: 'faturamento',
       label: 'Faturamento',
       path: '/admin/faturamento',
@@ -126,11 +117,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     {
       id: 'auditoria',
-      label: 'Auditoria e acessos',
+      label: 'Log de acesso',
       path: '/admin/auditoria',
       icon: ShieldCheck,
       badge: 'Master',
-      title: 'Auditoria, logs e controle de acessos (Master)',
+      title: 'Logs de acesso, auditoria e controle de acessos (Master)',
       visible: isMaster
     }
   ];

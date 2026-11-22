@@ -65,12 +65,21 @@ export interface AtivoHistoricoItem {
   totalNaoConformidades: number;
 }
 
+/** Categoria de ativo com subcategorias editáveis. */
+export interface CategoriaAtivoDef {
+  id: string;
+  nome: string;
+  subcategorias: string[];
+}
+
 export interface Ativo {
   id: string;
   clienteId: string;
   clienteNome?: string;
   proprietario?: string;
   tipo: string;
+  categoriaId?: string;
+  subcategoria?: string;
   identificacao: string; // Ex: Placa, Chassi, Tag, Prefixo
   fabricante: string;
   modelo?: string;
@@ -195,6 +204,10 @@ export interface Orcamento {
   prazoEntrega?: string;
   validadeDias?: number;
   condicoesPagamento?: string;
+  /** Forma de pagamento escolhida no Gerador de Proposta. */
+  formaPagamento?: '50_50' | '100_apos_laudo_art';
+  /** Metodologia de engenharia em etapas selecionada no gerador. */
+  metodologiaEmEtapas?: boolean;
   incluiNotaFiscal?: boolean;
   chavePixTipo?: 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria';
   chavePix?: string;

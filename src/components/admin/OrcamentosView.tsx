@@ -33,8 +33,18 @@ import {
   gerarSecoesPadraoOrcamentoV2, 
   DADOS_VL_PADRAO, 
   calcularValidadeAte,
-  obterTituloLaudoProposta
+  obterTituloLaudoProposta,
+  FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
+import {
+  A_COMBINAR_COM_CLIENTE,
+  FORMAS_PAGAMENTO,
+  OPCOES_TEXTO_OPERACIONAL,
+  TEXTO_OPERACIONAL_PADRAO,
+  TITULO_METODOLOGIA_PADRAO,
+  obterFormaPagamento,
+  type FormaPagamentoId,
+} from '../../lib/textosPadraoVL';
 
 export const OrcamentosView: React.FC = () => {
   const { 
@@ -68,6 +78,9 @@ export const OrcamentosView: React.FC = () => {
   const [filtroClienteId, setFiltroClienteId] = useState('');
   const [cardsAnimados, setCardsAnimados] = useState<Set<string>>(() => new Set());
   const animacoesTimeoutRef = useRef<Map<string, number>>(new Map());
+  // Evita que o preenchimento automático dos dados do cliente sobrescreva os
+  // valores salvos no orçamento quando o gerador é aberto para edição.
+  const preservarDadosEdicaoRef = useRef(false);
 
   const [clienteId, setClienteId] = useState(clientes[0]?.id || '');
   const [cnpjCliente, setCnpjCliente] = useState('');
@@ -81,7 +94,16 @@ export const OrcamentosView: React.FC = () => {
   const [prazoDias, setPrazoDias] = useState<number>(7);
   const [validadeDias, setValidadeDias] = useState<number>(15);
   const [valorTotal, setValorTotal] = useState('3500');
-  const [condicoesPagamento, setCondicoesPagamento] = useState('50% na aprovação da proposta e 50% após emissão do laudo técnico pericial e registro da ART junto ao CREA-PE.');
+  const [condicoesPagamento, setCondicoesPagamento] = useState<string>(obterFormaPagamento('50_50').condicoes);
+
+  // Campos do Gerador de Proposta (padronizados em textosPadraoVL)
+  const [orcamentoEditando, setOrcamentoEditando] = useState<Orcamento | null>(null);
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoId>('50_50');
+  const [metodologiaEmEtapas, setMetodologiaEmEtapas] = useState(true);
+  const [ativosInspecionados, setAtivosInspecionados] = useState<string>(TEXTO_OPERACIONAL_PADRAO.ativosInspecionados);
+  const [horasTecnicas, setHorasTecnicas] = useState<string>(TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
+  const [mobilizacao, setMobilizacao] = useState<string>(TEXTO_OPERACIONAL_PADRAO.mobilizacao);
+  const [incluiNotaFiscal, setIncluiNotaFiscal] = useState(true);
 
   const animarCardOrcamento = (id: string) => {
     const timeoutAnterior = animacoesTimeoutRef.current.get(id);
@@ -110,6 +132,10 @@ export const OrcamentosView: React.FC = () => {
 
   // Preenchimento automático ao selecionar cliente
   useEffect(() => {
+    if (preservarDadosEdicaoRef.current) {
+      preservarDadosEdicaoRef.current = false;
+      return;
+    }
     const c = clientes.find(cli => cli.id === clienteId);
     if (c) {
       setCnpjCliente(c.cpfCnpj || c.cnpj || '');
@@ -160,40 +186,110 @@ export const OrcamentosView: React.FC = () => {
     }
   };
 
-  const criarPropostaDados = () => {
+  const aplicarFormaPagamento = (id: FormaPagamentoId) => {
+    setFormaPagamento(id);
+    setCondicoesPagamento(obterFormaPagamento(id).condicoes);
+  };
+
+  const abrirGeradorNovo = () => {
+    setOrcamentoEditando(null);
+    setClienteId(clientes[0]?.id || '');
+    setCnpjCliente('');
+    setRepresentanteNome('');
+    setLocalidadeServico('');
+    setServicoCategoriaId('nr12-projetos');
+    setSubtipoSelecionadoId('');
+    setServicoTitulo('Adequação à NR-12 e projetos mecânicos');
+    setNormasTecnicas('NR-12 · NBR ISO 12100');
+    setDescricaoEscopo('Apreciação de risco, projeto de proteções mecânicas, enclausuramento e documentação técnica oficial.');
+    setPrazoDias(7);
+    setValidadeDias(15);
+    setValorTotal('3500');
+    aplicarFormaPagamento('50_50');
+    setMetodologiaEmEtapas(true);
+    setAtivosInspecionados(TEXTO_OPERACIONAL_PADRAO.ativosInspecionados);
+    setHorasTecnicas(TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
+    setMobilizacao(TEXTO_OPERACIONAL_PADRAO.mobilizacao);
+    setIncluiNotaFiscal(true);
+    setModalNovoAberto(true);
+  };
+
+  const abrirGeradorExistente = (orcamento: Orcamento) => {
+    preservarDadosEdicaoRef.current = true;
+    setOrcamentoEditando(orcamento);
+    setClienteId(orcamento.clienteId || clientes[0]?.id || '');
+    setCnpjCliente(orcamento.cnpjCliente || '');
+    setRepresentanteNome(orcamento.representanteNome || '');
+    setLocalidadeServico(orcamento.localidadeServico || '');
+    setServicoCategoriaId('personalizado');
+    setSubtipoSelecionadoId('');
+    setServicoTitulo(orcamento.servico || '');
+    setNormasTecnicas(orcamento.normasTecnicas || '');
+    setDescricaoEscopo(orcamento.descricaoEscopo || '');
+    setPrazoDias(orcamento.prazoDias || 7);
+    setValidadeDias(orcamento.validadeDias || 15);
+    setValorTotal(String(orcamento.valor || 2500));
+    const forma: FormaPagamentoId = orcamento.formaPagamento === '100_apos_laudo_art'
+      ? '100_apos_laudo_art'
+      : '50_50';
+    setFormaPagamento(forma);
+    setCondicoesPagamento(orcamento.condicoesPagamento || obterFormaPagamento(forma).condicoes);
+    setMetodologiaEmEtapas(orcamento.metodologiaEmEtapas !== false);
+    setAtivosInspecionados(orcamento.qtdEquipamentos || TEXTO_OPERACIONAL_PADRAO.ativosInspecionados);
+    setHorasTecnicas(orcamento.horasEngenharia || TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
+    setMobilizacao(orcamento.mobilizacao || TEXTO_OPERACIONAL_PADRAO.mobilizacao);
+    setIncluiNotaFiscal(orcamento.incluiNotaFiscal !== false);
+    setModalNovoAberto(true);
+  };
+
+  /** Monta o orçamento a partir dos campos do gerador (texto vem de textosPadraoVL). */
+  const montarDadosProposta = (): Omit<Orcamento, 'id' | 'criadoEm'> => {
     const cliente = clientes.find(c => c.id === clienteId);
     const valorNum = parseFloat(valorTotal) || 2500;
     const ano = new Date().getFullYear();
-    const codigoProposta = `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
-    const emitidaEm = new Date().toISOString().split('T')[0];
+    const codigoProposta = orcamentoEditando?.codigoProposta || `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
+    const emitidaEm = orcamentoEditando?.emitidaEm || new Date().toISOString().split('T')[0];
     const validaAte = calcularValidadeAte(emitidaEm, validadeDias);
-    const metade = valorNum / 2;
+    const forma = obterFormaPagamento(formaPagamento);
+    const parcelas = forma.parcelas.map((p) => ({
+      parcela: p.parcela,
+      quando: p.quando,
+      percentual: p.percentual,
+      valor: (valorNum * p.percentual) / 100,
+    }));
 
     const orcamentoRascunho: Omit<Orcamento, 'id' | 'criadoEm'> = {
       clienteId,
-      clienteNome: cliente?.nomeFantasia || cliente?.razaoSocial || 'Cliente Contratante',
+      clienteNome: cliente?.nomeFantasia || cliente?.razaoSocial || orcamentoEditando?.clienteNome || 'Cliente Contratante',
       cnpjCliente: cnpjCliente.trim() || cliente?.cpfCnpj || cliente?.cnpj || '',
       representanteNome: representanteNome.trim() || cliente?.contatos?.[0]?.nome || 'Diretoria / Coordenação Técnica',
       localidadeServico: localidadeServico.trim() || (cliente?.endereco?.cidade ? `${cliente.endereco.cidade}/${cliente.endereco.estado || 'PE'}` : 'Recife e Região Metropolitana - PE'),
       emailCliente: cliente?.contatos?.[0]?.email || 'comercial@cliente.com.br',
       telefoneCliente: cliente?.contatos?.[0]?.telefone || '(81) 98444-2592',
       codigoProposta,
-      revisao: '00',
+      revisao: orcamentoEditando
+        ? String((parseInt(orcamentoEditando.revisao || '00', 10) || 0) + 1).padStart(2, '0')
+        : '00',
       emitidaEm,
       validaAte,
       layoutVersao: 'v2',
       modoExportacaoPdf: 'executiva',
       servico: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
       descricaoEscopo: descricaoEscopo.trim() || 'Vistoria técnica in loco, ensaios não destrutivos e emissão de laudo pericial com ART CREA-PE.',
-      status: 'rascunho',
+      status: orcamentoEditando?.status || 'rascunho',
       valor: valorNum,
       valorFormatado: valorNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       prazoDias,
       prazoEntrega: `${prazoDias} dias úteis`,
       validadeDias,
-      condicoesPagamento: condicoesPagamento || '50% na aprovação e 50% após emissão do laudo e ART.',
+      condicoesPagamento: condicoesPagamento.trim() || forma.condicoes,
+      formaPagamento,
+      metodologiaEmEtapas,
       normasTecnicas: normasTecnicas || 'ABNT NBR, NR-11, NR-12, NR-13 conforme aplicável',
-      incluiNotaFiscal: true,
+      incluiNotaFiscal,
+      qtdEquipamentos: ativosInspecionados.trim() || TEXTO_OPERACIONAL_PADRAO.ativosInspecionados,
+      horasEngenharia: horasTecnicas.trim() || TEXTO_OPERACIONAL_PADRAO.horasTecnicas,
+      mobilizacao: mobilizacao.trim() || TEXTO_OPERACIONAL_PADRAO.mobilizacao,
       chavePix: DADOS_VL_PADRAO.pixChave,
       contratadaCnpj: DADOS_VL_PADRAO.cnpj,
       contratadaNome: DADOS_VL_PADRAO.razaoSocial,
@@ -206,56 +302,75 @@ export const OrcamentosView: React.FC = () => {
       contratadaPixChave: DADOS_VL_PADRAO.pixChave,
       contratadaPixTitular: DADOS_VL_PADRAO.pixTitular,
       contratadaPixCidade: DADOS_VL_PADRAO.pixCidade,
-      itensCalculo: [
-        {
-          id: 'item-1',
-          descricao: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
-          quantidade: 1,
-          valorUnitario: valorNum,
-          valorTotal: valorNum,
-        }
-      ],
-      parcelas: [
-        { parcela: '1ª', quando: 'Na aprovação da proposta comercial', percentual: 50, valor: metade },
-        { parcela: '2ª', quando: 'Após emissão do laudo técnico pericial e registro da ART no CREA-PE', percentual: 50, valor: metade }
-      ],
+      itensCalculo: (orcamentoEditando?.itensCalculo && orcamentoEditando.itensCalculo.length > 0)
+        ? orcamentoEditando.itensCalculo
+        : [
+            {
+              id: 'item-1',
+              descricao: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
+              quantidade: 1,
+              valorUnitario: valorNum,
+              valorTotal: valorNum,
+            }
+          ],
+      parcelas,
       cronograma: [
         { marco: 'Alinhamento & Análise de Documentação Técnica', prazo: 'D+1', responsavel: 'VL & Contratante' },
         { marco: 'Inspeção Técnica In Loco e Ensaios Não Destrutivos', prazo: 'D+3 a D+4', responsavel: 'Eng. Vitor Leonardo' },
         { marco: 'Análise de Conformidade e Memoriais de Cálculo', prazo: 'D+5', responsavel: 'Corpo Técnico VL' },
         { marco: 'Emissão de Laudo Preliminar para Validação', prazo: 'D+6', responsavel: 'Engenheiro Mecânico' },
         { marco: 'Protocolo da ART CREA-PE & Entrega Oficial do Laudo', prazo: `D+${prazoDias}`, responsavel: 'VL Engenharia' }
-      ]
+      ],
+      ...(metodologiaEmEtapas ? {
+        tituloMetodologia: TITULO_METODOLOGIA_PADRAO,
+        metodologiaFases: FASES_METODOLOGIA_PADRAO.map(fase => ({ ...fase })),
+      } : {}),
+      ...(orcamentoEditando?.ativoId ? { ativoId: orcamentoEditando.ativoId } : {}),
+      ...(orcamentoEditando?.ativoIdentificacao ? { ativoIdentificacao: orcamentoEditando.ativoIdentificacao } : {}),
     };
 
-    // Gera as 6 seções do Modelo Base Aprovado (v2)
+    // Regera as seções a partir da fonte padronizada, refletindo forma de
+    // pagamento, metodologia, textos operacionais e NFS-e escolhidos aqui.
     orcamentoRascunho.secoes = gerarSecoesPadraoOrcamentoV2(orcamentoRascunho as Orcamento, { cliente });
 
-    const idCriado = adicionarOrcamento(orcamentoRascunho);
+    return orcamentoRascunho;
+  };
+
+  const salvarProposta = (): Orcamento => {
+    const dados = montarDadosProposta();
+    if (orcamentoEditando) {
+      atualizarOrcamento(orcamentoEditando.id, {
+        ...dados,
+        atualizadoEm: new Date().toISOString(),
+      });
+      animarCardOrcamento(orcamentoEditando.id);
+      return { ...orcamentoEditando, ...dados } as Orcamento;
+    }
+    const idCriado = adicionarOrcamento(dados);
     animarCardOrcamento(idCriado);
-    return { id: idCriado, ...orcamentoRascunho, criadoEm: new Date().toISOString() } as Orcamento;
+    return { id: idCriado, ...dados, criadoEm: new Date().toISOString() } as Orcamento;
   };
 
   const handleCriarEVisualizarPdf = (e: React.FormEvent) => {
     e.preventDefault();
     if (!servicoTitulo.trim()) return;
-    const orcamentoCriado = criarPropostaDados();
+    const salvo = salvarProposta();
     setModalNovoAberto(false);
-    setPropostaModalOrcamento(orcamentoCriado);
+    setPropostaModalOrcamento(salvo);
   };
 
   const handleCriarEAbrirEditor = (e: React.FormEvent) => {
     e.preventDefault();
     if (!servicoTitulo.trim()) return;
-    const orcamentoCriado = criarPropostaDados();
+    const salvo = salvarProposta();
     setModalNovoAberto(false);
-    navigate(`/admin/orcamentos/${orcamentoCriado.id}`);
+    navigate(`/admin/orcamentos/${salvo.id}`);
   };
 
   const handleCriarPropostaApenas = (e: React.FormEvent) => {
     e.preventDefault();
     if (!servicoTitulo.trim()) return;
-    criarPropostaDados();
+    salvarProposta();
     setModalNovoAberto(false);
   };
 
@@ -499,6 +614,14 @@ export const OrcamentosView: React.FC = () => {
             </button>
             <button
               type="button"
+              onClick={() => abrirGeradorExistente(orcamento)}
+              className="p-1.5 rounded-lg text-[#1565D8] hover:bg-[#1565D8]/10 transition-colors cursor-pointer"
+              title="Abrir Gerador de Proposta para editar este orçamento"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
               onClick={() => navigate(`/admin/orcamentos/${orcamento.id}`)}
               className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--line)]/50 transition-colors cursor-pointer"
               title="Editar proposta no editor rico"
@@ -555,7 +678,7 @@ export const OrcamentosView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setModalNovoAberto(true)}
+            onClick={abrirGeradorNovo}
             className="btn-tech pri text-[14px] px-4 py-2 shadow-sm flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -738,9 +861,14 @@ export const OrcamentosView: React.FC = () => {
                 <div>
                   <h2 className="text-[19px] font-bold text-[var(--ink)]">
                     Gerador de Proposta Técnico-Comercial
+                    {orcamentoEditando && (
+                      <span className="ml-2 text-xs font-semibold text-[#1565D8]">
+                        · Editando {orcamentoEditando.codigoProposta || orcamentoEditando.id}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-xs text-[var(--muted)]">
-                    Emissão oficial padronizada em 13 páginas A4 com cálculo automático e ART CREA-PE
+                    Preencha forma de pagamento, metodologia, informações operacionais e NFS-e. A proposta é gerada a partir de um texto único padronizado.
                   </p>
                 </div>
               </div>
@@ -917,7 +1045,7 @@ export const OrcamentosView: React.FC = () => {
               </label>
 
               {/* Valor & Condições de Pagamento */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <label className="block text-xs font-bold text-[var(--ink)]">
                   <span className="mb-1 block">Investimento Total (R$)</span>
                   <div className="relative">
@@ -936,6 +1064,19 @@ export const OrcamentosView: React.FC = () => {
                   </div>
                 </label>
 
+                <label className="block text-xs font-bold text-[var(--ink)]">
+                  <span className="mb-1 block">Forma de Pagamento</span>
+                  <select
+                    value={formaPagamento}
+                    onChange={(e) => aplicarFormaPagamento(e.target.value as FormaPagamentoId)}
+                    className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
+                  >
+                    {FORMAS_PAGAMENTO.map(opcao => (
+                      <option key={opcao.id} value={opcao.id}>{opcao.label}</option>
+                    ))}
+                  </select>
+                </label>
+
                 <label className="block text-xs font-bold text-[var(--ink)] sm:col-span-2">
                   <span className="mb-1 block">Condições de Pagamento & PIX</span>
                   <input
@@ -944,6 +1085,94 @@ export const OrcamentosView: React.FC = () => {
                     onChange={(e) => setCondicoesPagamento(e.target.value)}
                     className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
                   />
+                </label>
+              </div>
+
+              {/* Metodologia, Informações Operacionais e NFS-e */}
+              <div className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--line)] space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold uppercase tracking-wider text-[var(--blue)] text-xs">
+                    Metodologia & Informações Técnicas Operacionais
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAtivosInspecionados(A_COMBINAR_COM_CLIENTE);
+                      setHorasTecnicas(A_COMBINAR_COM_CLIENTE);
+                      setMobilizacao(A_COMBINAR_COM_CLIENTE);
+                    }}
+                    className="text-[11px] font-semibold text-[#1565D8] hover:underline cursor-pointer"
+                  >
+                    Usar “{A_COMBINAR_COM_CLIENTE}” nos três campos
+                  </button>
+                </div>
+
+                <label className="flex items-start gap-2.5 text-xs font-semibold text-[var(--ink)] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={metodologiaEmEtapas}
+                    onChange={(e) => setMetodologiaEmEtapas(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[#1565D8]"
+                  />
+                  <span>
+                    Metodologia de engenharia em etapas
+                    <span className="block font-normal text-[var(--muted)]">
+                      Selecionada por padrão · 5 fases com inspeção, checklists normativos, ensaios, análise de risco e laudo com ART.
+                    </span>
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <label className="block text-xs font-bold text-[var(--ink)]">
+                    <span className="mb-1 block">Ativos inspecionados</span>
+                    <input
+                      type="text"
+                      list="opcoes-texto-operacional"
+                      value={ativosInspecionados}
+                      onChange={(e) => setAtivosInspecionados(e.target.value)}
+                      placeholder={TEXTO_OPERACIONAL_PADRAO.ativosInspecionados}
+                      className="w-full p-2 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)]"
+                    />
+                  </label>
+                  <label className="block text-xs font-bold text-[var(--ink)]">
+                    <span className="mb-1 block">Horas técnicas</span>
+                    <input
+                      type="text"
+                      list="opcoes-texto-operacional"
+                      value={horasTecnicas}
+                      onChange={(e) => setHorasTecnicas(e.target.value)}
+                      placeholder={TEXTO_OPERACIONAL_PADRAO.horasTecnicas}
+                      className="w-full p-2 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)]"
+                    />
+                  </label>
+                  <label className="block text-xs font-bold text-[var(--ink)]">
+                    <span className="mb-1 block">Mobilização</span>
+                    <input
+                      type="text"
+                      list="opcoes-texto-operacional"
+                      value={mobilizacao}
+                      onChange={(e) => setMobilizacao(e.target.value)}
+                      placeholder={TEXTO_OPERACIONAL_PADRAO.mobilizacao}
+                      className="w-full p-2 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)]"
+                    />
+                  </label>
+                </div>
+                <datalist id="opcoes-texto-operacional">
+                  {OPCOES_TEXTO_OPERACIONAL.map(opcao => (
+                    <option key={opcao} value={opcao} />
+                  ))}
+                </datalist>
+
+                <label className="block text-xs font-bold text-[var(--ink)]">
+                  <span className="mb-1 block">Nota Fiscal (NFS-e)</span>
+                  <select
+                    value={incluiNotaFiscal ? 'com' : 'sem'}
+                    onChange={(e) => setIncluiNotaFiscal(e.target.value === 'com')}
+                    className="w-full p-2.5 text-xs border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)]"
+                  >
+                    <option value="com">Com Nota Fiscal (NFS-e)</option>
+                    <option value="sem">Sem Nota Fiscal (NFS-e)</option>
+                  </select>
                 </label>
               </div>
 
@@ -960,21 +1189,31 @@ export const OrcamentosView: React.FC = () => {
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
                   <button
                     type="button"
+                    onClick={handleCriarPropostaApenas}
+                    className="w-full sm:w-auto px-3 py-2 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:bg-[var(--line)]/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="Salva a proposta sem abrir o visualizador"
+                  >
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{orcamentoEditando ? 'Salvar alterações' : 'Salvar apenas'}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleCriarEAbrirEditor}
                     className="w-full sm:w-auto px-4 py-2 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:bg-[var(--line)]/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                    title="Salvar e editar cada uma das 13 seções no editor rico"
+                    title="Salvar e editar as seções no editor rico"
                   >
                     <Edit className="w-3.5 h-3.5 text-[#1565D8]" />
-                    <span>Editar 13 Seções</span>
+                    <span>Editar seções</span>
                   </button>
 
                   <button
                     type="submit"
                     className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0B1E3D] hover:bg-[#1565D8] text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                    title="Gera o orçamento e abre diretamente o visualizador e exportador de PDF"
+                    title="Gera a proposta e abre diretamente o visualizador e exportador de PDF"
                   >
                     <Eye className="w-4 h-4 text-[#D4AF37]" />
-                    <span>Gerar e Ver PDF Completo</span>
+                    <span>{orcamentoEditando ? 'Salvar e Ver PDF' : 'Gerar e Ver PDF'}</span>
                   </button>
                 </div>
               </div>

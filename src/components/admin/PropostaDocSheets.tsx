@@ -10,6 +10,7 @@ import {
   FASES_METODOLOGIA_PADRAO
 } from '../../lib/orcamentoTemplatePadrao';
 import { gerarPixCopiaECola } from '../../lib/pixEmv';
+import { TEXTO_NFS_E_COM, TEXTO_NFS_E_SEM } from '../../lib/textosPadraoVL';
 import { VlLogoVector } from './PropostaViewerModal';
 
 export interface PropostaDocSheetsProps {
@@ -561,9 +562,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
             <span className="k">Tributos & Emissão</span>
             <b>{orcamento.incluiNotaFiscal !== false ? 'Nota Fiscal (NFS-e)' : 'Faturamento via Recibo'}</b>
             <p>
-              {orcamento.incluiNotaFiscal !== false 
-                ? 'Emissão eletrônica de NFS-e municipal com todas as retenções aplicáveis inclusas.'
-                : 'Recibo profissional de prestação de serviços técnicos autônomos com taxa de ART inclusa.'}
+              {orcamento.incluiNotaFiscal !== false ? TEXTO_NFS_E_COM : TEXTO_NFS_E_SEM}
             </p>
           </div>
           <div>

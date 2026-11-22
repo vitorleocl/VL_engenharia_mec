@@ -15,8 +15,10 @@ import {
   ChecklistCampo,
   ChecklistModeloServico,
   SolicitacaoAcesso,
-  UserRole
+  UserRole,
+  CategoriaAtivoDef
 } from '../types';
+import { CATEGORIAS_ATIVOS_PADRAO, achatarCategoriasAtivos } from '../data/categoriasAtivosPadrao';
 import { CHECKLIST_MODELOS_PADRAO } from '../lib/checklistModelosPadrao';
 import { montarDadosLaudoDeChecklist } from '../lib/checklistToLaudo';
 import {
@@ -104,6 +106,8 @@ interface DataContextType {
   categoriasLaudo: CategoriaLaudoDef[];
   categoriasAtivos: string[];
   atualizarCategoriasAtivos: (categorias: string[]) => void;
+  categoriasAtivosArvore: CategoriaAtivoDef[];
+  atualizarCategoriasAtivosArvore: (categorias: CategoriaAtivoDef[]) => void;
   servicosCatalogo: ServicoItem[];
   atualizarServicosCatalogo: (servicos: ServicoItem[]) => void;
   
@@ -904,22 +908,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveStorage('vl_checklist_modelos', modelos);
     return modelos;
   });
+  const normalizarCategoriaAtivo = (cat: CategoriaAtivoDef): CategoriaAtivoDef => ({
+    id: String(cat.id || `cat-${String(cat.nome || '').toLocaleLowerCase('pt-BR').replace(/\s+/g, '-')}`),
+    nome: String(cat.nome || '').trim(),
+    subcategorias: Array.isArray(cat.subcategorias)
+      ? Array.from(new Set(cat.subcategorias.map(s => String(s).trim()).filter(Boolean)))
+      : [],
+  });
+
+  const [categoriasAtivosArvore, setCategoriasAtivosArvore] = useState<CategoriaAtivoDef[]>(() => {
+    const salvo = loadStorage<CategoriaAtivoDef[] | null>('vl_ativos_categorias_arvore', null);
+    if (Array.isArray(salvo) && salvo.length > 0) return salvo.map(normalizarCategoriaAtivo);
+    const arvore = CATEGORIAS_ATIVOS_PADRAO.map(normalizarCategoriaAtivo);
+    const extras: string[] = loadStorage('vl_ativos_categorias', []);
+    const conhecidos = new Set(achatarCategoriasAtivos(arvore));
+    const personalizadas = extras
+      .map(item => item === 'Outro Equipamento' ? 'Outro ativo' : item)
+      .filter(item => item && !conhecidos.has(item));
+    if (personalizadas.length > 0) {
+      arvore.push({
+        id: 'cat-personalizadas',
+        nome: 'Categorias personalizadas',
+        subcategorias: personalizadas,
+      });
+    }
+    return arvore;
+  });
+
   const [categoriasAtivos, setCategoriasAtivos] = useState<string[]>(() => {
-    const categoriasSalvas: string[] = loadStorage('vl_ativos_categorias', [
-      'Caminhão Munck',
-      'Guindaste Rodoviário',
-      'Prensa Hidráulica',
-      'Injetora de Plástico',
-      'Playground Infantil',
-      'Sistema de Climatização',
-      'Veículo Sinistrado',
-      'Veículo Oficial / Utilitário',
-      'Caldeira / Vaso de Pressão',
-      'Ponte Rolante / Talha',
-      'Empilhadeira',
-      'Outro ativo',
-    ]);
-    return Array.from(new Set(categoriasSalvas.map(item => item === 'Outro Equipamento' ? 'Outro ativo' : item)));
+    const categoriasSalvas: string[] = loadStorage('vl_ativos_categorias', []);
+    return Array.from(new Set([
+      ...categoriasSalvas.map(item => item === 'Outro Equipamento' ? 'Outro ativo' : item),
+      ...achatarCategoriasAtivos(categoriasAtivosArvore),
+    ].filter(Boolean)));
   });
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [syncConflicts, setSyncConflicts] = useState<OfflineSyncConflict[]>([]);
@@ -1032,6 +1053,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveStorage('vl_checklists_campo', checklistsCampo), [checklistsCampo]);
   useEffect(() => saveStorage('vl_checklist_modelos', checklistModelos), [checklistModelos]);
   useEffect(() => saveStorage('vl_ativos_categorias', categoriasAtivos), [categoriasAtivos]);
+  useEffect(() => saveStorage('vl_ativos_categorias_arvore', categoriasAtivosArvore), [categoriasAtivosArvore]);
   useEffect(() => saveStorage('vl_taxonomia_categorias', categoriasLaudo), [categoriasLaudo]);
   useEffect(() => saveStorage('vl_servicos_catalogo', servicosCatalogo), [servicosCatalogo]);
   useEffect(() => saveStorage('vl_logs', logsAuditoria), [logsAuditoria]);
@@ -1615,10 +1637,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('[Firestore] Erro ao carregar categorias de ativos:', error);
       });
 
+      const unsubCategoriasAtivosArvore = onSnapshot(doc(db, 'configuracoes', 'categoriasAtivosArvore'), (snapshot) => {
+        const remoto = snapshot.data()?.categorias;
+        if (Array.isArray(remoto) && remoto.length > 0) {
+          const arvore = remoto
+            .filter((cat): cat is CategoriaAtivoDef => Boolean(cat && typeof cat === 'object' && Array.isArray(cat.subcategorias)))
+            .map(cat => ({
+              id: String(cat.id || `cat-${String(cat.nome || '').replace(/\s+/g, '-')}`),
+              nome: String(cat.nome || '').trim(),
+              subcategorias: Array.from(new Set(cat.subcategorias.map(s => String(s).trim()).filter(Boolean))),
+            }));
+          if (arvore.length > 0) {
+            setCategoriasAtivosArvore(arvore);
+            saveStorage('vl_ativos_categorias_arvore', arvore);
+            setCategoriasAtivos(achatarCategoriasAtivos(arvore));
+            saveStorage('vl_ativos_categorias', achatarCategoriasAtivos(arvore));
+          }
+        }
+      }, (error) => {
+        console.warn('[Firestore] Erro ao carregar árvore de categorias de ativos:', error);
+      });
+
       // Publica exclusões antigas (feitas antes do tombstone remoto existir).
       void publicarTombstonesLocais();
 
-      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubExclusoesChecklist, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos);
+      unsubs.push(unsubClientes, unsubAtivos, unsubOrcamentos, unsubLaudos, unsubChecklists, unsubExclusoesChecklist, unsubAgenda, unsubUsuarios, unsubServicos, unsubCategoriasAtivos, unsubCategoriasAtivosArvore);
 
       if (currentUser.role === 'master') {
         const unsubSolicitacoes = onSnapshot(collection(db, 'solicitacoesAcesso'), (snapshot) => {
@@ -3008,6 +3051,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const atualizarCategoriasAtivosArvore = (categorias: CategoriaAtivoDef[]) => {
+    const normalizadas = categorias.map(cat => ({
+      id: String(cat.id || `cat-${String(cat.nome || '').toLocaleLowerCase('pt-BR').replace(/\s+/g, '-')}`),
+      nome: String(cat.nome || '').trim(),
+      subcategorias: Array.isArray(cat.subcategorias)
+        ? Array.from(new Set(cat.subcategorias.map(s => String(s).trim()).filter(Boolean)))
+        : [],
+    })).filter(cat => cat.nome || cat.subcategorias.length > 0);
+    const planas = achatarCategoriasAtivos(normalizadas);
+
+    setCategoriasAtivosArvore(normalizadas);
+    setCategoriasAtivos(planas);
+    saveStorage('vl_ativos_categorias_arvore', normalizadas);
+    saveStorage('vl_ativos_categorias', planas);
+    registrarLog(
+      'configuracoes',
+      'categoriasAtivosArvore',
+      'editar',
+      `Taxonomia de ativos atualizada (${normalizadas.length} categorias, ${planas.length} opções).`
+    );
+
+    if (db && auth?.currentUser && !isFirestoreWriteQuotaBlocked()) {
+      setDoc(doc(db, 'configuracoes', 'categoriasAtivosArvore'), {
+        categorias: normalizadas,
+        atualizadoEm: new Date().toISOString(),
+      }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.WRITE, 'configuracoes/categoriasAtivosArvore');
+      });
+      setDoc(doc(db, 'configuracoes', 'categoriasAtivos'), {
+        categorias: planas,
+        atualizadoEm: new Date().toISOString(),
+      }, { merge: true }).catch(err => {
+        handleFirestoreError(err, OperationType.WRITE, 'configuracoes/categoriasAtivos');
+      });
+    }
+  };
+
   // Templates
   const salvarTemplate = (dados: Omit<LaudoTemplate, 'id' | 'criadoEm'>) => {
     const id = `tpl-${Date.now()}`;
@@ -3783,6 +3863,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         categoriasLaudo,
         categoriasAtivos,
         atualizarCategoriasAtivos,
+        categoriasAtivosArvore,
+        atualizarCategoriasAtivosArvore,
         servicosCatalogo,
         atualizarServicosCatalogo,
         adicionarCliente,
