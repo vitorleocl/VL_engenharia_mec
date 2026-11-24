@@ -302,8 +302,8 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
         </div>
         <div className="c4">
           <span className="k">Pagamento</span>
-          <span className="big">50% + 50%</span>
-          <span className="cap">na aprovação e após laudo e ART</span>
+          <span className="big">{parcelas.length === 1 ? '100%' : parcelas.map((p) => `${p.percentual}%`).join(' + ')}</span>
+          <span className="cap">{parcelas.length === 1 ? 'após envio do laudo e ART' : 'conforme condições comerciais'}</span>
         </div>
         <div className="c5 price">
           <span className="k">{rotuloInvestimento}</span>
