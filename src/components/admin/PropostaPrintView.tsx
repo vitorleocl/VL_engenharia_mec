@@ -112,17 +112,44 @@ export const PropostaPrintView: React.FC = () => {
 
   const tituloMetodologia = orcamento?.tituloMetodologia || 'Metodologia de engenharia em etapas';
 
-  // Installments (50% / 50%)
+  // Installments: respeita formaPagamento/condições, com fallback inteligente
   const parcelas = useMemo(() => {
-    if (orcamento?.parcelas && orcamento.parcelas.length > 0) {
-      return orcamento.parcelas;
+    const parcelasOrig = Array.isArray(orcamento?.parcelas) ? orcamento!.parcelas : [];
+    const forma100 = orcamento?.formaPagamento === '100_apos_laudo_art'
+      || /100%\s*(ap[oó]s|no envio)/i.test(orcamento?.condicoesPagamento || '');
+    const parcelasSao50_50Padrao = parcelasOrig.length === 2
+      && parcelasOrig.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+
+    if (forma100 && (parcelasOrig.length === 0 || parcelasSao50_50Padrao)) {
+      return [
+        {
+          parcela: '1ª',
+          quando: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE',
+          percentual: 100,
+          valor: valorTotalNum,
+        }
+      ];
     }
-    const metade = valorTotalNum / 2;
+
+    if (parcelasOrig.length > 0) return parcelasOrig;
+
+    if (forma100) {
+      return [
+        {
+          parcela: '1ª',
+          quando: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE',
+          percentual: 100,
+          valor: valorTotalNum,
+        }
+      ];
+    }
+
+    const metade = Math.round((valorTotalNum / 2) * 100) / 100;
     return [
       { parcela: '1ª', quando: 'Na aprovação da proposta', percentual: 50, valor: metade },
-      { parcela: '2ª', quando: 'Após a emissão do laudo técnico pericial e o registro da ART junto ao CREA-PE', percentual: 50, valor: metade }
+      { parcela: '2ª', quando: 'Após a emissão do laudo técnico pericial e o registro da ART junto ao CREA-PE', percentual: 50, valor: Math.round((valorTotalNum - metade) * 100) / 100 }
     ];
-  }, [orcamento, valorTotalNum]);
+  }, [orcamento?.parcelas, orcamento?.formaPagamento, orcamento?.condicoesPagamento, valorTotalNum]);
 
   const modoOpcoes = orcamento?.modoPrecificacao === 'opcoes' && (orcamento?.opcoesValores?.length || 0) > 0;
   const opcoesValoresValidas = useMemo(
@@ -984,7 +1011,7 @@ export const PropostaPrintView: React.FC = () => {
                   <span className="e">Etapa 3</span>
                   <a href="#p4">
                     <span className="t">Prazo, pagamento e investimento</span>
-                    <span className="d">Cronograma executivo, pagamento em 2 parcelas, PIX, homologação com ART e aceite.</span>
+                    <span className="d">Cronograma executivo, {parcelas.length === 1 ? 'pagamento em parcela única' : `pagamento em ${parcelas.length} parcelas`}, PIX, homologação com ART e aceite.</span>
                   </a>
                   <span className="p">p. 4</span>
                 </li>
@@ -1066,8 +1093,8 @@ export const PropostaPrintView: React.FC = () => {
             </div>
             <div className="c4">
               <span className="k">Pagamento</span>
-              <span className="big">50% + 50%</span>
-              <span className="cap">na aprovação e após laudo e ART</span>
+              <span className="big">{parcelas.length === 1 ? '100%' : parcelas.map((p) => `${p.percentual}%`).join(' + ')}</span>
+              <span className="cap">{parcelas.length === 1 ? 'após envio do laudo e ART' : 'conforme condições comerciais'}</span>
             </div>
             <div className="c5 price">
               <span className="k">{rotuloInvestimento}</span>
@@ -1409,8 +1436,8 @@ export const PropostaPrintView: React.FC = () => {
                 </div>
                 <div>
                   <span className="k">Condições de pagamento</span>
-                  <b>50% na aprovação, 50% na entrega</b>
-                  <p>Os 50% finais após a emissão do laudo técnico pericial e o registro da ART junto ao CREA-PE. PIX, transferência ou boleto.</p>
+                  <b>{parcelas.length === 1 ? '100% após envio do laudo e ART' : parcelas.map((p) => `${p.percentual}% ${p.quando?.toLowerCase().includes('aprova') ? 'na aprovação' : 'na entrega'}`).join(', ')}</b>
+                  <p>{condicoesPagamento}</p>
                 </div>
                 <div>
                   <span className="k">Validade da proposta</span>
@@ -1445,11 +1472,11 @@ export const PropostaPrintView: React.FC = () => {
               <div className="tl">
                 <div className="rail"></div>
                 <ol>
-                  <li><i></i><b>Dia 0</b><span>Aprovação e pagamento da 1ª parcela</span></li>
+                  <li><i></i><b>Dia 0</b><span>{parcelas.length === 1 ? 'Aceite da proposta' : 'Aprovação e pagamento da 1ª parcela'}</span></li>
                   <li><i></i><b>Até 48 h úteis</b><span>Mobilização e agendamento da vistoria</span></li>
                   <li><i></i><b>Vistoria in loco</b><span>Inspeção, medições e ensaios</span></li>
                   <li><i></i><b>Até {prazoEntrega}</b><span>Laudo conclusivo e ART registrada, contados da vistoria</span></li>
-                  <li><i></i><b>Entrega</b><span>Pagamento da 2ª parcela</span></li>
+                  <li><i></i><b>Entrega</b><span>{parcelas.length === 1 ? 'Pagamento integral (100%)' : 'Pagamento da 2ª parcela'}</span></li>
                 </ol>
               </div>
             </div>
@@ -1458,10 +1485,10 @@ export const PropostaPrintView: React.FC = () => {
               <div className="pix">
                 <div className="qr" dangerouslySetInnerHTML={{ __html: qrCodeSvg }} />
                 <div>
-                  <h4>PIX Oficial para Pagamento da 1ª Parcela (50%)</h4>
+                  <h4>{parcelas.length === 1 ? 'PIX Oficial para Pagamento Integral (100%)' : `PIX Oficial para Pagamento da 1ª Parcela (${parcelas[0]?.percentual ?? 50}%)`}</h4>
                   <div className="kv2">
                     <div>Chave PIX (CPF): <b>102.870.934-09</b> &nbsp;|&nbsp; Titular: <b>{DADOS_VL_PADRAO.pixTitular}</b></div>
-                    <div>Instituição: <b>Banco Cora SCD (403)</b> &nbsp;|&nbsp; Valor da 1ª Parcela: <b>{(parcelas[0]?.valor || (valorTotalNum / 2)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
+                    <div>Instituição: <b>Banco Cora SCD (403)</b> &nbsp;|&nbsp; {parcelas.length === 1 ? 'Valor' : 'Valor da 1ª Parcela'}: <b>{(parcelas[0]?.valor || valorTotalNum).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
                   </div>
                   <div className="code" title="Clique para copiar o código Pix Copia e Cola" onClick={handleCopiarPix}>
                     {pixPayload || '00020126330014br.gov.bcb.pix0111102870934095204000053039865802BR5925VITOR LEONARDO CORDEIRO L6006RECIFE62070503***63043BD0'}

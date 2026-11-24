@@ -86,17 +86,44 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
 
   const tituloMetodologia = orcamento.tituloMetodologia || 'Metodologia de engenharia em etapas';
 
-  // Parcelas (50% / 50%)
+  // Parcelas: respeita formaPagamento/condições, com fallback inteligente
   const parcelas = useMemo(() => {
-    if (orcamento.parcelas && orcamento.parcelas.length > 0) {
-      return orcamento.parcelas;
+    const parcelasOrig = Array.isArray(orcamento.parcelas) ? orcamento.parcelas : [];
+    const forma100 = orcamento.formaPagamento === '100_apos_laudo_art'
+      || /100%\s*(ap[oó]s|no envio)/i.test(orcamento.condicoesPagamento || '');
+    const parcelasSao50_50Padrao = parcelasOrig.length === 2
+      && parcelasOrig.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+
+    if (forma100 && (parcelasOrig.length === 0 || parcelasSao50_50Padrao)) {
+      return [
+        {
+          parcela: '1ª',
+          quando: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE',
+          percentual: 100,
+          valor: valorTotalNum,
+        }
+      ];
     }
-    const metade = valorTotalNum / 2;
+
+    if (parcelasOrig.length > 0) return parcelasOrig;
+
+    if (forma100) {
+      return [
+        {
+          parcela: '1ª',
+          quando: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE',
+          percentual: 100,
+          valor: valorTotalNum,
+        }
+      ];
+    }
+
+    const metade = Math.round((valorTotalNum / 2) * 100) / 100;
     return [
       { parcela: '1ª', quando: 'Na aprovação da proposta comercial', percentual: 50, valor: metade },
-      { parcela: '2ª', quando: 'Após emissão do laudo técnico pericial e registro da ART no CREA-PE', percentual: 50, valor: metade }
+      { parcela: '2ª', quando: 'Após emissão do laudo técnico pericial e registro da ART no CREA-PE', percentual: 50, valor: Math.round((valorTotalNum - metade) * 100) / 100 }
     ];
-  }, [orcamento.parcelas, valorTotalNum]);
+  }, [orcamento.parcelas, orcamento.formaPagamento, orcamento.condicoesPagamento, valorTotalNum]);
 
   const modoOpcoes = orcamento.modoPrecificacao === 'opcoes' && (orcamento.opcoesValores?.length || 0) > 0;
   const opcoesValoresValidas = useMemo(
@@ -193,7 +220,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
               <span className="e">Etapa 3</span>
               <a href="#p4">
                 <span className="t">Prazo, pagamento e investimento</span>
-                <span className="d">Cronograma executivo, pagamento em 2 parcelas, PIX, homologação com ART e aceite.</span>
+                <span className="d">Cronograma executivo, {parcelas.length === 1 ? 'pagamento em parcela única' : `pagamento em ${parcelas.length} parcelas`}, PIX, homologação com ART e aceite.</span>
               </a>
               <span className="p">p. 4</span>
             </li>
@@ -218,7 +245,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
             </li>
             <li>
               <span className="n">2</span>
-              <p><b>Pague a 1ª parcela (50%).</b> PIX com QR Code e “copia e cola” na página 4.</p>
+              <p><b>{parcelas.length === 1 ? 'Efetue o pagamento (100%).' : `Pague a 1ª parcela (${parcelas[0]?.percentual ?? 50}%).`}</b> PIX com QR Code e “copia e cola” na página 4.</p>
             </li>
             <li>
               <span className="n">3</span>

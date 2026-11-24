@@ -495,9 +495,16 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
     // 4. PIX CRC
     try {
       const chavePix = orcamento.chavePix || DADOS_VL_PADRAO.pixChave;
+      const forma100 = orcamento.formaPagamento === '100_apos_laudo_art'
+        || /100%\s*(ap[oó]s|no envio)/i.test(orcamento.condicoesPagamento || '');
+      const parcelasOrig = Array.isArray(orcamento.parcelas) ? orcamento.parcelas : [];
+      const parcelasSao50_50Padrao = parcelasOrig.length === 2 && parcelasOrig.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+      const valorPrimeiraParcela = (forma100 && (parcelasOrig.length === 0 || parcelasSao50_50Padrao))
+        ? (orcamento.valor || 0)
+        : (parcelasOrig[0]?.valor || ((orcamento.valor || 0) / (forma100 ? 1 : 2)));
       const pixCode = gerarPixCopiaECola({
         chavePix,
-        valor: (orcamento.valor || 2280) / 2,
+        valor: valorPrimeiraParcela,
         titular: DADOS_VL_PADRAO.pixTitular,
         cidade: DADOS_VL_PADRAO.pixCidade,
         identificador: (orcamento.codigoProposta || orcamento.id || 'PROP2026').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20),

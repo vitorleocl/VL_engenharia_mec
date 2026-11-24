@@ -158,6 +158,40 @@ export const OrcamentoEditorView: React.FC = () => {
     const valores = opcoes.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
     return valores.length > 0 ? Math.min(...valores) : 0;
   };
+
+  const ehPagamento100 = (orc?: Orcamento | null) => {
+    const o = orc || orcamentoState;
+    return o?.formaPagamento === '100_apos_laudo_art' || /100%\s*(ap[oó]s|no envio)/i.test(o?.condicoesPagamento || '');
+  };
+
+  const gerarParcelasPadrao = (total: number, orc?: Orcamento | null): OrcamentoParcela[] => {
+    if (ehPagamento100(orc)) {
+      return [{
+        parcela: '1ª Parcela (Integral)',
+        quando: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE',
+        gatilho: 'Entrega do laudo técnico pericial e ART registrada no CREA-PE',
+        percentual: 100,
+        valor: Math.round(total * 100) / 100,
+      }];
+    }
+    const metade = Math.round((total / 2) * 100) / 100;
+    return [
+      {
+        parcela: '1ª Parcela (Entrada)',
+        quando: 'Na aprovação / mobilização',
+        gatilho: 'Aceite formal da proposta comercial',
+        percentual: 50,
+        valor: metade,
+      },
+      {
+        parcela: '2ª Parcela (Saldo)',
+        quando: 'Na emissão do laudo final e ART',
+        gatilho: 'Entrega digital do laudo conclusivo homologado no CREA-PE',
+        percentual: 50,
+        valor: Math.round((total - metade) * 100) / 100,
+      }
+    ];
+  };
   
   // Modals, Drawers & Menus
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
@@ -1016,8 +1050,12 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       };
     });
 
-    const parcelasAtualizadas = (orcamentoState.parcelas && orcamentoState.parcelas.length > 0)
-      ? orcamentoState.parcelas.map((p) => {
+    const parcelasBase = (orcamentoState.parcelas && orcamentoState.parcelas.length > 0) ? orcamentoState.parcelas : [];
+    const forma100 = ehPagamento100();
+    const parece50_50 = parcelasBase.length === 2 && parcelasBase.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+    const parcelasNormalizadas = forma100 && parece50_50 ? gerarParcelasPadrao(novoValor) : parcelasBase;
+    const parcelasAtualizadas = parcelasNormalizadas.length > 0
+      ? parcelasNormalizadas.map((p) => {
           const percentual = Number(p.percentual) || 0;
           const valorParcela = Math.round((novoValor * percentual / 100) * 100) / 100;
           return { ...p, valor: valorParcela };
@@ -1276,24 +1314,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       return s;
     });
 
-    const metade = Math.round((novoTotal / 2) * 100) / 100;
-    const segundaMetade = Math.round((novoTotal - metade) * 100) / 100;
-    const parcelasPadrao: OrcamentoParcela[] = [
-      {
-        parcela: '1ª Parcela (Entrada)',
-        quando: 'Na aprovação / mobilização',
-        gatilho: 'Aceite formal da proposta comercial',
-        percentual: 50,
-        valor: metade,
-      },
-      {
-        parcela: '2ª Parcela (Saldo)',
-        quando: 'Na emissão do laudo final e ART',
-        gatilho: 'Entrega digital do laudo conclusivo homologado no CREA-PE',
-        percentual: 50,
-        valor: segundaMetade,
-      }
-    ];
+    const parcelasPadrao = gerarParcelasPadrao(novoTotal);
 
     const atualizado: Orcamento = {
       ...orcamentoState,
@@ -1301,7 +1322,15 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       valorFormatado,
       itensCalculo: novaLista,
       secoes: novasSecoes,
-      parcelas: dadosExtras?.parcelas || (orcamentoState.parcelas && orcamentoState.parcelas.length > 0 ? orcamentoState.parcelas : parcelasPadrao),
+      parcelas: (() => {
+        const base = dadosExtras?.parcelas || (orcamentoState.parcelas && orcamentoState.parcelas.length > 0 ? orcamentoState.parcelas : parcelasPadrao);
+        const forma100 = ehPagamento100();
+        const parece50_50 = base.length === 2 && base.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+        const parece100 = base.length === 1 && Math.abs(Number(base[0]?.percentual) - 100) < 0.01;
+        if (forma100 && parece50_50) return gerarParcelasPadrao(novoTotal);
+        if (!forma100 && parece100 && /50%/.test(orcamentoState.condicoesPagamento || '')) return gerarParcelasPadrao(novoTotal);
+        return base;
+      })(),
       ...dadosExtras,
     };
 
@@ -1481,24 +1510,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
 
     setValorCheioDigitado(totalAlvo % 1 === 0 ? totalAlvo.toString() : totalAlvo.toFixed(2));
 
-    const metade = Math.round((totalAlvo / 2) * 100) / 100;
-    const segundaMetade = Math.round((totalAlvo - metade) * 100) / 100;
-    const novasParcelas: OrcamentoParcela[] = [
-      {
-        parcela: '1ª Parcela (Entrada)',
-        quando: 'Na aprovação / mobilização',
-        gatilho: 'Aceite formal da proposta comercial',
-        percentual: 50,
-        valor: metade,
-      },
-      {
-        parcela: '2ª Parcela (Saldo)',
-        quando: 'Na emissão do laudo final e ART',
-        gatilho: 'Entrega digital do laudo conclusivo homologado no CREA-PE',
-        percentual: 50,
-        valor: segundaMetade,
-      }
-    ];
+    const novasParcelas = gerarParcelasPadrao(totalAlvo);
 
     handleAtualizarListaItens(ajustados, true, {
       valor: totalAlvo,

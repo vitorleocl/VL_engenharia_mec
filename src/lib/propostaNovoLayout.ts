@@ -278,9 +278,21 @@ export async function normalizePropostaData(
   const somaBateComTotal = Math.abs(subtotalCalculado - valorTotal) < 0.05;
 
   // Parcelamento
+  const forma100 = orcamento.formaPagamento === '100_apos_laudo_art'
+    || /100%\s*(ap[oó]s|no envio)/i.test(orcamento.condicoesPagamento || '');
   let parcelas: OrcamentoParcela[] = [];
-  if (orcamento.parcelas && orcamento.parcelas.length > 0) {
-    parcelas = orcamento.parcelas;
+  const parcelasOrig = Array.isArray(orcamento.parcelas) ? orcamento.parcelas : [];
+  const parcelasSao50_50Padrao = parcelasOrig.length === 2 && parcelasOrig.every((p) => Math.abs(Number(p.percentual) - 50) < 0.01);
+  if (forma100 && (parcelasOrig.length === 0 || parcelasSao50_50Padrao)) {
+    parcelas = [
+      { parcela: '1ª', gatilho: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE', percentual: 100, valor: Math.round(valorTotal * 100) / 100 },
+    ];
+  } else if (parcelasOrig.length > 0) {
+    parcelas = parcelasOrig;
+  } else if (forma100) {
+    parcelas = [
+      { parcela: '1ª', gatilho: 'Após envio do laudo técnico pericial e da ART registrada no CREA-PE', percentual: 100, valor: Math.round(valorTotal * 100) / 100 },
+    ];
   } else {
     const v50 = Math.round((valorTotal * 0.5) * 100) / 100;
     const vResto = Math.round((valorTotal - v50) * 100) / 100;
