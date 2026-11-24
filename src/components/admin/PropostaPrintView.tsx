@@ -151,6 +151,9 @@ export const PropostaPrintView: React.FC = () => {
     ];
   }, [orcamento?.parcelas, orcamento?.formaPagamento, orcamento?.condicoesPagamento, valorTotalNum]);
 
+  // Pagamento único após a entrega: não existe 1ª/2ª parcela a informar no PDF.
+  const pagamentoUnicoAposLaudo = parcelas.length === 1 && Number(parcelas[0]?.percentual) === 100;
+
   const modoOpcoes = orcamento?.modoPrecificacao === 'opcoes' && (orcamento?.opcoesValores?.length || 0) > 0;
   const opcoesValoresValidas = useMemo(
     () => (orcamento?.opcoesValores || []).filter((op) => op && (op.nome || op.descricao || (op.itens && op.itens.length > 0))),
@@ -1040,7 +1043,7 @@ export const PropostaPrintView: React.FC = () => {
                 </li>
                 <li>
                   <span className="n">2</span>
-                  <p><b>Pague a 1ª parcela (50%).</b> PIX com QR Code e “copia e cola” na página 4.</p>
+                  <p><b>{pagamentoUnicoAposLaudo ? 'Efetue o pagamento integral (100%) após a entrega do laudo e da ART.' : `Pague a 1ª parcela (${parcelas[0]?.percentual ?? 50}%).`}</b> PIX com QR Code e “copia e cola” na página 4.</p>
                 </li>
                 <li>
                   <span className="n">3</span>
@@ -1433,7 +1436,7 @@ export const PropostaPrintView: React.FC = () => {
                 </div>
                 <div>
                   <span className="k">Condições de pagamento</span>
-                  <b>{parcelas.length === 1 ? '100% após envio do laudo e ART' : parcelas.map((p) => `${p.percentual}% ${p.quando?.toLowerCase().includes('aprova') ? 'na aprovação' : 'na entrega'}`).join(', ')}</b>
+                  <b>{pagamentoUnicoAposLaudo ? '100% após entrega do laudo e ART' : parcelas.map((p) => `${p.percentual}% ${p.quando?.toLowerCase().includes('aprova') ? 'na aprovação' : 'na entrega'}`).join(', ')}</b>
                   <p>{condicoesPagamento}</p>
                 </div>
                 <div>
@@ -1454,7 +1457,7 @@ export const PropostaPrintView: React.FC = () => {
                 <tbody>
                   {parcelas.map((parc, i) => (
                     <tr key={i}>
-                      <td>{parc.parcela}</td>
+                      <td>{pagamentoUnicoAposLaudo ? 'N/A (Não aplicável)' : parc.parcela}</td>
                       <td className="t">{parc.quando}</td>
                       <td className="r">{parc.percentual}%</td>
                       <td className="r">{(parc.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
@@ -1469,11 +1472,11 @@ export const PropostaPrintView: React.FC = () => {
               <div className="tl">
                 <div className="rail"></div>
                 <ol>
-                  <li><i></i><b>Dia 0</b><span>{parcelas.length === 1 ? 'Aceite da proposta' : 'Aprovação e pagamento da 1ª parcela'}</span></li>
+                  <li><i></i><b>Dia 0</b><span>{pagamentoUnicoAposLaudo ? 'Aceite da proposta (sem pagamento)' : parcelas.length === 1 ? 'Aceite da proposta' : 'Aprovação e pagamento da 1ª parcela'}</span></li>
                   <li><i></i><b>Até 48 h úteis</b><span>Mobilização e agendamento da vistoria</span></li>
                   <li><i></i><b>Vistoria in loco</b><span>Inspeção, medições e ensaios</span></li>
                   <li><i></i><b>Até {prazoEntrega}</b><span>Laudo conclusivo e ART registrada, contados da vistoria</span></li>
-                  <li><i></i><b>Entrega</b><span>{parcelas.length === 1 ? 'Pagamento integral (100%)' : 'Pagamento da 2ª parcela'}</span></li>
+                  <li><i></i><b>Entrega</b><span>{pagamentoUnicoAposLaudo ? 'Pagamento integral (100%)' : 'Pagamento da 2ª parcela'}</span></li>
                 </ol>
               </div>
             </div>
@@ -1482,10 +1485,10 @@ export const PropostaPrintView: React.FC = () => {
               <div className="pix">
                 <div className="qr" dangerouslySetInnerHTML={{ __html: qrCodeSvg }} />
                 <div>
-                  <h4>{parcelas.length === 1 ? 'PIX Oficial para Pagamento Integral (100%)' : `PIX Oficial para Pagamento da 1ª Parcela (${parcelas[0]?.percentual ?? 50}%)`}</h4>
+                  <h4>{pagamentoUnicoAposLaudo ? 'PIX Oficial para Pagamento Integral (100%)' : `PIX Oficial para Pagamento da 1ª Parcela (${parcelas[0]?.percentual ?? 50}%)`}</h4>
                   <div className="kv2">
                     <div>Chave PIX (CPF): <b>102.870.934-09</b> &nbsp;|&nbsp; Titular: <b>{DADOS_VL_PADRAO.pixTitular}</b></div>
-                    <div>Instituição: <b>Banco Cora SCD (403)</b> &nbsp;|&nbsp; {parcelas.length === 1 ? 'Valor' : 'Valor da 1ª Parcela'}: <b>{(parcelas[0]?.valor || valorTotalNum).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
+                    <div>Instituição: <b>{DADOS_VL_PADRAO.pixInstituicao}</b> &nbsp;|&nbsp; {pagamentoUnicoAposLaudo ? 'Valor' : 'Valor da 1ª Parcela'}: <b>{(parcelas[0]?.valor || valorTotalNum).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
                   </div>
                   <div className="code" title="Clique para copiar o código Pix Copia e Cola" onClick={handleCopiarPix}>
                     {pixPayload || '00020126330014br.gov.bcb.pix0111102870934095204000053039865802BR5925VITOR LEONARDO CORDEIRO L6006RECIFE62070503***63043BD0'}

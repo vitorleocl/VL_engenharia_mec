@@ -29,6 +29,7 @@ export const DADOS_VL_PADRAO = {
   cidade: 'Recife / PE',
   pixChave: '10287093409',
   pixTitular: 'Vitor Leonardo Cordeiro Linhares',
+  pixInstituicao: 'Banco Nubank (260)',
   pixCidade: 'RECIFE',
 };
 

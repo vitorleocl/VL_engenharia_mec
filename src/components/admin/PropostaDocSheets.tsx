@@ -125,6 +125,9 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
     ];
   }, [orcamento.parcelas, orcamento.formaPagamento, orcamento.condicoesPagamento, valorTotalNum]);
 
+  // Pagamento único após a entrega: não existe 1ª/2ª parcela a informar no PDF.
+  const pagamentoUnicoAposLaudo = parcelas.length === 1 && Number(parcelas[0]?.percentual) === 100;
+
   const modoOpcoes = orcamento.modoPrecificacao === 'opcoes' && (orcamento.opcoesValores?.length || 0) > 0;
   const opcoesValoresValidas = useMemo(
     () => (orcamento.opcoesValores || []).filter((op) => op && (op.nome || op.descricao || (op.itens && op.itens.length > 0))),
@@ -674,7 +677,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
               <tbody>
                 {parcelas.map((p, idx) => (
                   <tr key={idx}>
-                    <td><b>{p.parcela} parcela</b></td>
+                    <td><b>{pagamentoUnicoAposLaudo ? 'N/A (Não aplicável)' : `${p.parcela} parcela`}</b></td>
                     <td className="t">{p.quando}</td>
                     <td className="r">{p.percentual}%</td>
                     <td className="r font-mono">{p.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
@@ -689,7 +692,7 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
             <div className="tl">
               <div className="rail"></div>
               <ol>
-                <li><i></i><b>D+0</b><span>Aceite & PIX</span></li>
+                <li><i></i><b>D+0</b><span>{pagamentoUnicoAposLaudo ? 'Aceite da proposta (sem pagamento)' : 'Aceite & PIX'}</span></li>
                 <li><i></i><b>D+1</b><span>Alinhamento</span></li>
                 <li><i></i><b>D+3 a D+4</b><span>Vistoria</span></li>
                 <li><i></i><b>D+7</b><span>Laudo PDF</span></li>
@@ -718,8 +721,8 @@ export const PropostaDocSheets: React.FC<PropostaDocSheetsProps> = ({
               <b>{DADOS_VL_PADRAO.pixTitular}</b>
             </div>
             <div className="row">
-              <span>1ª Parcela (50%):</span>
-              <b className="font-mono text-[#2459C8]">{(valorTotalNum / 2).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
+              <span>{pagamentoUnicoAposLaudo ? 'Pagamento integral (100%):' : `1ª Parcela (${parcelas[0]?.percentual ?? 50}%):`}</span>
+              <b className="font-mono text-[#2459C8]">{(parcelas[0]?.valor || valorTotalNum / 2).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
             </div>
             <p className="how">
               Aponte a câmera do aplicativo do seu banco para o QR Code ao lado ou use o código PIX Copia e Cola abaixo.
