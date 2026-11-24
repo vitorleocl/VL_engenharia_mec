@@ -442,8 +442,45 @@ export const PropostaViewerModal: React.FC<PropostaViewerModalProps> = ({
       }
     }
 
-    // 3. Memorial de Cálculo: conferir soma
-    if (orcamento.itensCalculo && orcamento.itensCalculo.length > 0) {
+    // 3. Memorial de Cálculo / Cenários de Valor: conferir consistência
+    const modoOpcoes = orcamento.modoPrecificacao === 'opcoes';
+    if (modoOpcoes) {
+      const opcoes = Array.isArray(orcamento.opcoesValores) ? orcamento.opcoesValores : [];
+      if (opcoes.length === 0) {
+        pendencias.push({
+          tipo: 'erro',
+          mensagem: 'Proposta em modo cenários sem opções cadastradas',
+          detalhe: 'Adicione ao menos um cenário/opção de valor na Etapa 3 antes de exportar.'
+        });
+      } else {
+        const valores = opcoes.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
+        if (valores.length === 0) {
+          pendencias.push({
+            tipo: 'erro',
+            mensagem: 'Cenários de valor sem valores válidos',
+            detalhe: 'Cadastre pelo menos uma configuração com valor maior que zero nos cenários da proposta.'
+          });
+        } else {
+          const menor = Math.min(...valores);
+          const valorRef = Number(orcamento.valor) || 0;
+          if (valorRef > 0 && Math.abs(menor - valorRef) > 0.05) {
+            pendencias.push({
+              tipo: 'aviso',
+              mensagem: 'Valor de referência difere do menor cenário',
+              detalhe: `Menor cenário: ${menor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}; valor de referência: ${valorRef.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`
+            });
+          }
+        }
+        const semItens = opcoes.filter((op) => !op.itens || op.itens.length === 0);
+        if (semItens.length > 0) {
+          pendencias.push({
+            tipo: 'aviso',
+            mensagem: 'Cenário sem configurações de valor',
+            detalhe: 'Existe cenário comercial sem itens/configurações. Revise a Etapa 3 para evitar lacunas no PDF.'
+          });
+        }
+      }
+    } else if (orcamento.itensCalculo && orcamento.itensCalculo.length > 0) {
       const soma = orcamento.itensCalculo.reduce((acc, it) => acc + (it.valorTotal || (it.quantidade * it.valorUnitario) || 0), 0);
       const valorTotal = orcamento.valor || 0;
       if (Math.abs(soma - valorTotal) > 0.05) {

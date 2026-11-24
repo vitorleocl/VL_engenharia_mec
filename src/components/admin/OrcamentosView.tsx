@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Orcamento } from '../../types';
+import { Orcamento, OrcamentoOpcaoValor, OrcamentoOpcaoValorItem } from '../../types';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
 import { parseDataLocalSegura, obterYmLocal, formatarDataBrSegura } from '../../lib/dateUtils';
@@ -105,6 +105,8 @@ export const OrcamentosView: React.FC = () => {
   const [horasTecnicas, setHorasTecnicas] = useState<string>(TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
   const [mobilizacao, setMobilizacao] = useState<string>(TEXTO_OPERACIONAL_PADRAO.mobilizacao);
   const [incluiNotaFiscal, setIncluiNotaFiscal] = useState(true);
+  const [modoPrecificacao, setModoPrecificacao] = useState<'simples' | 'opcoes'>('simples');
+  const [opcoesValores, setOpcoesValores] = useState<OrcamentoOpcaoValor[]>([]);
 
   // Listas grandes do gerador — pesquisáveis via ComboboxSelect.
   const opcoesClientes: ComboboxOption[] = useMemo(
@@ -215,6 +217,41 @@ export const OrcamentosView: React.FC = () => {
     setCondicoesPagamento(obterFormaPagamento(id).condicoes);
   };
 
+  const criarOpcaoValorPadrao = (idx: number): OrcamentoOpcaoValor => ({
+    id: `opcao-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+    nome: `Opção ${idx + 1}`,
+    descricao: '',
+    itens: [
+      {
+        id: `opcao-item-${Date.now()}-${idx}-1`,
+        descricao: 'Com 1 ART única para o lote',
+        valor: 0,
+      },
+      {
+        id: `opcao-item-${Date.now()}-${idx}-2`,
+        descricao: 'Com 1 ART individual por veículo',
+        valor: 0,
+      },
+    ],
+  });
+
+  const criarItemOpcaoValorPadrao = (opIdx: number, itemIdx: number): OrcamentoOpcaoValorItem => ({
+    id: `opcao-item-${Date.now()}-${opIdx}-${itemIdx}-${Math.random().toString(36).slice(2, 7)}`,
+    descricao: 'Nova configuração',
+    valor: 0,
+  });
+
+  const obterMenorValorOpcoes = (opcoes: OrcamentoOpcaoValor[]): number => {
+    const valores = opcoes.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
+    return valores.length > 0 ? Math.min(...valores) : 0;
+  };
+
+  useEffect(() => {
+    if (modoPrecificacao !== 'opcoes') return;
+    const menor = obterMenorValorOpcoes(opcoesValores);
+    if (menor > 0) setValorTotal(String(menor));
+  }, [modoPrecificacao, opcoesValores]);
+
   const abrirGeradorNovo = () => {
     setOrcamentoEditando(null);
     setClienteId(clientes[0]?.id || '');
@@ -235,6 +272,8 @@ export const OrcamentosView: React.FC = () => {
     setHorasTecnicas(TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
     setMobilizacao(TEXTO_OPERACIONAL_PADRAO.mobilizacao);
     setIncluiNotaFiscal(true);
+    setModoPrecificacao('simples');
+    setOpcoesValores([]);
     setModalNovoAberto(true);
   };
 
@@ -263,13 +302,45 @@ export const OrcamentosView: React.FC = () => {
     setHorasTecnicas(orcamento.horasEngenharia || TEXTO_OPERACIONAL_PADRAO.horasTecnicas);
     setMobilizacao(orcamento.mobilizacao || TEXTO_OPERACIONAL_PADRAO.mobilizacao);
     setIncluiNotaFiscal(orcamento.incluiNotaFiscal !== false);
+    setModoPrecificacao(orcamento.modoPrecificacao === 'opcoes' ? 'opcoes' : 'simples');
+    setOpcoesValores(Array.isArray(orcamento.opcoesValores) ? orcamento.opcoesValores.map((op, opIdx) => ({
+      id: op.id || `opcao-${opIdx + 1}`,
+      nome: op.nome || `Opção ${opIdx + 1}`,
+      descricao: op.descricao || '',
+      itens: (op.itens || []).map((it, itIdx) => ({
+        id: it.id || `opcao-${opIdx + 1}-item-${itIdx + 1}`,
+        descricao: it.descricao || '',
+        valor: Number(it.valor) || 0,
+        valorFormatado: it.valorFormatado,
+      })),
+    })) : []);
     setModalNovoAberto(true);
   };
 
   /** Monta o orçamento a partir dos campos do gerador (texto vem de textosPadraoVL). */
   const montarDadosProposta = (): Omit<Orcamento, 'id' | 'criadoEm'> => {
     const cliente = clientes.find(c => c.id === clienteId);
-    const valorNum = parseFloat(valorTotal) || 2500;
+    const valorNumInformado = parseFloat(valorTotal) || 0;
+    const opcoesSanitizadas = modoPrecificacao === 'opcoes'
+      ? opcoesValores
+          .map((op, opIdx) => ({
+            id: op.id || `opcao-${opIdx + 1}`,
+            nome: (op.nome || '').trim() || `Opção ${opIdx + 1}`,
+            descricao: (op.descricao || '').trim() || undefined,
+            itens: (op.itens || [])
+              .map((it, itIdx) => ({
+                id: it.id || `opcao-${opIdx + 1}-item-${itIdx + 1}`,
+                descricao: (it.descricao || '').trim() || `Configuração ${itIdx + 1}`,
+                valor: Number(it.valor) || 0,
+              }))
+              .filter((it) => it.descricao || it.valor > 0),
+          }))
+          .filter((op) => op.nome || op.descricao || op.itens.length > 0)
+      : [];
+    const menorOpcao = obterMenorValorOpcoes(opcoesSanitizadas);
+    const valorNum = modoPrecificacao === 'opcoes'
+      ? (menorOpcao > 0 ? menorOpcao : valorNumInformado)
+      : (valorNumInformado || 2500);
     const ano = new Date().getFullYear();
     const codigoProposta = orcamentoEditando?.codigoProposta || `PROP-${ano}/${String(orcamentos.length + 1).padStart(3, '0')}`;
     const emitidaEm = orcamentoEditando?.emitidaEm || new Date().toISOString().split('T')[0];
@@ -326,17 +397,21 @@ export const OrcamentosView: React.FC = () => {
       contratadaPixChave: DADOS_VL_PADRAO.pixChave,
       contratadaPixTitular: DADOS_VL_PADRAO.pixTitular,
       contratadaPixCidade: DADOS_VL_PADRAO.pixCidade,
-      itensCalculo: (orcamentoEditando?.itensCalculo && orcamentoEditando.itensCalculo.length > 0)
-        ? orcamentoEditando.itensCalculo
-        : [
-            {
-              id: 'item-1',
-              descricao: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
-              quantidade: 1,
-              valorUnitario: valorNum,
-              valorTotal: valorNum,
-            }
-          ],
+      itensCalculo: modoPrecificacao === 'opcoes'
+        ? (orcamentoEditando?.itensCalculo || [])
+        : ((orcamentoEditando?.itensCalculo && orcamentoEditando.itensCalculo.length > 0)
+          ? orcamentoEditando.itensCalculo
+          : [
+              {
+                id: 'item-1',
+                descricao: servicoTitulo.trim() || 'Serviços Especializados de Engenharia Mecânica',
+                quantidade: 1,
+                valorUnitario: valorNum,
+                valorTotal: valorNum,
+              }
+            ]),
+      modoPrecificacao,
+      opcoesValores: modoPrecificacao === 'opcoes' ? opcoesSanitizadas : undefined,
       parcelas,
       cronograma: [
         { marco: 'Alinhamento & Análise de Documentação Técnica', prazo: 'D+1', responsavel: 'VL & Contratante' },
@@ -1068,47 +1143,176 @@ export const OrcamentosView: React.FC = () => {
               </label>
 
               {/* Valor & Condições de Pagamento */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <label className="block text-xs font-bold text-[var(--ink)]">
-                  <span className="mb-1 block">Investimento Total (R$)</span>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--muted)]">
-                      R$
-                    </span>
-                    <input
-                      type="number"
-                      step="50"
-                      value={valorTotal}
-                      onChange={(e) => setValorTotal(e.target.value)}
-                      required
-                      placeholder="3500"
-                      className="w-full pl-9 pr-3 py-2.5 text-sm font-bold border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                    />
+              <div className="space-y-3.5">
+                <div className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--line)] space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold uppercase tracking-wider text-[var(--blue)] text-xs">Modelo de Precificação</span>
+                    <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--line)] rounded-lg p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setModoPrecificacao('simples')}
+                        className={`px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${modoPrecificacao === 'simples' ? 'bg-[#1565D8] text-white' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                      >
+                        Valor único
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModoPrecificacao('opcoes');
+                          setOpcoesValores((prev) => prev.length > 0 ? prev : [criarOpcaoValorPadrao(0), criarOpcaoValorPadrao(1)]);
+                        }}
+                        className={`px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${modoPrecificacao === 'opcoes' ? 'bg-[#1565D8] text-white' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+                      >
+                        Cenários / opções
+                      </button>
+                    </div>
                   </div>
-                </label>
 
-                <label className="block text-xs font-bold text-[var(--ink)]">
-                  <span className="mb-1 block">Forma de Pagamento</span>
-                  <select
-                    value={formaPagamento}
-                    onChange={(e) => aplicarFormaPagamento(e.target.value as FormaPagamentoId)}
-                    className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                  >
-                    {FORMAS_PAGAMENTO.map(opcao => (
-                      <option key={opcao.id} value={opcao.id}>{opcao.label}</option>
-                    ))}
-                  </select>
-                </label>
+                  {modoPrecificacao === 'simples' ? (
+                    <label className="block text-xs font-bold text-[var(--ink)]">
+                      <span className="mb-1 block">Investimento Total (R$)</span>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--muted)]">R$</span>
+                        <input
+                          type="number"
+                          step="50"
+                          value={valorTotal}
+                          onChange={(e) => setValorTotal(e.target.value)}
+                          required
+                          placeholder="3500"
+                          className="w-full pl-9 pr-3 py-2.5 text-sm font-bold border border-[var(--line)] rounded-xl bg-[var(--card)] text-[var(--ink)]"
+                        />
+                      </div>
+                    </label>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] text-[var(--muted)] leading-relaxed">
+                        Cadastre cenários comerciais (ex.: inspeção concentrada / fracionada) e, dentro de cada cenário, as configurações de valor (ex.: 1 ART por lote / ART individual por veículo).
+                      </p>
+                      {opcoesValores.map((opcao, opIdx) => (
+                        <div key={opcao.id} className="rounded-xl border border-[var(--line)] bg-[var(--card)] overflow-hidden">
+                          <div className="px-3 py-2 border-b border-[var(--line)] bg-[var(--paper)] flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0B1E3D] text-white text-[10px] font-bold shrink-0">{opIdx + 1}</span>
+                            <input
+                              type="text"
+                              value={opcao.nome}
+                              onChange={(e) => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? { ...op, nome: e.target.value } : op))}
+                              placeholder={`Opção ${opIdx + 1}`}
+                              className="flex-1 min-w-0 p-1.5 text-xs font-bold border border-[var(--line)] rounded-lg bg-[var(--card)] text-[var(--ink)]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setOpcoesValores((prev) => prev.filter((op) => op.id !== opcao.id))}
+                              className="p-1.5 rounded-md text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                              title="Remover cenário"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="p-2.5 space-y-2">
+                            <input
+                              type="text"
+                              value={opcao.descricao || ''}
+                              onChange={(e) => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? { ...op, descricao: e.target.value } : op))}
+                              placeholder="Descrição do cenário (opcional)"
+                              className="w-full p-1.5 text-[11px] border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                            />
+                            <div className="space-y-1.5">
+                              {(opcao.itens || []).map((item, itemIdx) => (
+                                <div key={item.id} className="grid grid-cols-[1fr_130px_auto] gap-1.5 items-center">
+                                  <input
+                                    type="text"
+                                    value={item.descricao}
+                                    onChange={(e) => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? {
+                                      ...op,
+                                      itens: op.itens.map((it) => it.id === item.id ? { ...it, descricao: e.target.value } : it),
+                                    } : op))}
+                                    placeholder="Ex.: Com 1 ART única para o lote"
+                                    className="w-full p-1.5 text-[11px] border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                                  />
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--muted)]">R$</span>
+                                    <input
+                                      type="number"
+                                      step="50"
+                                      min="0"
+                                      value={item.valor || ''}
+                                      onChange={(e) => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? {
+                                        ...op,
+                                        itens: op.itens.map((it) => it.id === item.id ? { ...it, valor: parseFloat(e.target.value) || 0 } : it),
+                                      } : op))}
+                                      placeholder="0"
+                                      className="w-full pl-7 pr-2 py-1.5 text-[11px] font-mono font-bold border border-[var(--line)] rounded-lg bg-[var(--paper)] text-[var(--ink)]"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? { ...op, itens: op.itens.filter((it) => it.id !== item.id) } : op))}
+                                    className="p-1.5 rounded-md text-[var(--muted)] hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                                    title="Remover configuração"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setOpcoesValores((prev) => prev.map((op) => op.id === opcao.id ? { ...op, itens: [...(op.itens || []), criarItemOpcaoValorPadrao(opIdx, (op.itens || []).length)] } : op))}
+                              className="text-[11px] font-bold text-[#1565D8] hover:underline cursor-pointer"
+                            >
+                              + Adicionar configuração
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpcoesValores((prev) => [...prev, criarOpcaoValorPadrao(prev.length)])}
+                          className="px-3 py-1.5 rounded-lg border border-dashed border-[#1565D8]/40 text-[#1565D8] text-[11px] font-bold hover:bg-[#1565D8]/5 cursor-pointer"
+                        >
+                          + Adicionar cenário
+                        </button>
+                        <div className="text-[11px] text-[var(--muted)]">
+                          Valor de referência: <strong className="text-[var(--ink)] font-mono">{(obterMenorValorOpcoes(opcoesValores) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                <label className="block text-xs font-bold text-[var(--ink)] sm:col-span-2">
-                  <span className="mb-1 block">Condições de Pagamento & PIX</span>
-                  <input
-                    type="text"
-                    value={condicoesPagamento}
-                    onChange={(e) => setCondicoesPagamento(e.target.value)}
-                    className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
-                  />
-                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <label className="block text-xs font-bold text-[var(--ink)]">
+                    <span className="mb-1 block">Forma de Pagamento</span>
+                    <select
+                      value={formaPagamento}
+                      onChange={(e) => aplicarFormaPagamento(e.target.value as FormaPagamentoId)}
+                      className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
+                    >
+                      {FORMAS_PAGAMENTO.map(opcao => (
+                        <option key={opcao.id} value={opcao.id}>{opcao.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block text-xs font-bold text-[var(--ink)]">
+                    <span className="mb-1 block">{modoPrecificacao === 'opcoes' ? 'Valor referência (menor opção)' : 'Resumo'}</span>
+                    <div className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)] font-mono font-bold">
+                      {(modoPrecificacao === 'opcoes' ? (obterMenorValorOpcoes(opcoesValores) || parseFloat(valorTotal) || 0) : (parseFloat(valorTotal) || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </div>
+                  </label>
+
+                  <label className="block text-xs font-bold text-[var(--ink)] sm:col-span-2">
+                    <span className="mb-1 block">Condições de Pagamento & PIX</span>
+                    <input
+                      type="text"
+                      value={condicoesPagamento}
+                      onChange={(e) => setCondicoesPagamento(e.target.value)}
+                      className="w-full p-2.5 text-xs border border-[var(--line)] rounded-xl bg-[var(--paper)] text-[var(--ink)]"
+                    />
+                  </label>
+                </div>
               </div>
 
               {/* Metodologia, Informações Operacionais e NFS-e */}

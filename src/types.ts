@@ -141,6 +141,20 @@ export interface OrcamentoItemCalculo {
   observacaoDizima?: string;
 }
 
+export interface OrcamentoOpcaoValorItem {
+  id: string;
+  descricao: string;
+  valor: number;
+  valorFormatado?: string;
+}
+
+export interface OrcamentoOpcaoValor {
+  id: string;
+  nome: string;
+  descricao?: string;
+  itens: OrcamentoOpcaoValorItem[];
+}
+
 export interface OrcamentoMetodologiaFase {
   id: string;
   faseNumero?: number;
@@ -200,6 +214,10 @@ export interface Orcamento {
   valor: number;
   valorFormatado?: string;
   itensCalculo?: OrcamentoItemCalculo[]; // Memorial de cálculo detalhado por ativo/serviço
+  /** Modo de precificação: valor único (padrão) ou cenários/opções comparativas. */
+  modoPrecificacao?: 'simples' | 'opcoes';
+  /** Cenários/opções de valor para a proposta (quando modoPrecificacao === 'opcoes'). */
+  opcoesValores?: OrcamentoOpcaoValor[];
   prazoDias?: number;
   prazoEntrega?: string;
   validadeDias?: number;

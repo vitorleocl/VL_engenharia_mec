@@ -124,6 +124,22 @@ export const PropostaPrintView: React.FC = () => {
     ];
   }, [orcamento, valorTotalNum]);
 
+  const modoOpcoes = orcamento?.modoPrecificacao === 'opcoes' && (orcamento?.opcoesValores?.length || 0) > 0;
+  const opcoesValoresValidas = useMemo(
+    () => (orcamento?.opcoesValores || []).filter((op) => op && (op.nome || op.descricao || (op.itens && op.itens.length > 0))),
+    [orcamento?.opcoesValores]
+  );
+  const faixaValoresOpcoes = useMemo(() => {
+    const valores = opcoesValoresValidas.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
+    if (valores.length === 0) return null;
+    const min = Math.min(...valores);
+    const max = Math.max(...valores);
+    const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return { min, max, label: min === max ? fmt(min) : `${fmt(min)} a ${fmt(max)}`, aPartirDe: `A partir de ${fmt(min)}` };
+  }, [opcoesValoresValidas]);
+  const valorExibicao = modoOpcoes ? (faixaValoresOpcoes?.aPartirDe || valorTotalFormatado) : valorTotalFormatado;
+  const rotuloInvestimento = modoOpcoes ? 'Investimento (conforme cenário)' : 'Investimento total';
+
   // Generate PIX EMV String and SVG QR Code
   useEffect(() => {
     const chavePix = orcamento?.chavePix || DADOS_VL_PADRAO.pixChave;
@@ -1054,15 +1070,17 @@ export const PropostaPrintView: React.FC = () => {
               <span className="cap">na aprovação e após laudo e ART</span>
             </div>
             <div className="c5 price">
-              <span className="k">Investimento total</span>
-              <span className="n">{valorTotalFormatado}</span>
+              <span className="k">{rotuloInvestimento}</span>
+              <span className="n" style={modoOpcoes ? { fontSize: '13.5pt', lineHeight: 1.15 } : undefined}>{valorExibicao}</span>
               <div className="dim">
                 <svg viewBox="0 0 8 8"><path d="M0 4L7 .8V7.2Z"/></svg>
                 <i></i>
                 <svg viewBox="0 0 8 8"><path d="M8 4L1 .8V7.2Z"/></svg>
               </div>
               <span className="cap">
-                {orcamento.incluiNotaFiscal !== false ? 'NFS-e e taxa de ART inclusas' : 'Recibo de autônomo e ART inclusa'}
+                {modoOpcoes
+                  ? `Valores por cenário${faixaValoresOpcoes ? ` • ${faixaValoresOpcoes.label}` : ''}`
+                  : (orcamento.incluiNotaFiscal !== false ? 'NFS-e e taxa de ART inclusas' : 'Recibo de autônomo e ART inclusa')}
               </span>
             </div>
           </div>
@@ -1286,55 +1304,100 @@ export const PropostaPrintView: React.FC = () => {
             <h2>Prazo, pagamento e investimento</h2>
 
             <div className="blk tight">
-              <table className="memo">
-                <thead>
-                  <tr>
-                    <th style={{ width: '11mm' }}>Item</th>
-                    <th>Memorial de cálculo: descrição do ativo / serviço técnico</th>
-                    <th className="r" style={{ width: '14mm' }}>Qtd.</th>
-                    <th className="r" style={{ width: '26mm' }}>Unitário</th>
-                    <th className="r" style={{ width: '28mm' }}>Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itensCalculo.map((item, idx) => {
-                    const qtd = Number(item.quantidade) || 1;
-                    const subtotal = Number(item.valorTotal) || (qtd * (Number(item.valorUnitario) || 0));
-                    const unitNum = (Number(item.valorUnitario) > 0) ? Number(item.valorUnitario) : (subtotal / qtd);
-                    const isDizima = Math.abs(Math.round(unitNum * 100) * qtd - Math.round(subtotal * 100)) > 1;
-
+              <h3>{modoOpcoes ? 'Cenários comerciais e opções de investimento' : 'Memorial de cálculo da proposta comercial'}</h3>
+              {modoOpcoes ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2mm' }}>
+                  {opcoesValoresValidas.map((op, opIdx) => {
+                    const itens = (op.itens && op.itens.length > 0) ? op.itens : [{ id: `op-${opIdx}-1`, descricao: 'Valor da opção', valor: 0, valorFormatado: '' }];
                     return (
-                      <tr key={item.id || idx}>
-                        <td>{String(idx + 1).padStart(2, '0')}</td>
-                        <td>
-                          {item.descricao}
-                          {isDizima && (
-                            <div style={{ fontSize: '7.5pt', color: 'var(--muted)', marginTop: '0.4mm' }}>
-                              * Valor unitário médio rateado sobre o total contratado
+                      <div key={op.id || opIdx} style={{ border: '0.6pt solid #CBD5E1', borderRadius: '2mm', overflow: 'hidden' }}>
+                        <div style={{ background: '#F3F7FF', padding: '1.6mm 2.4mm', borderBottom: '0.4pt solid #BFDBFE' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2mm' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '5mm', height: '5mm', padding: '0 1.5mm', borderRadius: '999px', background: '#0B1E3D', color: '#fff', font: '700 7pt var(--sans)' }}>{opIdx + 1}</span>
+                            <div>
+                              <div style={{ font: '700 8.8pt var(--sans)', color: '#0B1E3D' }}>{op.nome || `Opção ${opIdx + 1}`}</div>
+                              {op.descricao ? <div style={{ font: '400 7.2pt var(--serif)', color: '#475569', marginTop: '0.2mm' }}>{op.descricao}</div> : null}
                             </div>
-                          )}
-                        </td>
-                        <td className="r">{qtd}</td>
-                        <td className="r">
-                          {item.exibirComoGlobal ? 'Lote / Global' : (
-                            `${unitNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${isDizima ? '*' : ''}`
-                          )}
-                        </td>
-                        <td className="r"><b>{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
-                      </tr>
+                          </div>
+                        </div>
+                        <table className="memo" style={{ margin: 0 }}>
+                          <thead>
+                            <tr>
+                              <th>Configuração / Escopo</th>
+                              <th className="r" style={{ width: '34mm' }}>Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {itens.map((it, idx) => (
+                              <tr key={it.id || idx}>
+                                <td><b>{it.descricao || 'Item'}</b></td>
+                                <td className="r font-mono"><b>{(Number(it.valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     );
                   })}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={2} className="lab">
-                      Investimento total líquido
-                      <span>{orcamento.incluiNotaFiscal !== false ? TEXTO_NFS_E_COM : TEXTO_NFS_E_SEM} Deslocamento e laudo completo incluídos.</span>
-                    </td>
-                    <td colSpan={3} className="r tot">{valorTotalFormatado}</td>
-                  </tr>
-                </tfoot>
-              </table>
+                  <div style={{ background: '#F8FAFC', border: '0.6pt solid #CBD5E1', borderRadius: '2mm', padding: '1.8mm 2.4mm', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '3mm' }}>
+                    <div>
+                      <div style={{ font: '700 7.5pt var(--sans)', color: '#334155', textTransform: 'uppercase', letterSpacing: '.04em' }}>Faixa de investimento</div>
+                      <div style={{ font: '400 7pt var(--serif)', color: '#64748B' }}>O valor contratado dependerá do cenário/configuração selecionado pelo cliente.</div>
+                    </div>
+                    <div style={{ font: '700 11pt var(--sans)', color: '#1565D8', whiteSpace: 'nowrap' }}>{faixaValoresOpcoes?.label || valorTotalFormatado}</div>
+                  </div>
+                </div>
+              ) : (
+                <table className="memo">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '11mm' }}>Item</th>
+                      <th>Memorial de cálculo: descrição do ativo / serviço técnico</th>
+                      <th className="r" style={{ width: '14mm' }}>Qtd.</th>
+                      <th className="r" style={{ width: '26mm' }}>Unitário</th>
+                      <th className="r" style={{ width: '28mm' }}>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itensCalculo.map((item, idx) => {
+                      const qtd = Number(item.quantidade) || 1;
+                      const subtotal = Number(item.valorTotal) || (qtd * (Number(item.valorUnitario) || 0));
+                      const unitNum = (Number(item.valorUnitario) > 0) ? Number(item.valorUnitario) : (subtotal / qtd);
+                      const isDizima = Math.abs(Math.round(unitNum * 100) * qtd - Math.round(subtotal * 100)) > 1;
+
+                      return (
+                        <tr key={item.id || idx}>
+                          <td>{String(idx + 1).padStart(2, '0')}</td>
+                          <td>
+                            {item.descricao}
+                            {isDizima && (
+                              <div style={{ fontSize: '7.5pt', color: 'var(--muted)', marginTop: '0.4mm' }}>
+                                * Valor unitário médio rateado sobre o total contratado
+                              </div>
+                            )}
+                          </td>
+                          <td className="r">{qtd}</td>
+                          <td className="r">
+                            {item.exibirComoGlobal ? 'Lote / Global' : (
+                              `${unitNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${isDizima ? '*' : ''}`
+                            )}
+                          </td>
+                          <td className="r"><b>{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={2} className="lab">
+                        Investimento total líquido
+                        <span>{orcamento.incluiNotaFiscal !== false ? TEXTO_NFS_E_COM : TEXTO_NFS_E_SEM} Deslocamento e laudo completo incluídos.</span>
+                      </td>
+                      <td colSpan={3} className="r tot">{valorTotalFormatado}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
             </div>
 
             <div className="blk tight">

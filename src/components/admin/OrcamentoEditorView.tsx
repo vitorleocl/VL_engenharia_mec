@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase, OrcamentoParcela } from '../../types';
+import { Orcamento, OrcamentoSecao, OrcamentoHistorico, OrcamentoItemCalculo, OrcamentoMetodologiaFase, OrcamentoParcela, OrcamentoOpcaoValor, OrcamentoOpcaoValorItem } from '../../types';
 import { TipTapEditor } from './TipTapEditor';
 import { PropostaViewerModal } from './PropostaViewerModal';
 import { FaturarOrcamentoModal } from './FaturarOrcamentoModal';
@@ -140,6 +140,24 @@ export const OrcamentoEditorView: React.FC = () => {
   
   // Estado para o input genérico de Valor Total Cheio da proposta
   const [valorCheioDigitado, setValorCheioDigitado] = useState<string>('');
+
+  const criarItemOpcaoValorPadrao = (opIdx: number, itemIdx: number): OrcamentoOpcaoValorItem => ({
+    id: `opcao-item-${Date.now()}-${opIdx}-${itemIdx}`,
+    descricao: itemIdx === 0 ? 'Com 1 ART única para o lote' : 'Com 1 ART individual por item',
+    valor: 0,
+  });
+
+  const criarOpcaoValorPadrao = (idx: number): OrcamentoOpcaoValor => ({
+    id: `opcao-${Date.now()}-${idx}`,
+    nome: `Opção ${idx + 1}`,
+    descricao: '',
+    itens: [criarItemOpcaoValorPadrao(idx, 0)],
+  });
+
+  const obterMenorValorOpcoes = (opcoes: OrcamentoOpcaoValor[]): number => {
+    const valores = opcoes.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
+    return valores.length > 0 ? Math.min(...valores) : 0;
+  };
   
   // Modals, Drawers & Menus
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
@@ -370,6 +388,8 @@ export const OrcamentoEditorView: React.FC = () => {
                 incluiNotaFiscal: orcamentoOriginal.incluiNotaFiscal !== false,
                 chavePix: orcamentoOriginal.chavePix,
                 itensCalculo: itensCalculoBase,
+                modoPrecificacao: orcamentoOriginal.modoPrecificacao,
+                opcoesValores: orcamentoOriginal.opcoesValores,
               }),
             };
           } else if (
@@ -560,10 +580,22 @@ export const OrcamentoEditorView: React.FC = () => {
       currency: 'BRL',
     });
     const escopo = textoSemHtml(orcamentoState.descricaoEscopo).slice(0, 700);
-    const itensCalculo = (orcamentoState.itensCalculo || [])
-      .filter((item) => item.descricao?.trim())
-      .slice(0, 5)
-      .map((item) => `- ${item.descricao}: ${item.quantidade || 1} x ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+    const modoOpcoes = orcamentoState.modoPrecificacao === 'opcoes' && (orcamentoState.opcoesValores?.length || 0) > 0;
+    const itensCalculo = !modoOpcoes
+      ? (orcamentoState.itensCalculo || [])
+          .filter((item) => item.descricao?.trim())
+          .slice(0, 5)
+          .map((item) => `- ${item.descricao}: ${item.quantidade || 1} x ${Number(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+      : [];
+    const opcoesTexto = modoOpcoes
+      ? (orcamentoState.opcoesValores || []).slice(0, 4).map((op, idx) => {
+          const itens = (op.itens || []).slice(0, 4).map((it) => {
+            const v = Number(it.valor) || 0;
+            return `  - ${it.descricao || 'Configuração'}: ${v > 0 ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'A definir'}`;
+          }).join('\n');
+          return `*${op.nome || `Opção ${idx + 1}`}*${op.descricao ? `\n  ${op.descricao}` : ''}${itens ? `\n${itens}` : ''}`;
+        }).join('\n\n')
+      : '';
     const mensagem = `Olá, ${orcamentoState.representanteNome || orcamentoState.clienteNome || 'tudo bem'}!
 
 *VL ENGENHARIA*
@@ -575,7 +607,7 @@ export const OrcamentoEditorView: React.FC = () => {
 ${escopo ? `\n*ESCOPO*\n${escopo}` : ''}${orcamentoState.normasTecnicas ? `\n\n*Normas de referência:* ${orcamentoState.normasTecnicas}` : ''}${itensCalculo.length ? `\n\n*ITENS PRINCIPAIS*\n${itensCalculo.join('\n')}` : ''}
 
 *INVESTIMENTO*
-*Valor total:* ${valor}${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `\n*Prazo:* ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}` : ''}${orcamentoState.validadeDias ? `\n*Validade da proposta:* ${orcamentoState.validadeDias} dias` : ''}${orcamentoState.condicoesPagamento ? `\n*Condições de pagamento:* ${orcamentoState.condicoesPagamento}` : ''}
+${modoOpcoes ? `*Cenários comerciais:*\n${opcoesTexto}\n\n*Valor de referência (a partir de):* ${valor}` : `*Valor total:* ${valor}`}${orcamentoState.prazoEntrega || orcamentoState.prazoDias ? `\n*Prazo:* ${orcamentoState.prazoEntrega || `${orcamentoState.prazoDias} dias`}` : ''}${orcamentoState.validadeDias ? `\n*Validade da proposta:* ${orcamentoState.validadeDias} dias` : ''}${orcamentoState.condicoesPagamento ? `\n*Condições de pagamento:* ${orcamentoState.condicoesPagamento}` : ''}
 
 Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`;
 
@@ -910,6 +942,105 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
     agendarAutoSave(novoOrcamento, `Seção "${secaoAlvo?.titulo}" ${novoOcultar ? 'oculta no PDF' : 'incluída no PDF'}`);
   };
 
+  const handleSetModoPrecificacaoEditor = (modo: 'simples' | 'opcoes') => {
+    if (!orcamentoState) return;
+    const opcoesAtuais = Array.isArray(orcamentoState.opcoesValores) ? orcamentoState.opcoesValores : [];
+    const novasOpcoes = modo === 'opcoes' && opcoesAtuais.length === 0
+      ? [criarOpcaoValorPadrao(0), criarOpcaoValorPadrao(1)]
+      : opcoesAtuais;
+    const menor = obterMenorValorOpcoes(novasOpcoes);
+    const novoValor = modo === 'opcoes' ? (menor || orcamentoState.valor || 0) : (orcamentoState.valor || 0);
+    const valorFormatado = novoValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const prazoFormatado = orcamentoState.prazoEntrega || `${orcamentoState.prazoDias || 7} dias úteis`;
+    const condicoesFormatado = orcamentoState.condicoesPagamento || '50% de entrada e 50% após emissão do laudo final e ART.';
+
+    const novasSecoes = (orcamentoState.secoes || []).map((s) => {
+      const isEtapa3 = s.id === 'etapa3' || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
+      if (!isEtapa3) return s;
+      return {
+        ...s,
+        conteudoHtml: gerarHtmlEtapa3Investimento({
+          valor: valorFormatado,
+          prazo: prazoFormatado,
+          condicoes: condicoesFormatado,
+          validade: orcamentoState.validadeDias || 15,
+          clienteNome: orcamentoState.clienteNome || cliente?.razaoSocial || 'Cliente',
+          representante: orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica',
+          incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
+          chavePix: orcamentoState.chavePix || '10287093409',
+          itensCalculo: orcamentoState.itensCalculo,
+          modoPrecificacao: modo,
+          opcoesValores: novasOpcoes,
+        }),
+      };
+    });
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      modoPrecificacao: modo,
+      opcoesValores: modo === 'opcoes' ? novasOpcoes : orcamentoState.opcoesValores,
+      valor: novoValor,
+      valorFormatado,
+      secoes: novasSecoes,
+    };
+    setValorCheioDigitado(novoValor > 0 ? (novoValor % 1 === 0 ? novoValor.toString() : novoValor.toFixed(2)) : '');
+    salvarImediato(atualizado, modo === 'opcoes' ? 'Modo de precificação alterado para cenários/opções' : 'Modo de precificação alterado para valor único');
+  };
+
+  const handleAtualizarOpcoesValores = (novasOpcoes: OrcamentoOpcaoValor[], salvarDireto = false) => {
+    if (!orcamentoState) return;
+    const menor = obterMenorValorOpcoes(novasOpcoes);
+    const novoValor = menor || 0;
+    const valorFormatado = novoValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const prazoFormatado = orcamentoState.prazoEntrega || `${orcamentoState.prazoDias || 7} dias úteis`;
+    const condicoesFormatado = orcamentoState.condicoesPagamento || '50% de entrada e 50% após emissão do laudo final e ART.';
+
+    const novasSecoes = (orcamentoState.secoes || []).map((s) => {
+      const isEtapa3 = s.id === 'etapa3' || (s.titulo && s.titulo.toLowerCase().includes('etapa 3'));
+      if (!isEtapa3) return s;
+      return {
+        ...s,
+        conteudoHtml: gerarHtmlEtapa3Investimento({
+          valor: valorFormatado,
+          prazo: prazoFormatado,
+          condicoes: condicoesFormatado,
+          validade: orcamentoState.validadeDias || 15,
+          clienteNome: orcamentoState.clienteNome || cliente?.razaoSocial || 'Cliente',
+          representante: orcamentoState.representanteNome || 'Diretoria / Coordenação Técnica',
+          incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
+          chavePix: orcamentoState.chavePix || '10287093409',
+          itensCalculo: orcamentoState.itensCalculo,
+          modoPrecificacao: 'opcoes',
+          opcoesValores: novasOpcoes,
+        }),
+      };
+    });
+
+    const parcelasAtualizadas = (orcamentoState.parcelas && orcamentoState.parcelas.length > 0)
+      ? orcamentoState.parcelas.map((p) => {
+          const percentual = Number(p.percentual) || 0;
+          const valorParcela = Math.round((novoValor * percentual / 100) * 100) / 100;
+          return { ...p, valor: valorParcela };
+        })
+      : orcamentoState.parcelas;
+
+    const atualizado: Orcamento = {
+      ...orcamentoState,
+      modoPrecificacao: 'opcoes',
+      opcoesValores: novasOpcoes,
+      valor: novoValor,
+      valorFormatado,
+      secoes: novasSecoes,
+      ...(parcelasAtualizadas ? { parcelas: parcelasAtualizadas } : {}),
+    };
+    setValorCheioDigitado(novoValor > 0 ? (novoValor % 1 === 0 ? novoValor.toString() : novoValor.toFixed(2)) : '');
+    if (salvarDireto) {
+      salvarImediato(atualizado, 'Cenários/opções de valor atualizados');
+    } else {
+      agendarAutoSave(atualizado, 'Cenários/opções de valor atualizados');
+    }
+  };
+
   // Toggle Nota Fiscal (NFS-e)
   const handleToggleNotaFiscal = () => {
     if (!orcamentoState) return;
@@ -937,6 +1068,8 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
               incluiNotaFiscal: novoValor,
               chavePix: orcamentoState.chavePix || '10287093409',
               itensCalculo: orcamentoState.itensCalculo,
+              modoPrecificacao: orcamentoState.modoPrecificacao,
+              opcoesValores: orcamentoState.opcoesValores,
             }),
           };
         }
@@ -969,6 +1102,8 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
       chavePix: orcamentoState.chavePix || '10287093409',
       itensCalculo: orcamentoState.itensCalculo,
+      modoPrecificacao: orcamentoState.modoPrecificacao,
+      opcoesValores: orcamentoState.opcoesValores,
     });
 
     const novasSecoes = orcamentoState.secoes.map(s => {
@@ -1106,9 +1241,13 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
     dadosExtras?: Partial<Orcamento>
   ) => {
     if (!orcamentoState) return;
-    const novoTotal = dadosExtras?.valor !== undefined
-      ? dadosExtras.valor
-      : novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
+    const modoOpcoes = orcamentoState.modoPrecificacao === 'opcoes';
+    const menorOpcao = obterMenorValorOpcoes(orcamentoState.opcoesValores || []);
+    const novoTotal = modoOpcoes
+      ? (menorOpcao || orcamentoState.valor || 0)
+      : (dadosExtras?.valor !== undefined
+        ? dadosExtras.valor
+        : novaLista.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0));
     const valorFormatado = dadosExtras?.valorFormatado || novoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const prazoFormatado = orcamentoState.prazoEntrega || `${orcamentoState.prazoDias || 7} dias úteis`;
     const condicoesFormatado = orcamentoState.condicoesPagamento || '50% de entrada e 50% após emissão do laudo final e ART.';
@@ -1126,6 +1265,8 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
       incluiNotaFiscal: orcamentoState.incluiNotaFiscal !== false,
       chavePix: orcamentoState.chavePix || '10287093409',
       itensCalculo: novaLista,
+      modoPrecificacao: orcamentoState.modoPrecificacao,
+      opcoesValores: orcamentoState.opcoesValores,
     });
 
     const novasSecoes = (orcamentoState.secoes || []).map(s => {
@@ -1274,6 +1415,7 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
    */
   const handleFixarTotalGeralProposta = (totalAlvoRaw: number | string) => {
     if (!orcamentoState) return;
+    if (orcamentoState.modoPrecificacao === 'opcoes') return;
     const totalAlvo = typeof totalAlvoRaw === 'number' ? totalAlvoRaw : parseValorMoeda(totalAlvoRaw);
     if (totalAlvo <= 0) return;
 
@@ -2413,6 +2555,132 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
             {/* SPECIAL CASE: Etapa 3 (Investimento, Pagamento, PIX e Nota Fiscal + Memorial de Cálculo) */}
             {(secaoAtiva?.id === 'etapa3' || secaoAtiva?.numero === 12 || (secaoAtiva?.titulo && secaoAtiva.titulo.toLowerCase().includes('etapa 3'))) && (
               <div className="space-y-4">
+                {/* Modo de Precificação */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#0B1E3D] uppercase tracking-wider">Modelo de Precificação</h4>
+                      <p className="text-[11px] text-slate-500">Escolha valor único (memorial simples) ou cenários/opções comerciais.</p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleSetModoPrecificacaoEditor('simples')}
+                        className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${orcamentoState?.modoPrecificacao !== 'opcoes' ? 'bg-[#1565D8] text-white' : 'text-slate-500 hover:text-slate-800'}`}
+                      >
+                        Valor único
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetModoPrecificacaoEditor('opcoes')}
+                        className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${orcamentoState?.modoPrecificacao === 'opcoes' ? 'bg-[#1565D8] text-white' : 'text-slate-500 hover:text-slate-800'}`}
+                      >
+                        Cenários / opções
+                      </button>
+                    </div>
+                  </div>
+
+                  {orcamentoState?.modoPrecificacao === 'opcoes' && (
+                    <div className="space-y-2.5">
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Cadastre cenários comerciais e, dentro de cada cenário, as configurações de valor (ex.: 1 ART por lote / ART individual por veículo). O valor de referência da proposta será o menor valor cadastrado.
+                      </p>
+                      {(orcamentoState.opcoesValores || []).map((opcao, opIdx) => (
+                        <div key={opcao.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                          <div className="px-3 py-2 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0B1E3D] text-white text-[10px] font-bold shrink-0">{opIdx + 1}</span>
+                            <input
+                              type="text"
+                              value={opcao.nome}
+                              onChange={(e) => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? { ...op, nome: e.target.value } : op))}
+                              placeholder={`Opção ${opIdx + 1}`}
+                              className="flex-1 min-w-0 p-1.5 text-xs font-bold border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).filter((op) => op.id !== opcao.id), true)}
+                              className="p-1.5 rounded-md text-rose-500 hover:bg-rose-50 cursor-pointer"
+                              title="Remover cenário"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="p-2.5 space-y-2">
+                            <input
+                              type="text"
+                              value={opcao.descricao || ''}
+                              onChange={(e) => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? { ...op, descricao: e.target.value } : op))}
+                              placeholder="Descrição do cenário (opcional)"
+                              className="w-full p-1.5 text-[11px] border border-slate-200 rounded-lg bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                            />
+                            <div className="space-y-1.5">
+                              {(opcao.itens || []).map((item) => (
+                                <div key={item.id} className="grid grid-cols-[1fr_140px_auto] gap-1.5 items-center">
+                                  <input
+                                    type="text"
+                                    value={item.descricao}
+                                    onChange={(e) => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? {
+                                      ...op,
+                                      itens: op.itens.map((it) => it.id === item.id ? { ...it, descricao: e.target.value } : it),
+                                    } : op))}
+                                    placeholder="Ex.: Com 1 ART única para o lote"
+                                    className="w-full p-1.5 text-[11px] border border-slate-200 rounded-lg bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                                  />
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                                    <input
+                                      type="number"
+                                      step="50"
+                                      min="0"
+                                      value={item.valor || ''}
+                                      onChange={(e) => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? {
+                                        ...op,
+                                        itens: op.itens.map((it) => it.id === item.id ? { ...it, valor: parseFloat(e.target.value) || 0 } : it),
+                                      } : op))}
+                                      onBlur={() => handleAtualizarOpcoesValores(orcamentoState.opcoesValores || [], true)}
+                                      placeholder="0"
+                                      className="w-full pl-7 pr-2 py-1.5 text-[11px] font-mono font-bold border border-slate-200 rounded-lg bg-slate-50 text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1565D8]"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? { ...op, itens: op.itens.filter((it) => it.id !== item.id) } : op), true)}
+                                    className="p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer"
+                                    title="Remover configuração"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAtualizarOpcoesValores((orcamentoState.opcoesValores || []).map((op) => op.id === opcao.id ? { ...op, itens: [...(op.itens || []), criarItemOpcaoValorPadrao(opIdx, (op.itens || []).length)] } : op), true)}
+                              className="text-[11px] font-bold text-[#1565D8] hover:underline cursor-pointer"
+                            >
+                              + Adicionar configuração
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAtualizarOpcoesValores([...(orcamentoState.opcoesValores || []), criarOpcaoValorPadrao((orcamentoState.opcoesValores || []).length)], true)}
+                          className="px-3 py-1.5 rounded-lg border border-dashed border-[#1565D8]/40 text-[#1565D8] text-[11px] font-bold hover:bg-[#1565D8]/5 cursor-pointer"
+                        >
+                          + Adicionar cenário
+                        </button>
+                        <div className="text-[11px] text-slate-500">
+                          Valor de referência: <strong className="text-slate-900 font-mono">{(obterMenorValorOpcoes(orcamentoState.opcoesValores || []) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {orcamentoState?.modoPrecificacao !== 'opcoes' && (
+                <>
                 {/* Memorial de Cálculo Interativo */}
                 <div className="p-4 rounded-xl border border-blue-200 bg-white space-y-3 shadow-2xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
@@ -2679,6 +2947,8 @@ Se desejar, posso encaminhar a proposta completa e esclarecer qualquer dúvida.`
                     </table>
                   </div>
                 </div>
+                </>
+                )}
 
                 {/* Bloco de Faturamento PIX Oficial BACEN & Nota Fiscal */}
                 <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/70 space-y-3 shadow-2xs">

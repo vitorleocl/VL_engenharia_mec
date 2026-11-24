@@ -333,6 +333,90 @@ export function gerarHtmlEtapa2Metodologia(
   </div>`;
 }
 
+function formatarBRL(valor: number): string {
+  return (Number(valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+/**
+ * Gera a tabela visual de cenários/opções de valores da proposta.
+ */
+export function gerarTabelaOpcoesValoresHtml(
+  opcoes?: Orcamento['opcoesValores'],
+  valorTotalPadrao?: string
+): string {
+  const opcoesValidas = (opcoes || []).filter((op) => op && (op.nome || op.descricao || (op.itens && op.itens.length > 0)));
+  if (opcoesValidas.length === 0) {
+    return gerarTabelaMemorialCalculoHtml(undefined, valorTotalPadrao);
+  }
+
+  const todosValores = opcoesValidas.flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0);
+  const menorValor = todosValores.length > 0 ? Math.min(...todosValores) : 0;
+  const maiorValor = todosValores.length > 0 ? Math.max(...todosValores) : 0;
+  const faixa = menorValor > 0
+    ? (menorValor === maiorValor ? formatarBRL(menorValor) : `${formatarBRL(menorValor)} a ${formatarBRL(maiorValor)}`)
+    : (valorTotalPadrao || 'A definir');
+
+  const blocos = opcoesValidas.map((op, opIdx) => {
+    const itens = (op.itens && op.itens.length > 0) ? op.itens : [{ id: `op-${opIdx}-1`, descricao: 'Valor da opção', valor: 0 }];
+    const linhas = itens.map((it, idx) => {
+      const valor = Number(it.valor) || 0;
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding: 7px 10px; color: #334155; font-weight: 600;">${it.descricao || 'Item'}</td>
+          <td style="padding: 7px 10px; text-align: right; font-weight: 800; color: #0b1e3d; font-family: monospace; width: 130px; white-space: nowrap;">${valor > 0 ? formatarBRL(valor) : (valorTotalPadrao || 'A definir')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const nome = op.nome || `Opção ${opIdx + 1}`;
+    const descricao = op.descricao ? `<div style="font-size: 10px; color: #475569; font-weight: 500; margin-top: 2px; line-height: 1.35;">${op.descricao}</div>` : '';
+
+    return `
+      <div style="border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 10px; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); padding: 8px 10px; border-bottom: 1px solid #bfdbfe;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: #0B1E3D; color: #ffffff; font-size: 10px; font-weight: 800; font-family: monospace;">${opIdx + 1}</span>
+            <div>
+              <strong style="color: #0b1e3d; font-size: 11.5px; font-weight: 800; display: block;">${nome}</strong>
+              ${descricao}
+            </div>
+          </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
+          <thead>
+            <tr style="background: #f8fafc; color: #475569; border-bottom: 1px solid #cbd5e1; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;">
+              <th style="padding: 6px 10px; font-weight: 800;">Configuração / Escopo</th>
+              <th style="padding: 6px 10px; font-weight: 800; text-align: right; width: 130px;">Valor</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <div style="background: #0B1E3D; color: #ffffff; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <div>
+          <strong style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; display: block;">Cenários Comerciais & Opções de Investimento</strong>
+          <span style="font-size: 9px; color: #93c5fd; font-weight: 600;">Selecione a opção mais adequada ao cenário operacional</span>
+        </div>
+        <span style="background: rgba(212, 175, 55, 0.18); border: 1px solid rgba(212, 175, 55, 0.55); color: #fde68a; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; white-space: nowrap;">${opcoesValidas.length} OPÇÃO(ÕES)</span>
+      </div>
+      <div style="padding: 10px 10px 2px 10px;">
+        ${blocos}
+      </div>
+      <div style="padding: 0 10px 10px 10px;">
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <span style="font-size: 9.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.4px;">Faixa de investimento</span>
+          <strong style="font-size: 12px; font-weight: 900; color: #1565D8; font-family: monospace;">${faixa}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 /**
  * Gera a tabela visual do Memorial de Cálculo da proposta
  */
@@ -435,14 +519,34 @@ export function gerarHtmlEtapa3Investimento(params: {
   incluiNotaFiscal?: boolean;
   chavePix?: string;
   itensCalculo?: OrcamentoItemCalculo[];
+  modoPrecificacao?: Orcamento['modoPrecificacao'];
+  opcoesValores?: Orcamento['opcoesValores'];
 }): string {
   const comNotaFiscal = params.incluiNotaFiscal !== false;
   const chavePixDisplay = params.chavePix || CHAVE_PIX_FORMATADA_PADRAO;
-  const tabelaMemorialHtml = gerarTabelaMemorialCalculoHtml(params.itensCalculo, params.valor);
+  const modoOpcoes = params.modoPrecificacao === 'opcoes' && (params.opcoesValores?.length || 0) > 0;
+  const tabelaMemorialHtml = modoOpcoes
+    ? gerarTabelaOpcoesValoresHtml(params.opcoesValores, params.valor)
+    : gerarTabelaMemorialCalculoHtml(params.itensCalculo, params.valor);
+
+  const todosValoresOpcoes = modoOpcoes
+    ? (params.opcoesValores || []).flatMap((op) => (op.itens || []).map((it) => Number(it.valor) || 0)).filter((v) => v > 0)
+    : [];
+  const menorValor = todosValoresOpcoes.length > 0 ? Math.min(...todosValoresOpcoes) : 0;
+  const maiorValor = todosValoresOpcoes.length > 0 ? Math.max(...todosValoresOpcoes) : 0;
+  const valorHero = modoOpcoes
+    ? (menorValor > 0 ? (menorValor === maiorValor ? formatarBRL(menorValor) : `A partir de ${formatarBRL(menorValor)}`) : params.valor)
+    : params.valor;
+  const labelHero = modoOpcoes ? 'INVESTIMENTO CONFORME CENÁRIO SELECIONADO' : 'INVESTIMENTO TOTAL LÍQUIDO';
+  const subtituloHero = modoOpcoes
+    ? `Valores variam conforme o cenário e a configuração de ART selecionados${menorValor > 0 && maiorValor > menorValor ? ` (${formatarBRL(menorValor)} a ${formatarBRL(maiorValor)})` : ''}. ${comNotaFiscal ? 'NFS-e e taxa de ART inclusas conforme a opção contratada.' : 'Recibo de prestação autônoma e taxa de ART inclusa conforme a opção contratada.'}`
+    : (comNotaFiscal
+      ? 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.'
+      : 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.');
 
   return `<div class="space-y-3.5 text-xs">
     
-    <!-- MEMORIAL DE CÁLCULO TRANSPARENTE -->
+    <!-- MEMORIAL DE CÁLCULO / CENÁRIOS COMERCIAIS -->
     ${tabelaMemorialHtml}
 
     <!-- HERO CARD DO INVESTIMENTO COMERCIAL -->
@@ -451,18 +555,15 @@ export function gerarHtmlEtapa3Investimento(params: {
 
       <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
         <span style="background: rgba(212, 175, 55, 0.25); border: 1.5px solid #D4AF37; color: #fef08a; padding: 2px 10px; border-radius: 20px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px;">
-          INVESTIMENTO TOTAL LÍQUIDO
+          ${labelHero}
         </span>
         
-        <div style="font-size: 28px; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 4px 0;">
-          ${params.valor}
+        <div style="font-size: ${modoOpcoes ? '24px' : '28px'}; line-height: 1.1; font-weight: 900; font-family: monospace; letter-spacing: -0.5px; color: #ffffff; margin: 4px 0;">
+          ${valorHero}
         </div>
 
-        <p style="color: #e2e8f0; font-size: 10.5px; max-width: 500px; margin: 0; line-height: 1.4;">
-          ${comNotaFiscal 
-            ? 'Valor líquido para prestação de serviços de engenharia com emissão de Nota Fiscal (NFS-e) e taxa de ART inclusa.'
-            : 'Valor líquido para prestação de serviços técnicos de engenharia com Recibo de Prestação Autônoma e taxa de ART inclusa.'
-          }
+        <p style="color: #e2e8f0; font-size: 10.5px; max-width: 520px; margin: 0; line-height: 1.4;">
+          ${subtituloHero}
         </p>
 
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px;">
@@ -858,6 +959,8 @@ export function gerarSecoesPadraoOrcamentoV2(
         incluiNotaFiscal: orcamento.incluiNotaFiscal !== false,
         chavePix: orcamento.chavePix || DADOS_VL_PADRAO.pixChave,
         itensCalculo: orcamento.itensCalculo,
+        modoPrecificacao: orcamento.modoPrecificacao,
+        opcoesValores: orcamento.opcoesValores,
       })
     },
     {
@@ -1161,6 +1264,9 @@ export function gerarSecoesPadraoOrcamentoLegado(
         representante,
         incluiNotaFiscal: orcamento.incluiNotaFiscal,
         chavePix: orcamento.chavePix,
+        itensCalculo: orcamento.itensCalculo,
+        modoPrecificacao: orcamento.modoPrecificacao,
+        opcoesValores: orcamento.opcoesValores,
       })
     },
     {
@@ -1231,7 +1337,7 @@ export function converterPaginasParaSecoes(
       conteudo = gerarHtmlEtapa2Metodologia(normas);
       titulo = 'Etapa 2 - Escopo Técnico das Atividades (Metodologia)';
       subtitulo = 'FASES, CHECKLISTS E ENSAIOS EM 5 ETAPAS';
-    } else if (isEtapa3 && !conteudo.includes('INVESTIMENTO COMERCIAL LÍQUIDO')) {
+    } else if (isEtapa3 && !conteudo.includes('INVESTIMENTO COMERCIAL LÍQUIDO') && !conteudo.includes('INVESTIMENTO CONFORME CENÁRIO SELECIONADO')) {
       conteudo = gerarHtmlEtapa3Investimento({
         valor,
         prazo,
@@ -1241,6 +1347,9 @@ export function converterPaginasParaSecoes(
         representante,
         incluiNotaFiscal: orcamento?.incluiNotaFiscal,
         chavePix: orcamento?.chavePix,
+        itensCalculo: orcamento?.itensCalculo,
+        modoPrecificacao: orcamento?.modoPrecificacao,
+        opcoesValores: orcamento?.opcoesValores,
       });
       titulo = 'Etapa 3 - Prazo, Pagamento & Investimento';
       subtitulo = 'INVESTIMENTO COMERCIAL E TERMOS FINANCEIROS';
