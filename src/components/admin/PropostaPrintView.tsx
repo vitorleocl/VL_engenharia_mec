@@ -442,6 +442,10 @@ export const PropostaPrintView: React.FC = () => {
           justify-content: space-between;
           padding-top: 2.5mm;
         }
+        /* Mantém a tabela de fases logo abaixo do título da metodologia */
+        .sheet:not(.cover) .body.metodologia {
+          justify-content: flex-start;
+        }
 
         /* Running Header (Pages 2-6) */
         .rh {
@@ -1256,10 +1260,10 @@ export const PropostaPrintView: React.FC = () => {
             <VlLogoVector className="h-7 w-auto" style={{ width: '135px', height: '26px' }} />
             <div className="where"><b>Etapa 2 de 3</b> Escopo técnico das atividades (metodologia)</div>
           </div>
-          <div className="body">
+          <div className="body metodologia">
             <h2>{tituloMetodologia}</h2>
 
-            <div style={{ marginTop: '1mm' }}>
+            <div style={{ marginTop: '0.5mm' }}>
               {fasesMetodologia.map((fase, idx) => {
                 const num = String(idx + 1).padStart(2, '0');
                 const desc = (fase.descricao || '').replace(/\{normasTecnicas\}/g, normasTecnicas);
