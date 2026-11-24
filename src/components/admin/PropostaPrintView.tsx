@@ -1258,15 +1258,8 @@ export const PropostaPrintView: React.FC = () => {
           </div>
           <div className="body">
             <h2>{tituloMetodologia}</h2>
-            <div className="band">
-              <div>
-                <b>{fasesMetodologia.length} etapa{fasesMetodologia.length > 1 ? 's' : ''} sequenciais, da vistoria à ART</b>
-                <span>Inspeção in loco, checklists normativos, instrumentação, laudo e homologação técnica.</span>
-              </div>
-              <em>Engenharia diagnóstica</em>
-            </div>
 
-            <div style={{ marginTop: '2mm' }}>
+            <div style={{ marginTop: '1mm' }}>
               {fasesMetodologia.map((fase, idx) => {
                 const num = String(idx + 1).padStart(2, '0');
                 const desc = (fase.descricao || '').replace(/\{normasTecnicas\}/g, normasTecnicas);
