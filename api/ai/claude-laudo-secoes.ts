@@ -1,5 +1,53 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { responder, lerCorpo, usuarioAutorizado } from './_comum';
+// Funções da Vercel (package.json é type=module): sem imports relativos, tudo neste arquivo.
+
+
+function responder(res: ServerResponse, status: number, dados: unknown): void {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(dados));
+}
+
+function lerCorpo(req: IncomingMessage): Promise<any> {
+  return new Promise((resolve) => {
+    const partes: Buffer[] = [];
+    req.on('data', (p: Buffer) => partes.push(Buffer.from(p)));
+    req.on('end', () => {
+      try {
+        const t = Buffer.concat(partes).toString('utf-8');
+        resolve(t ? JSON.parse(t) : {});
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', () => resolve({}));
+  });
+}
+
+/** Confere o token de login do Firebase e se o e-mail é o autorizado. */
+async function usuarioAutorizado(req: IncomingMessage): Promise<boolean> {
+  const auth = String(req.headers['authorization'] || '');
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || 'AIzaSyCuTq8f2U-_Q0HW1wBIpml0QU2RgRx8ELw';
+  // MASTER_EMAIL aceita vários e-mails separados por vírgula (ex.: master e administrativo).
+  const permitidos = (process.env.MASTER_EMAIL || process.env.VITE_MASTER_EMAIL || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (!token || !apiKey || !permitidos.length) return false;
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: token }),
+    });
+    if (!r.ok) return false;
+    const j: any = await r.json();
+    const u = j?.users?.[0];
+    return Boolean(u?.email) && permitidos.includes(String(u.email).toLowerCase()) && u.emailVerified !== false;
+  } catch {
+    return false;
+  }
+}
+
+
 
 /**
  * POST /api/ai/claude-laudo-secoes
@@ -29,7 +77,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const system = `Você é um Engenheiro Mecânico Perito (CREA-PE) que redige laudos técnicos da VL Engenharia (inspeções, NR-12, NR-13, vasos de pressão, caldeiras, HVAC/PMOC, veículos, perícias, máquinas, elevação de cargas etc.).
 Você recebe o contexto de um laudo e algumas de suas seções. Redija o conteúdo de cada seção pedida.
 Regras:
-1. Cada conteudoHtml é HTML limpo (<p>, <ul>, <li>, <strong>, <em>, <table class="tiptap-table border-collapse border border-slate-300 w-full my-3"> com <tr>/<td>), sem markdown nem blocos de código.
+1. Cada conteudoHtml é HTML limpo e simples, SEM classes, SEM style e SEM <div>: use <p> para texto corrido (parágrafos de 3 a 5 linhas), <h4> para subtítulos curtos, <ul>/<ol> com <li> para listas, <strong> para termos-chave, <table><thead><tr><th>..</th></tr></thead><tbody><tr><td>..</td></tr></tbody></table> para dados comparativos ou de identificação (tabelas com no máximo 5 colunas) e <blockquote><p>..</p></blockquote> para destacar o parecer, o resultado ou um alerta importante (no máximo um por seção). Sem markdown nem blocos de código.
 2. Tom formal, técnico, impessoal; cite apenas normas coerentes com o tipo de laudo informado.
 3. Use SOMENTE os fatos do contexto (cliente, ativo, datas, checklist, não conformidades, observações do engenheiro). NÃO invente medições, números de série, datas, nomes, resultados de ensaio ou fotos.
 4. Quando faltar um dado necessário, escreva "[VERIFICAR: dado que falta]".

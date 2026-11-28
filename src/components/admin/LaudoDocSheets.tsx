@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { paginarSecoes } from '../../lib/paginarLaudo';
 import QRCode from 'qrcode';
 import { Laudo, Cliente, Ativo } from '../../types';
 import { VlLogoVector } from './PropostaViewerModal';
@@ -19,6 +20,9 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
   embutidoNoModal = false,
 }) => {
   const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
+  const [paginasFlow, setPaginasFlow] = useState<string[][]>([[]]);
+  const totalFolhas = 3 + paginasFlow.length + 1;
+  const medidorRef = useRef<HTMLDivElement>(null);
 
   // Identificação e controle
   const numero = laudo.numero || 'LAR-2026-001';
@@ -125,6 +129,39 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
   ];
 
   const premissas = laudo.premissasLimitacoes || 'Este laudo refere-se exclusivamente às condições observadas no ativo e no local na data da vistoria. Itens não acessíveis, não energizados ou não disponibilizados pelo cliente não foram avaliados e estão indicados como não aplicáveis. Alterações, reparos ou mudanças de uso posteriores à vistoria exigem nova avaliação.';
+
+
+  // Paginação automática: mede os blocos de todas as seções e distribui nas folhas A4
+  useEffect(() => {
+    let cancelado = false;
+    const rodar = () => {
+      const caixa = medidorRef.current;
+      if (!caixa || cancelado) return;
+      const sonda = document.createElement('div');
+      sonda.style.cssText = 'height:236mm;width:1px;position:absolute;visibility:hidden';
+      caixa.appendChild(sonda);
+      const alturaUtil = sonda.offsetHeight;
+      caixa.removeChild(sonda);
+      const medir = (html: string) => {
+        const d = document.createElement('div');
+        d.className = 'lp-unit';
+        d.innerHTML = html;
+        caixa.appendChild(d);
+        const h = d.getBoundingClientRect().height;
+        caixa.removeChild(d);
+        return h;
+      };
+      try {
+        const paginas = paginarSecoes(secoesConstatacoes, alturaUtil, medir);
+        if (!cancelado) setPaginasFlow(paginas);
+      } catch (e) {
+        console.warn('Falha ao paginar laudo', e);
+      }
+    };
+    const fontes: any = (document as any).fonts;
+    if (fontes?.ready) fontes.ready.then(() => requestAnimationFrame(rodar)); else requestAnimationFrame(rodar);
+    return () => { cancelado = true; };
+  }, [secoesConstatacoes]);
 
   // Estilos A4 com tipografia idêntica ao modelo aprovado
   const stylesA4 = `
@@ -324,6 +361,36 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
       font-weight: 600;
       font-size: 8.5pt;
     }
+
+    .lp-medidor { position: absolute; left: -9999px; top: 0; width: 182mm; visibility: hidden; pointer-events: none; }
+    .laudo-prose { font-family: var(--serif); font-size: 9.6pt; line-height: 1.5; color: var(--text); hyphens: auto; text-align: left; }
+    .laudo-prose .lp-unit { display: flow-root; break-inside: avoid; }
+    .laudo-prose .lp-sec-h { display: flex; align-items: baseline; gap: 3mm; margin: 5mm 0 2mm; padding-bottom: 1.2mm; border-bottom: 1.4pt solid var(--ink); }
+    .laudo-prose .lp-sec-h .lp-num { font-family: var(--sans); font-weight: 700; font-size: 10pt; color: #fff; background: var(--ink); min-width: 6.2mm; height: 6.2mm; line-height: 6.2mm; text-align: center; border-radius: 1mm; flex: none; }
+    .laudo-prose .lp-sec-h h3 { font-family: var(--sans); font-weight: 700; font-size: 13.5pt; line-height: 1.15; color: var(--ink); margin: 0; }
+    .laudo-prose p { margin: 0 0 2.4mm; text-align: justify; orphans: 3; widows: 3; }
+    .laudo-prose ul, .laudo-prose ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+    .laudo-prose ul { list-style: disc outside; }
+    .laudo-prose ol { list-style: decimal outside; }
+    .laudo-prose li::marker { color: var(--blue); }
+    .laudo-prose li { margin-bottom: 1mm; }
+    .laudo-prose strong, .laudo-prose b { color: var(--ink); }
+    .laudo-prose h2, .laudo-prose h4 { font-family: var(--sans); color: var(--ink); font-weight: 700; margin: 3mm 0 1.5mm; font-size: 11pt; }
+    .laudo-prose table { width: 100%; border-collapse: collapse; margin: 1mm 0 3.5mm; font-family: var(--sans); font-size: 8.6pt; line-height: 1.3; break-inside: avoid; }
+    .laudo-prose th, .laudo-prose td { border: 0.5pt solid var(--rule); padding: 1.5mm 2mm; text-align: left; vertical-align: top; }
+    .laudo-prose th, .laudo-prose thead td, .laudo-prose tr:first-child > td:first-child:only-child { background: var(--tint); color: var(--ink); font-weight: 700; }
+    .laudo-prose td:first-child:not(:only-child) { background: #F7F9FC; font-weight: 600; color: var(--ink); }
+    .laudo-prose [class*="bg-"], .laudo-prose [class*="rounded"] { border-radius: 1mm; }
+    .laudo-prose blockquote { margin: 1mm 0 3.5mm; padding: 2.4mm 3.4mm; border-left: 2pt solid var(--blue); background: var(--tint); font-family: var(--sans); font-size: 9.2pt; line-height: 1.45; color: var(--ink); break-inside: avoid; }
+    .laudo-prose blockquote p { margin: 0 0 1.2mm; text-align: left; }
+    .laudo-prose blockquote p:last-child { margin: 0; }
+    .laudo-prose .lp-ref { font-family: var(--sans); font-size: 8.4pt; color: var(--muted); margin: 0 0 3mm; }
+    .laudo-prose .lp-fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 1mm 0 4mm; }
+    .laudo-prose .lp-fotos figure { margin: 0; border: 0.3pt solid var(--rule); background: var(--tint); padding: 1mm; }
+    .laudo-prose .lp-foto { height: 56mm; background: #E2E8F0; overflow: hidden; }
+    .laudo-prose .lp-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .laudo-prose figcaption { font-family: var(--sans); font-size: 7.8pt; color: var(--muted); padding: 1mm 0.5mm 0; }
+    .laudo-prose .todo-highlight { font-size: 8.6pt; }
     @media print {
       body {
         margin: 0 !important;
@@ -368,7 +435,7 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
         </div>
         <div>
           <span className="k">Folha</span>
-          <span className="v">{folhaNum} / 6</span>
+          <span className="v">{folhaNum} / {totalFolhas}</span>
         </div>
       </div>
       <div className="laudo-ft">
@@ -386,6 +453,7 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
   return (
     <div className="laudo-a4-root">
       <style>{stylesA4}</style>
+      <div ref={medidorRef} className="laudo-prose lp-medidor" aria-hidden="true" />
 
       {/* ==================== FOLHA 1: CAPA ==================== */}
       {(!folhaEspecifica || folhaEspecifica === 1) && (
@@ -1065,283 +1133,31 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
         </section>
       )}
 
-      {/* ==================== FOLHA 4: CONSTATAÇÕES TÉCNICAS (ITENS 1 E 2) ==================== */}
-      {(!folhaEspecifica || folhaEspecifica === 4) && (
-        <section className="laudo-sheet" id="p4">
+      {/* ==================== FOLHAS DE CONSTATAÇÕES: paginação automática de todas as seções ==================== */}
+      {(!folhaEspecifica || folhaEspecifica >= 4) && paginasFlow.map((blocos, idx) => (
+        <section className="laudo-sheet" id={`p${4 + idx}`} key={`flow-${idx}`}>
           {isMinuta && (
             <div className="minuta-banner">
-              MINUTA ILUSTRATIVA · dados de exemplo, sem validade até a anexação da ART e a emissão
+              MINUTA · sem validade até a anexação da ART e a emissão
             </div>
           )}
 
           <div className="laudo-rh">
             <VlLogoVector style={{ width: '135px', height: '26px' }} />
             <div style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: '9pt', color: '#56637F' }}>
-              <b>Laudo {numero}</b> &nbsp;Constatações técnicas por item
+              <b>Laudo {numero}</b> &nbsp;Constatações técnicas
             </div>
           </div>
 
-          <div className="laudo-body">
-            {/* Item 1 */}
-            <div style={{ paddingBottom: '4mm' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '5mm' }}>
-                <div>
-                  <span style={{ display: 'block', fontFamily: 'var(--sans)', fontSize: '7.6pt', color: '#56637F', fontWeight: 600 }}>
-                    Item 1 de 4
-                  </span>
-                  <h4 style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '13.5pt', color: '#15264B', margin: '0.8mm 0 0 0' }}>
-                    {secoesConstatacoes[0]?.titulo || 'Verificação dos estabilizadores e chassi de montagem'}
-                  </h4>
-                </div>
-                <span className="chip-item ok">
-                  <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
-                  Conforme
-                </span>
-              </div>
-              <div
-                style={{ fontFamily: 'var(--serif)', fontSize: '9.2pt', lineHeight: 1.45, color: '#1F2B45', marginTop: '2mm' }}
-                dangerouslySetInnerHTML={{ __html: secoesConstatacoes[0]?.conteudoHtml || '' }}
-              />
-              <div style={{ fontFamily: 'var(--sans)', fontSize: '8.4pt', color: '#56637F', marginTop: '1.6mm' }}>
-                <b>Critério de referência:</b> {secoesConstatacoes[0]?.criterioReferencia || 'NR-11 · NBR 8400'}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4mm', marginTop: '3mm' }}>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '56mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[0]?.fotos?.[0]?.url ? (
-                      <img src={secoesConstatacoes[0].fotos[0].url} alt="Foto 1" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO 1</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1.2mm' }}>
-                    <b>Foto 1.</b> {secoesConstatacoes[0]?.fotos?.[0]?.legenda || 'Estabilizadores estendidos com travas operacionais e cilindros estanques.'}
-                  </div>
-                </div>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '56mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[0]?.fotos?.[1]?.url ? (
-                      <img src={secoesConstatacoes[0].fotos[1].url} alt="Foto 2" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO 2</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1.2mm' }}>
-                    <b>Foto 2.</b> {secoesConstatacoes[0]?.fotos?.[1]?.legenda || 'Fixação do chassi de montagem às longarinas do caminhão.'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Separador */}
-            <div style={{ borderTop: '1.4pt solid #15264B', margin: '2mm 0 4mm 0' }} />
-
-            {/* Item 2 */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '5mm' }}>
-                <div>
-                  <span style={{ display: 'block', fontFamily: 'var(--sans)', fontSize: '7.6pt', color: '#56637F', fontWeight: 600 }}>
-                    Item 2 de 4
-                  </span>
-                  <h4 style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '13.5pt', color: '#15264B', margin: '0.8mm 0 0 0' }}>
-                    {secoesConstatacoes[1]?.titulo || 'Exame dos acessórios de içamento (ganchos, cabos, moitões)'}
-                  </h4>
-                </div>
-                <span className="chip-item ok">
-                  <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6.4l2.7 2.7L10.2 3.3" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
-                  Conforme
-                </span>
-              </div>
-              <div
-                style={{ fontFamily: 'var(--serif)', fontSize: '9.2pt', lineHeight: 1.45, color: '#1F2B45', marginTop: '2mm' }}
-                dangerouslySetInnerHTML={{ __html: secoesConstatacoes[1]?.conteudoHtml || '' }}
-              />
-              <div style={{ fontFamily: 'var(--sans)', fontSize: '8.4pt', color: '#56637F', marginTop: '1.6mm' }}>
-                <b>Critério de referência:</b> {secoesConstatacoes[1]?.criterioReferencia || 'NR-11 · NBR 8400'}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4mm', marginTop: '3mm' }}>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '56mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[1]?.fotos?.[0]?.url ? (
-                      <img src={secoesConstatacoes[1].fotos[0].url} alt="Foto 3" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1.2mm' }}>
-                    <b>Foto.</b> {secoesConstatacoes[1]?.fotos?.[0]?.legenda || 'Gancho forjado com trava de segurança tipo mola operante.'}
-                  </div>
-                </div>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '56mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[1]?.fotos?.[1]?.url ? (
-                      <img src={secoesConstatacoes[1].fotos[1].url} alt="Foto 4" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1.2mm' }}>
-                    <b>Foto.</b> {secoesConstatacoes[1]?.fotos?.[1]?.legenda || 'Moitão e polias de direcionamento de cabo sem folgas.'}
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="laudo-body laudo-prose" style={{ overflow: 'hidden' }}>
+            {blocos.map((h, i) => (
+              <div className="lp-unit" key={i} dangerouslySetInnerHTML={{ __html: h }} />
+            ))}
           </div>
 
-          {renderControlFooter(4)}
+          {renderControlFooter(4 + idx)}
         </section>
-      )}
-
-      {/* ==================== FOLHA 5: CONSTATAÇÕES TÉCNICAS (ITENS 3 E 4) + COMPLEMENTAR ==================== */}
-      {(!folhaEspecifica || folhaEspecifica === 5) && (
-        <section className="laudo-sheet" id="p5">
-          {isMinuta && (
-            <div className="minuta-banner">
-              MINUTA ILUSTRATIVA · dados de exemplo, sem validade até a anexação da ART e a emissão
-            </div>
-          )}
-
-          <div className="laudo-rh">
-            <VlLogoVector style={{ width: '135px', height: '26px' }} />
-            <div style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: '9pt', color: '#56637F' }}>
-              <b>Laudo {numero}</b> &nbsp;Constatações técnicas por item
-            </div>
-          </div>
-
-          <div className="laudo-body">
-            {/* Item 3 com NC */}
-            <div style={{ paddingBottom: '3.5mm' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '5mm' }}>
-                <div>
-                  <span style={{ display: 'block', fontFamily: 'var(--sans)', fontSize: '7.6pt', color: '#56637F', fontWeight: 600 }}>
-                    Item 3 de 4
-                  </span>
-                  <h4 style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '13.5pt', color: '#15264B', margin: '0.8mm 0 0 0' }}>
-                    {secoesConstatacoes[2]?.titulo || 'Inspeção do posto de comando e alavancas'}
-                  </h4>
-                </div>
-                <span className="chip-item nc">
-                  <svg width="10" height="10" viewBox="0 0 12 12"><path d="M2.6 2.6l6.8 6.8M9.4 2.6L2.6 9.4" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
-                  Não conforme · NC-01
-                </span>
-              </div>
-              <div
-                style={{ fontFamily: 'var(--serif)', fontSize: '9.2pt', lineHeight: 1.45, color: '#1F2B45', marginTop: '2mm' }}
-                dangerouslySetInnerHTML={{ __html: secoesConstatacoes[2]?.conteudoHtml || '' }}
-              />
-              <div style={{ fontFamily: 'var(--sans)', fontSize: '8.4pt', color: '#56637F', marginTop: '1.6mm' }}>
-                <b>Critério de referência:</b> {secoesConstatacoes[2]?.criterioReferencia || 'NR-11 · NBR 8400 · Origem: checklist, item 5'}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4mm', marginTop: '2.5mm' }}>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '48mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[2]?.fotos?.[0]?.url ? (
-                      <img src={secoesConstatacoes[2].fotos[0].url} alt="Foto 3" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO 3</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1mm' }}>
-                    <b>Foto 3.</b> {secoesConstatacoes[2]?.fotos?.[0]?.legenda || 'Posto de comando com desgaste nas etiquetas indicativas de comando.'}
-                  </div>
-                </div>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '48mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[2]?.fotos?.[1]?.url ? (
-                      <img src={secoesConstatacoes[2].fotos[1].url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8.5pt', color: '#56637F', background: '#fff', padding: '1mm 3mm' }}>FOTO</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '8pt', color: '#56637F', marginTop: '1mm' }}>
-                    <b>Foto.</b> {secoesConstatacoes[2]?.fotos?.[1]?.legenda || 'Detalhe da placa de advertência com desgaste superficial a ser reposta.'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Separador */}
-            <div style={{ borderTop: '1.4pt solid #15264B', margin: '2mm 0 3.5mm 0' }} />
-
-            {/* Item 4 */}
-            <div style={{ paddingBottom: '3.5mm' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '5mm' }}>
-                <div>
-                  <span style={{ display: 'block', fontFamily: 'var(--sans)', fontSize: '7.6pt', color: '#56637F', fontWeight: 600 }}>
-                    Item 4 de 4
-                  </span>
-                  <h4 style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '13.5pt', color: '#15264B', margin: '0.8mm 0 0 0' }}>
-                    {secoesConstatacoes[3]?.titulo || 'Parecer de liberação para obras e indústrias'}
-                  </h4>
-                </div>
-                <span className="chip-item rs">
-                  <svg width="10" height="10" viewBox="0 0 12 12"><path d="M6 1.6L11 10.4H1z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M6 5v2.4M6 8.6v.1" stroke="currentColor" strokeWidth="1.5"/></svg>
-                  Liberado com restrições
-                </span>
-              </div>
-              <div
-                style={{ fontFamily: 'var(--serif)', fontSize: '9.2pt', lineHeight: 1.45, color: '#1F2B45', marginTop: '2mm' }}
-                dangerouslySetInnerHTML={{ __html: secoesConstatacoes[3]?.conteudoHtml || '' }}
-              />
-            </div>
-
-            {/* Registro fotográfico complementar em grid de 3 */}
-            <div style={{ marginTop: '2mm' }}>
-              <h3 style={{
-                fontFamily: 'var(--sans)',
-                fontWeight: 700,
-                fontSize: '11.5pt',
-                color: '#15264B',
-                borderBottom: '0.7pt solid #15264B',
-                paddingBottom: '1mm',
-                marginBottom: '2mm'
-              }}>
-                Registro fotográfico complementar
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3.5mm' }}>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '34mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[3]?.fotos?.[0]?.url ? (
-                      <img src={secoesConstatacoes[3].fotos[0].url} alt="Foto 4" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8pt', color: '#56637F', background: '#fff', padding: '0.8mm 2mm' }}>FOTO 4</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '7.8pt', color: '#56637F', marginTop: '1mm' }}>
-                    <b>Foto 4.</b> Vista geral do ativo.
-                  </div>
-                </div>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '34mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[3]?.fotos?.[1]?.url ? (
-                      <img src={secoesConstatacoes[3].fotos[1].url} alt="Foto 5" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8pt', color: '#56637F', background: '#fff', padding: '0.8mm 2mm' }}>FOTO 5</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '7.8pt', color: '#56637F', marginTop: '1mm' }}>
-                    <b>Foto 5.</b> Placa de identificação.
-                  </div>
-                </div>
-                <div style={{ border: '0.3pt solid #C5CEDD', background: '#F1F4F9', padding: '1mm' }}>
-                  <div style={{ height: '34mm', background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {secoesConstatacoes[3]?.fotos?.[2]?.url ? (
-                      <img src={secoesConstatacoes[3].fotos[2].url} alt="Foto 6" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontFamily: 'var(--sans)', fontWeight: 700, fontSize: '8pt', color: '#56637F', background: '#fff', padding: '0.8mm 2mm' }}>FOTO 6</span>
-                    )}
-                  </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: '7.8pt', color: '#56637F', marginTop: '1mm' }}>
-                    <b>Foto 6.</b> Ponto de aterramento.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {renderControlFooter(5)}
-        </section>
-      )}
+      ))}
 
       {/* ==================== FOLHA 6: NÃO CONFORMIDADES, PARECER, ASSINATURA & AUTENTICIDADE ==================== */}
       {(!folhaEspecifica || folhaEspecifica === 6) && (
@@ -1534,7 +1350,7 @@ export const LaudoDocSheets: React.FC<LaudoDocSheetsProps> = ({
             </div>
           </div>
 
-          {renderControlFooter(6)}
+          {renderControlFooter(totalFolhas)}
         </section>
       )}
     </div>
