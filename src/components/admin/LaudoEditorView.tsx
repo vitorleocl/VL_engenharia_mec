@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { auth } from '../../lib/firebase';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -510,9 +511,10 @@ export const LaudoEditorView: React.FC = () => {
     registrarUsoIA('Assistente Técnico IA', 1);
 
     try {
-      const res = await fetch('/api/ai/redigir-secao-laudo', {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/ai/claude-redigir-secao', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           tituloSecao: secaoAtiva.titulo,
           tipoLaudo: taxonomyDetails.tipoNome,
