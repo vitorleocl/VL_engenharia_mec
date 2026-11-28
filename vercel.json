@@ -2,18 +2,6 @@
   "functions": {
     "api/[...path].ts": {
       "maxDuration": 60
-    },
-    "api/ai/claude-laudo-causa-raiz.ts": {
-      "maxDuration": 300
-    },
-    "api/ai/claude-redigir-secao.ts": {
-      "maxDuration": 120
-    },
-    "api/ai/claude-laudo-secoes.ts": {
-      "maxDuration": 120
-    },
-    "api/ai/claude-prospeccao.ts": {
-      "maxDuration": 60
     }
   },
   "rewrites": [

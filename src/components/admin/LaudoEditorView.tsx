@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { auth } from '../../lib/firebase';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -133,12 +132,14 @@ export const LaudoEditorView: React.FC = () => {
   const [modalPdfAberto, setModalPdfAberto] = useState(false);
   const [modalRevisoesAberto, setModalRevisoesAberto] = useState(false);
   const [modalNovaSecaoAberto, setModalNovaSecaoAberto] = useState(false);
-  const [modalIaAberto, setModalIaAberto] = useState(false);
   const [modalFinalizarAberto, setModalFinalizarAberto] = useState(false);
   const [modalExcluirLaudoAberto, setModalExcluirLaudoAberto] = useState(false);
   const [modalImportarChecklistAberto, setModalImportarChecklistAberto] = useState(false);
   const [modalAssociarOrcamentoAberto, setModalAssociarOrcamentoAberto] = useState(false);
   const [modalVerificacaoAberto, setModalVerificacaoAberto] = useState(false);
+  const [modalAgenteAberto, setModalAgenteAberto] = useState(false);
+  const [textoAgente, setTextoAgente] = useState('');
+  const [msgAgente, setMsgAgente] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
   const [modalConverterLayoutAberto, setModalConverterLayoutAberto] = useState(false);
   const [modoExibicao, setModoExibicao] = useState<'editor' | 'folhas'>('editor');
   const [abaEstruturada, setAbaEstruturada] = useState<'geral' | 'parecer' | 'ncs' | 'normas_instrumentos'>('geral');
@@ -150,12 +151,6 @@ export const LaudoEditorView: React.FC = () => {
   const [novaSecaoTitulo, setNovaSecaoTitulo] = useState('');
   const [novaSecaoPreset, setNovaSecaoPreset] = useState('custom');
   const [novaNotaRevisao, setNovaNotaRevisao] = useState('');
-  const [promptIa, setPromptIa] = useState('Melhorar redação técnica conforme ABNT e NRs');
-  const [carregandoIa, setCarregandoIa] = useState(false);
-  const [modalCompletoAberto, setModalCompletoAberto] = useState(false);
-  const [obsCompleto, setObsCompleto] = useState('');
-  const [progressoCompleto, setProgressoCompleto] = useState<string>('');
-  const [erroCompleto, setErroCompleto] = useState<string>('');
   const [artNumeroInput, setArtNumeroInput] = useState(laudoOriginal?.artNumero || '');
   const [termoAceito, setTermoAceito] = useState(false);
   const [erroClienteValidacao, setErroClienteValidacao] = useState<string | null>(null);
@@ -508,161 +503,65 @@ export const LaudoEditorView: React.FC = () => {
     setNovaNotaRevisao('');
   };
 
-  // Assistente IA Redação Técnica
-  const handleAplicarIa = async () => {
-    if (!secaoAtiva) return;
-    setCarregandoIa(true);
-    registrarUsoIA('Assistente Técnico IA', 1);
-
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/ai/claude-redigir-secao', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          tituloSecao: secaoAtiva.titulo,
-          tipoLaudo: taxonomyDetails.tipoNome,
-          normasRef: laudoState.normasReferencia,
-          clienteNome: cliente?.razaoSocial,
-          ativoIdentificacao: ativo?.identificacao,
-          promptUsuario: promptIa,
-          conteudoAtual: secaoAtiva.conteudoHtml || ''
-        })
-      });
-
-      let htmlGerado = '';
-      if (res.ok) {
-        const data = await res.json();
-        htmlGerado = data.conteudoHtml || '';
-      }
-
-      // Se por algum motivo o backend não responder ou retornar vazio, usamos o motor pericial autônomo offline
-      if (!htmlGerado) {
-        htmlGerado = gerarMinutaTecnicaSecao(
-          secaoAtiva.titulo,
-          { nome: taxonomyDetails.tipoNome, normasRef: laudoState.normasReferencia },
-          { 
-            clienteNome: cliente?.razaoSocial, 
-            ativoIdentificacao: ativo?.identificacao,
-            promptUsuario: promptIa
-          }
-        );
-      }
-
-      const conteudoAnterior = secaoAtiva.conteudoHtml ? secaoAtiva.conteudoHtml.trim() : '';
-      const novoConteudo = conteudoAnterior && conteudoAnterior !== '<p></p>'
-        ? `${conteudoAnterior}<div class="my-3">${htmlGerado}</div>`
-        : htmlGerado;
-
-      const novasSecoes = laudoState.secoes.map(s => {
-        if (s.id === secaoAtiva.id) {
-          return { ...s, conteudoHtml: novoConteudo };
-        }
-        return s;
-      });
-
-      agendarAutoSave({
-        ...laudoState,
-        secoes: novasSecoes,
-      });
-    } catch (err) {
-      console.warn('Falha na requisição da IA, aplicando motor técnico autônomo:', err);
-      // Fallback pericial robusto garantido
-      const htmlFallback = gerarMinutaTecnicaSecao(
-        secaoAtiva.titulo,
-        { nome: taxonomyDetails.tipoNome, normasRef: laudoState.normasReferencia },
-        { 
-          clienteNome: cliente?.razaoSocial, 
-          ativoIdentificacao: ativo?.identificacao,
-          promptUsuario: promptIa
-        }
-      );
-
-      const conteudoAnterior = secaoAtiva.conteudoHtml ? secaoAtiva.conteudoHtml.trim() : '';
-      const novoConteudo = conteudoAnterior && conteudoAnterior !== '<p></p>'
-        ? `${conteudoAnterior}<div class="my-3">${htmlFallback}</div>`
-        : htmlFallback;
-
-      const novasSecoes = laudoState.secoes.map(s => {
-        if (s.id === secaoAtiva.id) {
-          return { ...s, conteudoHtml: novoConteudo };
-        }
-        return s;
-      });
-
-      agendarAutoSave({
-        ...laudoState,
-        secoes: novasSecoes,
-      });
-    } finally {
-      setCarregandoIa(false);
-      setModalIaAberto(false);
-    }
-  };
-
-  // Preencher o laudo inteiro (qualquer tipo) com o Claude, em lotes de seções
-  const handlePreencherCompleto = async () => {
-    if (!laudoState) return;
-    setErroCompleto('');
-    const textoPuro = (h?: string) => (h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const alvo = laudoState.secoes.filter(sc =>
-      !sc.isFixa && !sc.ocultaNoPdf &&
-      !['capa', 'art_assinatura', 'checklist'].includes(String(sc.tipo || '')) &&
-      textoPuro(sc.conteudoHtml).length < 120
-    );
-    if (alvo.length === 0) {
-      setErroCompleto('Todas as seções já têm texto. Para refazer uma seção, use "Redação assistida por IA".');
-      return;
-    }
-    const contexto = {
+  // ===== Ponte com o Agent IA VL (fora do site): pacote de dados -> texto pronto =====
+  const montarPacoteAgente = () => {
+    const tipoDef = categoriasLaudo
+      .find(c => c.id === laudoState.categoriaId)?.subcategorias.find(sb => sb.id === laudoState.subcategoriaId)?.tipos.find(t => t.id === laudoState.tipoLaudoId);
+    const semHtml = (h?: string) => (h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return {
+      formato: 'vl-laudo-pacote',
+      versao: 1,
+      geradoEm: new Date().toISOString(),
+      laudoId: laudoState.id,
+      numero: laudoState.numero,
       tipo: taxonomyDetails.tipoNome,
       categoria: taxonomyDetails.catNome,
       subcategoria: taxonomyDetails.subNome,
-      numero: laudoState.numero,
-      normas: laudoState.normasReferencia,
+      normas: laudoState.normasReferencia || tipoDef?.normasRef || '',
       cliente: { nome: cliente?.razaoSocial || laudoState.clienteNome, cnpj: cliente?.cnpj || laudoState.clienteCnpj, endereco: laudoState.clienteEndereco },
       ativo: {
         identificacao: ativo?.identificacao || laudoState.ativoIdentificacao,
-        fabricante: laudoState.ativoFabricante, modelo: laudoState.ativoModelo,
-        serie: laudoState.ativoNumeroSerie, capacidade: laudoState.ativoCapacidade, ano: laudoState.ativoAno,
+        fabricante: laudoState.ativoFabricante, modelo: laudoState.ativoModelo, serie: laudoState.ativoNumeroSerie,
+        capacidade: laudoState.ativoCapacidade, ano: laudoState.ativoAno,
       },
       vistoria: { data: laudoState.dataInspecao, local: laudoState.localVistoria, acompanhante: laudoState.acompanhanteVistoria },
-      apresentacao: textoPuro(laudoState.apresentacao).slice(0, 1500),
-      metodologia: textoPuro(laudoState.metodologia).slice(0, 1500),
-      checklist: laudoState.secoes.flatMap(sc => (sc.itens || []).map(i => ({ item: i.requisito, status: i.status, obs: i.observacao }))).slice(0, 80),
-      naoConformidades: (laudoState.naoConformidadesEstruturadas || []).map(n => ({ id: n.id, titulo: n.titulo, descricao: n.descricao, risco: n.risco })),
       responsavel: { nome: laudoState.responsavelNome, crea: laudoState.responsavelCrea },
+      camposDoTipo: (tipoDef?.checklistInicial || []).map((c: any) => typeof c === 'string' ? { campo: c } : { campo: c.campo, tipoResposta: c.tipoResposta, unidade: c.unidade, criterio: c.criterioReferencia }),
+      checklist: laudoState.secoes.flatMap(sc => (sc.itens || []).map(i => ({ item: i.requisito, status: i.status, obs: i.observacao }))).slice(0, 120),
+      naoConformidades: (laudoState.naoConformidadesEstruturadas || []).map(n => ({ id: n.id, titulo: n.titulo, descricao: n.descricao, risco: n.risco })),
+      secoes: laudoState.secoes
+        .filter(sc => !sc.ocultaNoPdf)
+        .map(sc => ({ id: sc.id, titulo: sc.titulo, tipo: sc.tipo, textoAtual: semHtml(sc.conteudoHtml).slice(0, 1500) })),
     };
-    const titulosTodas = laudoState.secoes.map(sc => sc.titulo);
-    let secoesAtuais = laudoState.secoes;
-    let preenchidas = 0;
-    setCarregandoIa(true);
+  };
+
+  const copiarPacoteAgente = async () => {
     try {
-      const token = await auth.currentUser?.getIdToken();
-      for (let i = 0; i < alvo.length; i += 4) {
-        const lote = alvo.slice(i, i + 4);
-        setProgressoCompleto(`Gerando seções ${i + 1}–${i + lote.length} de ${alvo.length}...`);
-        const res = await fetch('/api/ai/claude-laudo-secoes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            contexto, titulosTodas, observacoes: obsCompleto,
-            secoes: lote.map(sc => ({ id: sc.id, titulo: sc.titulo, conteudoAtual: sc.conteudoHtml || '' })),
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || `Falha (${res.status})`);
-        const mapa = new Map<string, string>((data.secoes || []).map((x: any) => [x.id, x.conteudoHtml]));
-        secoesAtuais = secoesAtuais.map(sc => (mapa.has(sc.id) ? { ...sc, conteudoHtml: mapa.get(sc.id) as string } : sc));
-        preenchidas += mapa.size;
-        agendarAutoSave({ ...laudoState, secoes: secoesAtuais });
-      }
-      setProgressoCompleto(`${preenchidas} seção(ões) preenchida(s). Revise tudo e procure por [VERIFICAR antes de assinar.`);
+      await navigator.clipboard.writeText(JSON.stringify(montarPacoteAgente(), null, 2));
+      setMsgAgente({ tipo: 'ok', texto: 'Dados copiados. Abra o Agent IA VL, vá em Laudos e cole lá.' });
+    } catch {
+      setMsgAgente({ tipo: 'erro', texto: 'O navegador bloqueou a cópia. Permita o acesso à área de transferência e tente de novo.' });
+    }
+  };
+
+  const aplicarRespostaAgente = () => {
+    try {
+      const r = JSON.parse(textoAgente.trim());
+      if (r?.formato !== 'vl-laudo-resposta' || !Array.isArray(r.secoes)) throw new Error('Este texto não é uma resposta do Agent IA VL.');
+      if (r.laudoId && r.laudoId !== laudoState.id) throw new Error('Esta resposta é de outro laudo. Copie o pacote deste laudo e gere de novo.');
+      const mapa = new Map<string, string>(r.secoes.filter((x: any) => x?.id && typeof x.conteudoHtml === 'string').map((x: any) => [x.id, x.conteudoHtml]));
+      if (!mapa.size) throw new Error('A resposta não tem nenhuma seção.');
+      let aplicadas = 0;
+      const novas = laudoState.secoes.map(sc => {
+        if (!mapa.has(sc.id)) return sc;
+        aplicadas += 1;
+        return { ...sc, conteudoHtml: mapa.get(sc.id) as string };
+      });
+      agendarAutoSave({ ...laudoState, secoes: novas });
+      setMsgAgente({ tipo: 'ok', texto: `${aplicadas} seção(ões) atualizada(s). Revise o texto e procure por [VERIFICAR antes de assinar.` });
+      setTextoAgente('');
     } catch (e: any) {
-      setErroCompleto(e?.message || 'Erro ao gerar com IA.');
-      if (preenchidas > 0) setProgressoCompleto(`${preenchidas} seção(ões) já preenchida(s) antes do erro.`);
-    } finally {
-      setCarregandoIa(false);
+      setMsgAgente({ tipo: 'erro', texto: e?.message || 'Não foi possível ler a resposta.' });
     }
   };
 
@@ -1118,15 +1017,6 @@ export const LaudoEditorView: React.FC = () => {
               </span>
 
               <button
-                onClick={() => { setProgressoCompleto(''); setErroCompleto(''); setModalCompletoAberto(true); }}
-                className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
-                title="Preencher as seções vazias deste laudo com o Claude"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Preencher com IA</span>
-              </button>
-
-              <button
                 onClick={handleSalvarManual}
                 disabled={statusSalvamento === 'salvando'}
                 className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white text-[11px] font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
@@ -1250,19 +1140,11 @@ export const LaudoEditorView: React.FC = () => {
                         </button>
 
                         <button
-                          onClick={() => { setMenuAcoesAberto(false); setProgressoCompleto(''); setErroCompleto(''); setModalCompletoAberto(true); }}
+                          onClick={() => { setMenuAcoesAberto(false); setMsgAgente(null); setModalAgenteAberto(true); }}
                           className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Preencher laudo completo com Claude</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setMenuAcoesAberto(false); setModalIaAberto(true); }}
-                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Redação assistida por IA</span>
+                          <FileText className="w-3.5 h-3.5 text-[#1565D8]" />
+                          <span>Trocar dados com o Agent IA VL</span>
                         </button>
 
                         <button
@@ -2267,13 +2149,6 @@ export const LaudoEditorView: React.FC = () => {
                     <span>Minuta</span>
                   </button>
                   <button
-                    onClick={() => setModalIaAberto(true)}
-                    className="px-2 py-1 rounded-md text-purple-700 dark:text-purple-300 text-[11px] font-semibold hover:bg-purple-50 dark:hover:bg-purple-950/40 flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>IA</span>
-                  </button>
-                  <button
                     type="button"
                     onClick={() => setSecaoParaRemoverConfirm(secaoAtiva)}
                     className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
@@ -2841,128 +2716,25 @@ export const LaudoEditorView: React.FC = () => {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: ASSISTENTE IA DE REDAÇÃO TÉCNICA                                  */}
-      {/* ========================================================================= */}
-      {modalIaAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0F172A] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 space-y-4">
-            
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                <h3 className="font-bold text-base text-[#0B1E3D] dark:text-white">
-                  Assistente IA de Redação Pericial
-                </h3>
-              </div>
-              <button 
-                onClick={() => setModalIaAberto(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <p className="text-slate-600 dark:text-slate-300">
-                Selecione uma diretriz para que a inteligência artificial formule ou expanda o texto técnico na seção ativa: <strong className="text-purple-600 font-semibold">{secaoAtiva?.titulo}</strong>.
-              </p>
-
-              <div className="space-y-2">
-                <label className="font-bold text-slate-700 dark:text-slate-300 block">
-                  Instrução Técnica Pericial:
-                </label>
-                <textarea
-                  rows={3}
-                  value={promptIa}
-                  onChange={(e) => setPromptIa(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setPromptIa('Melhorar redação técnica conforme ABNT e NRs')}
-                  className="px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:bg-purple-100 cursor-pointer"
-                >
-                  Conformidade ABNT / NRs
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPromptIa('Formular parecer conclusivo pericial fundamentado')}
-                  className="px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:bg-purple-100 cursor-pointer"
-                >
-                  Conclusão Pericial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPromptIa('Apreciação de risco quantitativa preliminar')}
-                  className="px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 hover:bg-purple-100 cursor-pointer"
-                >
-                  Apreciação de Risco
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => setModalIaAberto(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAplicarIa}
-                disabled={carregandoIa}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {carregandoIa ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Processando Redação...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Inserir na Seção</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {modalCompletoAberto && (
+      {modalAgenteAberto && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-600" /> Preencher laudo completo com Claude
-              </h3>
-              <button onClick={() => !carregandoIa && setModalCompletoAberto(false)} className="text-slate-400 p-1"><X className="w-5 h-5" /></button>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">Trocar dados com o Agent IA VL</h3>
+              <button onClick={() => setModalAgenteAberto(false)} className="text-slate-400 p-1 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              O Claude redige as seções ainda vazias deste laudo ({taxonomyDetails.tipoNome}) usando o cliente, o ativo, o checklist e as não conformidades já lançados. Seções com texto, capa e ART não são alteradas. O resultado é um rascunho: revise tudo e procure por <strong>[VERIFICAR</strong> antes de assinar.
-            </p>
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Observações de campo (opcional)</label>
-            <textarea
-              rows={5}
-              value={obsCompleto}
-              onChange={(e) => setObsCompleto(e.target.value)}
-              placeholder="Ex.: o que foi constatado, medições feitas, histórico do equipamento, quesitos do contratante..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
-            />
-            {progressoCompleto && <p className="text-xs text-emerald-700 dark:text-emerald-400">{progressoCompleto}</p>}
-            {erroCompleto && <p className="text-xs text-red-600">{erroCompleto}</p>}
-            <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setModalCompletoAberto(false)} disabled={carregandoIa} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold disabled:opacity-50 cursor-pointer">Fechar</button>
-              <button onClick={handlePreencherCompleto} disabled={carregandoIa} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
-                {carregandoIa ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Gerando...</span></> : <><Sparkles className="w-3.5 h-3.5" /><span>Gerar rascunho</span></>}
-              </button>
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">1. Enviar os dados deste laudo</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Copia cliente, ativo, checklist, não conformidades e a estrutura do laudo. Cole no Agent IA VL, na tela Laudos.</p>
+              <button onClick={copiarPacoteAgente} className="px-3 py-2 rounded-xl bg-[#1565D8] hover:bg-blue-600 text-white text-xs font-bold cursor-pointer">Copiar dados do laudo</button>
             </div>
+            <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">2. Receber o texto pronto</p>
+              <textarea rows={6} value={textoAgente} onChange={(e) => setTextoAgente(e.target.value)} placeholder="Cole aqui a resposta copiada do Agent IA VL"
+                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+              <button onClick={aplicarRespostaAgente} disabled={!textoAgente.trim()} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer">Aplicar nas seções do laudo</button>
+            </div>
+            {msgAgente && <p className={`text-xs ${msgAgente.tipo === 'ok' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600'}`}>{msgAgente.texto}</p>}
           </div>
         </div>
       )}
