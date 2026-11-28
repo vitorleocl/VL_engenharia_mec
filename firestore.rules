@@ -116,6 +116,11 @@ service cloud.firestore {
     }
 
     // Configurações operacionais do painel.
+    // Prospecção comercial (leads e configurações do agente de IA)
+    match /prospeccao/{leadId} {
+      allow read, write: if isColaborador() || isMaster();
+    }
+
     match /configuracoes/{configId} {
       allow read: if isColaborador() || isMaster();
       allow write: if isColaborador() || isMaster();

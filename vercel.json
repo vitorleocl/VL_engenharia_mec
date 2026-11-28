@@ -11,6 +11,9 @@
     },
     "api/ai/claude-laudo-secoes.ts": {
       "maxDuration": 120
+    },
+    "api/ai/claude-prospeccao.ts": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

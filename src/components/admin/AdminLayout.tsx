@@ -13,6 +13,7 @@ import {
   Moon,
   RefreshCw,
   Wrench,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -105,6 +106,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       badge: String(laudos.length),
       title: `${laudos.length} laudos registrados`,
       visible: true
+    },
+    {
+      id: 'prospeccao',
+      label: 'Prospecção',
+      path: '/admin/prospeccao',
+      icon: Sparkles,
+      title: 'Agente de IA para prospecção de clientes',
+      visible: isColaborador
     },
     {
       id: 'faturamento',

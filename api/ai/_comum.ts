@@ -29,8 +29,9 @@ export async function usuarioAutorizado(req: IncomingMessage): Promise<boolean> 
   const auth = String(req.headers['authorization'] || '');
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   const apiKey = (firebaseConfig as any).apiKey || process.env.VITE_FIREBASE_API_KEY;
-  const master = (process.env.MASTER_EMAIL || process.env.VITE_MASTER_EMAIL || '').trim().toLowerCase();
-  if (!token || !apiKey || !master) return false;
+  // MASTER_EMAIL aceita vários e-mails separados por vírgula (ex.: master e administrativo).
+  const permitidos = (process.env.MASTER_EMAIL || process.env.VITE_MASTER_EMAIL || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (!token || !apiKey || !permitidos.length) return false;
   try {
     const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
       method: 'POST',
@@ -40,7 +41,7 @@ export async function usuarioAutorizado(req: IncomingMessage): Promise<boolean> 
     if (!r.ok) return false;
     const j: any = await r.json();
     const u = j?.users?.[0];
-    return Boolean(u?.email) && String(u.email).toLowerCase() === master && u.emailVerified !== false;
+    return Boolean(u?.email) && permitidos.includes(String(u.email).toLowerCase()) && u.emailVerified !== false;
   } catch {
     return false;
   }
