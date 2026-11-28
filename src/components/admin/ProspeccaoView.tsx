@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { Sparkles, Loader2, Plus, Trash2, MessageCircle, Mail, Copy, Check, Upload, Settings, X } from 'lucide-react';
+import { Sparkles, Loader2, Plus, Trash2, MessageCircle, Mail, Copy, Check, Upload, X, Pencil, Phone, AtSign, MapPin } from 'lucide-react';
 import { db, auth } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -38,14 +38,25 @@ const STATUS: { id: Status; label: string }[] = [
 ];
 const SERVICOS = ['Laudo NR-12', 'Inspeção NR-13 (vasos/caldeiras)', 'Equipamentos de elevação (munck/ponte)', 'HVAC / PMOC', 'Projeto HVAC em Revit (BIM)', 'Laudo de falha mecânica (causa raiz)', 'Laudo veicular / frota', 'Simulação FEA', 'Manutenção e relatórios técnicos'];
 
-const inp = 'w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100';
-const btn = 'px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50';
+const COR: Record<Status, string> = {
+  novo: '#1E5BD8', contatado: '#C2610C', respondeu: '#0E7490', orcamento: '#6D4AC9', fechado: '#16A34A', perdido: '#8393A8',
+};
+const inp = 'w-full px-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--line)] text-[14px] text-[var(--ink)] placeholder:text-[var(--muted)]/70 focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:border-[var(--blue)]';
+const rotulo = 'block text-[13px] font-semibold text-[var(--ink)] space-y-1.5';
+const btnBase = 'inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-[14px] font-semibold cursor-pointer transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--blue)]';
+const btnPri = `${btnBase} bg-[var(--blue)] text-[var(--onblue)] hover:brightness-110`;
+const btnSec = `${btnBase} border border-[var(--line)] bg-[var(--card)] text-[var(--ink)] hover:border-[var(--blue)]`;
 const foneWa = (t?: string) => {
   const d = (t || '').replace(/\D/g, '');
   if (!d) return '';
   return d.length <= 11 ? '55' + d : d;
 };
 const diasDesde = (iso?: string) => (iso ? (Date.now() - new Date(iso).getTime()) / 86400000 : Infinity);
+const textoUltimo = (iso?: string) => {
+  if (!iso) return 'ainda não contatado';
+  const d = Math.floor(diasDesde(iso));
+  return d <= 0 ? 'contatado hoje' : d === 1 ? 'contatado ontem' : `contatado há ${d} dias`;
+};
 
 export const ProspeccaoView: React.FC = () => {
   const { currentUser } = useAuth();
@@ -53,12 +64,12 @@ export const ProspeccaoView: React.FC = () => {
   const [cfg, setCfg] = useState<Config>(CFG_PADRAO);
   const [aba, setAba] = useState<'fila' | 'leads' | 'config'>('fila');
   const [filtro, setFiltro] = useState<Status | 'todos'>('todos');
-  const [novo, setNovo] = useState<Partial<Lead>>({});
-  const [mostrarNovo, setMostrarNovo] = useState(false);
+  const [form, setForm] = useState<Partial<Lead> | null>(null);
   const [importar, setImportar] = useState('');
   const [mostrarImportar, setMostrarImportar] = useState(false);
   const [ativo, setAtivo] = useState<Lead | null>(null);
   const [erroDb, setErroDb] = useState('');
+  const [cfgSalva, setCfgSalva] = useState(false);
 
   useEffect(() => {
     const un = onSnapshot(collection(db, 'prospeccao'), (snap) => {
@@ -82,7 +93,7 @@ export const ProspeccaoView: React.FC = () => {
 
   const adicionar = async (parcial: Partial<Lead>) => {
     if (!parcial.empresa?.trim()) return;
-    const id = `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const id = parcial.id || `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     await salvarLead({ status: 'novo', etapa: 1, criadoEm: new Date().toISOString(), ...parcial, empresa: parcial.empresa.trim(), id } as Lead);
   };
 
@@ -103,108 +114,160 @@ export const ProspeccaoView: React.FC = () => {
 
   const visiveis = aba === 'fila' ? fila : leads.filter(l => filtro === 'todos' || l.status === filtro);
   const contagem = (s: Status) => leads.filter(l => l.status === s).length;
+  const total = Math.max(leads.length, 1);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-purple-600" /> Prospecção</h1>
-          <p className="text-xs text-slate-500">Agente de IA da VL: escreve a mensagem, você revisa e envia pelo WhatsApp ou e-mail.</p>
+    <div className="px-4 py-5 md:px-8 md:py-7 max-w-5xl mx-auto space-y-6 text-[var(--ink)]" style={{ fontFamily: 'var(--b)' }}>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="max-w-xl">
+          <h1 className="text-[28px] leading-tight font-bold" style={{ fontFamily: 'var(--d)' }}>Prospecção</h1>
+          <p className="text-[15px] text-[var(--muted)] mt-1">
+            Cadastre empresas, deixe o Claude escrever a mensagem e envie pelo WhatsApp ou pelo e-mail depois de revisar.
+          </p>
         </div>
         <div className="flex gap-2">
-          <button className={`${btn} border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`} onClick={() => setMostrarImportar(true)}><Upload className="w-3.5 h-3.5" /> Importar lista</button>
-          <button className={`${btn} bg-blue-600 text-white`} onClick={() => { setNovo({}); setMostrarNovo(true); }}><Plus className="w-3.5 h-3.5" /> Novo lead</button>
+          <button className={btnSec} onClick={() => setMostrarImportar(true)}><Upload className="w-4 h-4" /> Importar lista</button>
+          <button className={btnPri} onClick={() => setForm({})}><Plus className="w-4 h-4" /> Novo lead</button>
         </div>
-      </div>
+      </header>
 
-      {erroDb && <p className="text-xs text-red-600">Erro no banco: {erroDb}. Se for "permissions", publique as regras do Firestore (firestore.rules) com a coleção prospeccao.</p>}
+      {erroDb && (
+        <p role="alert" className="text-[14px] rounded-lg border border-[var(--bad)]/40 bg-[var(--bad)]/10 text-[var(--bad)] px-3 py-2">
+          Não foi possível acessar os leads: {erroDb}. Se a mensagem fala de permissão, publique as regras do Firestore com a coleção prospeccao.
+        </p>
+      )}
 
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-        {STATUS.map(s => (
-          <div key={s.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-center">
-            <div className="text-lg font-black text-slate-900 dark:text-white">{contagem(s.id)}</div>
-            <div className="text-[10px] text-slate-500">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      {/* Funil: cada faixa é um status e filtra a lista */}
+      <section aria-label="Funil de prospecção">
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-[var(--line)]" aria-hidden="true">
+          {STATUS.map(s => (
+            <div key={s.id} style={{ width: `${(contagem(s.id) / total) * 100}%`, background: COR[s.id], transition: 'width .4s ease' }} />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-3">
+          {STATUS.map(s => {
+            const sel = aba === 'leads' && filtro === s.id;
+            return (
+              <button key={s.id} onClick={() => { setAba('leads'); setFiltro(sel ? 'todos' : s.id); }}
+                aria-pressed={sel}
+                className={`text-left rounded-lg px-3 py-2 border cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[var(--blue)] ${sel ? 'bg-[var(--card)] border-[var(--ink)]' : 'bg-[var(--card)] border-[var(--line)] hover:border-[var(--muted)]'}`}>
+                <span className="flex items-center gap-1.5 text-[13px] text-[var(--muted)]">
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: COR[s.id] }} />{s.label}
+                </span>
+                <span className="block text-[24px] leading-none font-bold mt-1" style={{ fontFamily: 'var(--d)' }}>{contagem(s.id)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
-      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700">
-        {([['fila', `Fila de hoje (${fila.length})`], ['leads', `Todos os leads (${leads.length})`], ['config', 'Configurações']] as const).map(([id, nome]) => (
-          <button key={id} onClick={() => setAba(id)} className={`px-3 py-2 text-xs font-bold cursor-pointer border-b-2 ${aba === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}`}>{nome}</button>
+      <div role="tablist" className="inline-flex p-1 rounded-lg bg-[var(--line)]/50 border border-[var(--line)]">
+        {([['fila', `Para contatar hoje (${fila.length})`], ['leads', `Todos os leads (${leads.length})`], ['config', 'Configurações']] as const).map(([id, nome]) => (
+          <button key={id} role="tab" aria-selected={aba === id} onClick={() => { setAba(id); if (id === 'leads') setFiltro('todos'); }}
+            className={`px-3.5 py-1.5 rounded-md text-[14px] font-semibold cursor-pointer transition-colors ${aba === id ? 'bg-[var(--card)] text-[var(--ink)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}>{nome}</button>
         ))}
       </div>
 
       {aba === 'config' ? (
-        <div className="grid md:grid-cols-2 gap-3 max-w-3xl">
-          {([
-            ['remetenteVitorNome', 'Vitor: nome na assinatura'], ['remetenteVitorCargo', 'Vitor: cargo'],
-            ['remetenteEduardaNome', 'Eduarda: nome na assinatura'], ['remetenteEduardaCargo', 'Eduarda: cargo'],
-          ] as const).map(([k, rotulo]) => (
-            <label key={k} className="text-xs font-bold text-slate-700 dark:text-slate-300 space-y-1 block">{rotulo}
-              <input className={inp} value={cfg[k]} onChange={e => setCfg({ ...cfg, [k]: e.target.value })} /></label>
-          ))}
-          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 space-y-1 block">Remetente padrão
+        <section className="grid md:grid-cols-2 gap-4 max-w-3xl">
+          <fieldset className="md:col-span-2 grid md:grid-cols-2 gap-4 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4">
+            <legend className="px-1.5 text-[14px] font-semibold">Assinatura das mensagens</legend>
+            {([
+              ['remetenteVitorNome', 'Vitor: nome'], ['remetenteVitorCargo', 'Vitor: cargo'],
+              ['remetenteEduardaNome', 'Eduarda: nome'], ['remetenteEduardaCargo', 'Eduarda: cargo'],
+            ] as const).map(([k, r]) => (
+              <label key={k} className={rotulo}>{r}
+                <input className={inp} value={cfg[k]} onChange={e => setCfg({ ...cfg, [k]: e.target.value })} /></label>
+            ))}
+          </fieldset>
+          <label className={rotulo}>Quem assina por padrão
             <select className={inp} value={cfg.remetentePadrao} onChange={e => setCfg({ ...cfg, remetentePadrao: e.target.value as any })}>
-              <option value="vitor">Vitor (Engenheiro)</option><option value="eduarda">Eduarda Soares (Administrativo)</option></select></label>
-          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 space-y-1 block">Dias até o follow-up
+              <option value="vitor">Vitor, engenheiro</option><option value="eduarda">Eduarda Soares, administrativo</option></select></label>
+          <label className={rotulo}>Dias até o follow-up
             <input type="number" min={1} className={inp} value={cfg.diasFollowUp} onChange={e => setCfg({ ...cfg, diasFollowUp: Number(e.target.value) || 3 })} /></label>
           <div className="md:col-span-2">
-            <button className={`${btn} bg-blue-600 text-white`} onClick={() => setDoc(doc(db, 'prospeccao', '_config'), cfg, { merge: true })}><Check className="w-3.5 h-3.5" /> Salvar configurações</button>
+            <button className={btnPri} onClick={async () => { await setDoc(doc(db, 'prospeccao', '_config'), cfg, { merge: true }); setCfgSalva(true); setTimeout(() => setCfgSalva(false), 2000); }}>
+              {cfgSalva ? <><Check className="w-4 h-4" /> Salvo</> : 'Salvar configurações'}
+            </button>
           </div>
-        </div>
+        </section>
       ) : (
-        <>
-          {aba === 'leads' && (
-            <div className="flex flex-wrap gap-1">
-              {(['todos', ...STATUS.map(s => s.id)] as const).map(f => (
-                <button key={f} onClick={() => setFiltro(f as any)} className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer ${filtro === f ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{f === 'todos' ? 'Todos' : STATUS.find(s => s.id === f)?.label}</button>
-              ))}
-            </div>
+        <section>
+          {aba === 'leads' && filtro !== 'todos' && (
+            <p className="text-[14px] text-[var(--muted)] mb-3">
+              Mostrando leads com status <b className="text-[var(--ink)]">{STATUS.find(s => s.id === filtro)?.label}</b>.{' '}
+              <button className="underline cursor-pointer" onClick={() => setFiltro('todos')}>Ver todos</button>
+            </p>
           )}
           {visiveis.length === 0 ? (
-            <p className="text-xs text-slate-500 py-8 text-center">{aba === 'fila' ? 'Nada na fila agora. Cadastre leads ou aguarde o prazo do follow-up.' : 'Nenhum lead aqui ainda.'}</p>
+            <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--card)] px-6 py-10 text-center">
+              <p className="text-[16px] font-semibold">{aba === 'fila' ? 'Ninguém para contatar agora' : 'Nenhum lead por aqui'}</p>
+              <p className="text-[14px] text-[var(--muted)] mt-1 mb-4">
+                {aba === 'fila' ? `Leads novos e follow-ups com mais de ${cfg.diasFollowUp || 3} dias aparecem nesta lista.` : 'Cadastre uma empresa ou importe uma lista para começar.'}
+              </p>
+              <button className={btnPri} onClick={() => setForm({})}><Plus className="w-4 h-4" /> Cadastrar lead</button>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <ul className="space-y-2.5">
               {visiveis.map(l => (
-                <div key={l.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="text-sm font-bold text-slate-900 dark:text-white">{l.empresa}</div>
-                    <div className="text-[11px] text-slate-500">{[l.contato, l.segmento, l.cidade].filter(Boolean).join(' · ') || 'sem detalhes'}</div>
-                    <div className="text-[11px] text-slate-500">{[l.telefone, l.email].filter(Boolean).join(' · ')}</div>
+                <li key={l.id} className="relative rounded-xl border border-[var(--line)] bg-[var(--card)] pl-5 pr-3 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 overflow-hidden">
+                  <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: COR[l.status] }} />
+                  <div className="flex-1 min-w-[220px]">
+                    <p className="text-[16px] font-bold leading-snug" style={{ fontFamily: 'var(--d)' }}>{l.empresa}</p>
+                    <p className="text-[13.5px] text-[var(--muted)]">{[l.contato, l.segmento].filter(Boolean).join(', ') || 'Sem detalhes do contato'}</p>
+                    <p className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-[var(--muted)] mt-1">
+                      {l.telefone && <span className="inline-flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{l.telefone}</span>}
+                      {l.email && <span className="inline-flex items-center gap-1"><AtSign className="w-3.5 h-3.5" />{l.email}</span>}
+                      {l.cidade && <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{l.cidade}</span>}
+                    </p>
                   </div>
-                  <select className="px-2 py-1 rounded-md text-[11px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100" value={l.status}
+                  <div className="text-[13px] text-[var(--muted)] text-right min-w-[150px]">
+                    <p>{l.etapa > 3 ? 'Sequência concluída' : `Próxima: mensagem ${l.etapa} de 3`}</p>
+                    <p>{textoUltimo(l.ultimoContatoEm)}</p>
+                  </div>
+                  <select aria-label={`Status de ${l.empresa}`} className="px-2.5 py-1.5 rounded-lg text-[13.5px] bg-[var(--card)] border border-[var(--line)] text-[var(--ink)] font-semibold" style={{ color: COR[l.status] }} value={l.status}
                     onChange={e => salvarLead({ ...l, status: e.target.value as Status })}>
                     {STATUS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
-                  <span className="text-[10px] text-slate-500">{l.etapa > 3 ? 'sequência concluída' : `próxima: etapa ${l.etapa}`}</span>
-                  <button className={`${btn} bg-purple-600 text-white`} onClick={() => setAtivo(l)}><Sparkles className="w-3.5 h-3.5" /> Escrever mensagem</button>
-                  <button title="Excluir" className="p-2 text-slate-400 hover:text-red-600 cursor-pointer" onClick={() => { if (window.confirm(`Excluir ${l.empresa}?`)) deleteDoc(doc(db, 'prospeccao', l.id)); }}><Trash2 className="w-4 h-4" /></button>
-                </div>
+                  <button className={btnPri} onClick={() => setAtivo(l)}><Sparkles className="w-4 h-4" /> Escrever mensagem</button>
+                  <button title="Editar lead" aria-label={`Editar ${l.empresa}`} className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--blue)] cursor-pointer" onClick={() => setForm(l)}><Pencil className="w-4 h-4" /></button>
+                  <button title="Excluir lead" aria-label={`Excluir ${l.empresa}`} className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--bad)] cursor-pointer" onClick={() => { if (window.confirm(`Excluir ${l.empresa}?`)) deleteDoc(doc(db, 'prospeccao', l.id)); }}><Trash2 className="w-4 h-4" /></button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </>
+        </section>
       )}
 
-      {mostrarNovo && (
-        <Modal titulo="Novo lead" onClose={() => setMostrarNovo(false)}>
-          <div className="grid grid-cols-2 gap-2">
-            {([['empresa', 'Empresa *'], ['contato', 'Contato'], ['telefone', 'Telefone / WhatsApp'], ['email', 'E-mail'], ['segmento', 'Segmento (ex.: indústria de alimentos)'], ['cidade', 'Cidade']] as const).map(([k, r]) => (
-              <input key={k} className={inp} placeholder={r} value={(novo as any)[k] || ''} onChange={e => setNovo({ ...novo, [k]: e.target.value })} />
+      {form && (
+        <Modal titulo={form.id ? 'Editar lead' : 'Novo lead'} onClose={() => setForm(null)}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([['empresa', 'Empresa'], ['contato', 'Nome do contato'], ['telefone', 'WhatsApp'], ['email', 'E-mail'], ['segmento', 'Segmento (ex.: indústria de alimentos)'], ['cidade', 'Cidade']] as const).map(([k, r]) => (
+              <label key={k} className={rotulo}>{r}
+                <input className={inp} value={(form as any)[k] || ''} onChange={e => setForm({ ...form, [k]: e.target.value })} /></label>
             ))}
-            <select className={`${inp} col-span-2`} value={novo.servico || ''} onChange={e => setNovo({ ...novo, servico: e.target.value })}>
-              <option value="">Serviço em foco (a IA escolhe se vazio)</option>{SERVICOS.map(s => <option key={s}>{s}</option>)}
-            </select>
+            <label className={`${rotulo} sm:col-span-2`}>Serviço em foco
+              <select className={inp} value={form.servico || ''} onChange={e => setForm({ ...form, servico: e.target.value })}>
+                <option value="">Deixar o Claude escolher pelo segmento</option>{SERVICOS.map(s => <option key={s}>{s}</option>)}
+              </select></label>
+            <label className={`${rotulo} sm:col-span-2`}>Notas
+              <textarea rows={2} className={inp} value={form.notas || ''} onChange={e => setForm({ ...form, notas: e.target.value })} /></label>
           </div>
-          <button className={`${btn} bg-blue-600 text-white mt-3`} onClick={async () => { await adicionar(novo); setMostrarNovo(false); }}>Salvar lead</button>
+          <div className="flex justify-end gap-2 mt-4">
+            <button className={btnSec} onClick={() => setForm(null)}>Cancelar</button>
+            <button className={btnPri} disabled={!form.empresa?.trim()} onClick={async () => { await adicionar(form); setForm(null); }}>Salvar lead</button>
+          </div>
         </Modal>
       )}
 
       {mostrarImportar && (
-        <Modal titulo="Importar lista" onClose={() => setMostrarImportar(false)}>
-          <p className="text-xs text-slate-500 mb-2">Uma linha por lead, separado por ponto e vírgula: <code>empresa;contato;telefone;email;segmento;cidade</code></p>
+        <Modal titulo="Importar lista de empresas" onClose={() => setMostrarImportar(false)}>
+          <p className="text-[14px] text-[var(--muted)] mb-2">Uma empresa por linha, separando os campos com ponto e vírgula, nesta ordem: empresa, contato, telefone, e-mail, segmento, cidade.</p>
           <textarea rows={8} className={inp} value={importar} onChange={e => setImportar(e.target.value)} placeholder="Metalúrgica Exemplo;Carlos;81999990000;compras@exemplo.com;metalurgia;Recife" />
-          <button className={`${btn} bg-blue-600 text-white mt-3`} onClick={importarLote}>Importar</button>
+          <div className="flex justify-end gap-2 mt-4">
+            <button className={btnSec} onClick={() => setMostrarImportar(false)}>Cancelar</button>
+            <button className={btnPri} disabled={!importar.trim()} onClick={importarLote}>Importar</button>
+          </div>
         </Modal>
       )}
 
@@ -213,17 +276,25 @@ export const ProspeccaoView: React.FC = () => {
   );
 };
 
-const Modal: React.FC<{ titulo: string; onClose: () => void; children: React.ReactNode }> = ({ titulo, onClose, children }) => (
-  <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4">
-    <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-xl">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-black text-slate-900 dark:text-white">{titulo}</h3>
-        <button onClick={onClose} className="text-slate-400 p-1 cursor-pointer"><X className="w-5 h-5" /></button>
+const Modal: React.FC<{ titulo: string; onClose: () => void; wide?: boolean; children: React.ReactNode }> = ({ titulo, onClose, wide, children }) => {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-[#071428]/60 p-0 sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-label={titulo}
+        className={`w-full ${wide ? 'max-w-4xl' : 'max-w-xl'} max-h-[94vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-[var(--paper)] text-[var(--ink)] border border-[var(--line)] shadow-2xl`} style={{ fontFamily: 'var(--b)' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--line)] bg-[var(--card)] sticky top-0">
+          <h2 className="text-[18px] font-bold" style={{ fontFamily: 'var(--d)' }}>{titulo}</h2>
+          <button onClick={onClose} aria-label="Fechar" className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-5">{children}</div>
       </div>
-      {children}
     </div>
-  </div>
-);
+  );
+};
 
 const MensagemModal: React.FC<{ lead: Lead; cfg: Config; onClose: () => void; onEnviado: (l: Lead) => Promise<void>; usuario?: string }> = ({ lead, cfg, onClose, onEnviado }) => {
   const [canal, setCanal] = useState<'whatsapp' | 'email'>(lead.telefone ? 'whatsapp' : 'email');
@@ -236,6 +307,7 @@ const MensagemModal: React.FC<{ lead: Lead; cfg: Config; onClose: () => void; on
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [pergEnviou, setPergEnviou] = useState(false);
 
   const gerar = async () => {
     setCarregando(true); setErro('');
@@ -250,8 +322,10 @@ const MensagemModal: React.FC<{ lead: Lead; cfg: Config; onClose: () => void; on
           remetente: rem === 'vitor' ? { nome: cfg.remetenteVitorNome, cargo: cfg.remetenteVitorCargo } : { nome: cfg.remetenteEduardaNome, cargo: cfg.remetenteEduardaCargo },
         }),
       });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || `Falha (${r.status})`);
+      const raw = await r.text();
+      let j: any = {};
+      try { j = JSON.parse(raw); } catch { /* resposta não-JSON */ }
+      if (!r.ok) throw new Error(j?.error || `O servidor respondeu ${r.status}. ${raw.slice(0, 120)}`);
       setAssunto(j.assunto || ''); setTexto(j.mensagem || '');
     } catch (e: any) { setErro(e?.message || 'Erro ao gerar'); } finally { setCarregando(false); }
   };
@@ -266,52 +340,84 @@ const MensagemModal: React.FC<{ lead: Lead; cfg: Config; onClose: () => void; on
     });
   };
 
-  const abrir = async () => {
+  const abrir = () => {
     if (!texto.trim()) return;
     const url = canal === 'whatsapp'
       ? `https://wa.me/${foneWa(lead.telefone)}?text=${encodeURIComponent(texto)}`
       : `mailto:${lead.email || ''}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
     window.open(url, '_blank', 'noopener');
-    if (window.confirm('Você enviou a mensagem? Clique em OK para registrar o envio e avançar a etapa.')) {
-      await marcarEnviado(); onClose();
-    }
+    setPergEnviou(true);
   };
 
   const semDestino = canal === 'whatsapp' ? !foneWa(lead.telefone) : !lead.email;
+  const nomeRem = rem === 'vitor' ? cfg.remetenteVitorNome : cfg.remetenteEduardaNome;
 
   return (
-    <Modal titulo={`Mensagem para ${lead.empresa}`} onClose={onClose}>
-      <div className="grid grid-cols-2 gap-2 mb-2">
-        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Canal
-          <select className={inp} value={canal} onChange={e => setCanal(e.target.value as any)}><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option></select></label>
-        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Etapa
-          <select className={inp} value={etapa} onChange={e => setEtapa(Number(e.target.value))}><option value={1}>1 · Primeiro contato</option><option value={2}>2 · Follow-up</option><option value={3}>3 · Última mensagem</option></select></label>
-        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Enviado por
-          <select className={inp} value={rem} onChange={e => setRem(e.target.value as any)}><option value="vitor">{cfg.remetenteVitorNome} (Engenheiro)</option><option value="eduarda">{cfg.remetenteEduardaNome} (Administrativo)</option></select></label>
-        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Serviço
-          <select className={inp} value={servico} onChange={e => setServico(e.target.value)}><option value="">IA escolhe</option>{SERVICOS.map(s => <option key={s}>{s}</option>)}</select></label>
-      </div>
-      <input className={inp} placeholder="Observação para a IA (opcional): ex. conheci a empresa na feira X" value={obs} onChange={e => setObs(e.target.value)} />
-      <button className={`${btn} bg-purple-600 text-white mt-2`} onClick={gerar} disabled={carregando}>
-        {carregando ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Gerando...</> : <><Sparkles className="w-3.5 h-3.5" /> {texto ? 'Gerar outra versão' : 'Gerar com Claude'}</>}
-      </button>
-      {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
-      {(texto || assunto) && (
-        <div className="mt-3 space-y-2">
-          {canal === 'email' && <input className={inp} value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto" />}
-          <textarea rows={9} className={inp} value={texto} onChange={e => setTexto(e.target.value)} />
-          {semDestino && <p className="text-xs text-amber-600">Este lead não tem {canal === 'whatsapp' ? 'telefone' : 'e-mail'} cadastrado. Edite o lead para enviar.</p>}
-          <div className="flex flex-wrap gap-2">
-            <button className={`${btn} bg-emerald-600 text-white`} disabled={semDestino} onClick={abrir}>
-              {canal === 'whatsapp' ? <MessageCircle className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />} Abrir {canal === 'whatsapp' ? 'WhatsApp' : 'e-mail'}
-            </button>
-            <button className={`${btn} border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`} onClick={() => { navigator.clipboard?.writeText((assunto ? assunto + '\n\n' : '') + texto); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }}>
-              {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} Copiar
-            </button>
-            <button className={`${btn} border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200`} onClick={async () => { await marcarEnviado(); onClose(); }}>Marcar como enviado</button>
-          </div>
+    <Modal wide titulo={`Mensagem para ${lead.empresa}`} onClose={onClose}>
+      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
+        <div className="space-y-3">
+          <fieldset>
+            <legend className="text-[13px] font-semibold mb-1.5">Canal</legend>
+            <div className="inline-flex p-1 rounded-lg bg-[var(--line)]/50 border border-[var(--line)]">
+              {([['whatsapp', 'WhatsApp', MessageCircle], ['email', 'E-mail', Mail]] as const).map(([id, nome, Icone]) => (
+                <button key={id} type="button" aria-pressed={canal === id} onClick={() => setCanal(id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[14px] font-semibold cursor-pointer ${canal === id ? 'bg-[var(--card)] shadow-sm' : 'text-[var(--muted)]'}`}><Icone className="w-4 h-4" />{nome}</button>
+              ))}
+            </div>
+          </fieldset>
+          <label className={rotulo}>Mensagem
+            <select className={inp} value={etapa} onChange={e => setEtapa(Number(e.target.value))}>
+              <option value={1}>1 de 3: primeiro contato</option><option value={2}>2 de 3: follow-up</option><option value={3}>3 de 3: última mensagem</option></select></label>
+          <label className={rotulo}>Assinada por
+            <select className={inp} value={rem} onChange={e => setRem(e.target.value as any)}>
+              <option value="vitor">{cfg.remetenteVitorNome}, engenheiro</option><option value="eduarda">{cfg.remetenteEduardaNome}, administrativo</option></select></label>
+          <label className={rotulo}>Serviço em foco
+            <select className={inp} value={servico} onChange={e => setServico(e.target.value)}>
+              <option value="">O Claude escolhe pelo segmento</option>{SERVICOS.map(s => <option key={s}>{s}</option>)}</select></label>
+          <label className={rotulo}>Contexto para o Claude (opcional)
+            <input className={inp} placeholder="Ex.: conheci a empresa na feira de Recife" value={obs} onChange={e => setObs(e.target.value)} /></label>
+          <button className={`${btnPri} w-full`} onClick={gerar} disabled={carregando}>
+            {carregando ? <><Loader2 className="w-4 h-4 animate-spin" /> Escrevendo...</> : <><Sparkles className="w-4 h-4" /> {texto ? 'Escrever outra versão' : 'Escrever com Claude'}</>}
+          </button>
+          {erro && <p role="alert" className="text-[14px] text-[var(--bad)]">{erro}</p>}
         </div>
-      )}
+
+        <div className="space-y-3">
+          <p className="text-[13px] font-semibold">{canal === 'whatsapp' ? `Como ${lead.contato || lead.empresa} vai ver no WhatsApp` : 'Como vai aparecer no e-mail'}</p>
+          {canal === 'whatsapp' ? (
+            <div className="rounded-xl p-3 min-h-[220px]" style={{ background: '#E7DFD3' }}>
+              <textarea aria-label="Texto da mensagem" rows={9} value={texto} onChange={e => setTexto(e.target.value)} placeholder="A mensagem aparece aqui. Você pode editar antes de enviar."
+                className="ml-auto block w-[92%] resize-y rounded-xl rounded-tr-sm px-3 py-2 text-[14.5px] leading-snug text-[#111B21] placeholder:text-[#667781] border-0 focus-visible:outline-2 focus-visible:outline-[var(--blue)]" style={{ background: '#D9FDD3', boxShadow: '0 1px 0.5px rgba(11,20,26,.13)' }} />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--card)] overflow-hidden min-h-[220px]">
+              <div className="px-3 py-2 border-b border-[var(--line)] text-[13px] text-[var(--muted)]">Para: {lead.email || 'sem e-mail cadastrado'}</div>
+              <input aria-label="Assunto" value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Assunto"
+                className="w-full px-3 py-2 border-b border-[var(--line)] bg-transparent text-[14.5px] font-semibold text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-[var(--blue)]" />
+              <textarea aria-label="Texto do e-mail" rows={9} value={texto} onChange={e => setTexto(e.target.value)} placeholder="O texto aparece aqui. Você pode editar antes de enviar."
+                className="w-full px-3 py-2 bg-transparent text-[14.5px] leading-relaxed text-[var(--ink)] resize-y focus-visible:outline-2 focus-visible:outline-[var(--blue)]" />
+            </div>
+          )}
+          {semDestino && <p className="text-[13.5px] text-[var(--warn)]">Este lead não tem {canal === 'whatsapp' ? 'WhatsApp' : 'e-mail'} cadastrado. Edite o lead para poder enviar.</p>}
+          {pergEnviou ? (
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--card)] p-3 flex flex-wrap items-center gap-3">
+              <p className="text-[14px] flex-1 min-w-[180px]">Você enviou a mensagem de {nomeRem}?</p>
+              <button className={btnPri} onClick={async () => { await marcarEnviado(); onClose(); }}>Sim, registrar envio</button>
+              <button className={btnSec} onClick={() => setPergEnviou(false)}>Ainda não</button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button className={`${btnBase} text-white hover:brightness-110`} style={{ background: 'var(--green)' }} disabled={semDestino || !texto.trim()} onClick={abrir}>
+                {canal === 'whatsapp' ? <MessageCircle className="w-4 h-4" /> : <Mail className="w-4 h-4" />} Abrir {canal === 'whatsapp' ? 'WhatsApp' : 'e-mail'}
+              </button>
+              <button className={btnSec} disabled={!texto.trim()} onClick={() => { navigator.clipboard?.writeText((assunto ? assunto + '\n\n' : '') + texto); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }}>
+                {copiado ? <><Check className="w-4 h-4" /> Copiado</> : <><Copy className="w-4 h-4" /> Copiar</>}
+              </button>
+              <button className={btnSec} disabled={!texto.trim()} onClick={async () => { await marcarEnviado(); onClose(); }}>Já enviei, registrar</button>
+            </div>
+          )}
+        </div>
+      </div>
     </Modal>
   );
 };
