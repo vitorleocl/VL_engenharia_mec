@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { auth } from '../../lib/firebase';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -151,6 +152,10 @@ export const LaudoEditorView: React.FC = () => {
   const [novaNotaRevisao, setNovaNotaRevisao] = useState('');
   const [promptIa, setPromptIa] = useState('Melhorar redação técnica conforme ABNT e NRs');
   const [carregandoIa, setCarregandoIa] = useState(false);
+  const [modalCompletoAberto, setModalCompletoAberto] = useState(false);
+  const [obsCompleto, setObsCompleto] = useState('');
+  const [progressoCompleto, setProgressoCompleto] = useState<string>('');
+  const [erroCompleto, setErroCompleto] = useState<string>('');
   const [artNumeroInput, setArtNumeroInput] = useState(laudoOriginal?.artNumero || '');
   const [termoAceito, setTermoAceito] = useState(false);
   const [erroClienteValidacao, setErroClienteValidacao] = useState<string | null>(null);
@@ -510,9 +515,10 @@ export const LaudoEditorView: React.FC = () => {
     registrarUsoIA('Assistente Técnico IA', 1);
 
     try {
-      const res = await fetch('/api/ai/redigir-secao-laudo', {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/ai/claude-redigir-secao', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           tituloSecao: secaoAtiva.titulo,
           tipoLaudo: taxonomyDetails.tipoNome,
@@ -591,6 +597,72 @@ export const LaudoEditorView: React.FC = () => {
     } finally {
       setCarregandoIa(false);
       setModalIaAberto(false);
+    }
+  };
+
+  // Preencher o laudo inteiro (qualquer tipo) com o Claude, em lotes de seções
+  const handlePreencherCompleto = async () => {
+    if (!laudoState) return;
+    setErroCompleto('');
+    const textoPuro = (h?: string) => (h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const alvo = laudoState.secoes.filter(sc =>
+      !sc.isFixa && !sc.ocultaNoPdf &&
+      !['capa', 'art_assinatura', 'checklist'].includes(String(sc.tipo || '')) &&
+      textoPuro(sc.conteudoHtml).length < 120
+    );
+    if (alvo.length === 0) {
+      setErroCompleto('Todas as seções já têm texto. Para refazer uma seção, use "Redação assistida por IA".');
+      return;
+    }
+    const contexto = {
+      tipo: taxonomyDetails.tipoNome,
+      categoria: taxonomyDetails.catNome,
+      subcategoria: taxonomyDetails.subNome,
+      numero: laudoState.numero,
+      normas: laudoState.normasReferencia,
+      cliente: { nome: cliente?.razaoSocial || laudoState.clienteNome, cnpj: cliente?.cnpj || laudoState.clienteCnpj, endereco: laudoState.clienteEndereco },
+      ativo: {
+        identificacao: ativo?.identificacao || laudoState.ativoIdentificacao,
+        fabricante: laudoState.ativoFabricante, modelo: laudoState.ativoModelo,
+        serie: laudoState.ativoNumeroSerie, capacidade: laudoState.ativoCapacidade, ano: laudoState.ativoAno,
+      },
+      vistoria: { data: laudoState.dataInspecao, local: laudoState.localVistoria, acompanhante: laudoState.acompanhanteVistoria },
+      apresentacao: textoPuro(laudoState.apresentacao).slice(0, 1500),
+      metodologia: textoPuro(laudoState.metodologia).slice(0, 1500),
+      checklist: laudoState.secoes.flatMap(sc => (sc.itens || []).map(i => ({ item: i.requisito, status: i.status, obs: i.observacao }))).slice(0, 80),
+      naoConformidades: (laudoState.naoConformidadesEstruturadas || []).map(n => ({ id: n.id, titulo: n.titulo, descricao: n.descricao, risco: n.risco })),
+      responsavel: { nome: laudoState.responsavelNome, crea: laudoState.responsavelCrea },
+    };
+    const titulosTodas = laudoState.secoes.map(sc => sc.titulo);
+    let secoesAtuais = laudoState.secoes;
+    let preenchidas = 0;
+    setCarregandoIa(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      for (let i = 0; i < alvo.length; i += 4) {
+        const lote = alvo.slice(i, i + 4);
+        setProgressoCompleto(`Gerando seções ${i + 1}–${i + lote.length} de ${alvo.length}...`);
+        const res = await fetch('/api/ai/claude-laudo-secoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            contexto, titulosTodas, observacoes: obsCompleto,
+            secoes: lote.map(sc => ({ id: sc.id, titulo: sc.titulo, conteudoAtual: sc.conteudoHtml || '' })),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error || `Falha (${res.status})`);
+        const mapa = new Map<string, string>((data.secoes || []).map((x: any) => [x.id, x.conteudoHtml]));
+        secoesAtuais = secoesAtuais.map(sc => (mapa.has(sc.id) ? { ...sc, conteudoHtml: mapa.get(sc.id) as string } : sc));
+        preenchidas += mapa.size;
+        agendarAutoSave({ ...laudoState, secoes: secoesAtuais });
+      }
+      setProgressoCompleto(`${preenchidas} seção(ões) preenchida(s). Revise tudo e procure por [VERIFICAR antes de assinar.`);
+    } catch (e: any) {
+      setErroCompleto(e?.message || 'Erro ao gerar com IA.');
+      if (preenchidas > 0) setProgressoCompleto(`${preenchidas} seção(ões) já preenchida(s) antes do erro.`);
+    } finally {
+      setCarregandoIa(false);
     }
   };
 
@@ -1166,6 +1238,14 @@ export const LaudoEditorView: React.FC = () => {
                         >
                           <ClipboardCheck className="w-3.5 h-3.5 text-[#1565D8]" />
                           <span>Importar checklist de campo</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setMenuAcoesAberto(false); setProgressoCompleto(''); setErroCompleto(''); setModalCompletoAberto(true); }}
+                          className="w-full px-3 py-2 flex items-center gap-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Preencher laudo completo com Claude</span>
                         </button>
 
                         <button
@@ -2842,6 +2922,38 @@ export const LaudoEditorView: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {modalCompletoAberto && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-5 space-y-3 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-600" /> Preencher laudo completo com Claude
+              </h3>
+              <button onClick={() => !carregandoIa && setModalCompletoAberto(false)} className="text-slate-400 p-1"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              O Claude redige as seções ainda vazias deste laudo ({taxonomyDetails.tipoNome}) usando o cliente, o ativo, o checklist e as não conformidades já lançados. Seções com texto, capa e ART não são alteradas. O resultado é um rascunho: revise tudo e procure por <strong>[VERIFICAR</strong> antes de assinar.
+            </p>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Observações de campo (opcional)</label>
+            <textarea
+              rows={5}
+              value={obsCompleto}
+              onChange={(e) => setObsCompleto(e.target.value)}
+              placeholder="Ex.: o que foi constatado, medições feitas, histórico do equipamento, quesitos do contratante..."
+              className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+            />
+            {progressoCompleto && <p className="text-xs text-emerald-700 dark:text-emerald-400">{progressoCompleto}</p>}
+            {erroCompleto && <p className="text-xs text-red-600">{erroCompleto}</p>}
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setModalCompletoAberto(false)} disabled={carregandoIa} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold disabled:opacity-50 cursor-pointer">Fechar</button>
+              <button onClick={handlePreencherCompleto} disabled={carregandoIa} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                {carregandoIa ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Gerando...</span></> : <><Sparkles className="w-3.5 h-3.5" /><span>Gerar rascunho</span></>}
+              </button>
+            </div>
           </div>
         </div>
       )}

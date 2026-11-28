@@ -976,7 +976,7 @@ export const GeradorLaudoCausaRaizModal: React.FC<GeradorLaudoCausaRaizModalProp
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-purple-950 dark:text-purple-200">
-                        Análise de Causa Raiz Assistida por IA (Gemini)
+                        Análise de Causa Raiz Assistida por IA (Claude)
                       </h4>
                       <p className="text-xs text-slate-600 dark:text-slate-400">
                         Processa a mecânica da falha, confronta os odômetros e sugere a causa provável como rascunho editável.

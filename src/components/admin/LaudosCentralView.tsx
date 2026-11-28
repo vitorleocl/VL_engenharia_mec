@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { LaudoPdfExportModal } from './LaudoPdfExportModal';
 import { AnexarLaudoAssinadoModal } from './AnexarLaudoAssinadoModal';
 import { PublicarNoSiteModal } from './PublicarNoSiteModal';
+import { GeradorLaudoCausaRaizModal } from './GeradorLaudoCausaRaizModal';
 import { Laudo, TrabalhoPublicadoSite } from '../../types';
 import { resolverUrlPdfVisualizacao } from '../../lib/pdfStorage';
 
@@ -50,6 +51,7 @@ export const LaudosCentralView: React.FC = () => {
   const [laudoExportandoPdf, setLaudoExportandoPdf] = useState<Laudo | null>(null);
   const [laudoParaExcluir, setLaudoParaExcluir] = useState<Laudo | null>(null);
   const [modalPdfAssinadoAberto, setModalPdfAssinadoAberto] = useState(false);
+  const [modalCausaRaizAberto, setModalCausaRaizAberto] = useState(false);
   const [laudoParaAnexarPdf, setLaudoParaAnexarPdf] = useState<Laudo | null>(null);
   const [laudoVisualizandoPdfAssinado, setLaudoVisualizandoPdfAssinado] = useState<Laudo | null>(null);
   const [pdfPreviewSrc, setPdfPreviewSrc] = useState<string | null>(null);
@@ -440,6 +442,14 @@ export const LaudosCentralView: React.FC = () => {
           >
             <FileUp className="w-4 h-4 mr-1.5" />
             <span>Anexar laudo assinado (PDF)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalCausaRaizAberto(true)}
+            className="btn-tech pri text-[14.5px] px-4 py-2"
+          >
+            <Sparkles className="w-4 h-4 mr-1.5" />
+            <span>Laudo de causa raiz (IA)</span>
           </button>
           <button
             type="button"
@@ -1066,6 +1076,11 @@ export const LaudosCentralView: React.FC = () => {
           </div>
         </div>
       )}
+
+      <GeradorLaudoCausaRaizModal
+        isOpen={modalCausaRaizAberto}
+        onClose={() => setModalCausaRaizAberto(false)}
+      />
 
       {/* PDF Export Modal */}
       {laudoExportandoPdf && (
