@@ -1,5 +1,53 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { responder, lerCorpo, usuarioAutorizado } from './_comum';
+// Funções da Vercel (package.json é type=module): sem imports relativos, tudo neste arquivo.
+
+
+function responder(res: ServerResponse, status: number, dados: unknown): void {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(dados));
+}
+
+function lerCorpo(req: IncomingMessage): Promise<any> {
+  return new Promise((resolve) => {
+    const partes: Buffer[] = [];
+    req.on('data', (p: Buffer) => partes.push(Buffer.from(p)));
+    req.on('end', () => {
+      try {
+        const t = Buffer.concat(partes).toString('utf-8');
+        resolve(t ? JSON.parse(t) : {});
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', () => resolve({}));
+  });
+}
+
+/** Confere o token de login do Firebase e se o e-mail é o autorizado. */
+async function usuarioAutorizado(req: IncomingMessage): Promise<boolean> {
+  const auth = String(req.headers['authorization'] || '');
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || 'AIzaSyCuTq8f2U-_Q0HW1wBIpml0QU2RgRx8ELw';
+  // MASTER_EMAIL aceita vários e-mails separados por vírgula (ex.: master e administrativo).
+  const permitidos = (process.env.MASTER_EMAIL || process.env.VITE_MASTER_EMAIL || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (!token || !apiKey || !permitidos.length) return false;
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: token }),
+    });
+    if (!r.ok) return false;
+    const j: any = await r.json();
+    const u = j?.users?.[0];
+    return Boolean(u?.email) && permitidos.includes(String(u.email).toLowerCase()) && u.emailVerified !== false;
+  } catch {
+    return false;
+  }
+}
+
+
 
 /**
  * POST /api/ai/claude-prospeccao
