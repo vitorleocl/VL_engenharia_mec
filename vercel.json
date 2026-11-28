@@ -8,6 +8,9 @@
     },
     "api/ai/claude-redigir-secao.ts": {
       "maxDuration": 120
+    },
+    "api/ai/claude-laudo-secoes.ts": {
+      "maxDuration": 120
     }
   },
   "rewrites": [
