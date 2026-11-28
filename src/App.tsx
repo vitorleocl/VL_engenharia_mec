@@ -22,7 +22,6 @@ import { OrcamentoEditorView } from './components/admin/OrcamentoEditorView';
 import { FaturamentoView } from './components/admin/FaturamentoView';
 import { AgendaView } from './components/admin/AgendaView';
 import { LaudosCentralView } from './components/admin/LaudosCentralView';
-import { ProspeccaoView } from './components/admin/ProspeccaoView';
 import { LaudoEditorView } from './components/admin/LaudoEditorView';
 import { ChecklistCampoView } from './components/admin/ChecklistCampoView';
 import { ServicosView } from './components/admin/ServicosView';
@@ -170,14 +169,6 @@ export default function App() {
                 element={
                   <AdminLayout>
                     <AgendaView />
-                  </AdminLayout>
-                }
-              />
-              <Route
-                path="/admin/prospeccao"
-                element={
-                  <AdminLayout>
-                    <ProspeccaoView />
                   </AdminLayout>
                 }
               />
