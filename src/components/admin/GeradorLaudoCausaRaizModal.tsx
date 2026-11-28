@@ -32,6 +32,7 @@ import {
   gerarLaudoCausaRaizOffline, 
   ResultadoLaudoCausaRaiz 
 } from '../../lib/motorLaudoCausaRaiz';
+import { auth } from '../../lib/firebase';
 import { Laudo, LaudoSecao, EvidenciaFoto, MatrizNexoCausal, NexoCausalClassificacao } from '../../types';
 
 interface GeradorLaudoCausaRaizModalProps {
@@ -308,9 +309,10 @@ export const GeradorLaudoCausaRaizModal: React.FC<GeradorLaudoCausaRaizModalProp
     try {
       let resultado: ResultadoLaudoCausaRaiz | null = null;
       try {
-        const res = await fetch('/api/ai/gerar-laudo-causa-raiz', {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/ai/claude-laudo-causa-raiz', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(dadosEntrada)
         });
         if (res.ok) {
